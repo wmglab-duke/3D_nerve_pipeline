@@ -421,11 +421,7 @@ class Slide(Exceptionable):
                         iddraw.text(location,str(int(row['id'])),font = fnt,fill=0)
                 imgi = factor_resize(imgi,resize_factor)
                 imgi.save(path['i'])
-    def deisland():
-        pass #Flag: want this to check for certain countour size and remove if too small
-    def expand_nerve():
-        pass #flag: check for fascicle intersecting/outside of nerve boundary and do a clip offset+boolean
-
+                
     # %% DISCLAIMER: this is depreciated and not well documented
     def reposition_fascicles(self, new_nerve: Nerve, minimum_distance: float = 10, seed: int = None):
         """
