@@ -15,6 +15,7 @@ import random
 # packages
 from shapely.geometry import LineString, Point
 from shapely.affinity import scale
+from shapely.ops import unary_union
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw, ImageFont
@@ -151,7 +152,7 @@ class Slide(Exceptionable):
 
         return any([not fascicle.within_nerve(self.nerve) for fascicle in self.fascicles])
 
-    def move_center(self, point: np.ndarray):
+    def move_center(self, point: np.ndarray,target = None):
         """
         :param point: the point of the new slide center
         """
@@ -159,13 +160,15 @@ class Slide(Exceptionable):
         if self.monofasc():
             # get shift from nerve centroid and point argument
             shift = list(point - np.array(self.fascicles[0].centroid())) + [0]
-        else:
+        elif target == None or target == "nerve":
             # get shift from nerve centroid and point argument
             shift = list(point - np.array(self.nerve.centroid())) + [0]
-
-            # apply shift to nerve trace and all fascicles
-            self.nerve.shift(shift)
-
+        elif target == "fascicle" or target == "fascicles":
+            center = np.array(unary_union([fasc.outer.polygon() for fasc in self.fascicles]).centroid.coords[0])
+            shift = list(point - center) + [0]
+        # apply shift to nerve trace and all fascicles
+        self.nerve.shift(shift)
+        
         for fascicle in self.fascicles:
             fascicle.shift(shift)
 
@@ -349,15 +352,18 @@ class Slide(Exceptionable):
 
         os.chdir(start)
 
-    def saveimg(self, path: str,dims,separate:bool = False,colors = {'n':'red','i':'green','p':'blue'}, buffer = 0,nerve = True, outers = True,inners = True,outer_minus_inner = False,ids = []):
+    def saveimg(self, path: str,dims,separate:bool = False,colors = {'n':'red','i':'green','p':'blue'}, buffer = 0,nerve = True, outers = True,inners = True,outer_minus_inner = False,ids = [],resize_factor = 1,id_font = 40):
         #comments coming soon to a method near you
-
+        def factor_resize(im, factor):
+                (width, height) = (int(im.width*factor), int(im.height*factor))
+                im_resized = im.resize((width, height))
+                return im_resized
         def prep_points(points):
             #adjusts plot points to dimensions and formats for PIL
             points = (points-dim_min+buffer)[:,0:2].astype(int)
             points = tuple(zip(points[:,0],points[:,1]))
             return points
-        fnt = ImageFont.truetype("arial.ttf", 60)       
+        fnt = ImageFont.truetype("arial.ttf", id_font)       
         dim_min = [min(x) for x in dims]
         dim = [max(x) for x in dims]
         imdim = [dim[0]+abs(dim_min[0])+buffer*2,dim[1]+abs(dim_min[1])+buffer*2]
@@ -379,6 +385,7 @@ class Slide(Exceptionable):
                 for i,row in ids.iterrows():
                     location = (row['x']-dim_min[0]+buffer,img.height-row['y']+dim_min[1]-buffer)
                     iddraw.text(location,str(int(row['id'])),font = fnt,fill='white')
+            img = factor_resize(img,resize_factor)
             img.save(path)
         elif separate: #generate each image and save seperately
             if nerve:
@@ -386,6 +393,7 @@ class Slide(Exceptionable):
                 draw = ImageDraw.Draw(img)
                 draw.polygon(prep_points(self.nerve.points[:,0:2]), fill = 1)
                 img = img.transpose(Image.FLIP_TOP_BOTTOM)
+                img = factor_resize(img,resize_factor)
                 img.save(path['n'])
             if outers:
                 imgp = Image.new('1',imdim)
@@ -397,6 +405,7 @@ class Slide(Exceptionable):
                             for inner in fascicle.inners:
                                 draw.polygon(prep_points(inner.points[:,0:2]),fill = 0)    
                 imgp = imgp.transpose(Image.FLIP_TOP_BOTTOM)
+                imgp = factor_resize(imgp,resize_factor)
                 imgp.save(path['p'])
             if inners:
                 imgi = Image.new('1',imdim)
@@ -410,6 +419,7 @@ class Slide(Exceptionable):
                     for i,row in ids.iterrows():
                         location = (row['x']-dim_min[0]+buffer,img.height-row['y']+dim_min[1]-buffer)
                         iddraw.text(location,str(int(row['id'])),font = fnt,fill=0)
+                imgi = factor_resize(imgi,resize_factor)
                 imgi.save(path['i'])
     def deisland():
         pass #Flag: want this to check for certain countour size and remove if too small
