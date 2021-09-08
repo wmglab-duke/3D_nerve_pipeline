@@ -153,7 +153,7 @@ class Fascicle(Exceptionable):
             return self.outer.angle_to(other)
 
     def plot(self, plot_format: str = 'b-', color: Tuple[float, float, float, float] = None,
-             ax: plt.Axes = None, outer_flag=True, inner_index_start: int = None):
+             ax: plt.Axes = None, outer_flag=True, inner_index_start: int = None,centroids:bool = True):
         """
         :param inner_index_start:
         :param ax:
@@ -167,9 +167,10 @@ class Fascicle(Exceptionable):
             self.outer.plot(ax=ax)
             
         for i, inner in enumerate(self.inners):
-            inner.plot(plot_format, color=color, ax=ax)
+            inner.plot(plot_format, color=color, ax=ax, centroid = centroids)
             if inner_index_start is not None:
                 ax.text(*inner.centroid(), s=str(i + inner_index_start), ha='center', va='center')
+            
 
     def deepcopy(self):
         """

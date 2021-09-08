@@ -201,7 +201,8 @@ class Slide(Exceptionable):
              ax: plt.Axes = None,
              outers_flag: bool = True,
              inner_index_labels: bool = False,
-             show_axis: bool = True):
+             show_axis: bool = True,
+             centroids: bool = True):
         """
         Quick util for plotting the nerve and fascicles
         :param show_axis:
@@ -213,6 +214,7 @@ class Slide(Exceptionable):
         :param final: optional, if False, will not show or add title (if comparisons are being overlayed)
         :param inner_format: optional format for inner traces of fascicles
         :param fix_aspect_ratio: optional, if True, will set equal aspect ratio
+        :param: centroids: optional, if True, will plot centroids
         """
 
         if ax is None:
@@ -227,7 +229,7 @@ class Slide(Exceptionable):
 
         # loop through constituents and plot each
         if not self.monofasc():
-            self.nerve.plot(plot_format='k-', ax=ax)
+            self.nerve.plot(plot_format='k-', ax=ax, centroid = centroids)
 
         if fascicle_colors is not None:
             if not len(self.fascicles) == len(fascicle_colors):
@@ -242,7 +244,8 @@ class Slide(Exceptionable):
                 color,
                 ax=ax,
                 outer_flag=outers_flag,
-                inner_index_start=inner_index if inner_index_labels else None
+                inner_index_start=inner_index if inner_index_labels else None,
+                centroids = centroids
             )
             inner_index += len(fascicle.inners)
 
@@ -364,7 +367,7 @@ class Slide(Exceptionable):
 
         os.chdir(start)
 
-    def saveimg(self, path: str,dims,separate:bool = False,colors = {'n':'red','i':'green','p':'blue'}, buffer = 0,nerve = True, outers = True,inners = True,outer_minus_inner = False,ids = [],resize_factor = 1,id_font = 40):
+    def saveimg(self, path: str,dims,separate:bool = False,colors = {'n':'red','i':'green','p':'blue'}, buffer = 0,nerve = True, outers = True,inners = True,outer_minus_inner = False,ids = [],resize_factor = 1,id_font = 40,centroids = False):
         #comments coming soon to a method near you
         def factor_resize(im, factor):
                 (width, height) = (int(im.width*factor), int(im.height*factor))
@@ -379,7 +382,6 @@ class Slide(Exceptionable):
         dim_min = [min(x) for x in dims]
         dim = [max(x) for x in dims]
         imdim = [dim[0]+abs(dim_min[0])+buffer*2,dim[1]+abs(dim_min[1])+buffer*2]
-        self.move_center
         if not separate: #draw contours and ids if provided
             img = Image.new('RGB',imdim)
             draw = ImageDraw.Draw(img)
@@ -391,6 +393,7 @@ class Slide(Exceptionable):
             for fascicle in self.fascicles:
                 for inner in fascicle.inners:
                     draw.polygon(prep_points(inner.points[:,0:2]),fill = colors['i'])
+                    if centroids: draw.point(prep_points(np.around(np.reshape(np.array(inner.centroid()),(1,-1)))),fill = 'white')
             img = img.transpose(Image.FLIP_TOP_BOTTOM)
             iddraw = ImageDraw.Draw(img)
             if len(ids)>0: #prints the fascicle ids
