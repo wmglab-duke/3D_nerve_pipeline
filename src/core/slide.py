@@ -286,15 +286,30 @@ class Slide(Exceptionable):
             fascicle.rotate(angle, center)
 
         self.validation()
-
-    def bounds(self):
-        """
-        :return: check bounds of all traces and return outermost bounds
-        """
+        
+    def trace_list(self):
+        """get list of all traces composing the slide"""
         if self.monofasc():
             trace_list = [f.outer for f in self.fascicles]
         else:
             trace_list = [self.nerve] + [f.outer for f in self.fascicles]
+        return trace_list
+    def smooth_traces(self,nerve_offset, fascicle_offset):
+        """
+        smooths all traces in the current slide, factor is the amount by which 
+        each trace is dilated and then eroded
+        """
+        for trace in self.trace_list():
+            if isinstance(trace, Nerve):
+                trace.smooth(nerve_offset)
+            else:
+                trace.smooth(fascicle_offset)
+                
+    def bounds(self):
+        """
+        :return: check bounds of all traces and return outermost bounds
+        """
+        trace_list = self.trace_list()
         allbound = np.array([trace.bounds() for trace in trace_list if trace is not None])
         return (min(allbound[:,0]),min(allbound[:,1]),max(allbound[:,2]),max(allbound[:,3]))
 
@@ -316,10 +331,7 @@ class Slide(Exceptionable):
             sub_start = os.getcwd()
 
             # write nerve (if not monofasc) and fascicles
-            if self.monofasc():
-                trace_list = [(self.fascicles, 'fascicles')]
-            else:
-                trace_list = [([self.nerve], 'nerve'), (self.fascicles, 'fascicles')]
+            trace_list = self.trace_list()
 
             for items, folder in trace_list:
                 # build path if not already existing

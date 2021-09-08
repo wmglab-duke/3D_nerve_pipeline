@@ -105,7 +105,14 @@ class Trace(Exceptionable):
         # cleanup
         self.__update()
         pco.Clear()
-
+    def smooth(self,factor):
+        """
+        Smooths a contour using a dilation followed by erosion
+        inflation and deflation are specified in whatever units the trace is in
+        """
+        self.offset(fit = None,distance = factor)
+        self.offset(fit = None,distance = -factor)
+        
     def scale(self, factor: float = 1, center: Union[List[float], str] = 'centroid'):
         """
         :param factor: scaling factor to scale up by - multiple all points by a factor.
