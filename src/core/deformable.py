@@ -44,7 +44,7 @@ class Deformable(Exceptionable):
                morph_index_step: int = 10,
                render: bool = True,
                minimum_distance: float = 0.0,
-               ratio: float = None) -> Tuple[List[tuple], List[float]]:
+               ratio: float = None, comp = False) -> Tuple[List[tuple], List[float]]:
         """
         :param ratio:
         :param morph_count: number of incremental traces including the start and end of boundary
@@ -74,11 +74,16 @@ class Deformable(Exceptionable):
         space = pymunk.Space()
 
         # referencing the deform_steps method below
-        morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps(self.start,
+        if not comp: 
+            morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps(self.start,
                                                                                        self.end,
                                                                                        morph_count,
                                                                                        ratio)]
-
+        else: 
+            morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps_complex(self.start,
+                                                                                       self.end,
+                                                                                       morph_count,
+                                                                                       ratio)]
         # draw the deformation
         if render:
             # packages
@@ -257,6 +262,78 @@ class Deformable(Exceptionable):
                 point += vectors[i] * ratio
             traces.append(trace)
 
+        return traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
+
+    @staticmethod
+    def deform_steps_complex(start: Trace, end: Trace, count: int = 2, deform_ratio: float = 1.0, slide: Slide = None) \
+            -> List[Trace]:
+        from shapely.geometry import LinearRing
+        from shapely.ops import split
+        import sys
+        import matplotlib.pyplot as plt
+        def plotty(in1,in2):
+            x1 = list(zip(*[x for x in in1.coords]))[0]
+            y1 = list(zip(*[x for x in in1.coords]))[1]
+            x2 = list(zip(*[x for x in in2.coords]))[0]
+            y2 = list(zip(*[x for x in in2.coords]))[1]
+            plt.plot(x1,y1)
+            plt.plot(x2,y2)
+        start = start.deepcopy()
+        end = end.deepcopy()
+        shift = list(np.array([0,0]) - np.array(start.centroid())) + [0]
+        start.shift(shift)
+        shift = list(np.array([0,0]) - np.array(end.centroid())) + [0]
+        end.shift(shift)
+        startline = LineString([tuple(point) for point in start.points[:, :2]]+[tuple(start.points[0, :2])])
+        endline = LineString([tuple(point) for point in end.points[:, :2]]+[tuple(end.points[0, :2])])
+        plotty(startline,endline)
+        plt.scatter(endline.coords[0][0],endline.coords[0][1])
+
+        if not(startline.is_ring and endline.is_ring): sys.exit('whoopsie')
+        # Find point along old_nerve that is closest to major axis of best fit ellipse
+        (x, y), (a, b), angle = start.ellipse()  # returns degrees
+
+        angle *= 2 * np.pi / 360  # converts to radians
+
+        ray = LineString([(x, y), (x + (2 * a * np.cos(angle)), y + (2 * a * np.sin(angle)))])
+        
+        start_intersection = ray.intersection(start.polygon().boundary)
+        end_intersection = ray.intersection(end.polygon().boundary)
+        #need to add check to make sure intersection is only one point
+        startsplit = split(startline,ray)
+        endsplit = split(endline,ray)
+        plotty(startsplit[1],ray)
+        plt.scatter(startsplit[0].coords[0][0],startsplit[0].coords[0][1])
+        startfix = LineString(list(startsplit[1].coords)+list(startsplit[0].coords))
+        endfix = LineString(list(endsplit[1].coords)+list(endsplit[0].coords))
+        plotty(startline,ray)
+        plt.scatter(endfix.coords[0][0],endfix.coords[0][1])
+        plt.scatter(endfix.coords[-1][0],endfix.coords[-1][1])
+
+        interpcount = 500
+        # Find vector between old_nerve and new_nerve associated points
+        ns = [np.array(startfix.interpolate(d,normalized = True).coords[0]) for d in np.linspace(0,1,num=interpcount)]
+        ns = [np.append(x,0) for x in ns]
+        ne = [np.array(endfix.interpolate(d,normalized = True).coords[0]) for d in np.linspace(0,1,num=interpcount)]
+        ne = [np.append(x,0) for x in ne] 
+        vectors = [ne[i]-ns[i] for i in range(len(ne))]
+            
+        # Save incremental steps of nerve
+        ratios = np.linspace(0, 1, count)
+        traces = []
+        for ratio in ratios:
+            trace = Trace(ns,Config.EXCEPTIONS.value)
+            for i, point in enumerate(trace.points):
+                point += vectors[i] * ratio
+            traces.append(trace)
+        # traces[0].plot()
+   
+        # start.plot()
+        # traces[-1].plot()
+        # end.plot()
+        for trace in traces:
+            plt.figure()
+            trace.plot()
         return traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
