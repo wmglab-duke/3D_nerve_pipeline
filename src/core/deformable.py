@@ -197,6 +197,154 @@ class Deformable(Exceptionable):
         movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
         rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
         return movements, rotations
+    
+    def fiber_deform(self,points,
+               morph_count: int = 100,
+               morph_index_step: int = 10,
+               render: bool = True,
+               minimum_distance: float = 0.0,
+               ratio: float = None, comp = False) -> Tuple[List[tuple], List[float]]:
+        """
+        :param ratio:
+        :param morph_count: number of incremental traces including the start and end of boundary
+        :param morph_index_step: steps between loops of updating outer boundary, i.e. 1 is every loop,
+        2 is every other loop...
+        :param render: True if you care to see it happen... makes this method WAY slower
+        :param minimum_distance: separation between original inputs
+        :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
+        """
+        def pymunk_point(p):
+            x=p[0]
+            y=p[1]
+            
+        bounds = self.start.polygon().bounds
+        width = int(1.5 * (bounds[2] - bounds[0]))
+        height = int(1.5 * (bounds[3] - bounds[1]))
+
+
+        # initialize drawing vars, regardless of whether or not actually rendering
+        # these have been moved below (if render...)
+        drawing_screen = options = display_dimensions = screen = None
+
+        # initialize the physics space (gravity is 0)
+        space = pymunk.Space()
+
+        # referencing the deform_steps method below
+        morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps_complex(self.start,
+                                                                                       self.end,
+                                                                                       morph_count,
+                                                                                       ratio)]
+        # draw the deformation
+        if render:
+            # packages
+            import pygame
+            from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE
+            from pygame.colordict import THECOLORS
+
+            width = int(1.5 * (bounds[2] - bounds[0]))
+            height = int(1.5 * (bounds[3] - bounds[1]))
+
+            aspect = 2
+
+            display_dimensions = int(800 * aspect), 800
+            drawing_screen = pygame.display.set_mode(display_dimensions)
+
+            # pygame.init()
+            # drawing_screen = pygame.Surface((width, height))
+            options = pymunk.pygame_util.DrawOptions(drawing_screen)
+            options.shape_outline_color = (0, 0, 0, 255)
+            options.shape_static_color = (0, 0, 0, 255)
+
+        # init vector of start positions
+        start_positions: List[np.ndarray] = []
+
+        # add fascicles bodies to space
+        fibers = [pymunk_point(p) for p in points]
+        for body, shape in fascicles:
+            shape.elasticity = 0.0
+            space.add(body, shape)
+            start_positions.append(np.array(body.position))
+
+        def add_boundary():
+            for seg in morph_step:
+                seg.elasticity = 0.0
+                seg.group = 1
+            space.add(*morph_step)
+
+        def step_physics(space: pymunk.Space, count: int):
+            dt = 1.0 / 60.0
+            for x in range(count):
+                space.step(dt)
+
+        running = True
+        loop_count = morph_index_step
+        morph_index = 0
+        morph_step = morph_steps[morph_index]
+        add_boundary()
+
+        while running:
+            # if the loop count is divisible by the index step, update morph
+            if render:
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        running = False
+                    elif event.type == KEYDOWN and event.key == K_ESCAPE:
+                        running = False
+                    elif event.type == KEYDOWN and event.key == K_SPACE:
+                        pass
+
+            if loop_count % morph_index_step == 0:
+                # print('PRINT PRINT PRINT')
+                space.remove(*morph_step)
+                morph_index += 1
+                Deformable.printProgressBar(morph_index,
+                                            len(morph_steps),
+                                            prefix='\t\tdeforming',
+                                            suffix='complete',
+                                            length=50)
+                # print('\tmorph step {} of {}'.format(morph_index, len(morph_steps)))
+
+                if morph_index == len(morph_steps):
+                    running = False
+                else:
+                    morph_step = morph_steps[morph_index]
+                    add_boundary()
+
+            # update physics
+            step_physics(space, 3)
+
+            # draw screen
+            if render:
+                drawing_screen.fill(THECOLORS["white"])
+
+                # draw the actual screen
+                space.debug_draw(options)
+
+                temp_surf = drawing_screen.copy()
+                # drawing_screen.fill((0,0,0))  # here, you can fill the screen with whatever you want to take the place of what was there before
+                # drawing_screen.blit(temp_surf, (width/2,-height/2))
+
+                # pygame.display.update()
+
+                # drawing_screen = pygame.transform.scale(drawing_screen, display_dimensions)#, screen)
+                pygame.display.flip()
+                pygame.display.set_caption('nerve morph step {} of {}'.format(morph_index, len(morph_steps)))
+
+            loop_count += 1
+
+        step_physics(space, 500)
+
+        # get end positions
+        end_positions: List[np.ndarray] = []
+        end_rotations: List[float] = []
+        for body, _ in fascicles:
+            end_positions.append(np.array(body.position))
+            end_rotations.append(body.angle)
+
+        # return total movement vectors (dx, dy)
+        movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
+        rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
+        return movements, rotations
 
     @staticmethod
     def deform_steps(start: Trace, end: Trace, count: int = 2, deform_ratio: float = 1.0, slide: Slide = None) \
