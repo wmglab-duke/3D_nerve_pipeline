@@ -164,7 +164,7 @@ class Deformable(Exceptionable):
 
             # update physics
             step_physics(space, 3)
-
+            
             # draw screen
             if render:
                 drawing_screen.fill(THECOLORS["white"])
@@ -198,7 +198,7 @@ class Deformable(Exceptionable):
         rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
         return movements, rotations
     
-    def fiber_deform(self,points,
+    def fiber_deform(self,points,start,
                morph_count: int = 100,
                morph_index_step: int = 10,
                render: bool = True,
@@ -213,10 +213,32 @@ class Deformable(Exceptionable):
         :param minimum_distance: separation between original inputs
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
-        def pymunk_point(p):
-            x=p[0]
-            y=p[1]
-            
+        from pymunk import Body
+        from pymunk.vec2d import Vec2d
+        import matplotlib.pyplot as plt
+        plt.figure()
+        def plotty(trace,bodies):
+            trace.plot()
+            for point in bodies:
+                plt.scatter(point.position[0],point.position[1])
+        def pymunk_body(p):
+            bd = Body(mass=1,moment=1)
+            bd.position = Vec2d(p[0],p[1])
+            return bd
+        
+        def add_forces(bodies):
+            def force_calc(body,bodies):
+                final_vector = Vec2d(0,0)
+                for b in bodies:
+                    if b!=body:
+                        thisvec = body.position-b.position
+                        thisvec*=1/thisvec.get_length_sqrd()
+                        final_vector+=thisvec
+                return final_vector
+            for i,body in enumerate(bodies):
+                fvec = force_calc(body,bodies)
+                body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([body.position[0],body.position[1]]))
+                
         bounds = self.start.polygon().bounds
         width = int(1.5 * (bounds[2] - bounds[0]))
         height = int(1.5 * (bounds[3] - bounds[1]))
@@ -228,123 +250,43 @@ class Deformable(Exceptionable):
 
         # initialize the physics space (gravity is 0)
         space = pymunk.Space()
+        space.damping = .5
 
         # referencing the deform_steps method below
         morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps_complex(self.start,
                                                                                        self.end,
                                                                                        morph_count,
                                                                                        ratio)]
-        # draw the deformation
-        if render:
-            # packages
-            import pygame
-            from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE
-            from pygame.colordict import THECOLORS
-
-            width = int(1.5 * (bounds[2] - bounds[0]))
-            height = int(1.5 * (bounds[3] - bounds[1]))
-
-            aspect = 2
-
-            display_dimensions = int(800 * aspect), 800
-            drawing_screen = pygame.display.set_mode(display_dimensions)
-
-            # pygame.init()
-            # drawing_screen = pygame.Surface((width, height))
-            options = pymunk.pygame_util.DrawOptions(drawing_screen)
-            options.shape_outline_color = (0, 0, 0, 255)
-            options.shape_static_color = (0, 0, 0, 255)
-
         # init vector of start positions
         start_positions: List[np.ndarray] = []
 
         # add fascicles bodies to space
-        fibers = [pymunk_point(p) for p in points]
-        for body, shape in fascicles:
-            shape.elasticity = 0.0
-            space.add(body, shape)
+        fibers = [pymunk_body(p) for p in points]
+        for body in fibers:
+            space.add(body)
             start_positions.append(np.array(body.position))
 
-        def add_boundary():
-            for seg in morph_step:
-                seg.elasticity = 0.0
-                seg.group = 1
-            space.add(*morph_step)
-
-        def step_physics(space: pymunk.Space, count: int):
-            dt = 1.0 / 60.0
-            for x in range(count):
-                space.step(dt)
-
         running = True
-        loop_count = morph_index_step
-        morph_index = 0
-        morph_step = morph_steps[morph_index]
-        add_boundary()
-
+        
         while running:
             # if the loop count is divisible by the index step, update morph
-            if render:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        running = False
-                    elif event.type == KEYDOWN and event.key == K_ESCAPE:
-                        running = False
-                    elif event.type == KEYDOWN and event.key == K_SPACE:
-                        pass
 
-            if loop_count % morph_index_step == 0:
-                # print('PRINT PRINT PRINT')
-                space.remove(*morph_step)
-                morph_index += 1
-                Deformable.printProgressBar(morph_index,
-                                            len(morph_steps),
-                                            prefix='\t\tdeforming',
-                                            suffix='complete',
-                                            length=50)
-                # print('\tmorph step {} of {}'.format(morph_index, len(morph_steps)))
-
-                if morph_index == len(morph_steps):
-                    running = False
-                else:
-                    morph_step = morph_steps[morph_index]
-                    add_boundary()
-
+            add_forces(fibers)
             # update physics
-            step_physics(space, 3)
-
-            # draw screen
-            if render:
-                drawing_screen.fill(THECOLORS["white"])
-
-                # draw the actual screen
-                space.debug_draw(options)
-
-                temp_surf = drawing_screen.copy()
-                # drawing_screen.fill((0,0,0))  # here, you can fill the screen with whatever you want to take the place of what was there before
-                # drawing_screen.blit(temp_surf, (width/2,-height/2))
-
-                # pygame.display.update()
-
-                # drawing_screen = pygame.transform.scale(drawing_screen, display_dimensions)#, screen)
-                pygame.display.flip()
-                pygame.display.set_caption('nerve morph step {} of {}'.format(morph_index, len(morph_steps)))
-
-            loop_count += 1
-
-        step_physics(space, 500)
-
+            space.step(1)
+            plt.figure()
+            plotty(start,fibers)
+            
+            #flag, dont forget to check for multipoint intersections on the ray that detects the boundaries
+            #flag, need to find nearest point on boundary and apply a repulsive force from it
         # get end positions
         end_positions: List[np.ndarray] = []
-        end_rotations: List[float] = []
-        for body, _ in fascicles:
+        for body in fibers:
             end_positions.append(np.array(body.position))
-            end_rotations.append(body.angle)
 
         # return total movement vectors (dx, dy)
         movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
-        rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
-        return movements, rotations
+        return movements
 
     @staticmethod
     def deform_steps(start: Trace, end: Trace, count: int = 2, deform_ratio: float = 1.0, slide: Slide = None) \
@@ -479,9 +421,9 @@ class Deformable(Exceptionable):
         # start.plot()
         # traces[-1].plot()
         # end.plot()
-        # for trace in traces:
-        #     plt.figure()
-        #     trace.plot()
+        for trace in traces:
+            plt.figure()
+            trace.plot()
         return traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
