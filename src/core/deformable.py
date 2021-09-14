@@ -331,9 +331,9 @@ class Deformable(Exceptionable):
         # start.plot()
         # traces[-1].plot()
         # end.plot()
-        for trace in traces:
-            plt.figure()
-            trace.plot()
+        # for trace in traces:
+        #     plt.figure()
+        #     trace.plot()
         return traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
