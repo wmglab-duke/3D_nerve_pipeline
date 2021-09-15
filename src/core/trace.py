@@ -153,7 +153,11 @@ class Trace(Exceptionable):
         self.points = None
         self.append([list(coord[:2]) + [0] for coord in rotated_polygon.boundary.coords])
         self.__update()
-
+        
+    def center(self):
+        self.shift([-x for x in self.centroid()]+[0])
+        self.__update()
+        
     def shift(self, vector):
         """
         :param vector: 1-dim vector with 3 elements... shape is (3,)

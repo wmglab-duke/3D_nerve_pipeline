@@ -214,6 +214,7 @@ class Deformable(Exceptionable):
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
         from pymunk import Body
+        from pymunk.query_info import PointQueryInfo
         from pymunk.vec2d import Vec2d
         import matplotlib.pyplot as plt
         plt.figure()
@@ -238,11 +239,18 @@ class Deformable(Exceptionable):
             for i,body in enumerate(bodies):
                 fvec = force_calc(body,bodies)
                 body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([body.position[0],body.position[1]]))
+        def add_boundary_force(bodies,boundary):
+            for body in bodies:
+                __,pq = boundary.point_query(body.position)
+                fvec = body.position-pq.point
+                fvec*=1/fvec.get_length()
+                body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([body.position[0],body.position[1]]))
                 
         bounds = self.start.polygon().bounds
         width = int(1.5 * (bounds[2] - bounds[0]))
         height = int(1.5 * (bounds[3] - bounds[1]))
-
+        
+        loop_n = 50
 
         # initialize drawing vars, regardless of whether or not actually rendering
         # these have been moved below (if render...)
@@ -250,13 +258,12 @@ class Deformable(Exceptionable):
 
         # initialize the physics space (gravity is 0)
         space = pymunk.Space()
-        space.damping = .5
+        space.damping = .9
 
         # referencing the deform_steps method below
-        morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps_complex(self.start,
-                                                                                       self.end,
-                                                                                       morph_count,
-                                                                                       ratio)]
+        morph_steps = Deformable.deform_steps_complex(self.start,self.end,morph_count,ratio)
+        morph_index = 0
+        
         # init vector of start positions
         start_positions: List[np.ndarray] = []
 
@@ -265,18 +272,22 @@ class Deformable(Exceptionable):
         for body in fibers:
             space.add(body)
             start_positions.append(np.array(body.position))
-
+        
         running = True
         
         while running:
-            # if the loop count is divisible by the index step, update morph
-
-            add_forces(fibers)
-            # update physics
-            space.step(1)
-            plt.figure()
-            plotty(start,fibers)
-            
+            nbody, boundary = morph_steps[morph_index].pymunk_poly()
+            space.add(boundary)
+            for i in range(loop_n):
+                add_forces(fibers)
+                add_boundary_force(fibers, boundary)
+                # update physics
+                space.step(1)
+                plt.figure()
+                plotty(morph_steps[morph_index],fibers)
+            space.remove(boundary)
+        morph_index+=1
+        
             #flag, dont forget to check for multipoint intersections on the ray that detects the boundaries
             #flag, need to find nearest point on boundary and apply a repulsive force from it
         # get end positions
@@ -355,7 +366,7 @@ class Deformable(Exceptionable):
         return traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
-    def deform_steps_complex(start: Trace, end: Trace, count: int = 2, deform_ratio: float = 1.0, slide: Slide = None) \
+    def deform_steps_complex(start: Trace, end: Trace, count: int = 2, deform_ratio: float = 1.0, slide: Slide = None, plot = False) \
             -> List[Trace]:
         from shapely.geometry import LinearRing
         from shapely.ops import split
@@ -376,8 +387,8 @@ class Deformable(Exceptionable):
         end.shift(shift)
         startline = LineString([tuple(point) for point in start.points[:, :2]]+[tuple(start.points[0, :2])])
         endline = LineString([tuple(point) for point in end.points[:, :2]]+[tuple(end.points[0, :2])])
-        plotty(startline,endline)
-        plt.scatter(endline.coords[0][0],endline.coords[0][1])
+        # plotty(startline,endline)
+        # plt.scatter(endline.coords[0][0],endline.coords[0][1])
 
         if not(startline.is_ring and endline.is_ring): sys.exit('whoopsie')
         # Find point along old_nerve that is closest to major axis of best fit ellipse
@@ -388,17 +399,23 @@ class Deformable(Exceptionable):
         ray = LineString([(x, y), (x + (2 * a * np.cos(angle)), y + (2 * a * np.sin(angle)))])
         
         start_intersection = ray.intersection(start.polygon().boundary)
+        #assert that is single point because currently there is no logic to handle concave shapes
+        #however all getting this working would involve is making the splitting logic below only split at the point that 
+        #ray intersects the boundary which is closest to the centroid
+        assert isinstance(start_intersection,Point)
         end_intersection = ray.intersection(end.polygon().boundary)
+        #assert again (I read that in the the voice of the cha cha slide guy)
+        assert isinstance(end_intersection,Point)
         #need to add check to make sure intersection is only one point
         startsplit = split(startline,ray)
         endsplit = split(endline,ray)
-        plotty(startsplit[1],ray)
-        plt.scatter(startsplit[0].coords[0][0],startsplit[0].coords[0][1])
+        # plotty(startsplit[1],ray)
+        # plt.scatter(startsplit[0].coords[0][0],startsplit[0].coords[0][1])
         startfix = LineString(list(startsplit[1].coords)+list(startsplit[0].coords))
         endfix = LineString(list(endsplit[1].coords)+list(endsplit[0].coords))
-        plotty(startline,ray)
-        plt.scatter(endfix.coords[0][0],endfix.coords[0][1])
-        plt.scatter(endfix.coords[-1][0],endfix.coords[-1][1])
+        # plotty(startline,ray)
+        # plt.scatter(endfix.coords[0][0],endfix.coords[0][1])
+        # plt.scatter(endfix.coords[-1][0],endfix.coords[-1][1])
 
         interpcount = 500
         # Find vector between old_nerve and new_nerve associated points
@@ -421,9 +438,10 @@ class Deformable(Exceptionable):
         # start.plot()
         # traces[-1].plot()
         # end.plot()
-        for trace in traces:
-            plt.figure()
-            trace.plot()
+        if plot:
+            for trace in traces:
+                plt.figure()
+                trace.plot()
         return traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
