@@ -227,7 +227,7 @@ class Deformable(Exceptionable):
             bd.position = Vec2d(p[0],p[1])
             return bd
         
-        def add_forces(bodies):
+        def add_forces(bodies, coeff):
             def force_calc(body,bodies):
                 final_vector = Vec2d(0,0)
                 for b in bodies:
@@ -237,20 +237,32 @@ class Deformable(Exceptionable):
                         final_vector+=thisvec
                 return final_vector
             for i,body in enumerate(bodies):
-                fvec = force_calc(body,bodies)
-                body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([body.position[0],body.position[1]]))
-        def add_boundary_force(bodies,boundary):
+                fvec = force_calc(body,bodies)*coeff
+                body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([0,0]))
+        def add_boundary_force(bodies,boundary,boundcoeff):
             for body in bodies:
                 __,pq = boundary.point_query(body.position)
                 fvec = body.position-pq.point
-                fvec*=1/fvec.get_length()
-                body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([body.position[0],body.position[1]]))
+                fvec*=1/fvec.get_length_sqrd()
+                fvec*= boundcoeff
+                body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([0,0]))
+        def add_all_boundary_force(bodies,trace,boundcoeff):
+            def force_calc(body,trace):
+                final_vector = Vec2d(0,0)
+                for p in trace.points:
+                    thisvec = body.position-Vec2d(p[0],p[1])
+                    thisvec= thisvec*float(1/thisvec.get_length_sqrd())
+                    final_vector+=thisvec
+                return final_vector
+            for i,body in enumerate(bodies):
+                fvec = force_calc(body,trace)*coeff
+                body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([0,0]))
                 
         bounds = self.start.polygon().bounds
         width = int(1.5 * (bounds[2] - bounds[0]))
         height = int(1.5 * (bounds[3] - bounds[1]))
         
-        loop_n = 50
+        loop_n = 30
 
         # initialize drawing vars, regardless of whether or not actually rendering
         # these have been moved below (if render...)
@@ -275,18 +287,25 @@ class Deformable(Exceptionable):
         
         running = True
         
+        coeff = 1
+        boundcoeff = 30
+        
         while running:
             nbody, boundary = morph_steps[morph_index].pymunk_poly()
             space.add(boundary)
             for i in range(loop_n):
-                add_forces(fibers)
-                add_boundary_force(fibers, boundary)
+                add_forces(fibers,coeff)
+                #need to make this repulse from the point online between centroid and the point
+                
+                #need to add collision between point and boundary
+                # add_boundary_force(fibers, boundary, boundcoeff)
+                add_all_boundary_force(fibers, start, boundcoeff)
                 # update physics
                 space.step(1)
                 plt.figure()
                 plotty(morph_steps[morph_index],fibers)
             space.remove(boundary)
-        morph_index+=1
+            morph_index+=1
         
             #flag, dont forget to check for multipoint intersections on the ray that detects the boundaries
             #flag, need to find nearest point on boundary and apply a repulsive force from it
