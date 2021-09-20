@@ -213,7 +213,7 @@ class Deformable(Exceptionable):
         :param minimum_distance: separation between original inputs
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
-        from pymunk import Body
+        from pymunk import Body, Circle
         from pymunk.query_info import PointQueryInfo
         from pymunk.vec2d import Vec2d
         import matplotlib.pyplot as plt
@@ -264,6 +264,12 @@ class Deformable(Exceptionable):
         
         loop_n = 30
 
+        def add_boundary():
+            for seg in morph_step:
+                seg.elasticity = 0.0
+                seg.group = 1
+            space.add(*morph_step)
+            
         # initialize drawing vars, regardless of whether or not actually rendering
         # these have been moved below (if render...)
         drawing_screen = options = display_dimensions = screen = None
@@ -275,15 +281,18 @@ class Deformable(Exceptionable):
         # referencing the deform_steps method below
         morph_steps = Deformable.deform_steps_complex(self.start,self.end,morph_count,ratio)
         morph_index = 0
-        
+        morph_step = morph_steps[morph_index]
+
         # init vector of start positions
         start_positions: List[np.ndarray] = []
 
         # add fascicles bodies to space
         fibers = [pymunk_body(p) for p in points]
+        shapes = [Circle(b,radius = 1) for b in fibers]
         for body in fibers:
             space.add(body)
             start_positions.append(np.array(body.position))
+        for shape in shapes: space.add(shape)
         
         running = True
         
@@ -295,18 +304,19 @@ class Deformable(Exceptionable):
             space.add(boundary)
             for i in range(loop_n):
                 add_forces(fibers,coeff)
-                #need to make this repulse from the point online between centroid and the point
-                
-                #need to add collision between point and boundary
                 # add_boundary_force(fibers, boundary, boundcoeff)
                 add_all_boundary_force(fibers, start, boundcoeff)
                 # update physics
                 space.step(1)
                 plt.figure()
                 plotty(morph_steps[morph_index],fibers)
-            space.remove(boundary)
-            morph_index+=1
-        
+            space.remove(*morph_step)
+            morph_index += 1
+            if morph_index == len(morph_steps):
+                running = False
+            else:
+                morph_step = morph_steps[morph_index]
+                add_boundary()
             #flag, dont forget to check for multipoint intersections on the ray that detects the boundaries
             #flag, need to find nearest point on boundary and apply a repulsive force from it
         # get end positions
