@@ -251,18 +251,19 @@ class Deformable(Exceptionable):
                 final_vector = Vec2d(0,0)
                 for p in trace.points:
                     thisvec = body.position-Vec2d(p[0],p[1])
-                    thisvec= thisvec*float(1/thisvec.get_length_sqrd())
+                    # if thisvec.length>50: continue
+                    thisvec = thisvec*float(1/thisvec.length**3)
                     final_vector+=thisvec
                 return final_vector
             for i,body in enumerate(bodies):
-                fvec = force_calc(body,trace)*coeff
+                fvec = force_calc(body,trace)*boundcoeff
                 body.apply_force_at_local_point(tuple([fvec[0],fvec[1]]),tuple([0,0]))
                 
         bounds = self.start.polygon().bounds
         width = int(1.5 * (bounds[2] - bounds[0]))
         height = int(1.5 * (bounds[3] - bounds[1]))
         
-        loop_n = 30
+        loop_n = 10
 
         def add_boundary():
             for seg in morph_step:
@@ -279,7 +280,8 @@ class Deformable(Exceptionable):
         space.damping = .9
 
         # referencing the deform_steps method below
-        morph_steps = Deformable.deform_steps_complex(self.start,self.end,morph_count,ratio)
+        morph_traces = Deformable.deform_steps_complex(self.start,self.end,morph_count,ratio)
+        morph_steps = [step.pymunk_segments(space) for step in morph_traces]
         morph_index = 0
         morph_step = morph_steps[morph_index]
 
@@ -296,29 +298,30 @@ class Deformable(Exceptionable):
         
         running = True
         
-        coeff = 1
-        boundcoeff = 30
+        coeff = 3
+        attract = -1.5
+        boundcoeff = 10
+        add_boundary()
         
         while running:
-            nbody, boundary = morph_steps[morph_index].pymunk_poly()
-            space.add(boundary)
             for i in range(loop_n):
                 add_forces(fibers,coeff)
-                # add_boundary_force(fibers, boundary, boundcoeff)
-                add_all_boundary_force(fibers, start, boundcoeff)
+                add_forces(fibers, attract)
+                # add_boundary_force(fibers, start, boundcoeff)
+                add_all_boundary_force(fibers, morph_traces[morph_index], boundcoeff)
                 # update physics
                 space.step(1)
                 plt.figure()
-                plotty(morph_steps[morph_index],fibers)
+                plotty(morph_traces[morph_index],fibers)
             space.remove(*morph_step)
             morph_index += 1
+            print('plotty')
+            # plotty(morph_traces[morph_index],fibers)
             if morph_index == len(morph_steps):
                 running = False
             else:
                 morph_step = morph_steps[morph_index]
                 add_boundary()
-            #flag, dont forget to check for multipoint intersections on the ray that detects the boundaries
-            #flag, need to find nearest point on boundary and apply a repulsive force from it
         # get end positions
         end_positions: List[np.ndarray] = []
         for body in fibers:
