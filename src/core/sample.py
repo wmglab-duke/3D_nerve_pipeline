@@ -19,11 +19,8 @@ import matplotlib.pyplot as plt
 import subprocess
 from shapely.geometry import LineString, Point
 from scipy.ndimage.morphology import binary_fill_holes
-<<<<<<< HEAD
 from skimage import morphology 
-=======
-from skimage import morphology
->>>>>>> master
+
 
 # ascent
 from src.core import Slide, Map, Fascicle, Nerve, Trace
@@ -339,13 +336,8 @@ class Sample(Exceptionable, Configurable, Saveable):
                 orientation_centroid = trace.centroid()
             else:
                 print('No orientation tif found, but continuing. (Sample.populate)')
-<<<<<<< HEAD
-            
-            #preprocess images
-=======
                 
             #preprocess binary masks
->>>>>>> master
             for mask in ["COMPILED","INNERS","OUTERS","NERVE"]:
                 maskfile = getattr(MaskFileNames,mask)
                 if exists(maskfile):
