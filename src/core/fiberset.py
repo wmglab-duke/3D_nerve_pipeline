@@ -58,11 +58,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
         xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
         xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
-        
+
         fibers_xy = self._generate_xy(sim_directory)
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
-        
+
         return self
 
     def write(self, mode: WriteMode, path: str):
@@ -426,8 +426,9 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             model_length = self.search(Config.MODEL, 'medium', 'proximal', 'length') if (
                     override_length is None) else override_length
 
-            if not ('min' in self.configs['sims']['fibers']['z_parameters'].keys() and 'max' in
-                    self.configs['sims']['fibers']['z_parameters'].keys()):
+            if not 'min' in self.configs['sims']['fibers']['z_parameters'].keys() or \
+                    not 'max' in self.configs['sims']['fibers']['z_parameters'].keys() or \
+                    override_length is not None:
                 fiber_length = model_length if override_length is None else override_length
                 self.configs['sims']['fibers'][FiberZMode.parameters.value]['min'] = 0
                 self.configs['sims']['fibers'][FiberZMode.parameters.value]['max'] = fiber_length
@@ -471,6 +472,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             fiber_geometry_mode_name: str = self.search(Config.SIM, 'fibers', 'mode')
 
             # use key from above to get myelination mode from fiber_z
+            diams = []
             if super_sample:
                 myelinated = False
             else:
@@ -481,7 +483,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     "myelinated"
                 )
 
-                diams = []
                 my_z_seed = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'seed')
                 diameter = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'diameter')
                 diam_distribution: bool = True if type(diameter) is dict else False
@@ -578,6 +579,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                                         delta_z,
                                                         x, y,
                                                         z_shift_to_center_in_model_range + z_shift_to_center_in_fiber_range)
+                    if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(np.array(fiber_pre)[:, 2]) > fiber_length:
+                        self.throw(119)
                     if diam_distribution:
                         fiber = {'diam': diam, 'fiber': fiber_pre}
                     else:
@@ -614,6 +617,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                                         delta_z,
                                                         x, y,
                                                         z_shift_to_center_in_model_range)
+                    if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(
+                            np.array(fiber_pre)[:, 2]) > fiber_length: self.throw(119)
                     if diam_distribution:
                         fiber = {'diam': diam, 'fiber': fiber_pre}
                     else:

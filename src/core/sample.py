@@ -19,7 +19,11 @@ import matplotlib.pyplot as plt
 import subprocess
 from shapely.geometry import LineString, Point
 from scipy.ndimage.morphology import binary_fill_holes
+<<<<<<< HEAD
 from skimage import morphology 
+=======
+from skimage import morphology
+>>>>>>> master
 
 # ascent
 from src.core import Slide, Map, Fascicle, Nerve, Trace
@@ -122,7 +126,22 @@ class Sample(Exceptionable, Configurable, Saveable):
             slide.generate_perineurium(fit)
         
         return self
-    
+
+    def im_preprocess(self,path):
+        """
+        Performs cleaning operations on the input image
+        :param path: path to image which will be processed
+        """
+        img = cv2.imread(path,-1)
+
+        if self.search(Config.SAMPLE, 'image_preprocessing','fill_holes',optional = True)==True:
+            img = binary_fill_holes(img)
+        removal_size = self.search(Config.SAMPLE, 'image_preprocessing','object_removal_area',optional = True)
+        if removal_size:
+            if removal_size<0: self.throw(119)
+            img = morphology.remove_small_objects(img,removal_size)
+        cv2.imwrite(path,img.astype(int)*255)
+        
     def get_factor(self, scale_bar_mask_path: str, scale_bar_length: float, scale_bar_is_literal: bool) -> 'Sample':
         """
         Returns scaling factor (micrometers per pixel)
@@ -320,8 +339,13 @@ class Sample(Exceptionable, Configurable, Saveable):
                 orientation_centroid = trace.centroid()
             else:
                 print('No orientation tif found, but continuing. (Sample.populate)')
+<<<<<<< HEAD
             
             #preprocess images
+=======
+                
+            #preprocess binary masks
+>>>>>>> master
             for mask in ["COMPILED","INNERS","OUTERS","NERVE"]:
                 maskfile = getattr(MaskFileNames,mask)
                 if exists(maskfile):
@@ -467,12 +491,13 @@ class Sample(Exceptionable, Configurable, Saveable):
                     morph_count = self.search(Config.SAMPLE, 'morph_count')
                 else:
                     morph_count = 100
-
+                    
                 if 'deform_ratio' in self.search(Config.SAMPLE).keys():
                     deform_ratio = self.search(Config.SAMPLE, 'deform_ratio')
                     if deform_ratio == 0: self.throw(117)
                     print('\t\tdeform ratio set to {}'.format(deform_ratio))
                 else: self.throw(118)
+
                 # title = 'morph count: {}'.format(morph_count)
                 sep_fascicles = self.search(Config.SAMPLE, "boundary_separation", "fascicles")
                 sep_nerve = None
@@ -500,6 +525,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                 for move, angle, fascicle in zip(movements, rotations, slide.fascicles):
                     fascicle.shift(list(move) + [0])
                     fascicle.rotate(angle)
+                    
             elif deform_mode == DeformationMode.JITTER:
                 slide.reposition_fascicles(slide.reshaped_nerve(reshape_nerve_mode), 10)
             else:  # must be DeformationMode.NONE
@@ -512,7 +538,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                 else:
                     warnings.warn('NO DEFORMATION is happening!')
 
-            if nerve_mode is not NerveMode.NOT_PRESENT:
+            if nerve_mode is NerveMode.PRESENT and deform_mode != DeformationMode.NONE:
                 if deform_ratio != 1 and partially_deformed_nerve is not None:
                     partially_deformed_nerve.shift(-np.asarray(list(partially_deformed_nerve.centroid()) + [0]))
                     slide.nerve = partially_deformed_nerve
@@ -522,6 +548,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                     slide.orientation_point = slide.nerve.points[slide.orientation_point_index][:2]
                     slide.nerve = slide.reshaped_nerve(reshape_nerve_mode)
                     slide.nerve.offset(distance=sep_nerve)
+                    
         #scale with ratio = 1 (no scaling happens, but connects the ends of each trace to itself)
         self.scale(1)
         
