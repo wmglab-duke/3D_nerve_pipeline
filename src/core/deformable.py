@@ -227,13 +227,15 @@ class Deformable(Exceptionable):
             bd.position = Vec2d(p[0],p[1])
             return bd
         
-        def add_forces(bodies, coeff):
+        def add_forces(bodies, coeff,square = True, maxdist = 100):
             def force_calc(body,bodies):
                 final_vector = Vec2d(0,0)
                 for b in bodies:
                     if b!=body:
                         thisvec = body.position-b.position
-                        thisvec*=1/thisvec.get_length_sqrd()
+                        if thisvec.get_length()>maxdist: continue
+                        if square:thisvec*=1/thisvec.get_length_sqrd()
+                        else: thisvec*=1/thisvec.get_length()
                         final_vector+=thisvec
                 return final_vector
             for i,body in enumerate(bodies):
@@ -305,8 +307,8 @@ class Deformable(Exceptionable):
         
         while running:
             for i in range(loop_n):
-                add_forces(fibers,coeff)
-                add_forces(fibers, attract)
+                add_forces(fibers,coeff,maxdist = 150)
+                add_forces(fibers, attract,maxdist = 200)
                 # add_boundary_force(fibers, start, boundcoeff)
                 add_all_boundary_force(fibers, morph_traces[morph_index], boundcoeff)
                 # update physics
