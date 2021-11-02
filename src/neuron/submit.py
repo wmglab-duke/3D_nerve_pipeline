@@ -54,6 +54,8 @@ def get_diameter(my_inner_fiber_diam_key, my_inner_ind, my_fiber_ind):
             break
         else:
             continue
+    if isinstance(my_diameter, list) and len(my_diameter)==1:
+        my_diameter = my_diameter[0]
 
     return my_diameter
 
@@ -100,7 +102,7 @@ def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
     sim_config = load(os.path.join(sim_dir, sim_name, '{}.json'.format(n_sim)))
 
     if sim_config['protocol']['mode'] == 'ACTIVATION_THRESHOLD' or sim_config['protocol']['mode'] == 'BLOCK_THRESHOLD':
-        if 'scout_sim' in sim_config['protocol']['bounds_search'].keys():
+        if 'scout_sim' in sim_config['protocol']['bounds_search'].keys() and sim_config['protocol']['bounds_search']['scout_sim']==True:
             # load in threshold from scout_sim (example use: run centroid first, then any other xy-mode after)
 
             scout_sim = sim_config['protocol']['bounds_search']['scout_sim']
@@ -159,6 +161,7 @@ def make_task(my_os: str, start_p: str, sim_p: str, inner: int, fiber: int, top:
                 '-c \"deltaz={:.4f}\" '
                 '-c \"axonnodes={}\" '
                 '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
+                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
                 '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n'.format(sim_p,
                                                                           inner,
                                                                           fiber,
@@ -188,6 +191,7 @@ def make_task(my_os: str, start_p: str, sim_p: str, inner: int, fiber: int, top:
                 '-c \"deltaz={:.4f}\" '
                 '-c \"axonnodes={}\" '
                 '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
+                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
                 '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n'.format(os.getcwd(),
                                                                           sim_path_win,
                                                                           inner,
@@ -367,7 +371,7 @@ def cluster_submit(run_number: int, array_length_max: int = 10):
                             continue
 
                         else:
-                            print(f"MISSING {thresh_path} -->\t\trunning inner ({inner_ind}) fiber ({fiber_ind})")
+                            print(f"RUNNING inner ({inner_ind}) fiber ({fiber_ind})  -->  {thresh_path}")
                             time.sleep(1)
 
                             if inner_fiber_diam_key is not None:

@@ -15,7 +15,9 @@ import numpy as np
 import os
 
 # ascent
-from src.utils import *
+from src.utils import (Config, Configurable, Exceptionable, FiberGeometry, FiberXYMode,
+                       MyelinationMode, NeuronRunMode, Saveable, SearchAmplitudeIncrementMode,
+                       SetupMode, TerminationCriteriaMode, WriteMode)
 
 
 class HocWriter(Exceptionable, Configurable, Saveable):
@@ -173,11 +175,13 @@ class HocWriter(Exceptionable, Configurable, Saveable):
                     "gating": False,
                     "istim": False,
                     "locs": [0]
-                }
+                },
+                "runtimes": False
             }
-            saving: dict = self.search(Config.SIM, "saving")
+            # saving: dict = self.search(Config.SIM, "saving")
         else:
-            saving: dict = self.search(Config.SIM, "saving")
+            pass
+            # saving: dict = self.search(Config.SIM, "saving")
 
         file_object.write("saveflag_Vm_time      = %0.0f\n" % int(self.search(Config.SIM, "saving", "time", "vm") == True))
         file_object.write("saveflag_gating_time  = %0.0f\n" % int(self.search(Config.SIM, "saving", "time", "gating") == True))
@@ -185,6 +189,11 @@ class HocWriter(Exceptionable, Configurable, Saveable):
         file_object.write("saveflag_gating_space = %0.0f\n" % int(self.search(Config.SIM, "saving", "space", "gating") == True))
         file_object.write("saveflag_Ve           = %0.0f\n" % int(False))
         file_object.write("saveflag_Istim        = %0.0f\n" % int(self.search(Config.SIM, "saving", "time", "istim") == True))
+
+        if 'runtimes' not in self.configs[Config.SIM.value]['saving'].keys():
+            file_object.write("saveflag_runtime     = %0.0f\n" % 0)
+        else:
+            file_object.write("saveflag_runtime     = %0.0f\n" % int(self.search(Config.SIM, "saving", "runtimes") == True))
 
         if 'end_ap_times' in self.configs[Config.SIM.value]['saving'].keys():
             loc_min = self.search(Config.SIM, "saving", "end_ap_times", "loc_min")

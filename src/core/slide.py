@@ -18,7 +18,6 @@ from shapely.affinity import scale
 from shapely.ops import unary_union
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image, ImageDraw, ImageFont
 
 # ascent
 from .fascicle import Fascicle
@@ -55,7 +54,7 @@ class Slide(Exceptionable):
                 self.throw(39)
 
         self.orientation_point: Union[Tuple[float, float], None] = None
-        self.orientation_point_index: Union[float, None] = None
+        self.orientation_angle: Union[float, None] = None
 
     def monofasc(self) -> bool:
         return self.nerve_mode == NerveMode.NOT_PRESENT and len(self.fascicles) == 1

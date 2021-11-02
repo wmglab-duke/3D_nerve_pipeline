@@ -468,15 +468,35 @@
     "text": "ap_end_times is defined in Sim, so the system is saving AP times at the ends of the fiber. \nThe values for loc_min and/or loc_max are the terminal nodes  (i.e., 0 or 1), which are also set to passive_end_nodes=1 (i.e., grounded therefore no APs)."
   },
   {
-    "code": 117,
-    "text": "If deformation mode is set to physics, deform_ratio cannot be zero (sample.json)"
-  },
-  {
     "code": 118,
     "text": "Deformation mode is set to physics, but no deform ratio is defined in sample.json"
   },
   {
     "code": 120,
     "text": "Object removal area (image_preprocessing->object_removal_area->sample.json) cannot be negative"
+  },
+  {
+    "code": 121,
+    "text": "No input morphology masks found"
+  },
+  {
+    "code": 122,
+    "text": "Input morphology masks do not have identical dimensions"
+  },
+  {
+    "code": 123,
+    "text": "Slide is not centered at [0,0]"
+  },
+  {
+    "code": 124,
+    "text": "Multiple objects were found in orientation mask. A single object of white pixels must be provided"
+  },
+  {
+    "code": 125,
+    "text": "No objects were found in orientation mask. An object of white pixels must be provided"
+  },
+  {
+    "code": 126,
+    "text": "Cuff configuration file must specify a fixed point if expandable=true. See Creating custom preset cuffs from instances of part primitives in the documentation"
   }
 ]

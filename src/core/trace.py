@@ -93,7 +93,7 @@ class Trace(Exceptionable):
 
         if fit is not None:
             # find offset distance from factor and mean radius
-            distance: float = fit.get("a") * 2 * self.mean_radius() + fit.get("b")
+            distance: float = fit.get("a") * 2 * np.sqrt(self.area()/np.pi) + fit.get("b")
         elif distance is None:
             self.throw(29)
 
@@ -490,7 +490,7 @@ class Trace(Exceptionable):
                 else:
                     self.throw(4)
 
-        except EnvironmentError as _:
+        except EnvironmentError:
             # only one of these can run, so comment at will
             self.throw(7)
             # raise
@@ -558,7 +558,7 @@ class Trace(Exceptionable):
 
     def make_circle(self):
         # Convert to float and randomize order
-        shuffled = [(float(x), float(y)) for (x, y) in self.points]
+        shuffled = [(float(x), float(y)) for (x, y) in self.points[:,0:2]]
         random.shuffle(shuffled)
 
         # Progressively add points to circle or recompute circle
