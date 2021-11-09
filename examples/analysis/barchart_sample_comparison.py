@@ -21,6 +21,7 @@ from src.core.query import Query
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
+os.chdir('D:/ASCENT/fresh')
 
 # M10
 # # initialize and run Querys
@@ -77,9 +78,9 @@ qMonoPolar = Query({
     'partial_matches': True,
     'include_downstream': True,
     'indices': {
-        'sample': [80],  # add 71, 74
+        'sample': [3070,3150,3230],  # add 71, 74
         'model': [0],
-        'sim': [10]
+        'sim': [3000]
     }
 }).run()
 

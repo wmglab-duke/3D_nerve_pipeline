@@ -14,12 +14,14 @@ import sys
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import numpy as np
+os.chdir('D:/ASCENT/fresh')
 
 import matplotlib.pyplot as plt
 from src.core.query import Query
 
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
+
 
 # initialize and run Querys
 # q = Query({
@@ -55,9 +57,9 @@ q = Query({
     'partial_matches': False,
     'include_downstream': True,
     'indices': {
-        'sample': [3008],
-        'model': [0, 1, 2],
-        'sim': [3001]
+        'sample': [3070,3150,3230],
+        'model': [0],
+        'sim': [3000]
     }
 }).run()
 
@@ -68,4 +70,4 @@ q = Query({
 #                                          'Model 2: Goodall Epineurium, \n              Veltink Perineurium',
 #                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
 #                            )
-q.barcharts_compare_models(save_path='out/analysis')
+q.barcharts_compare_3D(save_path='out/analysis')
