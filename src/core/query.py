@@ -1938,6 +1938,231 @@ class Query(Exceptionable, Configurable, Saveable):
 
         return ax
 
+    def ggpaired_3D(self,
+                                  sim_index: int = None,
+                                  sample_indices: int = None,
+                                  model_indices: List[int] = None,
+                                  sample_labels: List[str] = None,
+                                  model_labels: List[str] = None,
+                                  title: str = 'Activation Thresholds',
+                                  ylabel: str = 'Activation Threshold (mA)',
+                                  xlabel_override: str = None,
+                                  plot: bool = True,
+                                  save_path: str = None,
+                                  width: float = 0.8,
+                                  capsize: float = 5,
+                                  fascicle_filter_indices: List[int] = None,
+                                  logscale: bool = False,
+                                  calculation: str = 'mean',
+                                  merge_bars: bool = False,
+                                  label_bar_heights=None):
+        """
+
+        :param model_indices:
+        :param model_labels:
+        :param ylabel:
+        :param capsize:
+        :param label_bar_heights:
+        :param merge_bars:
+        :param logscale:
+        :param fascicle_filter_indices:
+        :param width:
+        :param xlabel_override:
+        :param title:
+        :param sample_labels:
+        :param sample_indices:
+        :param calculation: 'mean', 'i##'
+        :param sim_index:
+        :param nsim_indices:
+        :param plot:
+        :param save_path:
+        :return:
+        """
+
+        def get_ratio_value(percent: float, values: np.ndarray):
+            index: int = int(np.floor(percent * len(values)))
+            value = np.sort(values)[index]
+            return value
+
+        # quick helper class for storing data values
+        class DataPoint():
+            def __init__(self, value: float, error: float = None):
+                self.value = value
+                self.error = error
+
+        # warning
+        print('NOTE: assumes a SINGLE dimension for the selected sim (functionality defined otherwise)')
+
+        # validation
+        if self._result is None:
+            self.throw(66)
+
+        if model_indices is None:
+            # default to first model results
+            print('Defaulting to model indices from first sample results.')
+            model_indices = [model.get('index') for model in self._result.get('samples')[0].get('models')]
+
+        if sample_indices is None:
+            sample_indices = [sample_result['index'] for sample_result in self._result['samples']]
+
+        if sample_labels is None:
+            sample_labels = ['Sample {}'.format(i) for i in sample_indices]
+
+        if sim_index is None:
+            sim_index = self.search(Config.CRITERIA, 'indices', 'sim')[0]
+
+        if not len(sample_labels) == len(sample_indices):
+            self.throw(70)
+
+        if len(list(self.get_object(Object.SIMULATION,
+                                    [sample_indices[0], model_indices[0], sim_index]).factors.keys())) > 0:
+            comparison_key: str = list(self.get_object(Object.SIMULATION,
+                                                       [sample_indices[0], model_indices[0], sim_index])
+                                       .factors.keys())[0]
+        else:
+            comparison_key = 'fibers->z_parameters->diameter'
+
+        # summary of functionality
+        print('For models {}, comparing samples {} with sim {} along dimension \"{}\"'.format(
+            model_indices,
+            sample_indices,
+            sim_index,
+            comparison_key)
+        )
+
+        # loop models
+        model_results: dict
+        my_data = [[] for _ in model_indices]
+        xlabels = []
+        for model_index, model in enumerate(model_indices):
+            # model_index = model_results['index']
+
+            print('model: {}'.format(model))
+
+            # init fig, ax
+            fig: plt.Figure
+            ax: plt.Axes
+            fig, ax = plt.subplots()
+
+            # y label
+            ax.set_ylabel(ylabel)
+
+            # init x group labels
+            xlabels = []
+            first_iteration: bool = True  # for appending to xlabels (only do this first time around)
+
+            # init master data container (indices or outer list correspond to each model)
+            model_data: List[List[DataPoint]] = []
+
+            # loop samples
+            sample_results: dict
+            sim_object = None
+            for sample_results in self._result.get('samples', []):
+                sample_index = sample_results['index']
+
+                sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
+                # sample_config: dict = self.get_config(Config.SAMPLE, [sample_index])
+                slide: Slide = sample_object.slides[0]
+                n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
+
+                print('\tsample: {}'.format(sample_index))
+
+                # init data container for this model
+                sample_data: List[DataPoint] = []
+
+                # sim index is already set from input, so no need to loop
+                sim_object = self.get_object(Object.SIMULATION, [sample_index, model, sim_index])
+
+                if not sim_object.factors:
+                    sim_object.factors = {comparison_key: [
+                        sim_object.configs['sims']['fibers']['z_parameters']['diameter']]}  # comparison_key, [0.8]
+
+                # validate sim object
+                if len(sim_object.factors) != 1:
+                    self.throw(68)
+                if not list(sim_object.factors.keys())[0] == comparison_key:
+                    self.throw(69)
+
+                # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
+                # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
+                # indices as if they were the nsim indices
+                for nsim_index, nsim_value in enumerate(['2D','3D']):
+
+                    print('\t\tnsim: {}'.format(nsim_index))
+
+                    # this x group label
+                    if first_iteration:
+                        # print(nsim_value)
+                        xlabels.append(nsim_value)
+
+                    # default fiberset index to 0
+                    fiberset_index: int = 0
+                    if comparison_key.split('->')[0] == 'fiber':
+                        fiberset_index = nsim_index  # if dimension is fibers, use correct fiberset
+
+                    # fetch outer->inner->fiber and out->inner maps
+                    out_in_fib, out_in = sim_object.fiberset_map_pairs[fiberset_index]
+
+                    # build base dirs for fetching thresholds
+                    sim_dir = self.build_path(Object.SIMULATION,
+                                              [sample_index, model, sim_index],
+                                              just_directory=True)
+                    n_sim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
+
+                    # init thresholds container for this model, sim, nsim
+                    thresholds: List[float] = []
+
+                    # fetch all thresholds
+                    xy_mode_name: str = sim_object.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
+                    xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
+                    if not xy_mode == FiberXYMode.SL_PSEUDO_INTERP:
+
+                        for inner in range(n_inners):
+
+                            outer = [index for index, inners in enumerate(out_in) if inner in inners][0]
+
+                            if (fascicle_filter_indices is not None) and (outer not in fascicle_filter_indices):
+                                continue
+
+                            for local_fiber_index, _ in enumerate(out_in_fib[outer][out_in[outer].index(inner)]):
+                                thresh_path = os.path.join(n_sim_dir,
+                                                           'data',
+                                                           'outputs',
+                                                           'thresh_inner{}_fiber{}.dat'.format(inner,
+                                                                                               local_fiber_index))
+                                # if exist, else print
+                                if os.path.exists(thresh_path):
+                                    threshold = np.loadtxt(thresh_path)
+                                    if len(np.atleast_1d(threshold)) > 1:
+                                        threshold = threshold[-1]
+                                    thresholds.append(abs(threshold))
+                                else:
+                                    print(thresh_path)
+                    else:
+                        thresholds.append(abs(np.loadtxt(os.path.join(n_sim_dir,
+                                                                  'data',
+                                                                  'outputs',
+                                                                  'thresh_inner0_fiber0.dat'))))
+
+                    thresholds: np.ndarray = np.array(thresholds)
+
+                    data = thresholds
+                    
+                    sample_data.append(data)
+                    
+                first_iteration = False
+
+                model_data.append(sample_data)
+
+            # make the bar groups
+            x_vals = np.arange(len(model_data[0]))
+            n_samples = len(model_data)
+            effective_width = width / n_samples
+            d3 = True
+         
+            
+        return model_data
+
     def excel_output(self,
                      filepath: str,
                      sample_keys: List[list] = [],
