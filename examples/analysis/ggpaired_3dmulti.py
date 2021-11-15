@@ -8,6 +8,24 @@ The source code can be found on the following GitHub repository: https://github.
 
 # RUN THIS FROM REPOSITORY ROOT
 
+"""
+Created on Thu Nov 11 11:22:44 2021
+
+@author: dpm42
+"""
+import os
+os.environ['R_HOME'] = r'C:\Users\dpm42\Anaconda3\envs\ascent\lib\R'
+import rpy2.robjects as robjects
+import rpy2
+import pandas as pd
+from rpy2.robjects.packages import importr
+from rpy2.robjects import r, pandas2ri
+pandas2ri.activate()
+import rpy2.robjects.lib.ggplot2 as ggplot2
+rprint = robjects.globalenv.find("print")
+ggpubr = importr("ggpubr")
+
+
 import os
 import sys
 
@@ -70,4 +88,36 @@ q = Query({
 #                                          'Model 2: Goodall Epineurium, \n              Veltink Perineurium',
 #                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
 #                            )
-q.barcharts_compare_3D(save_path='out/analysis')
+data = q.ggpaired_3D()
+
+sample_labels = ['rostral contact','center','caudal contact']
+
+d=[]
+for i,sampdat in enumerate(data):
+    d2 = sampdat[0]
+    d3 = sampdat[1]
+        
+    di = {}
+    di["2D"] = d2
+    di["3D"] = d3
+    di["slice"] = sample_labels[i]
+
+    d.append(pd.DataFrame(di))
+
+dfinal = pd.concat(d)
+
+plot = ggpubr.ggpaired(dfinal, cond1 = "2D", cond2 = "3D",
+                       color = "condition", 
+                       line_color = "gray", 
+                       line_size = 0.5, 
+                       point_size = 1.2,
+                       palette = "npg",
+                       facet_by = "slice",
+                       xlab = False,
+                       ylab = "Threshold (mA)",
+                        legend = "none",
+                       title = "Activation thresholds for 2D extrusion models vs. full-3D model")
+
+plot.plot()
+
+plot.save('D:/3D_VNS/Images/boxplot-multipanel.png',dpi=600)

@@ -31,7 +31,6 @@ criteria = {
     }
 }
 
-
 q = Query(criteria)
 q.run()
 
@@ -48,9 +47,10 @@ for fiberset_ind, fiberset in enumerate(sim.fibersets):
     slide = sample.slides[0]
     fig, ax = plt.subplots(1, 1)
     slide.plot(fix_aspect_ratio=True, final=False, ax=ax)
+    ax.set_aspect('equal', adjustable='box')
 
     for fiber in fiberset.fibers:
-        plt.plot(fiber[0][0], fiber[0][1], 'r*', markersize=0.1)
+        plt.plot(fiber[0][0], fiber[0][1], 'r*', markersize=2)
 
     plt.xlabel('\u03bcm')
     plt.ylabel('\u03bcm')
