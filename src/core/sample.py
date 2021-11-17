@@ -340,14 +340,17 @@ class Sample(Exceptionable, Configurable, Saveable):
 
             # preprocess binary masks
             mask_dims = []
-            for mask in ["COMPILED", "INNERS", "OUTERS", "NERVE"]:
+            for mask in ["COMPILED", "INNERS", "OUTERS", "NERVE","ORIENTATION"]:
                 maskfile = getattr(MaskFileNames, mask)
                 if exists(maskfile):
                     mask_dims.append(cv2.imread(getattr(maskfile, 'value')).shape)
                     self.im_preprocess(getattr(maskfile, 'value'))
             if len(mask_dims) == 0: self.throw(121)
             if not np.all(np.array(mask_dims) == mask_dims[0]): self.throw(122)
-
+            scalemask = getattr(MaskFileNames, "SCALE_BAR")
+            if exists(scalemask):
+                mask_dims.append(cv2.imread(getattr(scalemask, 'value')).shape)
+                if not np.all(np.array(mask_dims) == mask_dims[0]): print('WARNING: Scale bar mask has a different resolution than morphology masks. \nProgram will continue and assume that the scale bar mask microns/pixel ratio is correct.')
             # fascicles list
             fascicles: List[Fascicle] = []
 
@@ -447,7 +450,7 @@ class Sample(Exceptionable, Configurable, Saveable):
 
         if plot == True:
             plt.figure()
-            slide.plot(final=False)
+            slide.plot(final=False, fix_aspect_ratio='True',axlabel=u"\u03bcm",title='Initial sample from morphology masks')
             if plot_folder == True:
                 plt.savefig(plotpath + '/sample_initial')
                 plt.close('all')
@@ -573,7 +576,7 @@ class Sample(Exceptionable, Configurable, Saveable):
 
         if plot == True:
             plt.figure()
-            slide.plot(final=False)
+            slide.plot(final=False, fix_aspect_ratio='True',axlabel=u"\u03bcm",title='Final sample after any user specified processing')
             if plot_folder == True:
                 plt.savefig(plotpath + '/sample_final')
                 plt.close()
