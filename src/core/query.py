@@ -1771,7 +1771,6 @@ class Query(Exceptionable, Configurable, Saveable):
             d3 = True
 
             if d3:
-                sample_labels = ['rostral contact','center','caudal contact']
                 for sample_index, sample_data in enumerate(model_data):
                     sample_data = [sample_data[0]]
                     x_vals = np.arange(len(sample_data))
