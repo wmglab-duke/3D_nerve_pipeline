@@ -44,7 +44,7 @@ class Deformable(Exceptionable):
                morph_index_step: int = 10,
                render: bool = True,
                minimum_distance: float = 0.0,
-               ratio: float = None, comp = False) -> Tuple[List[tuple], List[float]]:
+               ratio: float = None, comp = False, progress_bar = True) -> Tuple[List[tuple], List[float]]:
         """
         :param ratio:
         :param morph_count: number of incremental traces including the start and end of boundary
@@ -149,7 +149,7 @@ class Deformable(Exceptionable):
                 # print('PRINT PRINT PRINT')
                 space.remove(*morph_step)
                 morph_index += 1
-                Deformable.printProgressBar(morph_index,
+                if progress_bar: Deformable.printProgressBar(morph_index,
                                             len(morph_steps),
                                             prefix='\t\tdeforming',
                                             suffix='complete',
@@ -476,7 +476,7 @@ class Deformable(Exceptionable):
         return traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
-    def from_slide(slide: Slide, mode: ReshapeNerveMode, sep_nerve: float = None) -> 'Deformable':
+    def from_slide(slide: Slide, mode: ReshapeNerveMode, sep_nerve: float = None, override_r = None) -> 'Deformable':
         # method in slide will pull out each trace and add to a list of contents, go through traces and build polygons
 
         # exception configuration data
@@ -505,7 +505,7 @@ class Deformable(Exceptionable):
         # get end boundary
         if sep_nerve is None:
             sep_nerve = 0.0
-        boundary_end = slide.reshaped_nerve(mode, buffer=sep_nerve).deepcopy()
+        boundary_end = slide.reshaped_nerve(mode, buffer=sep_nerve,override_r=override_r).deepcopy()
 
         # get contents
         contents = [fascicle.outer.deepcopy() for fascicle in slide.fascicles]

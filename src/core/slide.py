@@ -171,7 +171,7 @@ class Slide(Exceptionable):
         for fascicle in self.fascicles:
             fascicle.shift(shift)
 
-    def reshaped_nerve(self, mode: ReshapeNerveMode, buffer: float = 0.0) -> Nerve:
+    def reshaped_nerve(self, mode: ReshapeNerveMode, buffer: float = 0.0,override_r = None) -> Nerve:
         """
         :param buffer:
         :param mode: Final form of reshaped nerve, either circle or ellipse
@@ -183,7 +183,7 @@ class Slide(Exceptionable):
             self.throw(45)
 
         if mode == ReshapeNerveMode.CIRCLE:
-            return self.nerve.to_circle(buffer)
+            return self.nerve.to_circle(buffer,override_r=override_r)
         elif mode == ReshapeNerveMode.ELLIPSE:
             return self.nerve.to_ellipse()
         elif mode == ReshapeNerveMode.NONE:
