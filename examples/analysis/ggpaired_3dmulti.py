@@ -90,6 +90,8 @@ q = Query({
 #                            )
 data = q.ggpaired_3D()
 
+print('NOTE: Assumes that for your given sample/sim, nsim 0 is 2D data, and nsim 1 is the translated 3D data')
+
 sample_labels = ['rostral contact','center','caudal contact']
 
 d=[]

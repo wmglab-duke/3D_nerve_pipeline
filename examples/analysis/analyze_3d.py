@@ -41,6 +41,8 @@ q = Query({
     }
 }).run()
 
+print('NOTE: assumes that nsim 0 is 2d and nsim 1 is 3d')
+
 data = q.ggpaired_3D()
 
 sample_labels = ['rostral contact','center','caudal contact']

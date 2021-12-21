@@ -63,6 +63,11 @@ q = Query({
     }
 }).run()
 
+
+sample_labels = ['rostral contact','center','caudal contact']
+
+print('NOTE: Assumes that nsim 0 is 2D and nsim 1 is 3D')
+
 # builds heatmaps
 # q.barcharts_compare_models(logscale=False,
 #                            model_labels=['Model 0: Veltink Epineurium, \n              Veltink Perineurium',
@@ -70,4 +75,4 @@ q = Query({
 #                                          'Model 2: Goodall Epineurium, \n              Veltink Perineurium',
 #                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
 #                            )
-q.barcharts_compare_3D(save_path='out/analysis')
+q.barcharts_compare_3D(save_path='out/analysis',sample_labels = sample_labels)

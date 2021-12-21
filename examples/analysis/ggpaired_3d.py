@@ -90,6 +90,8 @@ q = Query({
 #                            )
 data = q.ggpaired_3D()
 
+print('NOTE: assumes that nsim 0 is 2d and snim 1 is 3d')
+
 sample_labels = ['rostral contact','center','caudal contact']
 
 for i,sampdat in enumerate(data):
