@@ -102,7 +102,8 @@ of the file.
     to run only up to certain steps of the pipeline, which can be
     particularly useful for debugging. If a breakpoint is not defined, the
     default behavior is false (i.e., the pipeline continues beyond the
-    breakpoint). Optional.
+    breakpoint). Note: specifying a break point via command line arguments
+    will override any break points set in your run config. Optional.
 
     `“models_exit_status”`: The value (\[Boolean, ...\]) of this property
     indicates if Java successfully made the FEMs for the corresponding model
@@ -294,7 +295,7 @@ of the file.
         nerve morphology binary images provided as a decimal (e.g., 0.20
         results in a 20% expansion of the nerve, and 0 results in no
         shrinkage correction of the nerve). Required, must be greater than
-        0.
+        0. Note: Shrinkage correction scaling is linear (i.e. a nerve with diameter d and area a scaled by scaling factor s will have a final diameter of d_final=d\*(1+s) and a final area a_final = a\*(1+s)<sup>2</sup>)
 
     `“boundary_separation”`
 
@@ -1429,6 +1430,7 @@ of the file.
 
           "min": Double,
           "max": Double,
+          "full_nerve_length": Boolean,
           "offset": Double, // or omitted for random jitter within +/- 1 internodal length
           "seed": Integer
         },
@@ -1732,6 +1734,8 @@ of the file.
             `model.json`, the length of the nerve). Optional: if min and max
             are not both provided then the fiber length is assumed to be the
             proximal medium length by default.
+
+          - `full_nerve_length`: (Boolean) Optional. If true, suppresses the warning message associated with using the full length nerve when `"min"` and `"max"` are not defined. Must be false or not defined if `"min"` and `"max"` are defined.
 
           - `“offset”`: The value (Double or List\[Double\]) is the fraction
             of the node-node length (myelinated fibers) or segment length
@@ -2087,29 +2091,29 @@ of the file.
             timesteps. Alternatively, the user can use the value “all”
             (String) to prompt the program to save the state variables at
             all segments (unmyelinated) and sections (myelinated). Required.
-            
+
        - `“end_ap_times”`:
           - `“loc_min”`: The value (Double) tells the program at which location to save
             times at which V<sub>m</sub> passes the threshold voltage (defined below)
-            with a positive slope. The value must be between 0 and 1, and less than the 
-            value for `“loc_max”`. Be certain not to record from the end section (i.e., 0) 
-            if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to 
+            with a positive slope. The value must be between 0 and 1, and less than the
+            value for `“loc_max”`. Be certain not to record from the end section (i.e., 0)
+            if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
             z=length of proximal domain. Required if this JSON object (which is optional) is included.
-            
+
           - `“loc_max”`: The value (Double) tells the program at which location to save
             times at which V<sub>m</sub> passes the threshold voltage (defined below)
-            with a positive slope. The value must be between 0 and 1, and greater than the 
-            value for `“loc_min”`. Be certain not to record from the end section (i.e., 1) 
-            if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to 
+            with a positive slope. The value must be between 0 and 1, and greater than the
+            value for `“loc_min”`. Be certain not to record from the end section (i.e., 1)
+            if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
             z=length of proximal domain. Required if this JSON object (which is optional) is included.
-            
+
           - `“threshold”`: The value (Double, units: mV) is the threshold value for V<sub>m</sub> to pass
-            for an action potential to be detected. Required if this JSON object (which is optional) 
+            for an action potential to be detected. Required if this JSON object (which is optional)
             is included.
-            
-      - `“runtimes”`: The value (Boolean), if true, tells the program to save 
-            the NEURON runtime for either the finite amplitude or binary search for 
-            threshold simulation. If this key-value pair is omitted, the default 
+
+      - `“runtimes”`: The value (Boolean), if true, tells the program to save
+            the NEURON runtime for either the finite amplitude or binary search for
+            threshold simulation. If this key-value pair is omitted, the default
             behavior is False.
 
     `“protocol”`: 
@@ -2290,6 +2294,7 @@ of the file.
           "diameter": [1, 2, 5.7, 7.3, 8.7, 10],
           "min": 0,
           "max": 12500,
+          "full_nerve_length": False,
           "offset": 0,
           "seed": 123
         },
