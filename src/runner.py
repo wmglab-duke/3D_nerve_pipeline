@@ -417,7 +417,7 @@ class Runner(Exceptionable, Configurable):
                         .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
                         .resolve_factors() \
                         .write_waveforms(sim_obj_dir) \
-                        .write_fibers_nogen(sim_obj_dir) \
+                        .write_fibers_ssgen(sim_obj_dir) \
                         .validate_srcs(sim_obj_dir)
 
                     simulation.build_ss_n_sims(sim_dir, sim_num)

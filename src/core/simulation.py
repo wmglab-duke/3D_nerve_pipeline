@@ -143,7 +143,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         return self
     
-    def write_fibers_nogen(self, sim_directory: str) -> 'Simulation':
+    def write_fibers_ssgen(self, sim_directory: str) -> 'Simulation':
         # loop PARAMS in here, but loop HISTOLOGY in FiberSet object
 
         fibersets_directory = os.path.join(sim_directory, 'fibersets')
@@ -172,6 +172,8 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, sim_copy) \
                 .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
+                .generate_from_ss(sim_directory) \
+                .write(WriteMode.DATA, fiberset_directory)
 
             self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
             self.fibersets.append(fiberset)
@@ -201,6 +203,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
             self.ss_fibersets.append(fiberset)
 
         return self
+    
     def write_waveforms(self, sim_directory: str) -> 'Simulation':
         directory = os.path.join(sim_directory, 'waveforms')
         if not os.path.exists(directory):
