@@ -1360,8 +1360,16 @@ public class ModelWrapper {
                         double proximal_radius = proximalMedium.getDouble("radius");
 
                         String bounds_unit = "[um]";
-                        mediumParams.set("z_nerve", proximal_length + " " + bounds_unit);
+                        mediumParams.set("z_prox", proximal_length + " " + bounds_unit);
                         mediumParams.set("r_proximal", proximal_radius + " " + bounds_unit);
+
+                        double proximal_x = proximalMedium.getJSONObject("shift").getDouble("x");
+                        double proximal_y = proximalMedium.getJSONObject("shift").getDouble("y");
+                        double proximal_z = proximalMedium.getJSONObject("shift").getDouble("z");
+
+                        mediumParams.set("proximal_shift_x", proximal_x + " " + bounds_unit);
+                        mediumParams.set("proximal_shift_y", proximal_y + " " + bounds_unit);
+                        mediumParams.set("proximal_shift_z", proximal_z + " " + bounds_unit);
 
                         if (distalMedium.getBoolean("exist")) {
                             double distal_length = distalMedium.getDouble("length");
@@ -1420,6 +1428,7 @@ public class ModelWrapper {
 
                         if (!cuff_only) {
                             // add NERVE (Fascicles CI/MESH and EPINEURIUM)
+                            nerveParams.set("z_nerve", modelData.getDouble("nerve_length") + " [" + morphology_unit + "]");
                             if (morphology.isNull("Nerve")) { //Monofascicle, no-epineurium case
                                 nerveParams.set("a_nerve", "NaN");
                                 nerveParams.set("r_nerve", modelData.getDouble("min_radius_enclosing_circle") + " [" + morphology_unit + "]");

@@ -20,6 +20,7 @@ from shapely.affinity import scale, rotate
 from shapely.ops import nearest_points
 import pyclipper
 import pymunk
+import math
 
 # ascent
 from src.utils import Exceptionable, DownSampleMode, Config, WriteMode, SetupMode
@@ -105,7 +106,7 @@ class Trace(Exceptionable):
         # cleanup
         self.__update()
         pco.Clear()
-        
+
     def smooth(self,distance,area_compensation=True):
         """
         Smooths a contour using a dilation followed by erosion
@@ -124,7 +125,7 @@ class Trace(Exceptionable):
         else:
             self.scale(1)
         self.points = np.flip(self.points,axis = 0) # set points to opencv orientation
-        
+
     def scale(self, factor: float = 1, center: Union[List[float], str] = 'centroid'):
         """
         :param factor: scaling factor to scale up by - multiple all points by a factor.
@@ -161,11 +162,11 @@ class Trace(Exceptionable):
         self.points = None
         self.append([list(coord[:2]) + [0] for coord in rotated_polygon.boundary.coords])
         self.__update()
-        
+
     def center(self):
         self.shift([-x for x in self.centroid()]+[0])
         self.__update()
-        
+
     def shift(self, vector):
         """
         :param vector: 1-dim vector with 3 elements... shape is (3,)
@@ -222,13 +223,13 @@ class Trace(Exceptionable):
             self.__polygon = Polygon([tuple(point) for point in self.points[:, :2]])
 
         return self.__polygon
-    
+
     def bounds(self):
         """
         :return: bounds of the trace object
-        """      
+        """
         return self.polygon().bounds
-    
+
     def random_points(self, count: int, buffer: float = 0, my_xy_seed: int = 123) -> List[Tuple[float]]:
         """
         :param my_xy_seed:
@@ -389,9 +390,9 @@ class Trace(Exceptionable):
         # casting to float is just so PyCharm stops yelling at me (I think it should already be a float64?)
         if override_r is None:
             r = float(np.sqrt(self.area()/np.pi)) - buffer
-        else: 
+        else:
             r = override_r
-        
+
         # return the associated ellipse object, after converting angle to degrees
         # also, PyCharm thinks that np.mean returns a ndarray, but it definitely isn't in this case
         return self.__ellipse_object(u, v, 2*r, 2*r, angle * 2 * np.pi / 360)
@@ -446,7 +447,7 @@ class Trace(Exceptionable):
             ax.fill(points[:, 0], points[:, 1], color=color)
 
         ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=1)
-        
+
         ax.axes.scatter(self.centroid()[0],self.centroid()[1],c = color)
 
 

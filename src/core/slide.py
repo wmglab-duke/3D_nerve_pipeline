@@ -342,7 +342,11 @@ class Slide(Exceptionable):
             sub_start = os.getcwd()
 
             # write nerve (if not monofasc) and fascicles
-            trace_list = self.trace_list()
+            if self.monofasc():
+                trace_list = [(self.fascicles, 'fascicles')]
+            else:
+                trace_list = [([self.nerve], 'nerve'), (self.fascicles, 'fascicles')]
+
 
             for items, folder in trace_list:
                 # build path if not already existing

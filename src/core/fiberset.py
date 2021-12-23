@@ -74,10 +74,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         
         fibers = []
         for fiber in os.listdir(sim_directory+'/ss_coords'):
-            if fibers.endswith('.dat'):
+            if fiber.endswith('.dat'):
                 length = float(np.loadtxt('{}/ss_lengths/{}'.format(sim_directory,fiber)))
                 fibers.extend(self._generate_z([(0,0)],override_length=length))
-
+        self.fibers = fibers
         return self
 
     def write(self, mode: WriteMode, path: str):
