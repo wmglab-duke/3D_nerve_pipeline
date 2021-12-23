@@ -93,7 +93,8 @@ class Part {
 
             } else if ("ProximalMedium".equals(instanceLabel)) {
                 partInstance.setEntry("inputexpr", "radius", "r_proximal");
-                partInstance.setEntry("inputexpr", "length", "z_nerve");
+                partInstance.setEntry("inputexpr", "length", "z_prox");
+                partInstance.set("displ", new String[]{"proximal_shift_x", "proximal_shift_y", "proximal_shift_z"});
             }
 
             // imports
@@ -107,7 +108,7 @@ class Part {
                 String groundLabel = "Ground";
                 PhysicsFeature gnd = model.component("comp1").physics("ec").create(mw.im.next("gnd", groundLabel), "Ground", 2);
                 gnd.label(groundLabel);
-                gnd.selection().named("geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[0]) + "_bnd");
+                gnd.selection().named("geom1_" + mw.im.get(instanceLabel) + "_" + myIxM.get(myLabels[0]) + "_bnd");
             }
 
         } else {

@@ -20,6 +20,7 @@ from shapely.affinity import scale, rotate
 from shapely.ops import nearest_points
 import pyclipper
 import pymunk
+import math
 
 # ascent
 from src.utils import Exceptionable, DownSampleMode, Config, WriteMode, SetupMode
@@ -119,7 +120,7 @@ class Trace(Exceptionable):
         if area_compensation==True:
             #scale back to area of original trace
             self.scale((pre_area/self.area())**.5)
-            if round(pre_area,0)!=round(self.area(),0):
+            if (pre_area - self.area())>1:
                 self.throw(128)
         self.points = np.flip(self.points,axis = 0) # set points to opencv orientation
         
