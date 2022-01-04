@@ -14,12 +14,13 @@ EXCLUDED_FILENAMES = [
     'im.json',
     'Primitive.json',
     'sample.json',
-    'model.json'
+    'model.json',
+    'explicit.txt'
 ]
 
 
 def run(args):
-    
+
     for sample in args.sample_indices:
 
         if args.verbose:
@@ -67,6 +68,6 @@ def run(args):
                     print(f'\tKEEP DIR: {directory}')
 
         remove_empty_directories(str(sample_path.absolute()))
-    
+
         if args.verbose:
             print('\n\n')
