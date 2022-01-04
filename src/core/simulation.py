@@ -678,9 +678,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
                                     self.throw(81)
                                 else:
                                     ss_bases[basis_ind] = np.loadtxt(os.path.join(ss_bases_src_path, file))[1:]
-
+                                    
                             q = int(file.split('.')[0])
-
+                            
                             ss_weighted_bases_vec = np.zeros(len(ss_bases[basis_ind]))
                             for src_ind, src_weight in enumerate(active_src_vals[0]):
                                 ss_weighted_bases_vec += ss_bases[src_ind] * src_weight
@@ -700,7 +700,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                                 ss_fiber_coords = []
                                 for ss_fiberset_file_line in ss_fiberset_file_lines:
                                     ss_fiber_coords = np.append(ss_fiber_coords,
-                                                                float(ss_fiberset_file_line.split(' ')[-2]))
+                                                                float(ss_fiberset_file_line.split(' ')[2]))
 
                             # create interpolation from super_coords and super_bases
                             f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)

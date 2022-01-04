@@ -73,10 +73,13 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         """
         
         fibers = []
-        for fiber in os.listdir(sim_directory+'/ss_coords'):
-            if fiber.endswith('.dat'):
-                length = float(np.loadtxt('{}/ss_lengths/{}'.format(sim_directory,fiber)))
-                fibers.extend(self._generate_z([(0,0)],override_length=length))
+        fiberfiles = [int(os.path.splitext(x)[0]) for x in os.listdir(sim_directory+'/ss_coords') if x.endswith('.dat')]
+        fiberfiles.sort()
+        for fiber in fiberfiles:
+            length = float(np.loadtxt('{}/ss_lengths/{}.dat'.format(sim_directory,fiber)))
+            fib = self._generate_z([(0,0)],override_length=length-2)
+            fib[0] = [(x[0],x[1],x[2]+1) for x in fib[0]]
+            fibers.extend(fib)
         self.fibers = fibers
         return self
 
