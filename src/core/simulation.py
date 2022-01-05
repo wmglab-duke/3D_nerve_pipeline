@@ -548,6 +548,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                         elif file == 'diams.txt':
                             make_inner_fiber_diam_key(xy_mode, p, nsim_inputs_directory, potentials_directory, file)
         return self
+    
     def build_ss_n_sims(self, sim_dir, sim_num) -> 'Simulation':
 
         def make_inner_fiber_diam_key(my_xy_mode, my_p, my_nsim_inputs_directory, my_potentials_directory, my_file):

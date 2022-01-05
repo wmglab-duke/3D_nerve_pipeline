@@ -22,6 +22,8 @@ sys.path.append(os.path.sep.join([os.getcwd(), '']))
 import matplotlib.pyplot as plt
 from src.core.query import Query
 
+os.chdir('D:/ascent/ascent')
+
 # set default fig size
 plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 
@@ -30,9 +32,9 @@ q = Query({
     'partial_matches': True,
     'include_downstream': True,
     'indices': {
-        'sample': [3006, 3007],
-        'model': [0, 1, 2, 3],
-        'sim': [3000]
+        'sample': [670],
+        'model': [0],
+        'sim': [3]
     }
 }).run()
 

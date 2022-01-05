@@ -57,9 +57,9 @@ q = Query({
     'partial_matches': False,
     'include_downstream': True,
     'indices': {
-        'sample': [3070,3150,3230],
+        'sample': [670,671,672,673],
         'model': [0],
-        'sim': [3000]
+        'sim': [3]
     }
 }).run()
 
