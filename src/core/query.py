@@ -1539,6 +1539,230 @@ class Query(Exceptionable, Configurable, Saveable):
         plt.show()
 
         return ax
+    
+    def threshdat(self,
+                                 sim_index: int = None,
+                                 model_indices: List[int] = None,
+                                 model_labels: List[str] = None,
+                                 title: str = 'Activation Thresholds',
+                                 plot: bool = True,
+                                 save_path: str = None,
+                                 width: float = 0.8,
+                                 capsize: float = 5,
+                                 fascicle_filter_indices: List[int] = None,
+                                 logscale: bool = False,
+                                 sl: bool = False,
+                                 meanify=False):
+        """
+
+        :param sl:
+        :param logscale:
+        :param fascicle_filter_indices:
+        :param capsize:
+        :param width:
+        :param title:
+        :param model_labels:
+        :param model_indices:
+        :param sim_index:
+        :param nsim_indices:
+        :param plot:
+        :param save_path:
+        :return:
+        """
+
+        # quick helper class for storing data values
+        class DataPoint():
+            def __init__(self, value: float, error: float = None):
+                self.value = value
+                self.error = error
+
+        # warning
+        print('NOTE: assumes a SINGLE dimension for the selected sim (functionality defined otherwise)')
+
+        # validation
+        if self._result is None:
+            self.throw(66)
+
+        if model_indices is None:
+            model_indices = self.search(Config.CRITERIA, 'indices', 'model')
+
+        if model_labels is None:
+            model_labels = ['Model {}'.format(i) for i in model_indices]
+
+        if sim_index is None:
+            sim_index = self.search(Config.CRITERIA, 'indices', 'sim')[0]
+
+        if not len(model_labels) == len(model_indices):
+            self.throw(67)
+
+        # more metadata
+        sample_indices = [sample_result['index'] for sample_result in self._result['samples']]
+        comparison_key: str = \
+            list(self.get_object(Object.SIMULATION, [sample_indices[0], model_indices[0], sim_index]).factors.keys())[0]
+
+        # summary of functionality
+        print('For samples {}, comparing sim {} of models {} along dimension \"{}\"'.format(
+            sample_indices,
+            sim_index,
+            model_indices,
+            comparison_key)
+        )
+        
+        alldat = []
+        
+        # loop samples
+        sample_results: dict
+        for sample_results in self._result.get('samples', []):
+            sample_index = sample_results['index']
+            sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
+            sample_config: dict = self.get_config(Config.SAMPLE, [sample_index])
+            slide: Slide = sample_object.slides[0]
+            n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
+
+            print('sample: {}'.format(sample_index))
+
+            # init fig, ax
+            fig: plt.Figure
+            ax: plt.Axes
+            fig, ax = plt.subplots()
+
+            # x label
+            xlabel = comparison_key.split('->')[-1]
+            if xlabel == 'diameter':
+                ax.set_xlabel('Axon Diameter (µm)')
+            else:
+                # ax.set_xlabel(xlabel)
+                ax.set_xlabel('Pulse Width (\u03bcs)')
+            # y label
+            ax.set_ylabel('Activation Threshold (mA)')
+
+            # init x group labels
+            xlabels = []
+            first_iteration: bool = True  # for appending to xlabels (only do this first time around)
+
+            # init master data container (indices or outer list correspond to each model)
+            sample_data: List[List[DataPoint]] = []
+
+            # loop models
+            model_results: dict
+            for model_results in sample_results.get('models', []):
+                model_index = model_results['index']
+
+                print('\tmodel: {}'.format(model_index))
+
+                # init data container for this model
+                model_data: List[DataPoint] = []
+
+                # sim index is already set from input, so no need to loop
+                sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
+
+                # validate sim object
+                if len(sim_object.factors) != 1:
+                    self.throw(68)
+                if not list(sim_object.factors.keys())[0] == comparison_key:
+                    self.throw(69)
+
+                # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
+                # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
+                # indices as if they were the nsim indices
+                for nsim_index, nsim_value in enumerate(sim_object.factors[comparison_key]):
+
+                    # this x group label
+                    if first_iteration:
+                        # print(nsim_value)
+                        xlabels.append(int(nsim_value * 1000))
+
+                    # default fiberset index to 0
+                    fiberset_index: int = 0
+                    if comparison_key.split('->')[0] == 'fiber':
+                        fiberset_index = nsim_index  # if dimension is fibers, use correct fiberset
+
+                    # fetch outer->inner->fiber and out->inner maps
+                    out_in_fib, out_in = sim_object.fiberset_map_pairs[fiberset_index]
+
+                    # build base dirs for fetching thresholds
+                    sim_dir = self.build_path(Object.SIMULATION,
+                                              [sample_index, model_index, sim_index],
+                                              just_directory=True)
+                    n_sim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
+
+                    # init thresholds container for this model, sim, nsim
+                    thresholds: List[float] = []
+
+                    # fetch all thresholds
+                    for inner in (range(n_inners) if not sl else [0]):
+                        print(n_inners)
+                        print(inner)
+                        outer = 0
+                        try:
+                            outer = [index for index, inners in enumerate(out_in) if inner in inners][0]
+                        except:
+                            outer = 0
+
+                        if (fascicle_filter_indices is not None) and (outer not in fascicle_filter_indices):
+                            continue
+
+                        try:
+                            for local_fiber_index, _ in enumerate(out_in_fib[outer][out_in[outer].index(inner)]):
+                                thresh_path = os.path.join(n_sim_dir,
+                                                           'data',
+                                                           'outputs',
+                                                           'thresh_inner{}_fiber{}.dat'.format(inner,
+                                                                                               local_fiber_index))
+                                threshold = np.loadtxt(thresh_path)
+                                if threshold.size > 1:
+                                    threshold = threshold[-1]
+                                thresholds.append(abs(threshold))
+
+                        except:
+                            try: 
+                                for local_fiber_index, _ in enumerate([0]):
+                                    thresh_path = os.path.join(n_sim_dir,
+                                                               'data',
+                                                               'outputs',
+                                                               'thresh_inner{}_fiber{}.dat'.format(inner,
+                                                                                                   local_fiber_index))
+                                    threshold = np.loadtxt(thresh_path)
+                                    if threshold.size > 1:
+                                        threshold = threshold[-1]
+                                    thresholds.append(abs(threshold))
+                            except: 
+                                pass
+                    
+                    if len(thresholds)==0:
+                        alldat.append({
+                            'sample':sample_results['index'],
+                            'model':  model_results['index'],
+                            'sim':sim_index,
+                            'nsim':nsim_index,
+                            'mean' : np.nan,
+                            })
+                    elif meanify==True:   
+                        thresholds: np.ndarray = np.array(thresholds)
+    
+                        alldat.append({
+                            'sample':sample_results['index'],
+                            'model':  model_results['index'],
+                            'sim':sim_index,
+                            'nsim':nsim_index,
+                            'mean' : np.mean(thresholds),
+                            'std':  np.std(thresholds, ddof=1),
+                            'sem':stats.sem(thresholds)
+                            })
+                    else:
+                        thresholds: np.ndarray = np.array(thresholds)
+    
+                        alldat.extend([{
+                            'sample':sample_results['index'],
+                            'model':  model_results['index'],
+                            'sim':sim_index,
+                            'nsim':nsim_index,
+                            'threshold':thresh
+                            } for thresh in thresholds])
+                    
+                    
+                first_iteration = False
+        return pd.DataFrame(alldat)
 
     def barcharts_compare_3D(self,
                                   sim_index: int = None,
