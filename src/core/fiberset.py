@@ -446,7 +446,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         # all functionality is only defined for EXTRUSION as of now
         if fiber_z_mode == FiberZMode.EXTRUSION:
 
-            model_length = self.search(Config.MODEL, 'medium', 'proximal', 'length') if (
+            model_length = self.search(Config.MODEL, 'nerve_length') if (
                     override_length is None) else override_length
 
             if not 'min' in self.configs['sims']['fibers']['z_parameters'].keys() or \
