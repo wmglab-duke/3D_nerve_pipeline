@@ -21,49 +21,23 @@ import matplotlib.pyplot as plt
 from src.core.query import Query
 import pandas as pd
 
+threed = 19
 
+samples = [19]
 
-# set default fig size
-plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
+models = [451]
 
-# initialize and run Querys
-# q = Query({
-#     'partial_matches': True,
-#     'include_downstream': True,
-#     'indices': {
-#         'sample': [3],
-#         'model': [0, 1, 2, 3],
-#         'sim': [0]
-#     }
-# }).run()
-#
-# # builds heatmaps
-# q.barcharts_compare_models(model_labels=['Original orientation',
-#                                          '90-degree rotation',
-#                                          '180-degree rotation',
-#                                          '270-degree rotation'],
-#                            title= 'Upper lobe activation thresholds',
-#                            fascicle_filter_indices=[2, 3, 9, 7, 13, 15, 4, 0, 6, 10, 15, 18, 16, 1, 11, 17, 5, 8, 14, 12, 21, 23, 20, 25, 32],
-#                            logscale=True)
+sims = [1819]
 
-# q = Query({
-#     'partial_matches': True,
-#     'include_downstream': True,
-#     'indices': {
-#         'samples': [1017],
-#         'model': [4, 5, 6, 7],
-#         'sim': [1040]
-#     }
-# }).run()
 dats = []
 
 q = Query({
     'partial_matches': False,
     'include_downstream': True,
     'indices': {
-        'sample': [2110],
-        'model': [0],
-        'sim': [0]
+        'sample': samples,
+        'model': models,
+        'sim': sims
     }
 }).run()
 
@@ -74,6 +48,33 @@ q = Query({
 #                                          'Model 2: Goodall Epineurium, \n              Veltink Perineurium',
 #                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
 #                            )
-dats.append(q.threshdat(sl=False))
+dat2d = q.threshdat(sl=False,meanify=False)
+
+q = Query({
+    'partial_matches': False,
+    'include_downstream': True,
+    'indices': {
+        'sample': [threed],
+        'model': models,
+        'sim': sims
+    }
+}).run()
+
+dat3d = q.threshdat3d(meanify = False)
+
+dat2d['threshold'] = np.nan
+for i in range(len(dat2d)):
+    row = dat2d.iloc[i,:]
+    thresh = dat3d[(dat3d["sample"]==row['sample']) & 
+                       (dat3d["model"]==row['model']) &
+                       (dat3d["sim"]==row['sim']) &
+                       (dat3d["nsim"]==row['nsim']) &
+                       (dat3d["index"]==row['index'])]['threshold']
+    thresh=list(thresh)
+    if len(thresh)!=1:sys.exit('issue here')
+    dat2d.iloc[i,-1]=thresh[0]
+if np.any(dat2d.threshold==np.nan):
+    sys.exit('issue here too')
+
 
 # pd.concat(dats).to_csv('out/analysis/threshes.csv',index=False)
