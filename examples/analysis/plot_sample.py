@@ -24,7 +24,7 @@ criteria = {
     'partial_matches': True,
     'include_downstream': False,
     'indices': {
-        'sample': [88],
+        'sample': [670],
         'model': None,
         'sim': None
     }

@@ -13,7 +13,7 @@ import sys
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
-os.chdir('D:/ascent/fresh')
+os.chdir('D:/ascent/ascent')
 
 import matplotlib.pyplot as plt
 from src.core.query import Query
@@ -50,7 +50,7 @@ for i in range(3):
                 title_toggle=False,
                 track_colormap_bounds=True,
             #    track_colormap_bounds_offset_ratio=0.0,
-                colomap_bounds_override=[[2.9,5.6],[2.9,5.6]],
+                # colomap_bounds_override=[[2.9,5.6],[2.9,5.6]],
             #    subplot_title_toggle=False,
                 colorbar_text_size_override=30,
                 add_colorbar = False,
