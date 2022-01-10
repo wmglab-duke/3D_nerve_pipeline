@@ -911,8 +911,8 @@ public class ModelWrapper {
             if (nerveMode.equals("PRESENT") && deform_ratio==1 && reshapenerveMode.equals("CIRCLE")) { //Use a circle otherwise
                 Part.createNervePartInstance("Epi_circle", 0,
                         null, this, null, sampleData, nerveParams, modelData);
-            } 
-            else { //Use trace 
+            }
+            else { //Use trace
                 Part.createNervePartInstance("Epi_trace", 0,
                         nervePath, this, ndata, sampleData, nerveParams, modelData);
             }
@@ -1192,7 +1192,7 @@ public class ModelWrapper {
 
         boolean nerve_only = false;
         boolean cuff_only = false;
-        if (cli_args.has("partial_fem") && !cli_args.isNull("partial_fem")) {
+        if (cli_args.has("partial_fem")  && !cli_args.isNull("partial_fem")) {
             if (cli_args.getString("partial_fem").equals("cuff_only")) {
                 cuff_only = true;
             }
