@@ -10,8 +10,8 @@ The source code can be found on the following GitHub repository: https://github.
 
 import os
 import sys
-sys.path.append(r'D:\ASCENT\fresh')
-os.chdir(r'D:\ASCENT/fresh')
+sys.path.append(r'D:\ASCENT\ascent')
+os.chdir(r'D:\ASCENT/ascent')
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
@@ -21,13 +21,13 @@ import matplotlib.pyplot as plt
 from src.core.query import Query
 import pandas as pd
 
-threed = 19
+threed = 673
 
-samples = [19]
+samples = [670,671,672]
 
-models = [451]
+models = [0]
 
-sims = [1819]
+sims = [3]
 
 dats = []
 
@@ -62,11 +62,11 @@ q = Query({
 
 dat3d = q.threshdat3d(meanify = False)
 
-dat2d['threshold'] = np.nan
+dat2d['threshold3d'] = np.nan
+
 for i in range(len(dat2d)):
     row = dat2d.iloc[i,:]
-    thresh = dat3d[(dat3d["sample"]==row['sample']) & 
-                       (dat3d["model"]==row['model']) &
+    thresh = dat3d[(dat3d["model"]==row['model']) &
                        (dat3d["sim"]==row['sim']) &
                        (dat3d["nsim"]==row['nsim']) &
                        (dat3d["index"]==row['index'])]['threshold']
