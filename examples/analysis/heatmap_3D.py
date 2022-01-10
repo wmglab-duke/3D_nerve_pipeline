@@ -22,7 +22,7 @@ from src.core.query import Query
 plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 fig,axs = plt.subplots(3,2,figsize=(25, 25))
 
-samples = [3070,3150,3230]
+samples = [670,671,672]
 sample_labels = ['Rostral\nContact','Center','Caudal\nContact']
 
 for i in range(3):
@@ -33,7 +33,7 @@ for i in range(3):
         'indices': {
             'sample': samples[i],
             'model': [0],
-            'sim': [3000]
+            'sim': [3]
         }
     }).run()
     
@@ -55,14 +55,14 @@ for i in range(3):
                 colorbar_text_size_override=30,
                 add_colorbar = False,
                 comp_sim = True,
-                override_axes =axs[i],
+                override_axes =axs[i][0],
                 dotsize = 15,
-                show_orientation_point = True
+                show_orientation_point = True,
+                spec_nsim=0
             #    tick_bounds=True
            )
-
-print('NOTE: assumes nsim 0 is 2d and nsim 1 is 3d')
-
+# TODO: make the second column 3d saample over and over again
+# TODO: lop over nsims and print params in title
 axs[0][0].set_title('2D extrusion model',fontsize = 50)
 axs[0][1].set_title('Full 3D model',fontsize = 50)
 axs[0][0].set_ylabel(sample_labels[0],sample_labels[0],fontsize = 50,rotation = 0,labelpad = 100)

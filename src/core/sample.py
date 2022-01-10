@@ -651,8 +651,17 @@ class Sample(Exceptionable, Configurable, Saveable):
                 else:
                     self.throw(28)
 
-                if not os.path.exists(directory_to_create):
+                #clear directory if it exists, then create
+                if os.path.exists(directory_to_create):
+                    try:
+                        shutil.rmtree(directory_to_create)
+                    except:
+                        pass
+                try:
                     os.makedirs(directory_to_create)
+                except:
+                    pass
+                
                 os.chdir(directory_to_create)
 
                 # WRITE
