@@ -22,10 +22,12 @@ from src.core.query import Query
 plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 fig,axs = plt.subplots(3,2,figsize=(25, 25))
 
-samples = [670,671,672]
+samples = [670,672]
+samp3 = 673
 sample_labels = ['Rostral\nContact','Center','Caudal\nContact']
+fig,axs = plt.subplots(len(samples),2,figsize=(25, 25))
 
-for i in range(3):
+for i in range(len(samples)):
     # initialize and run Querys
     q = Query({
         'partial_matches': True,
@@ -57,10 +59,33 @@ for i in range(3):
                 comp_sim = True,
                 override_axes =axs[i][0],
                 dotsize = 15,
-                show_orientation_point = True,
-                spec_nsim=0
-            #    tick_bounds=True
+                show_orientation_point = True
+                #    tick_bounds=True
            )
+    
+    q.heatmaps(plot=False,
+                # save_path='out/analysis',
+                plot_mode='fibers',
+            #    rows_override=6,
+               colorbar_aspect=5,
+               colormap_str='viridis',
+               tick_count=4,
+               reverse_colormap=True,
+                title_toggle=False,
+                track_colormap_bounds=True,
+            #    track_colormap_bounds_offset_ratio=0.0,
+                # colomap_bounds_override=[[2.9,5.6],[2.9,5.6]],
+            #    subplot_title_toggle=False,
+                colorbar_text_size_override=30,
+                add_colorbar = False,
+                comp_sim = True,
+                override_axes =axs[i][1],
+                dotsize = 15,
+                show_orientation_point = True,
+                dest_sample = [samp3]
+                #    tick_bounds=True
+           )
+    
 # TODO: make the second column 3d saample over and over again
 # TODO: lop over nsims and print params in title
 axs[0][0].set_title('2D extrusion model',fontsize = 50)

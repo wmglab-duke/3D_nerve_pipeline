@@ -17,6 +17,8 @@ The source code can be found on the following GitHub repository: https://github.
 import os
 import sys
 
+os.chdir('D:/ascent/ascent')
+
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 import matplotlib.pyplot as plt
 from src.core.query import Query
@@ -29,9 +31,9 @@ q = Query({
     'partial_matches': True,
     'include_downstream': True,
     'indices': {
-        'sample': [18],
-        'model': [451],
-        'sim': [1,18]
+        'sample': [670],
+        'model': [0],
+        'sim': [3]
     }
 }).run()
 
