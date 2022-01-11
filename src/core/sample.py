@@ -515,14 +515,14 @@ class Sample(Exceptionable, Configurable, Saveable):
                 if 'nerve' in self.search(Config.SAMPLE, 'boundary_separation').keys():
                     sep_nerve = self.search(Config.SAMPLE, 'boundary_separation', 'nerve')
                     print('\t\tensuring minimum nerve:fascicle separation of {} um'.format(sep_nerve))
-                
+
                 #scale nerve trace down by sep nerve, will be scaled back up later
                 pre_area = slide.nerve.area()
                 slide.nerve.offset(distance = -sep_nerve)
                 slide.nerve.scale(1)
                 slide.nerve.points = np.flip(slide.nerve.points,axis = 0) # set points to opencv orientation
 
-                
+
                 deformable = Deformable.from_slide(slide, ReshapeNerveMode.CIRCLE)
 
                 movements, rotations = deformable.deform(morph_count=morph_count,
@@ -661,7 +661,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                     directory_to_create = 'sectionwise'
                 else:
                     self.throw(28)
-                
+
                 #clear directory if it exists, then create
                 if os.path.exists(directory_to_create):
                     try:
@@ -672,7 +672,9 @@ class Sample(Exceptionable, Configurable, Saveable):
                     os.makedirs(directory_to_create)
                 except:
                     pass
-                
+
+                os.chdir(directory_to_create)
+
                 # WRITE
                 self.slides[i].write(mode, os.getcwd())
 

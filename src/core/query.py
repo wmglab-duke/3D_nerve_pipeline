@@ -326,7 +326,8 @@ class Query(Exceptionable, Configurable, Saveable):
                  select_fascicles: List = None,
                  comp_sim: int = None,
                  override_axes = None,
-                 dotsize = 10
+                 dotsize = 10,
+                 spec_nsim=None
                  ):
 
         """
@@ -507,7 +508,13 @@ class Query(Exceptionable, Configurable, Saveable):
                         active_src_index, fiberset_index = sim_object.potentials_product[potentials_product_index]
 
                         # fetch axis
-                        ax: plt.Axes = axes[n if subplot_assign == "standard" else _renumber_subplot(n, 2, 5)]
+                        if spec_nsim is not None:
+                            if spec_nsim==n:
+                                ax = axes[0]
+                            else:
+                                continue
+                        else:
+                            ax: plt.Axes = axes[n if subplot_assign == "standard" else _renumber_subplot(n, 2, 5)]
                         # ax.axis('off')
 
                         # fetch sim information
