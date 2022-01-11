@@ -19,13 +19,12 @@ import matplotlib.pyplot as plt
 from src.core.query import Query
 
 # set default fig size
-plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
-fig,axs = plt.subplots(3,2,figsize=(25, 25))
+# plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 
 samples = [670,672]
 samp3 = 673
-sample_labels = ['Rostral\nContact','Center','Caudal\nContact']
-fig,axs = plt.subplots(len(samples),2,figsize=(25, 25))
+sample_labels = ['Rostral\nContact','Caudal\n(Cathodic)\nContact']
+fig,axs = plt.subplots(len(samples),2,figsize=(25, 20))
 
 for i in range(len(samples)):
     # initialize and run Querys
@@ -56,8 +55,8 @@ for i in range(len(samples)):
             #    subplot_title_toggle=False,
                 colorbar_text_size_override=30,
                 add_colorbar = False,
-                comp_sim = True,
-                override_axes =axs[i][0],
+                override_axes = axs[i][0],
+                spec_nsim=0,
                 dotsize = 15,
                 show_orientation_point = True
                 #    tick_bounds=True
@@ -81,8 +80,9 @@ for i in range(len(samples)):
                 comp_sim = True,
                 override_axes =axs[i][1],
                 dotsize = 15,
+                spec_nsim=0,
                 show_orientation_point = True,
-                dest_sample = [samp3]
+                thresh_source_sample = [samp3]
                 #    tick_bounds=True
            )
     
@@ -90,9 +90,8 @@ for i in range(len(samples)):
 # TODO: lop over nsims and print params in title
 axs[0][0].set_title('2D extrusion model',fontsize = 50)
 axs[0][1].set_title('Full 3D model',fontsize = 50)
-axs[0][0].set_ylabel(sample_labels[0],sample_labels[0],fontsize = 50,rotation = 0,labelpad = 100)
-axs[1][0].set_ylabel(sample_labels[1],fontsize = 50,rotation = 0,labelpad = 100)
-axs[2][0].set_ylabel(sample_labels[2],fontsize = 50,rotation = 0,labelpad = 100)
+for i in range(len(samples)):
+    axs[i][0].set_ylabel(sample_labels[i],fontsize = 50,rotation = 0,labelpad = 100)
 for ax in axs:
     for a in ax:
         a.axes.xaxis.set_visible(False)

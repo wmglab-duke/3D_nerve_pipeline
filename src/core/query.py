@@ -327,7 +327,8 @@ class Query(Exceptionable, Configurable, Saveable):
                  comp_sim: int = None,
                  override_axes = None,
                  dotsize = 10,
-                 spec_nsim=None
+                 spec_nsim=None,
+                 thresh_source_sample = None
                  ):
 
         """
@@ -550,24 +551,45 @@ class Query(Exceptionable, Configurable, Saveable):
                                     thresholds.append(np.nan)
 
                         elif plot_mode == 'fibers':
-                            for i in range(len(sim_object.fibersets[0].fibers)):
-                                inner_ind,fiber_ind = sim_object.indices_fib_to_n(0,i)
-                                if select_fascicles is None or select_fascicles[inner_ind]:
-                                    thresh_path = os.path.join(n_sim_dir, 'data', 'outputs',
-                                                               'thresh_inner{}_fiber{}.dat'.format(
-                                                                   inner_ind,
-                                                                   fiber_ind
-                                                               ))
-                                    if os.path.exists(thresh_path):
-                                        threshold = abs(np.loadtxt(thresh_path))
-                                        if len(np.atleast_1d(threshold)) > 1:
-                                            threshold = threshold[-1]
-                                        thresholds.append(threshold)
+                            if thresh_source_sample is None:
+                                for i in range(len(sim_object.fibersets[0].fibers)):
+                                    inner_ind,fiber_ind = sim_object.indices_fib_to_n(0,i)
+                                    if select_fascicles is None or select_fascicles[inner_ind]:
+                                        thresh_path = os.path.join(n_sim_dir, 'data', 'outputs',
+                                                                   'thresh_inner{}_fiber{}.dat'.format(
+                                                                       inner_ind,
+                                                                       fiber_ind
+                                                                   ))
+                                        if os.path.exists(thresh_path):
+                                            threshold = abs(np.loadtxt(thresh_path))
+                                            if len(np.atleast_1d(threshold)) > 1:
+                                                threshold = threshold[-1]
+                                            thresholds.append(threshold)
+                                        else:
+                                            missing_indices.append((inner_ind, fiber_ind))
+                                            print('MISSING: {}'.format(thresh_path))
                                     else:
-                                        missing_indices.append((inner_ind, fiber_ind))
-                                        print('MISSING: {}'.format(thresh_path))
-                                else:
-                                    thresholds.append(np.nan)
+                                        thresholds.append(np.nan)
+                            else:
+                                sim_dir = self.build_path(Object.SIMULATION, [thresh_source_sample[0], model_index, sim_index],
+                                                          just_directory=True)
+                                n_sim_dir = os.path.join(sim_dir, 'n_sims', str(n))
+                                for i in range(len(sim_object.fibersets[0].fibers)):
+                                    if select_fascicles is None or select_fascicles[inner_ind]:
+                                        thresh_path = os.path.join(n_sim_dir, 'data', 'outputs',
+                                                                   'thresh_inner0_fiber{}.dat'.format(
+                                                                       i
+                                                                   ))
+                                        if os.path.exists(thresh_path):
+                                            threshold = abs(np.loadtxt(thresh_path))
+                                            if len(np.atleast_1d(threshold)) > 1:
+                                                threshold = threshold[-1]
+                                            thresholds.append(threshold)
+                                        else:
+                                            missing_indices.append((0, i))
+                                            print('MISSING: {}'.format(thresh_path))
+                                    else:
+                                        thresholds.append(np.nan)
 
                         max_thresh = np.nanmax(thresholds)
                         min_thresh = np.nanmin(thresholds)
