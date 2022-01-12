@@ -10,6 +10,7 @@ import os
 import sys
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
+os.chdir('D:/ascent/ascent')
 
 import numpy as np
 
@@ -23,9 +24,9 @@ q = Query({
     'partial_matches': False,
     'include_downstream': True,
     'indices': {
-        'sample': [3008],
-        'model': [0,1,2,11],
-        'sim': [3001]
+        'sample': [672],
+        'model': [0],
+        'sim': [3]
     }
 }).run()
 

@@ -11,7 +11,7 @@ import sys
 
 root = os.path.abspath(os.path.join(*'../../'.split('/')))
 sys.path.append(root)
-
+os.chdir(root)
 from src.core import Simulation
 from src.core import Sample
 from src.core.query import Query
@@ -25,7 +25,7 @@ criteria = {
     'partial_matches': True,
     'include_downstream': True,
     'indices': {
-        'sample': [670],
+        'sample': [672],
         'model': [0],
         'sim': [3]
     }

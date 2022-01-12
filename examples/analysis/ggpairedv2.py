@@ -47,9 +47,9 @@ from src.core.query import Query
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
-threed = 673
+threed = 653
 
-samples = [670,672]
+samples = [650,652]
 
 models = [0]
 
@@ -102,7 +102,7 @@ for i in range(len(dat2d)):
 if np.any(dat2d.threshold==np.nan):
     sys.exit('issue here too')
 
-dat2d = dat2d[dat2d['nsim']==0]
+dat2d = dat2d[dat2d['nsim']==2]
 
 sample_labels = ['rostral contact','caudal contact']
 
@@ -116,8 +116,9 @@ plot = ggpubr.ggpaired(dat2d, cond1 = "threshold", cond2 = "threshold3d",
                        xlab = False,
                        ylab = "Threshold (mA)",
                         legend = "none",
-                       title = "Activation thresholds for 2D extrusion models vs. full-3D model")
+                        # scales="free_y",
+                       title = "Activation thresholds for 2D extrusion models vs. full-3D model (6um)")
 
 plot.plot()
 
-plot.save('D:/3D_VNS/Images/boxplot-multipanel.png',dpi=600)
+plot.save(r'D:\Box Sync\Home Folder dpm42\lab_meeting/4L_extrusion_comp.png',dpi=600)

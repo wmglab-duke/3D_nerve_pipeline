@@ -314,6 +314,7 @@ class Query(Exceptionable, Configurable, Saveable):
                  track_colormap_bounds_offset_ratio: float = 0.0,
                  missing_color: Tuple[int, int, int, int] = (1, 0, 0, 1),
                  title_toggle: bool = True,
+                 title_override = None,
                  subplot_title_toggle: bool = True,
                  tick_count: int = 5,
                  tick_bounds: bool = False,
@@ -328,7 +329,8 @@ class Query(Exceptionable, Configurable, Saveable):
                  override_axes = None,
                  dotsize = 10,
                  spec_nsim=None,
-                 thresh_source_sample = None
+                 thresh_source_sample = None,
+                 cbar_axs = None
                  ):
 
         """
@@ -501,9 +503,11 @@ class Query(Exceptionable, Configurable, Saveable):
                     axes = np.array(axes)
                     axes = axes.reshape(-1)
 
-                    # for ax in axes:
-                    #     ax.axis('off')
-
+                    for ax in axes:
+                        ax.axis('off')
+                        
+                    titles=[]
+                    
                     # loop nsims
                     for n, (potentials_product_index, waveform_index) in enumerate(sim_object.master_product_indices):
                         active_src_index, fiberset_index = sim_object.potentials_product[potentials_product_index]
@@ -680,13 +684,21 @@ class Query(Exceptionable, Configurable, Saveable):
                         # set title
                         if subplot_title_toggle:
                             ax.set_title(title, fontsize=35)
-
+                            
+                        titles.append(title)
+                        
                         # plot orientation point if applicable
                         if orientation_point is not None and show_orientation_point is True:
                             # ax.plot(*tuple(slide.nerve.points[slide.orientation_point_index][:2]), 'b*')
                             ax.plot(*orientation_point, 'o', markersize=30, color='red')
 
                         if add_colorbar:
+                            if cbar_axs is not None:
+                                cax = None
+                                caxyes = cbar_axs[n]
+                            else:
+                                cax = ax
+                                caxyes=None
                             # cb_label = r'mA'
                             cb: cbar.Colorbar = plt.colorbar(
                                 mappable=plt.cm.ScalarMappable(
@@ -695,7 +707,8 @@ class Query(Exceptionable, Configurable, Saveable):
                                 ),
                                 ticks=tick.MaxNLocator(nbins=tick_count) if not min_max_ticks else [min_thresh,
                                                                                                     max_thresh],
-                                ax=ax,
+                                ax=cax,
+                                cax=caxyes,
                                 orientation='vertical',
                                 # label=cb_label,
                                 aspect=colorbar_aspect if colorbar_aspect is not None else 20,
@@ -716,11 +729,14 @@ class Query(Exceptionable, Configurable, Saveable):
                                                          outers_flag=plot_outers, inner_format='k-')
                             sim_object.fibersets[0].plot(ax=ax, fiber_colors=colors, size=dotsize)
 
-                    plt.gcf().tight_layout(rect=[0, 0.03, 1, 0.95])
+                    # plt.gcf().tight_layout(rect=[0, 0.03, 1, 0.95])
 
                     # set super title
                     if title_toggle:
-                        plt.suptitle(
+                        if title_override is not None:
+                            plt.suptitle(title_override,size=40)
+                        else:
+                            plt.suptitle(
                             'Activation thresholds: {} (model {})'.format(
                                 sample_config.get('sample'),
                                 model_index
@@ -750,7 +766,7 @@ class Query(Exceptionable, Configurable, Saveable):
                 print(']')
 
         # return plt.gcf(), axes, colormap_bounds_tracking
-        return plt.gcf(), axes
+        return plt.gcf(), axes, colormap_bounds_tracking, titles
 
     def barcharts_compare_models(self,
                                  sim_index: int = None,
@@ -2859,3 +2875,131 @@ class Query(Exceptionable, Configurable, Saveable):
 
                             if plot:
                                 plt.show()
+    def ap_data(
+            self,
+            delta_V: float = 60,
+            rounding_precision: int = 5,
+            n_sim_filter: List[int] = None,
+            plot: bool = False,
+            plot_nodes_on_find: bool = False,
+            plot_compiled: bool = False,
+            absolute_voltage: bool = True,
+            n_sim_label_override: str = None,
+            model_labels: List[str] = None,
+            save: bool = False,
+            subplots = False,
+            nodes_only=False):
+    
+        print(
+            f'Finding time and location of action potentials, which are defined as any voltage deflection of {delta_V} mV.')
+    
+        if plot:
+            print(
+                'Note: Plotting is currently only defined for MRG axons in the SL branch; plotting for other axon models/locations may yield unexpected results.')
+        locdata = []
+        # loop samples
+        for sample_index, sample_results in [(s['index'], s) for s in self._result.get('samples')]:
+            print('sample: {}'.format(sample_index))
+    
+            # sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
+    
+            # loop models
+            for model_index, model_results in [(m['index'], m) for m in sample_results.get('models')]:
+                print('\tmodel: {}'.format(model_index))
+    
+                # loop sims
+                for sim_index in model_results.get('sims', []):
+                    print('\t\tsim: {}'.format(sim_index))
+    
+                    sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
+   
+                    # loop nsims
+                    for n_sim_index, (potentials_product_index, waveform_index) in enumerate(
+                            sim_object.master_product_indices):
+                        print('\t\t\tnsim: {}'.format(n_sim_index))
+    
+                        active_src_index, fiberset_index = sim_object.potentials_product[potentials_product_index]
+    
+                        # skip if not in existing n_sim filter
+                        if n_sim_filter is not None and n_sim_index not in n_sim_filter:
+                            print('\t\t\t\t(skip)')
+                            continue
+    
+                        # directory of data for this (sample, model, sim)
+                        sim_dir = self.build_path(Object.SIMULATION, [sample_index, model_index, sim_index],
+                                                  just_directory=True)
+    
+                        # directory for specific n_sim
+                        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(n_sim_index))
+    
+                        # directory of fiberset (i.e., points and potentials) associated with this n_sim
+                        fiberset_dir = os.path.join(sim_dir, 'fibersets', str(fiberset_index))
+    
+                        # the simulation outputs for this n_sim
+                        outputs_path = os.path.join(n_sim_dir, 'data', 'outputs')
+                        
+                        for master_index in range(len(sim_object.fibersets[0].fibers)):
+                            inner_index,fiber_index = sim_object.indices_fib_to_n(0,master_index)
+                            # path of the first inner, first fiber vm(t) data
+                            vm_t_path = os.path.join(outputs_path, 'Vm_time_inner{}_fiber{}_amp0.dat'.format(inner_index,fiber_index))
+        
+                            # load vm(t) data (see path above)
+                            # each row is a snapshot of the voltages at each node [mV]
+                            # the first column is the time [ms]
+                            # first row is holds column labels, so this is skipped (time, node0, node1, ...)
+                            vm_t_data = np.loadtxt(vm_t_path, skiprows=1)
+        
+                            # find V-nought be averaging voltage of all nodes at first timestep (assuming no stimulation at time=0)
+                            V_o = np.mean(vm_t_data[0, 1:])
+                            # if using absolute voltage, set an absolute delta V (i.e., -30mV)
+                            if absolute_voltage:
+                                V_o = 0
+        
+                            # find dt by rounding first timestep
+                            dt = round(vm_t_data[1, 0] - vm_t_data[0, 0], rounding_precision)
+        
+                            # initialize value AP time, node (locations), voltages at time
+                            time, node, voltages = None, None, None
+        
+                            # loop through and enumerate each timestep
+                            rows = vm_t_data[:, 1:]
+                            index = int(len(rows) / 2)
+                            for i, row in enumerate(rows):
+                                # get list of node indices that satisfy deflection condition
+                                found_nodes = np.where(row >= V_o + delta_V)[0]
+                                # that list contains any elements, set time and node (location), then break out of loop
+                                if len(found_nodes) > 0:
+                                    time = round(i * dt, rounding_precision)
+                                    node = found_nodes[0]
+                                    voltages = row
+                                    index = i
+                                    break
+        
+                            # if no AP found, skip
+                            if time is None or node is None:
+                                print('\t\t\t\t(no AP found)')
+                            # print results of timestep search
+                            # if time is not None and node is not None:
+                            else:
+                                # create message about AP time and location findings
+                                message = f't: {time} ms, node: {node + 1} (of {len(vm_t_data[0, 1:])})'
+                                print(f'\t\t\t\t{message}')
+                                
+                                # load fiber coordinates
+                                fiber = np.loadtxt(os.path.join(fiberset_dir, '0.dat'), skiprows=1)
+    
+                                fiber[11 * node, 2]
+                                locdata.append({
+                                    'sample':sample_index,
+                                    'model':  model_index,
+                                    'sim':sim_index,
+                                    'nsim':n_sim_index,
+                                    'inner':inner_index,
+                                    'fiber':fiber_index,
+                                    'index':master_index,
+                                    'activation_zpos':fiber[11 * node, 2],
+                                    'ap_time':time
+                                    })
+                                    
+        return pd.DataFrame(locdata)
+  
