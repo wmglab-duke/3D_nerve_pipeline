@@ -17,6 +17,7 @@ import time
 import numpy as np
 import warnings
 import pickle
+import argparse
 
 ALLOWED_SUBMISSION_CONTEXTS = ['cluster', 'local','auto']
 OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else 'WINDOWS'
@@ -219,7 +220,7 @@ def local_submit(my_local_args: dict):
         p = subprocess.call(['bash', start] if OS == 'UNIX-LIKE' else [start], stdout=fo, stderr=fe)
 
 
-def cluster_submit(run_number: int, array_length_max: int = 10):
+def cluster_submit(run_number: int, partition: str, mem: int=2000, array_length_max: int = 10):
     # configuration is not empty
     assert array_length_max > 0, 'SLURM Job Array length is not > 0: array_length_max={}'.format(array_length_max)
 
@@ -341,8 +342,8 @@ def cluster_submit(run_number: int, array_length_max: int = 10):
                             '--job-name={}'.format(job_name),
                             '--output={}'.format(output_log),
                             '--error={}'.format(error_log),
-                            '--mem=2000',
-                            '-p', 'wmglab',
+                            '--mem={}'.format(mem),
+                            '-p', partition,
                             '-c', '1',
                             start_path_solo
                         ])
@@ -428,7 +429,8 @@ def cluster_submit(run_number: int, array_length_max: int = 10):
 
                             os.system(f"sbatch --job-name={job_name} --output={out_dir}%a.log "
                                       f"--error={err_dir}%a.log --array={start}-{job_count - 1} "
-                                      f"array_launch.slurm {start_path_base}")
+                                      f"--mem={mem} --cpus-per-task=1 "
+                                      f"--partition={partition} array_launch.slurm {start_path_base}")
 
                             # allow job to start before removing slurm file
                             time.sleep(1.0)
@@ -547,9 +549,20 @@ def make_local_submission_list(run_number: int):
     return local_args_list
 
 
+def get_args():
+    #Set up parser and top level args
+    parser = argparse.ArgumentParser(description='ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds')
+    parser.add_argument('run_indices', nargs = '+', help = 'Space separated indices to submit NEURON sims for')
+    parser.add_argument('-p','--partition', help = 'If submitting on a cluster, overrides default partition assignment')
+    args = parser.parse_args()
+    return args
+
 def main():
-    # validate inputs
-    runs = []
+    #parse args
+    args = get_args()
+
+    #validate inputs
+    runs = args.run_indices
     submission_contexts = []
     auto_compile_flags = []
 
@@ -621,7 +634,18 @@ def main():
             result = pool.map(local_submit, submit_list)
 
         elif sub_context == 'cluster':
-            cluster_submit(run_index)
+            #load slurm params
+            slurm_params = load(os.path.join('config', 'system', 'slurm_params.json'))
+            
+            #assign params for array submission
+            if args.partition is None:
+                partition = slurm_params['partition']
+            else:
+                partition = args.partition
+            njobs = slurm_params.get("jobs_per_array") 
+            mem = slurm_params.get("memory_per_fiber") 
+            
+            cluster_submit(run_index,partition,array_length_max=njobs,mem=mem)
 
         else:
             # something went horribly wrong
