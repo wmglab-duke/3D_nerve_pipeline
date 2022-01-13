@@ -2381,6 +2381,261 @@ class Part {
 
                 break;
 
+            case "LivaNova_Primitive":
+
+                mp.set("Center", "0 [mm]");
+
+                im.labels = new String[]{
+                        "SEL END P1", //0
+                        "PC1",
+                        "CUFF P1",
+                        "RECESS P2", //5
+                        "PC2",
+                        "SRC",
+                        "CUFF P2",
+                        "SEL END P2",
+                        "PC3",
+                        "CONDUCTOR P2", //10
+                        "CUFF P3",
+                        "PC4"
+
+                };
+
+                for (String cselLNLabel: im.labels) {
+                    model.geom(id).selection().create(im.next("csel", cselLNLabel), "CumulativeSelection")
+                            .label(cselLNLabel);
+
+                }
+
+                model.geom("part1").create("wp1", "WorkPlane");
+                model.geom("part1").feature("wp1").label("Helical Insulator Cross Section Part 1");
+                model.geom("part1").feature("wp1").set("quickplane", "xz");
+                model.geom("part1").feature("wp1").set("unite", true);
+                model.geom("part1").feature("wp1").geom().selection().create("csel1", "CumulativeSelection");
+                model.geom("part1").feature("wp1").geom().selection("csel1").label("HELICAL INSULATOR CROSS SECTION PART 1");
+                model.geom("part1").feature("wp1").geom().create("r1", "Rectangle");
+                model.geom("part1").feature("wp1").geom().feature("r1").label("Helical Insulator Cross Section Part 1");
+                model.geom("part1").feature("wp1").geom().feature("r1").set("contributeto", "csel1");
+                model.geom("part1").feature("wp1").geom().feature("r1").set("pos", new String[]{"r_cuff_in_PD_LN+0.5*thk_cuff_LN", "-0.5*L_cuff_LN_PD"});
+                model.geom("part1").feature("wp1").geom().feature("r1").set("base", "center");
+                model.geom("part1").feature("wp1").geom().feature("r1").set("size", new String[]{"thk_cuff_LN", "w_cuff_LN"});
+                model.geom("part1").create("pc1", "ParametricCurve");
+                model.geom("part1").feature("pc1").label("Parametric Curve Part 1");
+                model.geom("part1").feature("pc1").set("contributeto", "csel2");
+                model.geom("part1").feature("pc1").set("pos", new int[]{0, 0, 0});
+                model.geom("part1").feature("pc1").set("parmax", "(rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)");
+                model.geom("part1").feature("pc1").set("coord", new String[]{"cos(2*pi*s)*(r_cuff_in_PD_LN)", "sin(2*pi*s)*(r_cuff_in_PD_LN)", "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"});
+                model.geom("part1").create("swe1", "Sweep");
+                model.geom("part1").feature("swe1").label("Make Cuff Part 1");
+                model.geom("part1").feature("swe1").set("contributeto", "csel3");
+                model.geom("part1").feature("swe1").set("keep", false);
+                model.geom("part1").feature("swe1").set("includefinal", false);
+                model.geom("part1").feature("swe1").set("twistcomp", false);
+                model.geom("part1").feature("swe1").selection("face").named("wp1_csel1");
+                model.geom("part1").feature("swe1").selection("edge").named("csel2");
+                model.geom("part1").feature("swe1").selection("diredge").set("pc1(1)", 1);
+                model.geom("part1").create("ballsel1", "BallSelection");
+                model.geom("part1").feature("ballsel1").set("entitydim", 2);
+                model.geom("part1").feature("ballsel1").label("Select End Face Part 1");
+                model.geom("part1").feature("ballsel1").set("posx", "cos(2*pi*((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
+                model.geom("part1").feature("ballsel1").set("posy", "sin(2*pi*((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
+                model.geom("part1").feature("ballsel1").set("posz", "Center+(L_cuff_LN_PD)*(((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2))/rev_PD_insul_LN)-(L_cuff_LN_PD/2)");
+                model.geom("part1").feature("ballsel1").set("r", 1);
+                model.geom("part1").feature("ballsel1").set("contributeto", "csel1");
+                model.geom("part1").create("wp4", "WorkPlane");
+                model.geom("part1").feature("wp4").label("Helical Insulator Cross Section Part 2");
+                model.geom("part1").feature("wp4").set("planetype", "faceparallel");
+                model.geom("part1").feature("wp4").set("unite", true);
+                model.geom("part1").feature("wp4").selection("face").named("csel1");
+                model.geom("part1").feature("wp4").geom().selection().create("csel1", "CumulativeSelection");
+                model.geom("part1").feature("wp4").geom().selection("csel1").label("HELICAL INSULATOR CROSS SECTION PART 2");
+                model.geom("part1").feature("wp4").geom().create("r1", "Rectangle");
+                model.geom("part1").feature("wp4").geom().feature("r1").label("Helical Insulator Cross Section Part 2");
+                model.geom("part1").feature("wp4").geom().feature("r1").set("contributeto", "csel1");
+                model.geom("part1").feature("wp4").geom().feature("r1").set("pos", new int[]{0, 0});
+                model.geom("part1").feature("wp4").geom().feature("r1").set("base", "center");
+                model.geom("part1").feature("wp4").geom().feature("r1").set("size", new String[]{"thk_cuff_LN", "w_cuff_LN"});
+                model.geom("part1").create("wp5", "WorkPlane");
+                model.geom("part1").feature("wp5").label("Helical Conductor Cross Section Part 2");
+                model.geom("part1").feature("wp5").set("planetype", "faceparallel");
+                model.geom("part1").feature("wp5").set("unite", true);
+                model.geom("part1").feature("wp5").selection("face").named("csel1");
+                model.geom("part1").feature("wp5").geom().selection().create("csel1", "CumulativeSelection");
+                model.geom("part1").feature("wp5").geom().selection("csel1").label("HELICAL CONDUCTOR CROSS SECTION PART 2");
+                model.geom("part1").feature("wp5").geom().selection().create("csel2", "CumulativeSelection");
+                model.geom("part1").feature("wp5").geom().selection("csel2").label("HELICAL RECESS CROSS SECTION PART 2");
+                model.geom("part1").feature("wp5").geom().create("if1", "If");
+                model.geom("part1").feature("wp5").geom().feature("if1").set("condition", "recess_LN>0");
+                model.geom("part1").feature("wp5").geom().create("r1", "Rectangle");
+                model.geom("part1").feature("wp5").geom().feature("r1").active(false);
+                model.geom("part1").feature("wp5").geom().feature("r1").label("Helical Recess Cross Section Part 2");
+                model.geom("part1").feature("wp5").geom().feature("r1").set("contributeto", "csel2");
+                model.geom("part1").feature("wp5").geom().feature("r1").set("pos", new String[]{"recess_LN/2-thk_cuff_LN/2", "0"});
+                model.geom("part1").feature("wp5").geom().feature("r1").set("base", "center");
+                model.geom("part1").feature("wp5").geom().feature("r1").set("size", new String[]{"recess_LN", "w_elec_LN"});
+                model.geom("part1").feature("wp5").geom().create("r2", "Rectangle");
+                model.geom("part1").feature("wp5").geom().feature("r2").label("Helical Conductor Cross Section Part 2 (recess)");
+                model.geom("part1").feature("wp5").geom().feature("r2").set("contributeto", "csel1");
+                model.geom("part1").feature("wp5").geom().feature("r2").set("pos", new String[]{"recess_LN+(thk_elec_LN-thk_cuff_LN)/2", "0"});
+                model.geom("part1").feature("wp5").geom().feature("r2").set("base", "center");
+                model.geom("part1").feature("wp5").geom().feature("r2").set("size", new String[]{"thk_elec_LN", "w_elec_LN"});
+                model.geom("part1").feature("wp5").geom().create("endif1", "EndIf");
+                model.geom("part1").feature("wp5").geom().create("if2", "If");
+                model.geom("part1").feature("wp5").geom().feature("if2").set("condition", "recess_LN==0");
+                model.geom("part1").feature("wp5").geom().create("r3", "Rectangle");
+                model.geom("part1").feature("wp5").geom().feature("r3").label("Helical Conductor Cross Section Part 2 (no recess)");
+                model.geom("part1").feature("wp5").geom().feature("r3").set("contributeto", "csel1");
+                model.geom("part1").feature("wp5").geom().feature("r3").set("pos", new String[]{"(thk_elec_LN-thk_cuff_LN)/2", "0"});
+                model.geom("part1").feature("wp5").geom().feature("r3").set("base", "center");
+                model.geom("part1").feature("wp5").geom().feature("r3").set("size", new String[]{"thk_elec_LN", "w_elec_LN"});
+                model.geom("part1").feature("wp5").geom().create("endif2", "EndIf");
+                model.geom("part1").create("wp8", "WorkPlane");
+                model.geom("part1").feature("wp8").label("Helical Recess Cross Section Part 2");
+                model.geom("part1").feature("wp8").set("planetype", "faceparallel");
+                model.geom("part1").feature("wp8").set("unite", true);
+                model.geom("part1").feature("wp8").selection("face").named("csel1");
+                model.geom("part1").feature("wp8").geom().selection().create("csel1", "CumulativeSelection");
+                model.geom("part1").feature("wp8").geom().selection("csel1").label("HELICAL CONDUCTOR CROSS SECTION PART 2");
+                model.geom("part1").feature("wp8").geom().selection().create("csel2", "CumulativeSelection");
+                model.geom("part1").feature("wp8").geom().selection("csel2").label("HELICAL RECESS CROSS SECTION PART 2");
+                model.geom("part1").feature("wp8").geom().create("if1", "If");
+                model.geom("part1").feature("wp8").geom().feature("if1").set("condition", "recess_LN>0");
+                model.geom("part1").feature("wp8").geom().create("r1", "Rectangle");
+                model.geom("part1").feature("wp8").geom().feature("r1").label("Helical Recess Cross Section Part 2");
+                model.geom("part1").feature("wp8").geom().feature("r1").set("contributeto", "csel2");
+                model.geom("part1").feature("wp8").geom().feature("r1").set("pos", new String[]{"recess_LN/2-thk_cuff_LN/2", "0"});
+                model.geom("part1").feature("wp8").geom().feature("r1").set("base", "center");
+                model.geom("part1").feature("wp8").geom().feature("r1").set("size", new String[]{"recess_LN", "w_elec_LN"});
+                model.geom("part1").feature("wp8").geom().create("r2", "Rectangle");
+                model.geom("part1").feature("wp8").geom().feature("r2").active(false);
+                model.geom("part1").feature("wp8").geom().feature("r2").label("Helical Conductor Cross Section Part 2 (recess)");
+                model.geom("part1").feature("wp8").geom().feature("r2").set("contributeto", "csel1");
+                model.geom("part1").feature("wp8").geom().feature("r2").set("pos", new String[]{"recess_LN+(thk_elec_LN-thk_cuff_LN)/2", "0"});
+                model.geom("part1").feature("wp8").geom().feature("r2").set("base", "center");
+                model.geom("part1").feature("wp8").geom().feature("r2").set("size", new String[]{"thk_elec_LN", "w_elec_LN"});
+                model.geom("part1").feature("wp8").geom().create("endif1", "EndIf");
+                model.geom("part1").create("pc3", "ParametricCurve");
+                model.geom("part1").feature("pc3").label("Parametric Curve Part 2 (cond)");
+                model.geom("part1").feature("pc3").set("contributeto", "csel4");
+                model.geom("part1").feature("pc3").set("pos", new int[]{0, 0, 0});
+                model.geom("part1").feature("pc3").set("parmin", "(rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)");
+                model.geom("part1").feature("pc3").set("parmax", "(rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)");
+                model.geom("part1").feature("pc3").set("coord", new String[]{"cos(2*pi*s)*(r_cuff_in_PD_LN+recess_LN)", "sin(2*pi*s)*(r_cuff_in_PD_LN+recess_LN)", "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"});
+                model.geom("part1").create("pc5", "ParametricCurve");
+                model.geom("part1").feature("pc5").active(false);
+                model.geom("part1").feature("pc5").label("Parametric Curve Part 2 (cuff)");
+                model.geom("part1").feature("pc5").set("contributeto", "csel12");
+                model.geom("part1").feature("pc5").set("pos", new int[]{0, 0, 0});
+                model.geom("part1").feature("pc5").set("parmin", "(rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)");
+                model.geom("part1").feature("pc5").set("parmax", "(rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)");
+                model.geom("part1").feature("pc5").set("coord", new String[]{"cos(2*pi*s)*(r_cuff_in_PD_LN)", "sin(2*pi*s)*(r_cuff_in_PD_LN)", "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"});
+                model.geom("part1").create("if4", "If");
+                model.geom("part1").feature("if4").set("condition", "recess_LN==0");
+                model.geom("part1").create("swe4", "Sweep");
+                model.geom("part1").feature("swe4").label("Make Cuff Part 2 (no recess)");
+                model.geom("part1").feature("swe4").set("contributeto", "csel5");
+                model.geom("part1").feature("swe4").set("crossfaces", true);
+                model.geom("part1").feature("swe4").set("includefinal", false);
+                model.geom("part1").feature("swe4").set("twistcomp", false);
+                model.geom("part1").feature("swe4").selection("face").named("wp4_csel1");
+                model.geom("part1").feature("swe4").selection("edge").named("csel4");
+                model.geom("part1").feature("swe4").selection("diredge").set("pc3(1)", 1);
+                model.geom("part1").create("endif4", "EndIf");
+                model.geom("part1").create("if5", "If");
+                model.geom("part1").feature("if5").set("condition", "recess_LN>0");
+                model.geom("part1").create("swe9", "Sweep");
+                model.geom("part1").feature("swe9").label("Make Cuff Part 2 (recess)");
+                model.geom("part1").feature("swe9").set("contributeto", "csel5");
+                model.geom("part1").feature("swe9").set("crossfaces", true);
+                model.geom("part1").feature("swe9").set("includefinal", false);
+                model.geom("part1").feature("swe9").set("twistcomp", false);
+                model.geom("part1").feature("swe9").selection("face").named("wp4_csel1");
+                model.geom("part1").feature("swe9").selection("edge").named("csel4");
+                model.geom("part1").feature("swe9").selection("diredge").set("pc3(1)", 1);
+                model.geom("part1").create("endif5", "EndIf");
+                model.geom("part1").create("if2", "If");
+                model.geom("part1").feature("if2").set("condition", "recess_LN==0");
+                model.geom("part1").create("swe5", "Sweep");
+                model.geom("part1").feature("swe5").label("Make Conductor Part 2 (no recess)");
+                model.geom("part1").feature("swe5").set("contributeto", "csel8");
+                model.geom("part1").feature("swe5").set("crossfaces", true);
+                model.geom("part1").feature("swe5").set("keep", false);
+                model.geom("part1").feature("swe5").set("includefinal", false);
+                model.geom("part1").feature("swe5").set("twistcomp", false);
+                model.geom("part1").feature("swe5").selection("face").named("wp5_csel1");
+                model.geom("part1").feature("swe5").selection("edge").named("csel4");
+                model.geom("part1").feature("swe5").selection("diredge").set("pc3(1)", 1);
+                model.geom("part1").create("endif2", "EndIf");
+                model.geom("part1").create("if3", "If");
+                model.geom("part1").feature("if3").set("condition", "recess_LN>0");
+                model.geom("part1").create("swe7", "Sweep");
+                model.geom("part1").feature("swe7").label("Make Recess Part 2");
+                model.geom("part1").feature("swe7").set("contributeto", "csel11");
+                model.geom("part1").feature("swe7").set("crossfaces", true);
+                model.geom("part1").feature("swe7").set("includefinal", false);
+                model.geom("part1").feature("swe7").set("twistcomp", false);
+                model.geom("part1").feature("swe7").selection("face").named("wp8_csel2");
+                model.geom("part1").feature("swe7").selection("edge").named("csel4");
+                model.geom("part1").feature("swe7").selection("diredge").set("pc3(1)", 1);
+                model.geom("part1").create("swe8", "Sweep");
+                model.geom("part1").feature("swe8").label("Make Conductor Part (recess)");
+                model.geom("part1").feature("swe8").set("contributeto", "csel8");
+                model.geom("part1").feature("swe8").set("crossfaces", true);
+                model.geom("part1").feature("swe8").set("keep", false);
+                model.geom("part1").feature("swe8").set("includefinal", false);
+                model.geom("part1").feature("swe8").set("twistcomp", false);
+                model.geom("part1").feature("swe8").selection("face").named("wp5_csel1");
+                model.geom("part1").feature("swe8").selection("edge").named("csel4");
+                model.geom("part1").feature("swe8").selection("diredge").set("pc3(1)", 1);
+                model.geom("part1").create("endif3", "EndIf");
+                model.geom("part1").create("ballsel2", "BallSelection");
+                model.geom("part1").feature("ballsel2").set("entitydim", 2);
+                model.geom("part1").feature("ballsel2").label("Select End Face Part 2");
+                model.geom("part1").feature("ballsel2").set("posx", "cos(2*pi*((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
+                model.geom("part1").feature("ballsel2").set("posy", "sin(2*pi*((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
+                model.geom("part1").feature("ballsel2").set("posz", "Center+(L_cuff_LN_PD)*(((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2))/rev_PD_insul_LN)-(L_cuff_LN_PD/2)");
+                model.geom("part1").feature("ballsel2").set("r", 1);
+                model.geom("part1").feature("ballsel2").set("contributeto", "csel6");
+                model.geom("part1").create("wp7", "WorkPlane");
+                model.geom("part1").feature("wp7").label("Helical Insulator Cross Section Part 3");
+                model.geom("part1").feature("wp7").set("planetype", "faceparallel");
+                model.geom("part1").feature("wp7").set("unite", true);
+                model.geom("part1").feature("wp7").selection("face").named("csel6");
+                model.geom("part1").feature("wp7").geom().selection().create("csel1", "CumulativeSelection");
+                model.geom("part1").feature("wp7").geom().selection("csel1").label("HELICAL INSULATOR CROSS SECTION PART 2");
+                model.geom("part1").feature("wp7").geom().selection().create("csel2", "CumulativeSelection");
+                model.geom("part1").feature("wp7").geom().selection("csel2").label("HELICAL INSULATOR CROSS SECTION PART 3");
+                model.geom("part1").feature("wp7").geom().create("r1", "Rectangle");
+                model.geom("part1").feature("wp7").geom().feature("r1").set("contributeto", "csel2");
+                model.geom("part1").feature("wp7").geom().feature("r1").set("pos", new int[]{0, 0});
+                model.geom("part1").feature("wp7").geom().feature("r1").set("base", "center");
+                model.geom("part1").feature("wp7").geom().feature("r1").set("size", new String[]{"thk_cuff_LN", "w_cuff_LN"});
+                model.geom("part1").create("pc4", "ParametricCurve");
+                model.geom("part1").feature("pc4").label("Parametric Curve Part 3");
+                model.geom("part1").feature("pc4").set("contributeto", "csel7");
+                model.geom("part1").feature("pc4").set("pos", new int[]{0, 0, 0});
+                model.geom("part1").feature("pc4").set("parmin", "(rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)");
+                model.geom("part1").feature("pc4").set("parmax", "rev_PD_insul_LN");
+                model.geom("part1").feature("pc4").set("coord", new String[]{"cos(2*pi*s)*(r_cuff_in_PD_LN)", "sin(2*pi*s)*(r_cuff_in_PD_LN)", "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"});
+                model.geom("part1").create("swe6", "Sweep");
+                model.geom("part1").feature("swe6").label("Make Cuff Part 3");
+                model.geom("part1").feature("swe6").set("contributeto", "csel9");
+                model.geom("part1").feature("swe6").set("keep", false);
+                model.geom("part1").feature("swe6").set("includefinal", false);
+                model.geom("part1").feature("swe6").set("twistcomp", false);
+                model.geom("part1").feature("swe6").selection("face").named("wp7_csel2");
+                model.geom("part1").feature("swe6").selection("edge").named("csel7");
+                model.geom("part1").feature("swe6").selection("diredge").set("pc4(1)", 1);
+                model.geom("part1").create("pt1", "Point");
+                model.geom("part1").feature("pt1").label("ptSRC");
+                model.geom("part1").feature("pt1").set("contributeto", "csel10");
+                model.geom("part1").feature("pt1").set("p", new String[]{"cos(2*pi*rev_PD_insul_LN*(1.25/2.5))*(recess_LN+(thk_elec_LN/2)+r_cuff_in_PD_LN)", "sin(2*pi*rev_PD_insul_LN*(1.25/2.5))*(recess_LN+(thk_elec_LN/2)+r_cuff_in_PD_LN)", "Center"});
+                model.geom("part1").run();
+
+                model.geom(id).run();
+
+                break;
+
             default:
                 throw new  IllegalArgumentException("No implementation for part primitive name: " + pseudonym);
 
