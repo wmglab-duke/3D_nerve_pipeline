@@ -2594,28 +2594,29 @@ class Part {
                 String mcp2nrLabel = "Make Cuff Part 2 (no recess)";
                 GeomFeature mcp2nr = model.geom(id).create(im.next("swe", mcp2nrLabel), "Sweep");
                 mcp2nr.label(mcp2nrLabel);
-                mcp2nr.set("contributeto", "csel5");
+                mcp2nr.set("contributeto", im.get(LNhrcsp2Label));
                 mcp2nr.set("crossfaces", true);
                 mcp2nr.set("includefinal", false);
                 mcp2nr.set("twistcomp", false);
-                mcp2nr.selection("face").named("wp4_csel1");
-                mcp2nr.selection("edge").named("csel4");
-                mcp2nr.selection("diredge").set("pc3(1)", 1);
+                mcp2nr.selection("face").named(im.get(LNhicsp2Label) + "_" + im.get(LNhicxp2Label));
+                mcp2nr.selection("edge").named(im.get(im.labels[4]));
+                mcp2nr.selection("diredge").set(im.get(LNpcp2cfLabel) + "(1)", 1);
 
-                model.geom("part1").create("endif4", "EndIf");
+                model.geom(id).create("endif4", "EndIf");
 
-                model.geom("part1").create("if5", "If");
-                model.geom("part1").feature("if5").set("condition", "recess_LN>0");
+                model.geom(id).create("if5", "If");
+                model.geom(id).feature("if5").set("condition", "recess_LN>0");
 
-                model.geom("part1").create("swe9", "Sweep");
-                model.geom("part1").feature("swe9").label("Make Cuff Part 2 (recess)");
-                model.geom("part1").feature("swe9").set("contributeto", "csel5");
-                model.geom("part1").feature("swe9").set("crossfaces", true);
-                model.geom("part1").feature("swe9").set("includefinal", false);
-                model.geom("part1").feature("swe9").set("twistcomp", false);
-                model.geom("part1").feature("swe9").selection("face").named("wp4_csel1");
-                model.geom("part1").feature("swe9").selection("edge").named("csel4");
-                model.geom("part1").feature("swe9").selection("diredge").set("pc3(1)", 1);
+                String mcp2rLabel = "Make Cuff Part 2 (recess)";
+                GeomFeature mcp2r = model.geom(id).create(im.next("swe", mcp2rLabel), "Sweep");
+                mcp2r.label(mcp2rLabel);
+                mcp2r.set("contributeto", im.get(im.labels[6]));
+                mcp2r.set("crossfaces", true);
+                mcp2r.set("includefinal", false);
+                mcp2r.set("twistcomp", false);
+                mcp2r.selection("face").named("wp4_csel1");
+                mcp2r.selection("edge").named("csel4");
+                mcp2r.selection("diredge").set("pc3(1)", 1);
 
                 model.geom("part1").create("endif5", "EndIf");
 
