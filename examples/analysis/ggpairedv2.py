@@ -88,19 +88,23 @@ q = Query({
 
 dat3d = q.threshdat3d(meanify = False)
 
-dat2d['threshold3d'] = np.nan
 
-for i in range(len(dat2d)):
-    row = dat2d.iloc[i,:]
-    thresh = dat3d[(dat3d["model"]==row['model']) &
-                       (dat3d["sim"]==row['sim']) &
-                       (dat3d["nsim"]==row['nsim']) &
-                       (dat3d["index"]==row['index'])]['threshold']
-    thresh=list(thresh)
-    if len(thresh)!=1:sys.exit('issue here')
-    dat2d.iloc[i,-1]=thresh[0]
-if np.any(dat2d.threshold==np.nan):
-    sys.exit('issue here too')
+def datamatch(dest,dat3d,importval):
+    dest[importval+'3d'] = np.nan
+    for i in range(len(dest)):
+        row = dest.iloc[i,:]
+        val = dat3d[(dat3d["model"]==row['model']) &
+                           (dat3d["sim"]==row['sim']) &
+                           (dat3d["nsim"]==row['nsim']) &
+                           (dat3d["index"]==row['index'])][importval]
+        val=list(val)
+        if len(val)!=1:sys.exit('issue here')
+        dest.iloc[i,-1]=val[0]
+    if np.any(dest[importval]==np.nan):
+        sys.exit('issue here too')
+    return dest
+
+dat2d = datamatch(dat2d,dat3d,'threshold')
 
 dat2d = dat2d[dat2d['nsim']==2]
 

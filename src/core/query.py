@@ -2888,7 +2888,9 @@ class Query(Exceptionable, Configurable, Saveable):
             model_labels: List[str] = None,
             save: bool = False,
             subplots = False,
-            nodes_only=False):
+            nodes_only=False,
+            sample_override = None,
+            delete_vmtime = False):
     
         print(
             f'Finding time and location of action potentials, which are defined as any voltage deflection of {delta_V} mV.')
@@ -2900,7 +2902,6 @@ class Query(Exceptionable, Configurable, Saveable):
         # loop samples
         for sample_index, sample_results in [(s['index'], s) for s in self._result.get('samples')]:
             print('sample: {}'.format(sample_index))
-    
             # sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
     
             # loop models
@@ -2912,7 +2913,9 @@ class Query(Exceptionable, Configurable, Saveable):
                     print('\t\tsim: {}'.format(sim_index))
     
                     sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
-   
+                    
+                    sample_index = sample_override if sample_override is not None else sample_index
+
                     # loop nsims
                     for n_sim_index, (potentials_product_index, waveform_index) in enumerate(
                             sim_object.master_product_indices):
@@ -2924,7 +2927,7 @@ class Query(Exceptionable, Configurable, Saveable):
                         if n_sim_filter is not None and n_sim_index not in n_sim_filter:
                             print('\t\t\t\t(skip)')
                             continue
-    
+                        
                         # directory of data for this (sample, model, sim)
                         sim_dir = self.build_path(Object.SIMULATION, [sample_index, model_index, sim_index],
                                                   just_directory=True)
@@ -2939,7 +2942,10 @@ class Query(Exceptionable, Configurable, Saveable):
                         outputs_path = os.path.join(n_sim_dir, 'data', 'outputs')
                         
                         for master_index in range(len(sim_object.fibersets[0].fibers)):
-                            inner_index,fiber_index = sim_object.indices_fib_to_n(0,master_index)
+                            if sample_override is None:
+                                inner_index,fiber_index = sim_object.indices_fib_to_n(0,master_index)
+                            else: 
+                                inner_index,fiber_index = 0,master_index
                             # path of the first inner, first fiber vm(t) data
                             vm_t_path = os.path.join(outputs_path, 'Vm_time_inner{}_fiber{}_amp0.dat'.format(inner_index,fiber_index))
         
@@ -2948,7 +2954,7 @@ class Query(Exceptionable, Configurable, Saveable):
                             # the first column is the time [ms]
                             # first row is holds column labels, so this is skipped (time, node0, node1, ...)
                             vm_t_data = np.loadtxt(vm_t_path, skiprows=1)
-        
+                            
                             # find V-nought be averaging voltage of all nodes at first timestep (assuming no stimulation at time=0)
                             V_o = np.mean(vm_t_data[0, 1:])
                             # if using absolute voltage, set an absolute delta V (i.e., -30mV)
@@ -2987,19 +2993,37 @@ class Query(Exceptionable, Configurable, Saveable):
                                 
                                 # load fiber coordinates
                                 fiber = np.loadtxt(os.path.join(fiberset_dir, '0.dat'), skiprows=1)
-    
+                                
                                 fiber[11 * node, 2]
-                                locdata.append({
-                                    'sample':sample_index,
-                                    'model':  model_index,
-                                    'sim':sim_index,
-                                    'nsim':n_sim_index,
-                                    'inner':inner_index,
-                                    'fiber':fiber_index,
-                                    'index':master_index,
-                                    'activation_zpos':fiber[11 * node, 2],
-                                    'ap_time':time
-                                    })
+                                if sample_override is None:
+                                    locdata.append({
+                                        'sample':sample_index,
+                                        'model':  model_index,
+                                        'sim':sim_index,
+                                        'nsim':n_sim_index,
+                                        'inner':inner_index,
+                                        'fiber':fiber_index,
+                                        'index':master_index,
+                                        'activation_zpos':fiber[11 * node, 2],
+                                        'ap_time':time,
+                                        'ap_init_node': node+1,
+                                        'fiber_node_count':len(vm_t_data[0, 1:])
+                                        })
+                                else:
+                                    locdata.append({
+                                        'sample':sample_index,
+                                        'model':  model_index,
+                                        'sim':sim_index,
+                                        'nsim':n_sim_index,
+                                        'index':master_index,
+                                        'long_ap_pos':fiber[11 * node, 2],
+                                        'activation_zpos':np.nan,
+                                        'ap_time':time,
+                                        'ap_init_node': node+1,
+                                        'fiber_node_count':len(vm_t_data[0, 1:])
+                                        })
+                            if delete_vmtime==True:
+                                os.remove(vm_t_path)
                                     
         return pd.DataFrame(locdata)
   
