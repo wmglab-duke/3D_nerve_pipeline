@@ -21,9 +21,9 @@ import matplotlib.pyplot as plt
 from src.core.query import Query
 import pandas as pd
 
-threed = 673
+threed = 3
 
-samples = [670,671,672]
+samples = [2]
 
 models = [0]
 

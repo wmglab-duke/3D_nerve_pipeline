@@ -21,10 +21,13 @@ from src.core.query import Query
 # set default fig size
 # plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 
-samples = [670,672]
-samp3 = 673
+samples = [650,652]
+samp3 = 653
+model = 0
+sim = 3
 sample_labels = ['Rostral\nContact','Caudal\n(Cathodic)\nContact']
-nerve_label = '6R'
+nerve_label = '6L'
+outpath = r'D:\ASCENT\ascent\out\analysis'
 
 print("Note: assumed cathodic sample is the last one")
 
@@ -38,8 +41,8 @@ for i in range(len(samples)):
         'include_downstream': True,
         'indices': {
             'sample': samples[i],
-            'model': [0],
-            'sim': [3]
+            'model': [model],
+            'sim': [sim]
         }
     }).run()
     
@@ -64,7 +67,8 @@ for i in range(len(samples)):
                 # override_axes = axs[i][0],
                 # spec_nsim=2,
                 dotsize = 15,
-                show_orientation_point = True
+                show_orientation_point = True,
+                save_path = 'out/analysis'
                 #    tick_bounds=True
            )
 
@@ -89,8 +93,9 @@ for i in range(len(samples)):
                 dotsize = 15,
                 # spec_nsim=2,
                 show_orientation_point = True,
-                thresh_source_sample = [samp3]
-                #    tick_bounds=True
+                thresh_source_sample = [samp3],
+                #    tick_bounds=True,
+                save_path = 'out/analysis'
            )
 
     if i==len(samples)-1:
@@ -116,8 +121,8 @@ q = Query({
     'include_downstream': True,
     'indices': {
         'sample': samples[-1],
-        'model': [0],
-        'sim': [3]
+        'model': [model],
+        'sim': [sim]
     }
 }).run()
 
@@ -139,7 +144,7 @@ q.heatmaps(plot=False,
             add_colorbar = False,
             override_axes = [x[0] for x in axs],
             # spec_nsim=2,
-            dotsize = 15,
+            dotsize = 10,
             show_orientation_point = True
             #    tick_bounds=True
        )
@@ -162,7 +167,7 @@ q.heatmaps(plot=False,
             # comp_sim = True,
             cbar_axs = [x[2] for x in axs],
             override_axes = [x[1] for x in axs],
-            dotsize = 15,
+            dotsize = 10,
             # spec_nsim=2,
             show_orientation_point = True,
             thresh_source_sample = [samp3]
@@ -182,6 +187,7 @@ for nsim,ax in enumerate(axs):
 axs[0][0].set_title('2D',fontsize = 30)
 axs[0][1].set_title('3D',fontsize = 30)
 fig.suptitle('Nsim thresholds for {}\nCathodic Contact'.format(nerve_label),fontsize=40)
+fig.savefig('out/analysis/{}-{}_{}_{}'.format(samples[-1], samp3, model, sim),dpi=400,bbox_inches = "tight")
 
 #%%
 
@@ -196,8 +202,8 @@ for i in range(override.shape[0]):
             'include_downstream': True,
             'indices': {
                 'sample': samples[s],
-                'model': [0],
-                'sim': [3]
+                'model': [model],
+                'sim': [sim]
             }
         }).run()
     
@@ -218,7 +224,7 @@ for i in range(override.shape[0]):
                     add_colorbar = False,
                     override_axes = [axs[s][0]],
                     spec_nsim=i,
-                    dotsize = 15,
+                    dotsize = 20,
                     show_orientation_point = True
                     #    tick_bounds=True
                )
@@ -241,7 +247,7 @@ for i in range(override.shape[0]):
                     # comp_sim = True,
                     # cbar_axs = [x[2] for x in axs],
                     override_axes = [axs[s][1]],
-                    dotsize = 15,
+                    dotsize = 20,
                     spec_nsim=i,
                     show_orientation_point = True,
                     thresh_source_sample = [samp3]
@@ -290,4 +296,4 @@ for i in range(override.shape[0]):
         # cb.update_ticks()
         fig.subplots_adjust(left=.15)
         fig.subplots_adjust(top=.9)
-        # fig.savefig(r'D:\Box Sync\Home Folder dpm42\lab_meeting/6R6um.png',dpi=500)
+        fig.savefig('out/analysis/{}-{}_{}_{}_{}'.format(samples[-1], samp3, model, sim,i),dpi=400,bbox_inches = "tight")

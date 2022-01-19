@@ -746,13 +746,13 @@ class Query(Exceptionable, Configurable, Saveable):
 
                     # plt.tight_layout(pad=0)
                     # plt.tight_layout(pad=5.0)
-
+                    sample_index = thresh_source_sample[0] if thresh_source_sample is not None else sample_index
                     # save figure as png
                     if save_path is not None:
                         if not os.path.exists(save_path):
                             os.makedirs(save_path)
                         dest = '{}{}{}_{}_{}.png'.format(save_path, os.sep, sample_index, model_index, sim_index)
-                        figure.savefig(dest, dpi=300)
+                        figure.savefig(dest, dpi=300,bbox_inches = "tight")
                         # print('done')
 
                     # plot figure
@@ -2899,11 +2899,18 @@ class Query(Exceptionable, Configurable, Saveable):
             print(
                 'Note: Plotting is currently only defined for MRG axons in the SL branch; plotting for other axon models/locations may yield unexpected results.')
         locdata = []
+        onepass = False
         # loop samples
         for sample_index, sample_results in [(s['index'], s) for s in self._result.get('samples')]:
-            print('sample: {}'.format(sample_index))
             # sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
-    
+            samplesave = sample_index  
+            if onepass == True: break
+            if sample_override is not None:
+                sample_index = sample_override
+                onepass=True
+            
+            print('sample: {}'.format(sample_index))
+
             # loop models
             for model_index, model_results in [(m['index'], m) for m in sample_results.get('models')]:
                 print('\tmodel: {}'.format(model_index))
@@ -2912,14 +2919,15 @@ class Query(Exceptionable, Configurable, Saveable):
                 for sim_index in model_results.get('sims', []):
                     print('\t\tsim: {}'.format(sim_index))
     
-                    sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
-                    
-                    sample_index = sample_override if sample_override is not None else sample_index
+                    sim_object = self.get_object(Object.SIMULATION, [samplesave, model_index, sim_index])
 
                     # loop nsims
                     for n_sim_index, (potentials_product_index, waveform_index) in enumerate(
                             sim_object.master_product_indices):
                         print('\t\t\tnsim: {}'.format(n_sim_index))
+                        rmpaths = []
+                        
+                        nsim_data = []
     
                         active_src_index, fiberset_index = sim_object.potentials_product[potentials_product_index]
     
@@ -2988,15 +2996,15 @@ class Query(Exceptionable, Configurable, Saveable):
                             # if time is not None and node is not None:
                             else:
                                 # create message about AP time and location findings
-                                message = f't: {time} ms, node: {node + 1} (of {len(vm_t_data[0, 1:])})'
-                                print(f'\t\t\t\t{message}')
+                                # message = f't: {time} ms, node: {node + 1} (of {len(vm_t_data[0, 1:])})'
+                                # print(f'\t\t\t\t{message}')
                                 
                                 # load fiber coordinates
-                                fiber = np.loadtxt(os.path.join(fiberset_dir, '0.dat'), skiprows=1)
+                                fiber = np.loadtxt(os.path.join(fiberset_dir, '{}.dat'.format(master_index)), skiprows=1)
                                 
                                 fiber[11 * node, 2]
                                 if sample_override is None:
-                                    locdata.append({
+                                    nsim_data.append({
                                         'sample':sample_index,
                                         'model':  model_index,
                                         'sim':sim_index,
@@ -3010,7 +3018,7 @@ class Query(Exceptionable, Configurable, Saveable):
                                         'fiber_node_count':len(vm_t_data[0, 1:])
                                         })
                                 else:
-                                    locdata.append({
+                                    nsim_data.append({
                                         'sample':sample_index,
                                         'model':  model_index,
                                         'sim':sim_index,
@@ -3022,8 +3030,11 @@ class Query(Exceptionable, Configurable, Saveable):
                                         'ap_init_node': node+1,
                                         'fiber_node_count':len(vm_t_data[0, 1:])
                                         })
-                            if delete_vmtime==True:
-                                os.remove(vm_t_path)
+                        locdata.extend(nsim_data)
+                        pd.DataFrame(nsim_data).to_csv(os.path.join(outputs_path, 'AP_info.csv'),index=False)
+                        if delete_vmtime:
+                            for path in rmpaths:
+                                os.remove(path)
                                     
         return pd.DataFrame(locdata)
   

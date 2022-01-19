@@ -10,13 +10,13 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
-samples = [200,201,205]
+os.chdir('D:/ascent/ascent')
+samples = [672,673]
 models = [0]
-sims = [0,1,2]
+sims = [3]
 inner = 0
 fiber = 0
-n_sims = [0,1,2]
+n_sims = [0]
 amp = 0
 
 outpath = 'out/analysis/videos'

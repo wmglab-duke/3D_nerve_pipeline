@@ -23,9 +23,9 @@ from nd_line.nd_line import nd_line
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14*2]) / 2)
 
-samp3d = 653
+samp3d = 673
 
-samples =  [650,652]
+samples =  [670,672]
 
 models = [0]
 
@@ -61,6 +61,7 @@ def actual_zpos(dat3d,samp3d,model,sim):
         for index,row in datnew.iterrows():
             actual_zpos = fiberline.interp(row['long_ap_pos'])[2]
             dat3d.loc[index,'activation_zpos']=actual_zpos
+    return dat3d
         
 def datamatch(dest,dat3d,importval):
     dest[importval+'3d'] = np.nan
@@ -90,9 +91,9 @@ dat3d = q.ap_data(
     absolute_voltage=False,
     delete_vmtime = False,
     sample_override = samp3d)
+#%%
+dat3z = actual_zpos(dat3d,samp3d,models[0],sims[0])
 
-dat3d = actual_zpos(dat3d,samp3d,models[0],sims[0])
-
-dat2d = datamatch(dat2d,dat3d,'activation_zpos')
+dat2d = datamatch(dat2d,dat3z,'activation_zpos')
 
 #%%

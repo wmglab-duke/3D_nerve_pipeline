@@ -10,6 +10,7 @@ The source code can be found on the following GitHub repository: https://github.
 
 import os
 import sys
+os.chdir('D:/ASCENT/ascent')
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
@@ -21,7 +22,6 @@ from src.core.query import Query
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
-os.chdir('D:/ASCENT/fresh')
 
 # M10
 # # initialize and run Querys
@@ -78,9 +78,9 @@ qMonoPolar = Query({
     'partial_matches': True,
     'include_downstream': True,
     'indices': {
-        'sample': [3070,3150,3230],  # add 71, 74
+        'sample': [2,3],  # add 71, 74
         'model': [0],
-        'sim': [3000]
+        'sim': [3]
     }
 }).run()
 

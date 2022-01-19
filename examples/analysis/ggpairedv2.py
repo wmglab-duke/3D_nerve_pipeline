@@ -47,15 +47,14 @@ from src.core.query import Query
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
-threed = 653
+threed = 673
 
-samples = [650,652]
+samples = [670,672]
 
 models = [0]
 
 sims = [3]
 
-dats = []
 
 q = Query({
     'partial_matches': False,
@@ -105,24 +104,49 @@ def datamatch(dest,dat3d,importval):
     return dest
 
 dat2d = datamatch(dat2d,dat3d,'threshold')
+#%%
+for sample in samples:
+    plotdata = dat2d[dat2d['sample']==sample]
 
-dat2d = dat2d[dat2d['nsim']==2]
+    plot = ggpubr.ggpaired(plotdata, cond1 = "threshold", cond2 = "threshold3d",
+                           color = "condition", 
+                           line_color = "gray", 
+                           line_size = 0.5, 
+                           point_size = 1.2,
+                           palette = "npg",
+                           facet_by = "nsim",
+                           xlab = False,
+                           ylab = "Threshold (mA)",
+                            legend = "none",
+                            scales="free_y",
+                           title = "Activation thresh for 2D ex models vs. full-3D model {}vs{}".format(threed,sample))
+    
+    # plot.plot()
+    
+    plot.save(r'out/analysis/{}-{}_{}_{}.png'.format(threed,sample,models[0],sims[0]),dpi=600)
 
-sample_labels = ['rostral contact','caudal contact']
 
-plot = ggpubr.ggpaired(dat2d, cond1 = "threshold", cond2 = "threshold3d",
-                       color = "condition", 
-                       line_color = "gray", 
-                       line_size = 0.5, 
-                       point_size = 1.2,
-                       palette = "npg",
-                       facet_by = "sample",
-                       xlab = False,
-                       ylab = "Threshold (mA)",
-                        legend = "none",
-                        # scales="free_y",
-                       title = "Activation thresholds for 2D extrusion models vs. full-3D model (6um)")
 
-plot.plot()
+#%%
+for nsim in pd.unique(dat2d['nsim']):
 
-plot.save(r'D:\Box Sync\Home Folder dpm42\lab_meeting/4L_extrusion_comp.png',dpi=600)
+    plotdata = dat2d[dat2d['nsim']==nsim]
+    
+    sample_labels = ['rostral contact','caudal contact']
+    
+    plot = ggpubr.ggpaired(plotdata, cond1 = "threshold", cond2 = "threshold3d",
+                           color = "condition", 
+                           line_color = "gray", 
+                           line_size = 0.5, 
+                           point_size = 1.2,
+                           palette = "npg",
+                           facet_by = "sample",
+                           xlab = False,
+                           ylab = "Threshold (mA)",
+                            legend = "none",
+                            # scales="free_y",
+                           title = "Activation thresh for 2D ex models vs. full-3D model ({}um)".format((nsim+1)*2))
+    
+    # plot.plot()
+    
+    plot.save(r'out/analysis/{}_{}_{}_{}.png'.format(threed,models[0],sims[0],nsim),dpi=600)
