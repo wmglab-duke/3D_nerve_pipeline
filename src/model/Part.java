@@ -13,6 +13,7 @@ import com.comsol.nativemph.geom.Geom;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.HashMap;
 
 class Part {
@@ -116,7 +117,7 @@ class Part {
         }
     }
 
-    public static IdentifierManager createCuffPartPrimitive(String id, String pseudonym, ModelWrapper mw) throws IllegalArgumentException {
+    public static IdentifierManager createCuffPartPrimitive(String id, String pseudonym, ModelWrapper mw) throws IllegalArgumentException, IOException {
         Model model = mw.getModel();
 
         // only used once per method, so ok to define outside the switch
@@ -2424,8 +2425,8 @@ class Part {
                 LNhicsp1.geom().feature("r1").label(LNhicxp1Label);
                 LNhicsp1.geom().feature("r1").set("contributeto", im.get(LNhicsLabel));
                 LNhicsp1.geom().feature("r1").set("pos", new String[]{
-                        "r_cuff_in_PD_LN+0.5*thk_cuff_LN",
-                        "-0.5*L_cuff_LN_PD"
+                        "r_cuff_in_LN+0.5*thk_cuff_LN",
+                        "Center-0.5*L_cuff_LN_PD"
                 });
                 LNhicsp1.geom().feature("r1").set("base", "center");
                 LNhicsp1.geom().feature("r1").set("size", new String[]{
@@ -2442,8 +2443,8 @@ class Part {
                 LNpc1.set("pos", new int[]{0, 0, 0});
                 LNpc1.set("parmax", "(rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)");
                 LNpc1.set("coord", new String[]{
-                        "cos(2*pi*s)*(r_cuff_in_PD_LN)",
-                        "sin(2*pi*s)*(r_cuff_in_PD_LN)",
+                        "cos(2*pi*s)*(r_cuff_in_LN)",
+                        "sin(2*pi*s)*(r_cuff_in_LN)",
                         "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"
                 });
 
@@ -2470,8 +2471,8 @@ class Part {
                 GeomFeature LNsefp1 = model.geom(id).create(im.next("ballsel", LNsefp1Label), "BallSelection");
                 LNsefp1.set("entitydim", 2);
                 LNsefp1.label(LNsefp1Label);
-                LNsefp1.set("posx", "cos(2*pi*((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
-                LNsefp1.set("posy", "sin(2*pi*((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
+                LNsefp1.set("posx", "cos(2*pi*((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)))*(r_cuff_in_LN+thk_cuff_LN/2)");
+                LNsefp1.set("posy", "sin(2*pi*((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)))*(r_cuff_in_LN+thk_cuff_LN/2)");
                 LNsefp1.set("posz", "Center+(L_cuff_LN_PD)*(((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2))/rev_PD_insul_LN)-(L_cuff_LN_PD/2)");
                 LNsefp1.set("r", 1);
                 LNsefp1.set("contributeto", im.get(im.labels[0]));
@@ -2508,9 +2509,9 @@ class Part {
 
                 System.out.println("here7");
 
-                String LNhccxp2wpLabel = "HELICAL CONDUCTOR CROSS SECTION PART 2";
-                LNhccxp2.geom().selection().create(im.next("csel", LNhccxp2wpLabel), "CumulativeSelection");
-                LNhccxp2.geom().selection(im.get(LNhccxp2wpLabel)).label(LNhccxp2wpLabel);
+                String LNhccxp2wpresessLabel = "HELICAL CONDUCTOR CROSS SECTION PART 2 (recess)";
+                LNhccxp2.geom().selection().create(im.next("csel", LNhccxp2wpresessLabel), "CumulativeSelection");
+                LNhccxp2.geom().selection(im.get(LNhccxp2wpresessLabel)).label(LNhccxp2wpresessLabel);
 
                 String LNhcrxp2wpLabel = "HELICAL RECESS CROSS SECTION PART 2";
                 LNhccxp2.geom().selection().create(im.next("csel", LNhcrxp2wpLabel), "CumulativeSelection");
@@ -2521,19 +2522,11 @@ class Part {
 
                 System.out.println("here8");
 
-                LNhccxp2.geom().create("r1", "Rectangle");
-                LNhccxp2.geom().feature("r1").active(false);
-                LNhccxp2.geom().feature("r1").label("Helical Recess Cross Section Part 2");
-                LNhccxp2.geom().feature("r1").set("contributeto", im.get(LNhcrxp2wpLabel));
-                LNhccxp2.geom().feature("r1").set("pos", new String[]{"recess_LN/2-thk_cuff_LN/2", "0"});
-                LNhccxp2.geom().feature("r1").set("base", "center");
-                LNhccxp2.geom().feature("r1").set("size", new String[]{"recess_LN", "w_elec_LN"});
-
                 System.out.println("here9");
 
                 LNhccxp2.geom().create("r2", "Rectangle");
                 LNhccxp2.geom().feature("r2").label("Helical Conductor Cross Section Part 2 (recess)");
-                LNhccxp2.geom().feature("r2").set("contributeto", im.get(LNhccxp2wpLabel));
+                LNhccxp2.geom().feature("r2").set("contributeto", im.get(LNhccxp2wpresessLabel));
                 LNhccxp2.geom().feature("r2").set("pos", new String[]{"recess_LN+(thk_elec_LN-thk_cuff_LN)/2", "0"});
                 LNhccxp2.geom().feature("r2").set("base", "center");
                 LNhccxp2.geom().feature("r2").set("size", new String[]{"thk_elec_LN", "w_elec_LN"});
@@ -2547,7 +2540,7 @@ class Part {
 
                 LNhccxp2.geom().create("r3", "Rectangle");
                 LNhccxp2.geom().feature("r3").label("Helical Conductor Cross Section Part 2 (no recess)");
-                LNhccxp2.geom().feature("r3").set("contributeto", im.get(LNhccxp2wpLabel));
+                LNhccxp2.geom().feature("r3").set("contributeto", im.get(LNhccxp2wpresessLabel));
                 LNhccxp2.geom().feature("r3").set("pos", new String[]{"(thk_elec_LN-thk_cuff_LN)/2", "0"});
                 LNhccxp2.geom().feature("r3").set("base", "center");
                 LNhccxp2.geom().feature("r3").set("size", new String[]{"thk_elec_LN", "w_elec_LN"});
@@ -2562,7 +2555,7 @@ class Part {
                 LNhrcxp2.set("planetype", "faceparallel");
                 LNhrcxp2.set("unite", true);
 
-                LNhrcxp2.selection("face").named("csel1"); // TODO
+                LNhrcxp2.selection("face").named("csel1");
 
                 System.out.println("here12");
 
@@ -2586,13 +2579,7 @@ class Part {
                 LNhrcxp2.geom().feature("r1").set("pos", new String[]{"recess_LN/2-thk_cuff_LN/2", "0"});
                 LNhrcxp2.geom().feature("r1").set("base", "center");
                 LNhrcxp2.geom().feature("r1").set("size", new String[]{"recess_LN", "w_elec_LN"});
-                LNhrcxp2.geom().create("r2", "Rectangle");
-                LNhrcxp2.geom().feature("r2").active(false);
-                LNhrcxp2.geom().feature("r2").label("Helical Conductor Cross Section Part 2 (recess)");
-                LNhrcxp2.geom().feature("r2").set("contributeto", "csel1");
-                LNhrcxp2.geom().feature("r2").set("pos", new String[]{"recess_LN+(thk_elec_LN-thk_cuff_LN)/2", "0"});
-                LNhrcxp2.geom().feature("r2").set("base", "center");
-                LNhrcxp2.geom().feature("r2").set("size", new String[]{"thk_elec_LN", "w_elec_LN"});
+
                 LNhrcxp2.geom().create("endif1", "EndIf");
 
                 System.out.println("here14");
@@ -2605,8 +2592,8 @@ class Part {
                 LNpcp2c.set("parmin", "(rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)");
                 LNpcp2c.set("parmax", "(rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)");
                 LNpcp2c.set("coord", new String[]{
-                        "cos(2*pi*s)*(r_cuff_in_PD_LN+recess_LN)",
-                        "sin(2*pi*s)*(r_cuff_in_PD_LN+recess_LN)",
+                        "cos(2*pi*s)*(r_cuff_in_LN+recess_LN)",
+                        "sin(2*pi*s)*(r_cuff_in_LN+recess_LN)",
                         "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"
                 });
 
@@ -2621,8 +2608,8 @@ class Part {
                 LNpcp2cf.set("parmin", "(rev_PD_insul_LN/2)-(rev_PD_cond_LN/2)");
                 LNpcp2cf.set("parmax", "(rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)");
                 LNpcp2cf.set("coord", new String[]{
-                        "cos(2*pi*s)*(r_cuff_in_PD_LN)",
-                        "sin(2*pi*s)*(r_cuff_in_PD_LN)",
+                        "cos(2*pi*s)*(r_cuff_in_LN)",
+                        "sin(2*pi*s)*(r_cuff_in_LN)",
                         "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"
                 });
 
@@ -2638,11 +2625,12 @@ class Part {
                 mcp2nr.set("crossfaces", true);
                 mcp2nr.set("includefinal", false);
                 mcp2nr.set("twistcomp", false);
+                mcp2nr.set("keep", false);
 
                 System.out.println("155b");
 
                 mcp2nr.selection("face").named(im.get(LNhicsp2Label) + "_" + im.get(LNhicxp2Label));
-                mcp2nr.selection("edge").named(im.get(im.labels[4]));
+                mcp2nr.selection("edge").named(im.get(im.labels[8]));
                 mcp2nr.selection("diredge").set(im.get(LNpcp2cfLabel) + "(1)", 1);
 
                 System.out.println("here17");
@@ -2659,7 +2647,7 @@ class Part {
                 mcp2r.set("crossfaces", true);
                 mcp2r.set("includefinal", false);
                 mcp2r.set("twistcomp", false);
-                mcp2r.selection("face").named(im.get(LNhicsp2Label) + "_" + im.get(LNhicxp2Label)); // TODO HEREEEEE
+                mcp2r.selection("face").named(im.get(LNhicsp2Label) + "_" + im.get(LNhicxp2Label));
                 mcp2r.selection("edge").named(im.get(im.labels[4]));
                 mcp2r.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
 
@@ -2673,12 +2661,12 @@ class Part {
                 String LNmcp2nrLabel = "Make Conductor Part 2 (no recess)";
                 GeomFeature LNmcp2nr = model.geom(id).create(im.next("swe", LNmcp2nrLabel), "Sweep");
                 LNmcp2nr.label(LNmcp2nrLabel);
-                LNmcp2nr.set("contributeto", im.get(im.labels[0]));
+                LNmcp2nr.set("contributeto", im.get(im.labels[9]));
                 LNmcp2nr.set("crossfaces", true);
                 LNmcp2nr.set("keep", false);
                 LNmcp2nr.set("includefinal", false);
                 LNmcp2nr.set("twistcomp", false);
-                LNmcp2nr.selection("face").named(im.get(LNhccxp2Label) + "_" + im.get(LNhccxp2wpLabel));
+                LNmcp2nr.selection("face").named(im.get(LNhccxp2Label) + "_" + im.get(LNhccxp2wpresessLabel));
                 LNmcp2nr.selection("edge").named(im.get(im.labels[4]));
                 LNmcp2nr.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
 
@@ -2689,33 +2677,33 @@ class Part {
                 model.geom(id).create("if3", "If");
                 model.geom(id).feature("if3").set("condition", "recess_LN>0");
 
+                String LNmcprLabel = "Make Conductor Part (recess)";
+                GeomFeature LNmcpr = model.geom(id).create(im.next("swe", LNmcprLabel), "Sweep");
+                LNmcpr.label(LNmcprLabel);
+                LNmcpr.set("contributeto", im.get(im.labels[3]));
+                LNmcpr.set("crossfaces", true);
+                LNmcpr.set("includefinal", false);
+                LNmcpr.set("twistcomp", false);
+                System.out.println("here19aa");
+                LNmcpr.selection("face").named(im.get(LNhccxp2Label) + "_" + im.get(LNhccxp2wpresessLabel));
+                System.out.println("here19a");
+                LNmcpr.selection("edge").named(im.get(im.labels[9]));
+                System.out.println("here19b");
+                LNmcpr.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
+
+                System.out.println("here20");
+
                 String LNmrp2Label = "Make Recess Part 2";
                 GeomFeature LNmrp2 = model.geom(id).create(im.next("swe", LNmrp2Label), "Sweep");
                 LNmrp2.label(LNmrp2Label);
                 LNmrp2.set("contributeto", im.get(im.labels[3]));
                 LNmrp2.set("crossfaces", true);
+                LNmrp2.set("keep", false);
                 LNmrp2.set("includefinal", false);
                 LNmrp2.set("twistcomp", false);
-                System.out.println("here19aa");
-                LNmrp2.selection("face").named(im.get(LNhrcxp2Label) + "_" + "csel1");
-                System.out.println("here19a");
+                LNmrp2.selection("face").named(im.get(LNhrcxp2Label) + "_" + "csel2");
                 LNmrp2.selection("edge").named(im.get(im.labels[4]));
-                System.out.println("here19b");
                 LNmrp2.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
-
-                System.out.println("here20");
-
-                String LNmcprLabel = "Make Conductor Part (recess)";
-                GeomFeature LNmcpr = model.geom(id).create(im.next("swe", LNmcprLabel), "Sweep");
-                LNmcpr.label(LNmcprLabel);
-                LNmcpr.set("contributeto", im.get(im.labels[9]));
-                LNmcpr.set("crossfaces", true);
-                LNmcpr.set("keep", false);
-                LNmcpr.set("includefinal", false);
-                LNmcpr.set("twistcomp", false);
-                LNmcpr.selection("face").named(im.get(LNhrcxp2Label) + "_" + "csel1");
-                LNmcpr.selection("edge").named(im.get(im.labels[4]));
-                LNmcpr.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
 
                 System.out.println("here21");
 
@@ -2725,8 +2713,8 @@ class Part {
                 GeomFeature LNsefp2 = model.geom(id).create(im.next("ballsel", LNsefp2Label), "BallSelection");
                 LNsefp2.set("entitydim", 2);
                 LNsefp2.label(LNsefp2Label);
-                LNsefp2.set("posx", "cos(2*pi*((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
-                LNsefp2.set("posy", "sin(2*pi*((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)))*(r_cuff_in_PD_LN+thk_cuff_LN/2)");
+                LNsefp2.set("posx", "cos(2*pi*((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)))*(r_cuff_in_LN+thk_cuff_LN/2)");
+                LNsefp2.set("posy", "sin(2*pi*((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)))*(r_cuff_in_LN+thk_cuff_LN/2)");
                 LNsefp2.set("posz", "Center+(L_cuff_LN_PD)*(((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2))/rev_PD_insul_LN)-(L_cuff_LN_PD/2)");
                 LNsefp2.set("r", 1);
                 LNsefp2.set("contributeto", im.get(im.labels[7]));
@@ -2760,8 +2748,8 @@ class Part {
                 LNpcp3.set("parmin", "(rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)");
                 LNpcp3.set("parmax", "rev_PD_insul_LN");
                 LNpcp3.set("coord", new String[]{
-                        "cos(2*pi*s)*(r_cuff_in_PD_LN)",
-                        "sin(2*pi*s)*(r_cuff_in_PD_LN)",
+                        "cos(2*pi*s)*(r_cuff_in_LN)",
+                        "sin(2*pi*s)*(r_cuff_in_LN)",
                         "Center+(L_cuff_LN_PD)*(s/rev_PD_insul_LN)-(L_cuff_LN_PD/2)"
                 });
 
@@ -2785,8 +2773,8 @@ class Part {
                 LNptsrc.label(LNptsrcLabel);
                 LNptsrc.set("contributeto", im.get(im.labels[5]));
                 LNptsrc.set("p", new String[]{
-                        "cos(2*pi*rev_PD_insul_LN*(1.25/2.5))*(recess_LN+(thk_elec_LN/2)+r_cuff_in_PD_LN)",
-                        "sin(2*pi*rev_PD_insul_LN*(1.25/2.5))*(recess_LN+(thk_elec_LN/2)+r_cuff_in_PD_LN)",
+                        "cos(2*pi*rev_PD_insul_LN*(1.25/2.5))*(recess_LN+(thk_elec_LN/2)+r_cuff_in_LN)",
+                        "sin(2*pi*rev_PD_insul_LN*(1.25/2.5))*(recess_LN+(thk_elec_LN/2)+r_cuff_in_LN)",
                         "Center"
                 });
 
@@ -3536,24 +3524,24 @@ class Part {
                 model.component("comp1").geom("geom1").feature(instanceID).setEntry("inputexpr", "Center", (String) itemObject.get("Center"));
 
                 // imports
-                partInstance.set("selkeepnoncontr", false);
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[1]) + ".dom", "off"); // Cuffp1
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[3]) + ".dom", "off"); // PC2
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[4]) + ".dom", "off"); // SRC
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[5]) + ".dom", "off"); // Cuffp2
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[6]) + ".dom", "on"); // Conductorp2
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[8]) + ".dom", "off"); // Cuffp3
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[9]) + ".dom", "off"); // PC3
-                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[10]) + ".dom", "on"); // CUFF FINAL
-
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[1]) + ".pnt", "off"); // Cuffp1
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[3]) + ".pnt", "off"); // PC2
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[4]) + ".pnt", "on"); // SRC
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[5]) + ".pnt", "off"); // Cuffp2
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[6]) + ".pnt", "off"); // Conductorp2
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[8]) + ".pnt", "off"); // Cuffp3
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[9]) + ".pnt", "off"); // PC3
-                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[10]) + ".pnt", "off"); // CUFF FINAL
+//                partInstance.set("selkeepnoncontr", false);
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[1]) + ".dom", "off"); // Cuffp1
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[3]) + ".dom", "off"); // PC2
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[4]) + ".dom", "off"); // SRC
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[5]) + ".dom", "off"); // Cuffp2
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[6]) + ".dom", "on"); // Conductorp2
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[8]) + ".dom", "off"); // Cuffp3
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[9]) + ".dom", "off"); // PC3
+//                partInstance.setEntry("selkeepdom", instanceID + "_" + myIM.get(myLabels[10]) + ".dom", "on"); // CUFF FINAL
+//
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[1]) + ".pnt", "off"); // Cuffp1
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[3]) + ".pnt", "off"); // PC2
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[4]) + ".pnt", "on"); // SRC
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[5]) + ".pnt", "off"); // Cuffp2
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[6]) + ".pnt", "off"); // Conductorp2
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[8]) + ".pnt", "off"); // Cuffp3
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[9]) + ".pnt", "off"); // PC3
+//                partInstance.setEntry("selkeeppnt", instanceID + "_" + myIM.get(myLabels[10]) + ".pnt", "off"); // CUFF FINAL
 
                 // assign physics
                 String LN_helix_pcsLabel = instanceLabel + " Current Source";
