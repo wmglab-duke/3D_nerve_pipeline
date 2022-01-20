@@ -2385,6 +2385,7 @@ class Part {
             case "LivaNova_Primitive":
 
                 mp.set("Center", "0 [mm]");
+                mp.set("Corr", "0 [mm]");
 
                 im.labels = new String[]{
                         "SEL END P1", //0
@@ -3445,7 +3446,8 @@ class Part {
 
                 // set instantiation parameters
                 String[] LivaNovaParameters = {
-                        "Center"
+                        "Center",
+                        "Corr"
                 };
 
                 for (String param : LivaNovaParameters) {
@@ -3453,7 +3455,7 @@ class Part {
 
                 }
 
-                partInstance.set("rot", "cuff_rot");
+                partInstance.set("rot", "cuff_rot + corr_LN");
 
                 model.component("comp1").geom("geom1").feature(instanceID).setEntry("inputexpr", "Center", (String) itemObject.get("Center"));
 
