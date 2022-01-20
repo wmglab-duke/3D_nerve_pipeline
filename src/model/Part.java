@@ -2680,14 +2680,14 @@ class Part {
                 String LNmcprLabel = "Make Conductor Part (recess)";
                 GeomFeature LNmcpr = model.geom(id).create(im.next("swe", LNmcprLabel), "Sweep");
                 LNmcpr.label(LNmcprLabel);
-                LNmcpr.set("contributeto", im.get(im.labels[3]));
+                LNmcpr.set("contributeto", im.get(im.labels[9]));
                 LNmcpr.set("crossfaces", true);
                 LNmcpr.set("includefinal", false);
                 LNmcpr.set("twistcomp", false);
                 System.out.println("here19aa");
                 LNmcpr.selection("face").named(im.get(LNhccxp2Label) + "_" + im.get(LNhccxp2wpresessLabel));
                 System.out.println("here19a");
-                LNmcpr.selection("edge").named(im.get(im.labels[9]));
+                LNmcpr.selection("edge").named(im.get(im.labels[8]));
                 System.out.println("here19b");
                 LNmcpr.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
 
