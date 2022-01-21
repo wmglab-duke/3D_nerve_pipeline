@@ -2639,8 +2639,9 @@ class Part {
                 LNmcpr.set("crossfaces", true);
                 LNmcpr.set("includefinal", false);
                 LNmcpr.set("twistcomp", false);
+                LNmcpr.set("keep", false);
                 LNmcpr.selection("face").named(im.get(LNhccxp2Label) + "_" + im.get(LNhccxp2wpresessLabel));
-                LNmcpr.selection("edge").named(im.get(im.labels[8]));
+                LNmcpr.selection("edge").named(im.get(im.labels[4]));
                 LNmcpr.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
 
                 String LNmrp2Label = "Make Recess Part 2";
@@ -2652,7 +2653,7 @@ class Part {
                 LNmrp2.set("includefinal", false);
                 LNmrp2.set("twistcomp", false);
                 LNmrp2.selection("face").named(im.get(LNhrcxp2Label) + "_" + "csel2");
-                LNmrp2.selection("edge").named(im.get(im.labels[4]));
+                LNmrp2.selection("edge").named(im.get(im.labels[8]));
                 LNmrp2.selection("diredge").set(im.get(LNpcp2cLabel) + "(1)", 1);
 
                 model.geom(id).create("endif3", "EndIf");
