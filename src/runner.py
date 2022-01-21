@@ -121,7 +121,8 @@ class Runner(Exceptionable, Configurable):
             :param path: path to python obj file
             :return: obj file
             """
-            return pickle.load(open(path, 'rb')).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value])
+            return pickle.load(open(path, 'rb')).add(SetupMode.OLD, Config.CLI_ARGS,
+                                                     self.configs[Config.CLI_ARGS.value])
 
         # ensure NEURON files exist in export location
         Simulation.export_neuron_files(os.environ[Env.NSIM_EXPORT_PATH.value])
@@ -223,7 +224,8 @@ class Runner(Exceptionable, Configurable):
 
                             simulation: Simulation = load_obj(sim_obj_file)
 
-                            if 'supersampled_bases' in simulation.configs['sims'].keys() and simulation.configs['sims']['supersampled_bases']['use']:
+                            if 'supersampled_bases' in simulation.configs['sims'].keys() and \
+                                    simulation.configs['sims']['supersampled_bases']['use']:
                                 source_sim_index = simulation.configs['sims']['supersampled_bases']['source_sim']
 
                                 source_sim_obj_dir = os.path.join(
@@ -237,14 +239,14 @@ class Runner(Exceptionable, Configurable):
                                 )
 
                                 # do Sim.fibers.xy_parameters match between Sim and source_sim?
-                                try: 
+                                try:
                                     source_sim: simulation = load_obj(os.path.join(source_sim_obj_dir, 'sim.obj'))
                                     print('\t    Found existing source sim {} for supersampled bases ({})'.format(
                                         source_sim_index, source_sim_obj_dir))
                                 except FileNotFoundError:
                                     traceback.print_exc()
                                     self.throw(129)
-                                    
+
                                 source_xy_dict: dict = source_sim.configs['sims']['fibers']['xy_parameters']
                                 xy_dict: dict = simulation.configs['sims']['fibers']['xy_parameters']
 
@@ -261,9 +263,9 @@ class Runner(Exceptionable, Configurable):
                         else:
                             if not os.path.exists(sim_obj_dir):
                                 os.makedirs(sim_obj_dir)
-                            
-                            if not os.path.exists(sim_obj_dir+'/plots'):
-                                os.makedirs(sim_obj_dir+'/plots')
+
+                            if not os.path.exists(sim_obj_dir + '/plots'):
+                                os.makedirs(sim_obj_dir + '/plots')
 
                             simulation: Simulation = Simulation(sample, self.configs[Config.EXCEPTIONS.value])
                             simulation \
@@ -276,7 +278,8 @@ class Runner(Exceptionable, Configurable):
                                 .validate_srcs(sim_obj_dir) \
                                 .save(sim_obj_file)
 
-                            if 'supersampled_bases' in simulation.configs['sims'].keys() and simulation.configs['sims']['supersampled_bases']['use']:
+                            if 'supersampled_bases' in simulation.configs['sims'].keys() and \
+                                    simulation.configs['sims']['supersampled_bases']['use']:
                                 source_sim_index = simulation.configs['sims']['supersampled_bases']['source_sim']
 
                                 source_sim_obj_dir = os.path.join(
@@ -290,14 +293,14 @@ class Runner(Exceptionable, Configurable):
                                 )
 
                                 # do Sim.fibers.xy_parameters match between Sim and source_sim?
-                                try: 
+                                try:
                                     source_sim: simulation = load_obj(os.path.join(source_sim_obj_dir, 'sim.obj'))
                                     print('\t    Found existing source sim {} for supersampled bases ({})'.format(
                                         source_sim_index, source_sim_obj_dir))
                                 except FileNotFoundError:
                                     traceback.print_exc()
-                                    self.throw(129)                                
-                            
+                                    self.throw(129)
+
                                 source_xy_dict: dict = source_sim.configs['sims']['fibers']['xy_parameters']
                                 xy_dict: dict = simulation.configs['sims']['fibers']['xy_parameters']
 
@@ -309,10 +312,10 @@ class Runner(Exceptionable, Configurable):
                                 )
                             else:
                                 potentials_exist.append(simulation.potentials_exist(sim_obj_dir))
-                        
-            if self.configs[Config.CLI_ARGS.value].get('break_point')=='pre_java' or \
+
+            if self.configs[Config.CLI_ARGS.value].get('break_point') == 'pre_java' or \
                     (('break_points' in self.configs[Config.RUN.value].keys()) and \
-                     self.search(Config.RUN, 'break_points').get('pre_java')==True):
+                     self.search(Config.RUN, 'break_points').get('pre_java') == True):
                 print('KILLING PRE JAVA')
                 return
 
@@ -330,7 +333,7 @@ class Runner(Exceptionable, Configurable):
                 self.remove(Config.RUN)
                 run_path = os.path.join('config', 'user', 'runs', '{}.json'.format(self.number))
                 self.add(SetupMode.NEW, Config.RUN, run_path)
-                                
+
                 #  continue by using simulation objects
                 models_exit_status = self.search(Config.RUN, "models_exit_status")
 
@@ -339,11 +342,11 @@ class Runner(Exceptionable, Configurable):
                     conditions = [models_exit_status is not None, len(models_exit_status) > model_index]
                     model_ran = models_exit_status[model_index] if all(conditions) else True
                     ss_use_notgen = []
-                    #check if all supersampled bases are "use" and not generating
+                    # check if all supersampled bases are "use" and not generating
                     for sim_index, sim_config in enumerate(all_configs['sims']):
                         if 'supersampled_bases' in simulation.configs['sims'].keys() and \
-                        simulation.configs['sims']['supersampled_bases']['use'] and not \
-                            simulation.configs['sims']['supersampled_bases']['generate']:
+                                simulation.configs['sims']['supersampled_bases']['use'] and not \
+                                simulation.configs['sims']['supersampled_bases']['generate']:
                             ss_use_notgen.append(True)
                         else:
                             ss_use_notgen.append(False)
@@ -392,7 +395,7 @@ class Runner(Exceptionable, Configurable):
 
                         print('Model {} data exported to appropriate folders in {}'.format(model_num, os.environ[
                             Env.NSIM_EXPORT_PATH.value]))
-                    
+
                     elif not models_exit_status[model_index]:
                         print('\nDid not create NEURON simulations for Sims associated with: \n'
                               '\t Model Index: {} \n'
@@ -412,12 +415,12 @@ class Runner(Exceptionable, Configurable):
 
         core_name = 'ModelWrapper'
 
-        #Encode command line args as jason string, then encode to base64 for passing to java
+        # Encode command line args as jason string, then encode to base64 for passing to java
         argstring = json.dumps(self.configs[Config.CLI_ARGS.value])
         argbytes = argstring.encode('ascii')
         argbase = base64.b64encode(argbytes)
         argfinal = argbase.decode('ascii')
-        
+
         if sys.platform.startswith('darwin'):  # macOS
 
             subprocess.Popen(['{}/bin/comsol'.format(comsol_path), 'server'], close_fds=True)
@@ -429,11 +432,11 @@ class Runner(Exceptionable, Configurable):
             os.system('{}/java/maci64/jre/Contents/Home/bin/java '
                       '-cp .:$(echo {}/plugins/*.jar | '
                       'tr \' \' \':\'):../bin/json-20190722.jar:../bin model.{} "{}" "{}" "{}"'.format(comsol_path,
-                                                                                                  comsol_path,
-                                                                                                  core_name,
-                                                                                                  project_path,
-                                                                                                  run_path,
-                                                                                                  argfinal))
+                                                                                                       comsol_path,
+                                                                                                       core_name,
+                                                                                                       project_path,
+                                                                                                       run_path,
+                                                                                                       argfinal))
             os.chdir('..')
 
         elif sys.platform.startswith('linux'):  # linux
@@ -447,11 +450,11 @@ class Runner(Exceptionable, Configurable):
             os.system('{}/java/glnxa64/jre/bin/java '
                       '-cp .:$(echo {}/plugins/*.jar | '
                       'tr \' \' \':\'):../bin/json-20190722.jar:../bin model.{} "{}" "{}" "{}"'.format(comsol_path,
-                                                                                                  comsol_path,
-                                                                                                  core_name,
-                                                                                                  project_path,
-                                                                                                  run_path,
-                                                                                                  argfinal))
+                                                                                                       comsol_path,
+                                                                                                       core_name,
+                                                                                                       project_path,
+                                                                                                       run_path,
+                                                                                                       argfinal))
             os.chdir('..')
 
         else:  # assume to be 'win64'
@@ -464,11 +467,11 @@ class Runner(Exceptionable, Configurable):
             os.system('""{}\\java\\win64\\jre\\bin\\java" '
                       '-cp "{}\\plugins\\*";"..\\bin\\json-20190722.jar";"..\\bin" '
                       'model.{} "{}" "{}" "{}""'.format(comsol_path,
-                                                   comsol_path,
-                                                   core_name,
-                                                   project_path,
-                                                   run_path,
-                                                   argfinal))
+                                                        comsol_path,
+                                                        core_name,
+                                                        project_path,
+                                                        run_path,
+                                                        argfinal))
             os.chdir('..')
 
     def compute_cuff_shift(self, model_config: dict, sample: Sample, sample_config: dict):
@@ -530,8 +533,8 @@ class Runner(Exceptionable, Configurable):
         # if poly fasc, use centroid of all fascicle as reference, not 0, 0
         # angle of centroid of nerve to center of minimum bounding circle
         reference_x = reference_y = 0.0
-        if not slide.monofasc() and not (round(slide.nerve.centroid()[0])==round(slide.nerve.centroid()[1])==0):
-            self.throw(123) #if the slide has nerve and is not centered at the nerve throw error
+        if not slide.monofasc() and not (round(slide.nerve.centroid()[0]) == round(slide.nerve.centroid()[1]) == 0):
+            self.throw(123)  # if the slide has nerve and is not centered at the nerve throw error
         if not slide.monofasc():
             reference_x, reference_y = slide.fascicle_centroid()
         theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
@@ -563,22 +566,153 @@ class Runner(Exceptionable, Configurable):
             theta_f = theta_i
         else:
             # get initial cuff radius
-            r_i_str: str = [item["expression"] for item in cuff_config["params"]
-                            if item["name"] == '_'.join(['r_cuff_in_pre', cuff_code])][0]
-            r_i: float = Quantity(
-                Quantity(
-                    r_i_str.translate(r_i_str.maketrans('', '', ' []')),
-                    scale='m'
-                ),
-                scale='um'
-            ).real  # [um] (scaled from any arbitrary length unit)
+            # get r_cuff_in_pre
+            adaptive = False
+            r_cuff_in_pre = \
+                [item for item in cuff_config["params"] if item["name"] == '_'.join(['r_cuff_in_pre', cuff_code])][0]
+            if 'adaptive' in r_cuff_in_pre.keys():
+                adaptive = r_cuff_in_pre['adaptive']
+
+            if not adaptive:
+                r_i_str: str = r_cuff_in_pre['expression']
+                r_i: float = Quantity(
+                    Quantity(
+                        r_i_str.translate(r_i_str.maketrans('', '', ' []')),
+                        scale='m'
+                    ),
+                    scale='um'
+                ).real  # [um] (scaled from any arbitrary length unit)
+
+            else:  # adaptive, r_f
+                r_cuff_in_parameter = None
+                bounds = []
+                for param_option in r_cuff_in_pre['condition']:
+                    r_min_str, r_max_str = param_option['min']['value'], param_option['max']['value'] # TODO units
+                    r_min_ix, r_max_ix = param_option['min']['inclusive'], param_option['max']['inclusive']
+                    parameter = param_option['parameter']
+
+                    if r_min_str is not None:
+                        r_min: float = Quantity(
+                            Quantity(
+                                r_min_str.translate(r_min_str.maketrans('', '', ' []')),
+                                scale='m'
+                            ),
+                            scale='um'
+                        ).real  # [um] (scaled from any arbitrary length unit)
+                    else:
+                        r_min = None
+
+                    if r_max_str is not None:
+                        r_max: float = Quantity(
+                            Quantity(
+                                r_max_str.translate(r_max_str.maketrans('', '', ' []')),
+                                scale='m'
+                            ),
+                            scale='um'
+                        ).real  # [um] (scaled from any arbitrary length unit)
+                    else:
+                        r_max = None
+
+                    bounds.append((r_min, r_max, r_min_ix, r_max_ix, parameter))
+
+                # check that none of the conditions have double Nones
+                if any([bound[0] is None and bound[1] is None for bound in bounds]):
+                    self.throw(133)
+
+                # check that there is only one max with None, and one min with None
+                if [bound[0] is None for bound in bounds].count(True) > 1 or [bound[1] is None for bound in
+                                                                              bounds].count(True) > 1:
+                    self.throw(134)
+
+                # find index of upper and lower bound conditions
+                lower_index = [x for x, y in enumerate(bounds) if y[0] is None][0]
+                upper_index = [x for x, y in enumerate(bounds) if y[1] is None][0]
+                lower = bounds[lower_index]
+                upper = bounds[upper_index]
+
+                # put max of None at end, and min of None at beginning
+                bounds_indices = sorted([lower_index, upper_index], reverse=True)
+                for idx in bounds_indices:
+                    if idx < len(bounds):
+                        bounds.pop(idx)
+
+                if len(bounds) > 1:
+                    bounds.sort(key=lambda tmp: tmp[0])
+
+                bounds_final = [lower, *bounds, upper]
+
+                condition_match_count = 0
+                r_cuff_in_parameter = None
+                for (r_min, r_max, r_min_ix, r_max_ix, parameter) in bounds_final:
+                    if r_min_ix and r_max_ix:
+                        if r_min is None:
+                            if r_f <= r_max:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_max is None:
+                            if r_f >= r_min:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_min <= r_f <= r_max:
+                            r_cuff_in_parameter: str = parameter
+                            condition_match_count += 1
+                    elif r_min_ix and not r_max_ix:
+                        if r_min is None:
+                            if r_f < r_max:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_max is None:
+                            if r_f >= r_min:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_min <= r_f < r_max:
+                            r_cuff_in_parameter: str = parameter
+                            condition_match_count += 1
+                    elif r_max_ix and not r_min_ix:
+                        if r_min is None:
+                            if r_f <= r_max:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_max is None:
+                            if r_f > r_min:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_min < r_f <= r_max:
+                            r_cuff_in_parameter: str = parameter
+                            condition_match_count += 1
+                    elif not r_min_ix and not r_max_ix:
+                        if r_min is None:
+                            if r_f < r_max:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_max is None:
+                            if r_f > r_min:
+                                r_cuff_in_parameter: str = parameter
+                                condition_match_count += 1
+                        elif r_min < r_f < r_max:
+                            r_cuff_in_parameter: str = parameter
+                            condition_match_count += 1
+
+                if condition_match_count == 0:
+                    self.throw(135)
+                elif condition_match_count > 1:
+                    # conditions are not mutually exclusive in preset JSON file
+                    self.throw(136)
+
+                r_i: float = Quantity(
+                    Quantity(
+                        r_cuff_in_parameter.translate(r_cuff_in_parameter.maketrans('', '', ' []')),
+                        scale='m'
+                    ),
+                    scale='um'
+                ).real  # [um] (scaled from any arbitrary length unit)
 
             if r_i < r_f:
                 fixed_point = cuff_config.get('fixed_point')
                 if fixed_point is None:
                     self.throw(126)
                 if fixed_point == 'clockwise_end':
-                    theta_f = theta_i*(r_i/r_f)
+                    theta_f = theta_i * (r_i / r_f)
                 elif fixed_point == 'center':
                     theta_f = theta_i
             else:
@@ -606,22 +740,23 @@ class Runner(Exceptionable, Configurable):
         model_config['min_radius_enclosing_circle'] = r_bound
 
         if slide.orientation_angle is not None:
-            theta_c = (slide.orientation_angle) * (360 / (2 * np.pi)) % 360  # overwrite theta_c, use our own orientation
+            theta_c = (slide.orientation_angle) * (
+                    360 / (2 * np.pi)) % 360  # overwrite theta_c, use our own orientation
 
         if cuff_shift_mode == CuffShiftMode.AUTO_ROTATION_MIN_CIRCLE_BOUNDARY \
                 or cuff_shift_mode == CuffShiftMode.MIN_CIRCLE_BOUNDARY:  # for backwards compatibility
             if r_i > r_f:
-                model_config['cuff']['rotate']['pos_ang'] = theta_c-theta_f
+                model_config['cuff']['rotate']['pos_ang'] = theta_c - theta_f
                 model_config['cuff']['shift']['x'] = x - (r_i - offset - cuff_r_buffer - r_bound) * np.cos(
                     theta_c * ((2 * np.pi) / 360))
                 model_config['cuff']['shift']['y'] = y - (r_i - offset - cuff_r_buffer - r_bound) * np.sin(
                     theta_c * ((2 * np.pi) / 360))
 
             else:
-                model_config['cuff']['rotate']['pos_ang'] = theta_c-theta_f
+                model_config['cuff']['rotate']['pos_ang'] = theta_c - theta_f
 
                 # if nerve is present, use 0,0
-                if slide.nerve is not None and deform_ratio==1:  # has nerve
+                if slide.nerve is not None and deform_ratio == 1:  # has nerve
                     model_config['cuff']['shift']['x'] = 0
                     model_config['cuff']['shift']['y'] = 0
                 else:
@@ -632,7 +767,7 @@ class Runner(Exceptionable, Configurable):
         elif cuff_shift_mode == CuffShiftMode.AUTO_ROTATION_TRACE_BOUNDARY \
                 or cuff_shift_mode == CuffShiftMode.TRACE_BOUNDARY:  # for backwards compatibility
             if r_i < r_f:
-                model_config['cuff']['rotate']['pos_ang'] = theta_c-theta_f
+                model_config['cuff']['rotate']['pos_ang'] = theta_c - theta_f
                 model_config['cuff']['shift']['x'] = x
                 model_config['cuff']['shift']['y'] = y
             else:
@@ -660,7 +795,7 @@ class Runner(Exceptionable, Configurable):
                 center_x += x_step
                 center_y += y_step
 
-                model_config['cuff']['rotate']['pos_ang'] = (theta_c-theta_f)
+                model_config['cuff']['rotate']['pos_ang'] = (theta_c - theta_f)
                 model_config['cuff']['shift']['x'] = center_x
                 model_config['cuff']['shift']['y'] = center_y
 
@@ -721,14 +856,14 @@ class Runner(Exceptionable, Configurable):
                 model_config['cuff']['rotate']['pos_ang'] = 0
 
                 # if nerve is present, use 0,0
-                if slide.nerve is not None and deform_ratio==1:  # has nerve
+                if slide.nerve is not None and deform_ratio == 1:  # has nerve
                     model_config['cuff']['shift']['x'] = 0
                     model_config['cuff']['shift']['y'] = 0
                 else:
                     # else, use
                     model_config['cuff']['shift']['x'] = x
                     model_config['cuff']['shift']['y'] = y
-                    
+
         return model_config
 
     def compute_electrical_parameters(self, all_configs, model_index):
