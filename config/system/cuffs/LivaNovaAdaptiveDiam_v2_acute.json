@@ -7,26 +7,8 @@
       "def": {
         "Radius": "r_cuff_in_LN+thk_cuff_LN+Thk_fill_LN",
         "Thk": "Thk_fill_LN",
-        "L": "L_cuff_LN_PD+w_cuff_LN+2*Thk_fill_LN",
-        "Center": "(z_nerve/2)-(sep_elec_LN/2)",
-        "x_shift": "0",
-        "y_shift": "0"
-      },
-      "materials": [
-        {
-          "info": "fill",
-          "label_index": 0
-        }
-      ]
-    },
-    {
-      "type": "CuffFill_Primitive",
-      "label": "LivaNova Cuff Fill 2",
-      "def": {
-        "Radius": "r_cuff_in_LN+thk_cuff_LN+Thk_fill_LN",
-        "Thk": "Thk_fill_LN",
-        "L": "L_cuff_LN_PD+w_cuff_LN+2*Thk_fill_LN",
-        "Center": "(z_nerve/2)+(sep_elec_LN/2)",
+        "L": "2*L_cuff_LN_PD+w_cuff_LN+2*Thk_fill_LN+sep_elec_LN",
+        "Center": "(z_nerve/2)",
         "x_shift": "0",
         "y_shift": "0"
       },
