@@ -25,7 +25,7 @@ samples3d = [2,3]
 
 models = [0]
 
-sims = [3]
+sims = [33]
 
 dats = []
 for sample in samples3d:
@@ -45,5 +45,5 @@ sb.set_theme(style="whitegrid")
 g = sb.catplot(x="sample", y='threshold',hue='sim',
                  col="nsim",
                 data=data, kind="strip", height = 5, aspect=.4,linewidth=1,sharey=False)
-
+plt.gcf().savefig('out/analysis/alsocvss.png',dpi=400)
 # pd.concat(dats).to_csv('out/analysis/threshes.csv',index=False)

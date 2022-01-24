@@ -201,7 +201,7 @@ class Slide(Exceptionable):
              outers_flag: bool = True,
              inner_index_labels: bool = False,
              show_axis: bool = True,
-             centroids: bool = True,
+             centroids: bool = False,
              axlabel: str = None):
         """
         Quick util for plotting the nerve and fascicles

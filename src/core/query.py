@@ -330,7 +330,9 @@ class Query(Exceptionable, Configurable, Saveable):
                  dotsize = 10,
                  spec_nsim=None,
                  thresh_source_sample = None,
-                 cbar_axs = None
+                 cbar_axs = None,
+                 tick_width = 3,
+                 tick_length = 8
                  ):
 
         """
@@ -718,7 +720,8 @@ class Query(Exceptionable, Configurable, Saveable):
                             # colorbar font size
                             if colorbar_text_size_override is not None:
                                 cb.ax.tick_params(labelsize=colorbar_text_size_override if (
-                                        colorbar_text_size_override is not None) else 25)
+                                        colorbar_text_size_override is not None) else 25,
+                                    width=tick_width, length = tick_length)
 
                         if plot_mode == 'fiber0' or plot_mode == 'on_off':
                             # plot slide (nerve and fascicles, defaulting to no outers)
@@ -2956,7 +2959,9 @@ class Query(Exceptionable, Configurable, Saveable):
                                 inner_index,fiber_index = 0,master_index
                             # path of the first inner, first fiber vm(t) data
                             vm_t_path = os.path.join(outputs_path, 'Vm_time_inner{}_fiber{}_amp0.dat'.format(inner_index,fiber_index))
-        
+                            
+                            rmpaths.append(vm_t_path)
+                            
                             # load vm(t) data (see path above)
                             # each row is a snapshot of the voltages at each node [mV]
                             # the first column is the time [ms]

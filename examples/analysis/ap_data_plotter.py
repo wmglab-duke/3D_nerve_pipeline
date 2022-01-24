@@ -8,7 +8,7 @@ The source code can be found on the following GitHub repository: https://github.
 
 import os
 import sys
-
+import pandas as pd 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 os.chdir('D:/ascent/ascent')
 
@@ -18,18 +18,33 @@ import matplotlib.pyplot as plt
 from src.core.query import Query
 sys.path.append(os.getcwd()+'/subrepos/nd_line')
 from nd_line.nd_line import nd_line
-# os.chdir('D:/ascent/fresh')
+os.environ['R_HOME'] = r'C:\Users\dpm42\Anaconda3\envs\ascent\lib\R'
+import rpy2.robjects as robjects
+import rpy2
+import pandas as pd
+from rpy2.robjects.packages import importr
+from rpy2.robjects import r, pandas2ri
+pandas2ri.activate()
+import rpy2.robjects.lib.ggplot2 as ggplot2
+rprint = robjects.globalenv.find("print")
+ggpubr = importr("ggpubr")
+
 
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14*2]) / 2)
 
-samp3d = 673
+samp3d = 473
 
-samples =  [670,672]
+samples =  [470,472]
 
 models = [0]
 
-sims = [3]
+sims = [33]
+
+nsim_count = 5
+
+bigcomp = {0:'anodic leading',1:'cathodic leading'}
+
 
 q = Query({
     'partial_matches': False,
@@ -41,12 +56,7 @@ q = Query({
     }
 }).run()
 
-'''
-TODO
--add deletion option for vmt
--add function from ggpaired to match 2d and 3d
--add function to get spatial z position from longitudinal z position
-'''
+
 
 def actual_zpos(dat3d,samp3d,model,sim):
     fiberdir = os.path.join('samples',str(samp3d),'models',str(model),'sims',str(sim),'3D_fiberset')
@@ -80,20 +90,46 @@ def datamatch(dest,dat3d,importval):
         
    
 #%%
-     
-dat2d = q.ap_data(
-    delta_V=60,
-    absolute_voltage=False,
-    delete_vmtime = False)
+dats = []
+for sample in samples:
+    for n in range(nsim_count):
+       ap_path = os.path.join('samples',str(sample),'models',str(models[0]),'sims',str(sims[0]),'n_sims',str(n),'data','outputs','AP_info.csv')
+       dats.append(pd.read_csv(ap_path))
+dat2d = pd.concat(dats)
+dats3 = []
+for n in range(nsim_count):
+   ap_path = os.path.join('samples',str(samp3d),'models',str(models[0]),'sims',str(sims[0]),'n_sims',str(n),'data','outputs','AP_info.csv')
+   dats3.append(pd.read_csv(ap_path))
+dat3d = pd.concat(dats3)
+dat2d = dat2d.reset_index()
+dat3d = dat3d.reset_index()
 
-dat3d = q.ap_data(
-    delta_V=60,
-    absolute_voltage=False,
-    delete_vmtime = False,
-    sample_override = samp3d)
 #%%
 dat3z = actual_zpos(dat3d,samp3d,models[0],sims[0])
 
-dat2d = datamatch(dat2d,dat3z,'activation_zpos')
+datfinal = datamatch(dat2d,dat3z,'activation_zpos')
 
 #%%
+for sample in samples:
+    plotdata = dat2d[dat2d['sample']==sample]
+    
+    plot = ggpubr.ggpaired(plotdata, cond1 = "activation_zpos", cond2 = "activation_zpos3d",
+                           color = "condition", 
+                           line_color = "gray", 
+                           line_size = 0.5, 
+                           point_size = 1.2,
+                           palette = "npg",
+                           facet_by = "nsim",
+                           xlab = False,
+                           ylab = "Activation zpos (um)",
+                            legend = "none",
+                            # scales="free_y",
+                           title = "Activation zpos for 2D ex models vs. full-3D model {}vs{}".format(samp3d,sample))
+    
+    # plot.plot()
+    
+    plot.save(r'out/analysis/{}-{}_{}_{}_ap.png'.format(samp3d,sample,models[0],sims[0]),dpi=600)
+
+#%%
+
+

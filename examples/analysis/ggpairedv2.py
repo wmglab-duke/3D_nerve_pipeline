@@ -51,9 +51,13 @@ threed = 673
 
 samples = [670,672]
 
+sample_name = '6L'
+
 models = [0]
 
-sims = [3]
+sims = [33]
+
+bigcomp = {0:'anodic leading',1:'cathodic leading'}
 
 
 q = Query({
@@ -87,6 +91,11 @@ q = Query({
 
 dat3d = q.threshdat3d(meanify = False)
 
+def rename_var(df,di):
+    for variable,values in di.items():
+        for old,new in values.items():
+            df = df.replace(to_replace={variable:old},value=new)
+    return df
 
 def datamatch(dest,dat3d,importval):
     dest[importval+'3d'] = np.nan
@@ -104,11 +113,24 @@ def datamatch(dest,dat3d,importval):
     return dest
 
 dat2d = datamatch(dat2d,dat3d,'threshold')
+#%% Renaming
+redict = {
+  "nsim":{
+      0:'(0) fiber diameter: 2\u03BCm',
+      1:'(1) fiber diameter: 5\u03BCm',
+      2:'(2) fiber diameter: 8\u03BCm',
+      3:'(3) fiber diameter: 11\u03BCm',
+      4:'(4) fiber diameter: 13\u03BCm'
+      }
+}
+dat2d = dat2d.rename(columns = {'threshold':'2D','threshold3d':'3D'})
+datre = rename_var(dat2d,redict)
+# datre = dat2d
 #%%
-for sample in samples:
-    plotdata = dat2d[dat2d['sample']==sample]
+for i,sample in enumerate(samples):
+    plotdata = datre[datre['sample']==sample]
 
-    plot = ggpubr.ggpaired(plotdata, cond1 = "threshold", cond2 = "threshold3d",
+    plot = ggpubr.ggpaired(plotdata, cond1 = "2D", cond2 = "3D",
                            color = "condition", 
                            line_color = "gray", 
                            line_size = 0.5, 
@@ -117,9 +139,9 @@ for sample in samples:
                            facet_by = "nsim",
                            xlab = False,
                            ylab = "Threshold (mA)",
-                            legend = "none",
-                            scales="free_y",
-                           title = "Activation thresh for 2D ex models vs. full-3D model {}vs{}".format(threed,sample))
+                           legend = "none",
+                           scales="free_y",
+                           title = "Activation thresholds for sample {} {} contact".format(sample_name,bigcomp[i]))
     
     # plot.plot()
     
@@ -134,7 +156,7 @@ for nsim in pd.unique(dat2d['nsim']):
     
     sample_labels = ['rostral contact','caudal contact']
     
-    plot = ggpubr.ggpaired(plotdata, cond1 = "threshold", cond2 = "threshold3d",
+    plot = ggpubr.ggpaired(plotdata, cond1 = "2D", cond2 = "3D",
                            color = "condition", 
                            line_color = "gray", 
                            line_size = 0.5, 
@@ -142,7 +164,7 @@ for nsim in pd.unique(dat2d['nsim']):
                            palette = "npg",
                            facet_by = "sample",
                            xlab = False,
-                           ylab = "Threshold (mA)",
+                           ylab = "Activation Threshold (mA)",
                             legend = "none",
                             # scales="free_y",
                            title = "Activation thresh for 2D ex models vs. full-3D model ({}um)".format((nsim+1)*2))

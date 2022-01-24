@@ -23,13 +23,13 @@ from nd_line.nd_line import nd_line
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14*2]) / 2)
 
-samp3d = 673
+samp3d = 453
 
-samples =  [670,672]
+samples =  [452]
 
 models = [0]
 
-sims = [3]
+sims = [33]
 
 q = Query({
     'partial_matches': False,

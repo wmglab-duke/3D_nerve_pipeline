@@ -27,7 +27,7 @@ criteria = {
     'indices': {
         'sample': [672],
         'model': [0],
-        'sim': [3]
+        'sim': [33]
     }
 }
 
@@ -46,12 +46,12 @@ sim: Simulation = q.get_object(Object.SIMULATION, [sample_index, model_index, si
 for fiberset_ind, fiberset in enumerate(sim.fibersets):
     slide = sample.slides[0]
     fig, ax = plt.subplots(1, 1)
-    slide.plot(fix_aspect_ratio=True, final=False, ax=ax)
+    slide.plot(fix_aspect_ratio=True, final=False, ax=ax,centroids = False)
     ax.set_aspect('equal', adjustable='box')
 
     for fiber in fiberset.fibers:
         plt.plot(fiber[0][0], fiber[0][1], 'r*', markersize=2)
-
+    
     plt.xlabel('\u03bcm')
     plt.ylabel('\u03bcm')
     plt.show()
@@ -62,7 +62,7 @@ for fiberset_ind, fiberset in enumerate(sim.fibersets):
                                  str(fiberset_ind))
     fmt = 'png'
 
-    dest = os.path.join('data', 'tmp', 'fiberset')
+    dest = os.path.join('out', 'analysis')
     if not os.path.exists(dest):
         os.mkdir(dest)
 

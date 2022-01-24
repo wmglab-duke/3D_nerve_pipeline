@@ -49,7 +49,7 @@ samples3d = [2,3]
 
 models = [0]
 
-sims = [3]
+sims = [33]
 
 dats = []
 
@@ -83,7 +83,29 @@ for sample in samples3d:
     
 data = datamatch(dats[0],dats[1],'threshold')
 
-plot = ggpubr.ggpaired(data, cond1 = "threshold", cond2 = "threshold3d",
+
+
+def rename_var(df,di):
+    for variable,values in di.items():
+        for old,new in values.items():
+            df = df.replace(to_replace={variable:old},value=new)
+    return df
+
+#%% Renaming
+redict = {
+  "nsim":{
+      0:'(0) fiber diameter: 2\u03BCm',
+      1:'(1) fiber diameter: 5\u03BCm',
+      2:'(2) fiber diameter: 8\u03BCm',
+      3:'(3) fiber diameter: 11\u03BCm',
+      4:'(4) fiber diameter: 13\u03BCm'
+      }
+}
+data = data.rename(columns = {'threshold':'2D','threshold3d':'3D'})
+datre = rename_var(data,redict)
+# datre = dat2d
+
+plot = ggpubr.ggpaired(data, cond1 = "2D", cond2 = "3D",
                        color = "condition", 
                        line_color = "gray", 
                        line_size = 0.5, 
@@ -94,7 +116,7 @@ plot = ggpubr.ggpaired(data, cond1 = "threshold", cond2 = "threshold3d",
                        ylab = "Threshold (mA)",
                         legend = "none",
                         scales="free_y",
-                       title = "Activation threshold for curvy vs straight axons")
+                       title = "Activation thresholds for 2D extrusion vs 3D curvilinear axons")
 
 # plot.plot()
 

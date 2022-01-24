@@ -430,7 +430,7 @@ class Trace(Exceptionable):
         return Trace(points, self.configs[Config.EXCEPTIONS.value])
 
     # %% output
-    def plot(self, plot_format: str = 'k-', color: Tuple[float, float, float, float] = None, ax: plt.Axes = None,centroid = True):
+    def plot(self, plot_format: str = 'k-', color: Tuple[float, float, float, float] = None, ax: plt.Axes = None,centroid = False):
         """
         :param ax:
         :param color:
@@ -455,6 +455,7 @@ class Trace(Exceptionable):
         """
         :param plot_format: the plt.plot format spec (see matplotlib docs)
         """
+        return
         plt.plot(*self.centroid(), plot_format)
 
     def write(self, mode: WriteMode, path: str):

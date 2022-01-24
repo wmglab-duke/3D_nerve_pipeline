@@ -21,18 +21,19 @@ from src.core.query import Query
 # set default fig size
 # plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 
-samples = [650,652]
-samp3 = 653
+samples = [670,672]
+samp3 = 673
 model = 0
-sim = 3
+sim = 33
 sample_labels = ['Rostral\nContact','Caudal\n(Cathodic)\nContact']
-nerve_label = '6L'
+nerve_label = '6R'
 outpath = r'D:\ASCENT\ascent\out\analysis'
+bigcomp = {0:'Anodic Leading',1:'Cathodic Leading'}
 
 print("Note: assumed cathodic sample is the last one")
 
-#%%
-allbound = []
+#%% Generates regular heatmaps with all nsims for each sample
+allbound = {}
 
 for i in range(len(samples)):
     # initialize and run Querys
@@ -98,98 +99,102 @@ for i in range(len(samples)):
                 save_path = 'out/analysis'
            )
 
-    if i==len(samples)-1:
-        allbound.append(bounds)
-        allbound.append(bounds3d)
+    allbound[i]=[]
+    allbound[i].append(bounds)
+    allbound[i].append(bounds3d)
     
-#%%
+#%% generates the paired heatmaps for all nsim and only cathodic contact
 import numpy as np
-finalbound = np.array(allbound)
-maxbound = np.amax(finalbound,axis=0)
-minbound = np.amin(finalbound,axis=0)
-override = np.zeros(maxbound.shape)
-override[:,0]=minbound[:,0]
-override[:,1]=maxbound[:,1]
+for sample_index,sample_name in bigcomp.items():
+    finalbound = np.array(allbound[sample_index])
+    maxbound = np.amax(finalbound,axis=0)
+    minbound = np.amin(finalbound,axis=0)
+    override = np.zeros(maxbound.shape)
+    override[:,0]=minbound[:,0]
+    override[:,1]=maxbound[:,1]
+    
+    #need to: loop through and generate the 2x2 comparison for each nsim, then a whole new one
+    #which does every nsim for the caudal contact for both
+    fig,axs = plt.subplots(override.shape[0],3,figsize=(10, 20),gridspec_kw={'width_ratios':[6,6,1]})
+    
+    # initialize and run Querys
+    q = Query({
+        'partial_matches': True,
+        'include_downstream': True,
+        'indices': {
+            'sample': samples[sample_index],
+            'model': [model],
+            'sim': [sim]
+        }
+    }).run()
+    
+    
+    q.heatmaps(plot=False,
+                # save_path='out/analysis',
+                plot_mode='fibers',
+            #    rows_override=6,
+               colorbar_aspect=5,
+               colormap_str='viridis',
+               tick_count=4,
+               reverse_colormap=True,
+                title_toggle=False,
+                track_colormap_bounds=True,
+            #    track_colormap_bounds_offset_ratio=0.0,
+                colomap_bounds_override=override,
+                subplot_title_toggle=False,
+                colorbar_text_size_override=30,
+                add_colorbar = False,
+                override_axes = [x[0] for x in axs],
+                # spec_nsim=2,
+                dotsize = 10,
+                show_orientation_point = True
+                #    tick_bounds=True
+           )
+    
+    q.heatmaps(plot=False,
+                # save_path='out/analysis',
+                plot_mode='fibers',
+            #    rows_override=6,
+               colorbar_aspect=5,
+               colormap_str='viridis',
+               tick_count=4,
+               reverse_colormap=True,
+                title_toggle=False,
+                track_colormap_bounds=True,
+            #    track_colormap_bounds_offset_ratio=0.0,
+                colomap_bounds_override=override,
+                subplot_title_toggle=False,
+                colorbar_text_size_override=30,
+                add_colorbar = True,
+                # comp_sim = True,
+                cbar_axs = [x[2] for x in axs],
+                override_axes = [x[1] for x in axs],
+                dotsize = 10,
+                # spec_nsim=2,
+                show_orientation_point = True,
+                thresh_source_sample = [samp3]
+                #    tick_bounds=True
+           )
+    
+    for nsim,ax in enumerate(axs):
+        this = ax[0]
+        this.axis('on')
+        this.set_ylabel(labels[nsim].split(':')[1],fontsize=20,rotation=0)
+        this.axes.xaxis.set_visible(False)
+        this.spines['top'].set_visible(False)
+        this.spines['right'].set_visible(False)
+        this.spines['bottom'].set_visible(False)
+        this.spines['left'].set_visible(False)
+        this.get_yaxis().set_ticks([])
+    axs[0][2].set_title('mA',fontsize = 30)
+    axs[0][0].set_title('2D',fontsize = 30)
+    axs[0][1].set_title('3D',fontsize = 30)
+    plt.subplots_adjust(left = .15)
+    fig.text(0.05,0.55, u"fiber diameter (\u03BCm)", ha="center", va="center", rotation=90,fontsize=35)
+    fig.suptitle('Activation thresholds for {}\n{} Contact'.format(nerve_label, sample_name),fontsize=40)
+    fig.savefig('out/analysis/{}-{}_{}_{}'.format(samples[sample_index], samp3, model, sim),dpi=400,bbox_inches = "tight")
 
-#need to: loop through and generate the 2x2 comparison for each nsim, then a whole new one
-#which does every nsim for the caudal contact for both
-fig,axs = plt.subplots(override.shape[0],3,figsize=(10, 20),gridspec_kw={'width_ratios':[6,6,1]})
-
-# initialize and run Querys
-q = Query({
-    'partial_matches': True,
-    'include_downstream': True,
-    'indices': {
-        'sample': samples[-1],
-        'model': [model],
-        'sim': [sim]
-    }
-}).run()
-
-
-q.heatmaps(plot=False,
-            # save_path='out/analysis',
-            plot_mode='fibers',
-        #    rows_override=6,
-           colorbar_aspect=5,
-           colormap_str='viridis',
-           tick_count=4,
-           reverse_colormap=True,
-            title_toggle=False,
-            track_colormap_bounds=True,
-        #    track_colormap_bounds_offset_ratio=0.0,
-            colomap_bounds_override=override,
-            subplot_title_toggle=False,
-            colorbar_text_size_override=30,
-            add_colorbar = False,
-            override_axes = [x[0] for x in axs],
-            # spec_nsim=2,
-            dotsize = 10,
-            show_orientation_point = True
-            #    tick_bounds=True
-       )
-
-q.heatmaps(plot=False,
-            # save_path='out/analysis',
-            plot_mode='fibers',
-        #    rows_override=6,
-           colorbar_aspect=5,
-           colormap_str='viridis',
-           tick_count=4,
-           reverse_colormap=True,
-            title_toggle=False,
-            track_colormap_bounds=True,
-        #    track_colormap_bounds_offset_ratio=0.0,
-            colomap_bounds_override=override,
-            subplot_title_toggle=False,
-            colorbar_text_size_override=30,
-            add_colorbar = True,
-            # comp_sim = True,
-            cbar_axs = [x[2] for x in axs],
-            override_axes = [x[1] for x in axs],
-            dotsize = 10,
-            # spec_nsim=2,
-            show_orientation_point = True,
-            thresh_source_sample = [samp3]
-            #    tick_bounds=True
-       )
-
-for nsim,ax in enumerate(axs):
-    this = ax[0]
-    this.axis('on')
-    this.set_ylabel(labels[nsim].split(':')[1],fontsize=20,rotation=0)
-    this.axes.xaxis.set_visible(False)
-    this.spines['top'].set_visible(False)
-    this.spines['right'].set_visible(False)
-    this.spines['bottom'].set_visible(False)
-    this.spines['left'].set_visible(False)
-    this.get_yaxis().set_ticks([])
-axs[0][0].set_title('2D',fontsize = 30)
-axs[0][1].set_title('3D',fontsize = 30)
-fig.suptitle('Nsim thresholds for {}\nCathodic Contact'.format(nerve_label),fontsize=40)
-fig.savefig('out/analysis/{}-{}_{}_{}'.format(samples[-1], samp3, model, sim),dpi=400,bbox_inches = "tight")
-
-#%%
+#%% generates the individual comparison between all samples for each nsim
 
 for i in range(override.shape[0]):
     fig,axs = plt.subplots(len(samples),2,figsize=(25, 20))
