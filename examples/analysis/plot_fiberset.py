@@ -46,6 +46,7 @@ sim: Simulation = q.get_object(Object.SIMULATION, [sample_index, model_index, si
 for fiberset_ind, fiberset in enumerate(sim.fibersets):
     slide = sample.slides[0]
     fig, ax = plt.subplots(1, 1)
+    plt.title('Fibers for 6R cathodic leading sample')
     slide.plot(fix_aspect_ratio=True, final=False, ax=ax,centroids = False)
     ax.set_aspect('equal', adjustable='box')
 

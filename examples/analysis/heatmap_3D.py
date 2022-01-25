@@ -21,12 +21,12 @@ from src.core.query import Query
 # set default fig size
 # plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 
-samples = [670,672]
-samp3 = 673
+samples = [470,472]
+samp3 = 473
 model = 0
 sim = 33
 sample_labels = ['Rostral\nContact','Caudal\n(Cathodic)\nContact']
-nerve_label = '6R'
+nerve_label = '4R'
 outpath = r'D:\ASCENT\ascent\out\analysis'
 bigcomp = {0:'Anodic Leading',1:'Cathodic Leading'}
 
