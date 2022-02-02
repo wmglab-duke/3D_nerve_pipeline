@@ -103,5 +103,5 @@ for i in range(5):
     plt.ylabel('Proportion of Fibers Activated')
     plt.xlabel('Activation Threshold (mA, log scale)')
     plt.title('Threshold eCDF for Sample {} (2D slice - highest r)'.format(samplename))
-plt.text(.05,-.25,'Note: fiber diameters (\u03bcm) from left to right: [2, 5, 8, 11, 13]',fontstyle='italic')
+plt.text(.05,-.25,'Note: fiber diameters (\u03bcm) from left to right: [13, 11, 8, 5, 2]',fontstyle='italic')
 plt.savefig(r'out/analysis/{}_ecdf.png'.format(threed),dpi=400,bbox_inches = 'tight')
