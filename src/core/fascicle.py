@@ -224,6 +224,8 @@ class Fascicle(Exceptionable):
         # scale up outer trace
         self.outer.offset(fit=fit)
         
+        self.outer.thickness = self.outer.offset(fit=fit)
+
         #check for any bad traces
         self.validate()
 

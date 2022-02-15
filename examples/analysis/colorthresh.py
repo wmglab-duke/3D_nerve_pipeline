@@ -32,7 +32,7 @@ import rpy2.robjects.lib.ggplot2 as ggplot2
 rprint = robjects.globalenv.find("print")
 ggpubr = importr("ggpubr")
 import seaborn as sb
-
+from scipy.stats import pearsonr
 import os
 import sys
 
@@ -47,11 +47,11 @@ from src.core.query import Query
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
-threed = 473
+threed = 653
 
-samples = [470,472]
+samples = [650,652]
 
-sample_name = '4R'
+sample_name = '6L'
 
 models = [0]
 
@@ -139,4 +139,18 @@ for i,sample in enumerate(samples):
     g = sb.catplot(data = plotdata,kind = 'swarm',col='nsim',hue='inner',y='threshold',x='dataset',sharey=False,palette='colorblind')
     plt.subplots_adjust(top=.85)
     plt.suptitle('Activation thresholds by fascicle (Sample {}, 2D slice: {} contact)'.format(sample_name,bigcomp[i]))
+    axs = g.axes.ravel()
+    axs[0].set_ylabel('Activation threshold (mA)')
+    plt.subplots_adjust(top=.85)
+    for j,s in enumerate([2,5,8,11,13]):
+        ax = axs[j]
+        corr = {}
+        thisdat = dat2d[(dat2d["nsim"]==j) & (dat2d["sample"]==sample)]
+        corr[sample]=round(pearsonr(thisdat['2D'],thisdat['3D'])[0],3)
+        leg = ax.legend(labels = ["r="+str(corr[sample])],handlelength=0, handletextpad=0, fancybox=True, loc = 'lower center')
+        for item in leg.legendHandles:
+            item.set_visible(False)
+        ax.set_xlabel('2D threshold (mA)')
+
     plt.savefig('out/analysis/colorthresh{}-{}.png'.format(sample_name,bigcomp[i]),dpi=500)
+  

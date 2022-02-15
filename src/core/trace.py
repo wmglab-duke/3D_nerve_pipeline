@@ -106,6 +106,8 @@ class Trace(Exceptionable):
         # cleanup
         self.__update()
         pco.Clear()
+        
+        return distance
 
     def smooth(self,distance,area_compensation=True):
         """
@@ -125,6 +127,7 @@ class Trace(Exceptionable):
         else:
             self.scale(1)
         self.points = np.flip(self.points,axis = 0) # set points to opencv orientation
+        
 
     def scale(self, factor: float = 1, center: Union[List[float], str] = 'centroid'):
         """
