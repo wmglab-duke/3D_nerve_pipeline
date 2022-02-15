@@ -1,0 +1,74 @@
+#!/usr/bin/env python3.7
+
+"""
+The copyrights of this software are owned by Duke University.
+Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""
+
+# RUN THIS FROM REPOSITORY ROOT
+
+import os
+import sys
+sys.path.append(r'D:\ASCENT\ascent')
+os.chdir(r'D:\ASCENT/ascent')
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
+
+from scipy.stats import ks_2samp
+
+import numpy as np
+
+import matplotlib.pyplot as plt
+from src.core.query import Query
+import pandas as pd
+import seaborn as sb
+
+threed = 673
+
+samples = [672]
+
+samplename = '6R'
+
+models = [0]
+
+sims = [33]
+
+dats = []
+
+q = Query({
+    'partial_matches': False,
+    'include_downstream': True,
+    'indices': {
+        'sample': samples,
+        'model': models,
+        'sim': sims
+    }
+}).run()
+
+# builds heatmaps
+# q.barcharts_compare_models(logscale=False,
+#                            model_labels=['Model 0: Veltink Epineurium, \n              Veltink Perineurium',
+#                                          'Model 1: Veltink Epineurium, \n              Goodall Perineurium',
+#                                          'Model 2: Goodall Epineurium, \n              Veltink Perineurium',
+#                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
+#                            )
+dat2d = q.threshdat(sl=False,meanify=False)
+
+q = Query({
+    'partial_matches': False,
+    'include_downstream': True,
+    'indices': {
+        'sample': [threed],
+        'model': models,
+        'sim': sims
+    }
+}).run()
+
+dat3d = q.threshdat3d(meanify = False)
+
+results = []
+
+for i in range(0,5):
+    kstat,p = ks_2samp(dat2d[dat2d.nsim==i].threshold,dat3d[dat3d.nsim==i].threshold)
+    results.append([kstat,p])
