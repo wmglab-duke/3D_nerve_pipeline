@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -18,6 +18,11 @@ import numpy as np
 import warnings
 import pickle
 import argparse
+#Set up parser and top level args
+parser = argparse.ArgumentParser(description='ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds')
+parser.add_argument('run_indices', nargs = '+', help = 'Space separated indices to submit NEURON sims for')
+parser.add_argument('-p','--partition', help = 'If submitting on a cluster, overrides default partition assignment')
+
 
 ALLOWED_SUBMISSION_CONTEXTS = ['cluster', 'local','auto']
 OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else 'WINDOWS'
@@ -548,21 +553,12 @@ def make_local_submission_list(run_number: int):
 
     return local_args_list
 
-
-def get_args():
-    #Set up parser and top level args
-    parser = argparse.ArgumentParser(description='ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds')
-    parser.add_argument('run_indices', nargs = '+', help = 'Space separated indices to submit NEURON sims for')
-    parser.add_argument('-p','--partition', help = 'If submitting on a cluster, overrides default partition assignment')
-    args = parser.parse_args()
-    return args
-
 def main():
-    #parse args
-    args = get_args()
 
     #validate inputs
-    runs = args.run_indices
+    args = parser.parse_args()
+    run_inds = args.run_indices
+    runs = []
     submission_contexts = []
     auto_compile_flags = []
 
@@ -570,7 +566,7 @@ def main():
     compiled: bool = False
     compiled = auto_compile()
 
-    for run_number in sys.argv[1:]:
+    for run_number in run_inds:
         # run number is numeric
         assert re.search('[0-9]+', run_number), 'Encountered non-number run number argument: {}'.format(run_number)
 
@@ -588,11 +584,11 @@ def main():
         assert len(run.items()) > 0, 'Encountered empty run configuration: {}'.format(filename)
 
         submission_context = run.get('submission_context', 'cluster')
-        
+
         # submission context is valid
         assert submission_context in ALLOWED_SUBMISSION_CONTEXTS, 'Invalid submission context: {}'.format(
             submission_context)
-        
+
         #check for auto submission context
         if submission_context == 'auto':
             host = os.environ.get("HOSTNAME")
@@ -603,13 +599,13 @@ def main():
                 submission_context = 'local'
 
         submission_contexts.append(submission_context)
-        
+
         auto_compile_flag = run.get('override_compiled_mods', False)
         auto_compile_flags.append(auto_compile_flag)
-        
+
     # submit_lists, sub_contexts, run_filenames = make_submission_list()
     for sub_context, run_index, auto_compile_flag in zip(submission_contexts, runs, auto_compile_flags):
-        
+
         if auto_compile_flag and not compiled:
             auto_compile(override=True)
 
@@ -636,15 +632,15 @@ def main():
         elif sub_context == 'cluster':
             #load slurm params
             slurm_params = load(os.path.join('config', 'system', 'slurm_params.json'))
-            
+
             #assign params for array submission
             if args.partition is None:
                 partition = slurm_params['partition']
             else:
                 partition = args.partition
-            njobs = slurm_params.get("jobs_per_array") 
-            mem = slurm_params.get("memory_per_fiber") 
-            
+            njobs = slurm_params.get("jobs_per_array")
+            mem = slurm_params.get("memory_per_fiber")
+
             cluster_submit(run_index,partition,array_length_max=njobs,mem=mem)
 
         else:
