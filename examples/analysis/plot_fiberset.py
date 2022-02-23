@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -11,7 +11,7 @@ import sys
 
 root = os.path.abspath(os.path.join(*'../../'.split('/')))
 sys.path.append(root)
-
+os.chdir(root)
 from src.core import Simulation
 from src.core import Sample
 from src.core.query import Query
@@ -25,9 +25,9 @@ criteria = {
     'partial_matches': True,
     'include_downstream': True,
     'indices': {
-        'sample': [3070],
+        'sample': [672],
         'model': [0],
-        'sim': [3000]
+        'sim': [33]
     }
 }
 
@@ -46,12 +46,13 @@ sim: Simulation = q.get_object(Object.SIMULATION, [sample_index, model_index, si
 for fiberset_ind, fiberset in enumerate(sim.fibersets):
     slide = sample.slides[0]
     fig, ax = plt.subplots(1, 1)
-    slide.plot(fix_aspect_ratio=True, final=False, ax=ax)
+    plt.title('Fibers for 6R cathodic leading sample')
+    slide.plot(fix_aspect_ratio=True, final=False, ax=ax,centroids = False)
     ax.set_aspect('equal', adjustable='box')
 
     for fiber in fiberset.fibers:
         plt.plot(fiber[0][0], fiber[0][1], 'r*', markersize=2)
-
+    
     plt.xlabel('\u03bcm')
     plt.ylabel('\u03bcm')
     plt.show()
@@ -62,7 +63,7 @@ for fiberset_ind, fiberset in enumerate(sim.fibersets):
                                  str(fiberset_ind))
     fmt = 'png'
 
-    dest = os.path.join('data', 'tmp', 'fiberset')
+    dest = os.path.join('out', 'analysis')
     if not os.path.exists(dest):
         os.mkdir(dest)
 

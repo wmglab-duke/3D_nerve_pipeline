@@ -1,6 +1,6 @@
 /*
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 */
 
@@ -108,7 +108,7 @@ class Part {
                 String groundLabel = "Ground";
                 PhysicsFeature gnd = model.component("comp1").physics("ec").create(mw.im.next("gnd", groundLabel), "Ground", 2);
                 gnd.label(groundLabel);
-                gnd.selection().named("geom1_" + mw.im.get(instanceLabel) + "_" + myIxM.get(myLabels[0]) + "_bnd");
+                gnd.selection().named("geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[0]) + "_bnd");
             }
 
         } else {

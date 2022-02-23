@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -14,12 +14,25 @@ EXCLUDED_FILENAMES = [
     'im.json',
     'Primitive.json',
     'sample.json',
-    'model.json'
+    'model.json',
+    'explicit.txt'
 ]
 
 
 def run(args):
-    
+
+    proceed = input('All files EXCEPT those whose names end with the following strings:\n'
+                    '\t{}\n'
+                    'will be removed from the following sample directories:\n'
+                    '\t{}\n'
+                    '\n\t Would you like to proceed?\n'
+                    '\t\t 0 = NO\n'
+                    '\t\t 1 = YES\n'.format(EXCLUDED_FILENAMES,args.sample_indices))
+    if not int(proceed):
+        quit()
+    else:
+        print('Proceeding...')
+
     for sample in args.sample_indices:
 
         if args.verbose:
@@ -67,6 +80,6 @@ def run(args):
                     print(f'\tKEEP DIR: {directory}')
 
         remove_empty_directories(str(sample_path.absolute()))
-    
+
         if args.verbose:
             print('\n\n')

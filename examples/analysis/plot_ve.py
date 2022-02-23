@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -10,9 +10,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-sample = 3008
-model = 6
-sim = 3001
+sample = 670
+model = 0
+sim = 3
 
 base_n_sim = os.path.join('samples', str(sample), 'models', str(model), 'sims', str(sim), 'n_sims')
 

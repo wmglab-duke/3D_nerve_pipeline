@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -73,10 +73,13 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         """
         
         fibers = []
-        for fiber in os.listdir(sim_directory+'/ss_coords'):
-            if fiber.endswith('.dat'):
-                length = float(np.loadtxt('{}/ss_lengths/{}'.format(sim_directory,fiber)))
-                fibers.extend(self._generate_z([(0,0)],override_length=length))
+        fiberfiles = [int(os.path.splitext(x)[0]) for x in os.listdir(sim_directory+'/ss_coords') if x.endswith('.dat')]
+        fiberfiles.sort()
+        for fiber in fiberfiles:
+            length = float(np.loadtxt('{}/ss_lengths/{}.dat'.format(sim_directory,fiber)))
+            fib = self._generate_z([(0,0)],override_length=length-2)
+            fib[0] = [(x[0],x[1],x[2]+1) for x in fib[0]]
+            fibers.extend(fib)
         self.fibers = fibers
         return self
 
@@ -372,7 +375,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     inter_length = eval(inter_length_str)
 
             z_steps: List = []
-            while (sum(z_steps) - half_fiber_length) < 0.001:
+            while (sum(z_steps) - half_model_length) < 1:
                 z_steps += [(node_length / 2) + (paranodal_length_1 / 2),
                             (paranodal_length_1 / 2) + (paranodal_length_2 / 2),
                             (paranodal_length_2 / 2) + (inter_length / 2),
@@ -382,7 +385,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                             (paranodal_length_1 / 2) + (node_length / 2)]
 
             # account for difference between last node z and half fiber length -> must shift extra distance
-            my_z_shift_to_center_in_fiber_range = half_fiber_length - sum(z_steps)
+            my_z_shift_to_center_in_fiber_range = half_model_length - sum(z_steps)
 
             reverse_z_steps = z_steps.copy()
             reverse_z_steps.reverse()
@@ -405,6 +408,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             random_offset_value = 0
             # get offset param - NOTE: raw value is a FRACTION of dz (explanation for multiplication by dz)
+
             offset = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value,'offset',optional=True)
             
             if offset is None: 
@@ -442,7 +446,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         # all functionality is only defined for EXTRUSION as of now
         if fiber_z_mode == FiberZMode.EXTRUSION:
 
-            model_length = self.search(Config.MODEL, 'medium', 'proximal', 'length') if (
+            model_length = self.search(Config.MODEL, 'nerve_length') if (
                     override_length is None) else override_length
 
             if not 'min' in self.configs['sims']['fibers']['z_parameters'].keys() or \
@@ -469,30 +473,17 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
                 fiber_length = (max_fiber_z_limit - min_fiber_z_limit) if override_length is None else override_length
 
-            half_fiber_length = fiber_length / 2
+            if self.search(Config.SIM,
+                           'fibers',
+                           FiberZMode.parameters.value,
+                           'longitudinally_centered',optional=True) is False:
+                print('WARNING: the sim>fibers>z_parameters>longitudinally_centered parameter is deprecated.\
+                      \nFibers will be centered to the model.')
 
-            if not ('longitudinally_centered' in self.configs['sims']['fibers']['z_parameters'].keys()):
-                longitudinally_centered = True
-            else:
-                longitudinally_centered = self.search(Config.SIM,
-                                                      'fibers',
-                                                      FiberZMode.parameters.value,
-                                                      'longitudinally_centered')
-
-            if longitudinally_centered:
-                z_shift_to_center_in_model_range = (model_length - fiber_length) / 2
-            else:
-                z_shift_to_center_in_model_range = 0
-
-            # xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
-            # xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
-
-            # check that proximal model length is greater than or equal to fiber length (fibers only in nerve trunk)
-            # override this functionality if using SL (not in nerve trunk)
+            half_model_length = model_length / 2
 
             assert model_length >= fiber_length, 'proximal length: ({}) < fiber length: ({})'.format(model_length,
                                                                                                      fiber_length)
-
             fiber_geometry_mode_name: str = self.search(Config.SIM, 'fibers', 'mode')
 
             # use key from above to get myelination mode from fiber_z
@@ -604,7 +595,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                                         myelinated,
                                                         delta_z,
                                                         x, y,
-                                                        z_shift_to_center_in_model_range + z_shift_to_center_in_fiber_range)
+                                                        z_shift_to_center_in_fiber_range)
                     if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(np.array(fiber_pre)[:, 2]) > fiber_length:
                         self.throw(119)
                     if diam_distribution:
@@ -627,9 +618,9 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                           fiber_geometry_mode_name,
                                           'delta_zs')
 
-                z_top_half = np.arange(fiber_length / 2, fiber_length + delta_z, delta_z)
-                z_bottom_half = -np.flip(z_top_half) + fiber_length
-                while z_top_half[-1] > fiber_length:
+                z_top_half = np.arange(model_length / 2, model_length + delta_z, delta_z)
+                z_bottom_half = -np.flip(z_top_half) + model_length
+                while z_top_half[-1] > model_length:
                     # trim top of top half
                     z_top_half = z_top_half[:-1]
                     z_bottom_half = z_bottom_half[1:]
@@ -642,8 +633,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     fiber_pre = build_fiber_with_offset(list(np.concatenate((z_bottom_half[:-1], z_top_half))),
                                                         myelinated,
                                                         delta_z,
-                                                        x, y,
-                                                        z_shift_to_center_in_model_range)
+                                                        x, y)
                     if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(
                             np.array(fiber_pre)[:, 2]) > fiber_length: self.throw(119)
                     if diam_distribution:

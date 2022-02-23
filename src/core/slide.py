@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 from PIL import Image, ImageDraw, ImageFont
@@ -201,7 +201,7 @@ class Slide(Exceptionable):
              outers_flag: bool = True,
              inner_index_labels: bool = False,
              show_axis: bool = True,
-             centroids: bool = True,
+             centroids: bool = False,
              axlabel: str = None):
         """
         Quick util for plotting the nerve and fascicles
