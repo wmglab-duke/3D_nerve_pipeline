@@ -716,7 +716,7 @@ class Query(Exceptionable, Configurable, Saveable):
                                 aspect=colorbar_aspect if colorbar_aspect is not None else 20,
                                 format='%0.2f'
                             )
-
+                            cax.set_title(r'mA',size=30,loc='right',y=.83,x=1.23)
                             # colorbar font size
                             if colorbar_text_size_override is not None:
                                 cb.ax.tick_params(labelsize=colorbar_text_size_override if (

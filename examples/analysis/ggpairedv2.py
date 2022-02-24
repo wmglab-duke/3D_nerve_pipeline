@@ -47,11 +47,11 @@ from src.core.query import Query
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
-threed = 673
+threed = 473
 
-samples = [670,672]
+samples = [470,472]
 
-sample_name = '6L'
+sample_name = '4R'
 
 models = [0]
 
@@ -145,7 +145,7 @@ for i,sample in enumerate(samples):
     
     # plot.plot()
     
-    plot.save(r'out/analysis/{}-{}_{}_{}.png'.format(threed,sample,models[0],sims[0]),dpi=600)
+    plot.save(r'out/analysis/{}-{}_{}_{}.svg'.format(threed,sample,models[0],sims[0]),dpi=600)
 
 
 
@@ -171,4 +171,4 @@ for nsim in pd.unique(dat2d['nsim']):
     
     # plot.plot()
     
-    plot.save(r'out/analysis/{}_{}_{}_{}.png'.format(threed,models[0],sims[0],nsim),dpi=600)
+    plot.save(r'out/analysis/{}_{}_{}_{}.svg'.format(threed,models[0],sims[0],nsim),dpi=600)

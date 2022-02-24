@@ -21,8 +21,8 @@ from src.core.query import Query
 # set default fig size
 # plt.rcParams['figure.figsize'] = [16.8/3, 10.14*2 * 0.9]
 
-samples = [470,472]
-samp3 = 473
+samples = [2792]
+samp3 = 2793
 model = 0
 sim = 33
 sample_labels = ['Rostral\nContact','Caudal\n(Cathodic)\nContact']

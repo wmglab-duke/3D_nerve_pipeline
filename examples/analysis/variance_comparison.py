@@ -17,7 +17,6 @@ sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import numpy as np
 
-from statistics import variance
 import matplotlib.pyplot as plt
 from src.core.query import Query
 import pandas as pd
@@ -103,7 +102,7 @@ for threed,samples,sampname in zip(allthreed,allsamples,allsampname):
     #%%
     
     sample_labels = ['rostral contact','caudal contact']
-    act_labels = ['an','cat']
+    act_labels = ['anodic-leading contact','cathodic-leading contact']
 
     for x in sample_labels:
         compdat[sampname][x] = {} 
@@ -114,30 +113,41 @@ for threed,samples,sampname in zip(allthreed,allsamples,allsampname):
     
     dat2d = dat2d.rename(columns={'sample':'Slice'})
     #%%
+    # Plot sepal width as a function of sepal_length across days
+    g = sns.lmplot(
+        data=dat2d,
+        x="threshold", y="threshold3d", hue="Slice",
+        height=5,col = 'nsim',sharey=False,sharex=False
+    )
+    
+    axs = g.axes.ravel()
+    axs[0].set_ylabel('3D threshold (mA)')
+    plt.suptitle('Activation threshold correlation for sample {}'.format(sampname),fontsize=25)
+    plt.subplots_adjust(top=.85,right=.93)
+    new_labels = ['Anodic\nLeading', 'Cathodic\nLeading']
+    for t, l in zip(g._legend.texts, new_labels):
+        t.set_text(l)
     for i,s in enumerate([2,5,8,11,13]):
+        ax = axs[i]
+        ax.set_title('fiber diam: {}\u03BCm'.format(s))
+        corr = {}
         for label_ind,sample in enumerate(samples):
             thisdat = dat2d[(dat2d["nsim"]==i) & (dat2d["Slice"]==sample)]
-            var2 = variance(thisdat['threshold'])
-            var3 = variance(thisdat['threshold3d'])
+            correlation = round(pearsonr(thisdat['threshold'],thisdat['threshold3d'])[0],3)
+            corr[sample]=correlation
+            compdat[sampname][sample_labels[label_ind]][s]= correlation
             compdat_pandas.append({
                 'Sample':sampname,
                 '2D slice':act_labels[label_ind],
                 'fiber diam':s,
-                'var2':var2,
-                'case':'2D'})
-            compdat_pandas.append({
-                'Sample':sampname,
-                '2D slice':act_labels[label_ind],
-                'fiber diam':s,
-                'var2':var3,
-                'case':'3D'})
+                'correlation':correlation })
+        ax.legend(labels = ["r="+str(corr[sample]) for sample in samples])
+        ax.set_xlabel('2D threshold (mA)')
+    g.savefig('out/analysis/threscorr_{}'.format(threed),dpi=400)
 #%%
 plt.figure()
 allcorr = pd.DataFrame(compdat_pandas)
-g = sns.catplot(x="case", y="var2", hue="Sample", col="fiber diam",
-                capsize=.2, palette="colorblind", height=6, aspect=.75,
-                kind="point", data=allcorr,sharey = False, row = "2D slice")
-g = sns.swarmplot(data = allcorr,x='fiber diam',y='correlation',style='2D slice',hue = 'Sample',s=100,palette='colorblind')
+g = sns.scatterplot(data = allcorr,x='fiber diam',y='correlation',style='2D slice',hue = 'Sample',s=100,palette='colorblind')
 g = sns.lineplot(data = allcorr,x='fiber diam',y='correlation',style='2D slice',hue = 'Sample',legend = False, palette='colorblind')
 plt.legend(bbox_to_anchor=(1.53, .5), loc='center right', borderaxespad=0)
 plt.ylabel('Threshold Correlation')
