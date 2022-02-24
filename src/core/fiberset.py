@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import scipy.stats as stats
+import shutil
 
 # ascent
 from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberGeometry,
@@ -250,9 +251,18 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                 points.append(point)
 
             elif xy_mode == FiberXYMode.EXPLICIT:
-
+                
                 if not os.path.exists(os.path.join(sim_directory, 'explicit.txt')):
-                    self.throw(83)
+                    explicit_source = self.search(Config.SIM, 'fibers', 'xy_parameters', 'source_sim',optional=True)
+                    if explicit_source is not None:
+                        source = os.path.join(os.path.split(sim_directory)[0],str(explicit_source),'explicit.txt')
+                        dest = os.path.join(sim_directory,'explicit.txt')
+                        try:
+                            shutil.copyfile(source,dest)
+                        except:
+                            self.throw(9001)
+                    else:
+                        self.throw(83)
 
                 with open(os.path.join(sim_directory, 'explicit.txt')) as f:
                     # advance header
