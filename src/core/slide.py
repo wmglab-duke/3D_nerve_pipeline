@@ -390,7 +390,7 @@ class Slide(Exceptionable):
             points = (points-dim_min+buffer)[:,0:2].astype(int)
             points = tuple(zip(points[:,0],points[:,1]))
             return points
-        fnt = ImageFont.truetype("config/system/arial.ttf", id_font)       
+        if len(ids)>0: fnt = ImageFont.truetype("/config/system/arial.ttf", id_font)       
         dim_min = [min(x) for x in dims]
         dim = [max(x) for x in dims]
         imdim = [dim[0]+abs(dim_min[0])+buffer*2,dim[1]+abs(dim_min[1])+buffer*2]
