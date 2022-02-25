@@ -223,10 +223,9 @@ class Runner(Exceptionable, Configurable):
                                     self.configs[Config.RUN.value]['sims'][sim_index], sim_obj_file))
 
                                 simulation: Simulation = load_obj(sim_obj_file)
-                                potentials_exist.append(simulation.potentials_exist(sim_obj_dir))
 
-                                if 'supersampled_bases' in simulation.configs['sims'].keys():
-                                    if simulation.configs['sims']['supersampled_bases']['use']:
+                                if 'supersampled_bases' in simulation.configs['sims'].keys() and \
+                                    simulation.configs['sims']['supersampled_bases']['use']:
                                         source_sim = simulation.configs['sims']['supersampled_bases']['source_sim']
 
                                         source_sim_obj_dir = os.path.join(
@@ -248,13 +247,19 @@ class Runner(Exceptionable, Configurable):
 
                                         source_xy_dict: dict = source_sim.configs['sims']['fibers']['xy_parameters']
                                         xy_dict: dict = simulation.configs['sims']['fibers']['xy_parameters']
-
+                                        
                                         if not source_xy_dict == xy_dict:
-                                            self.throw(82)
+                                            if xy_dict['mode']=='EXPLICIT':
+                                                print('\t\tWarning: cannot verify supersampled xy match since fiber xy mode is EXPLICIT')
+                                            else:
+                                                self.throw(82)
 
                                         ss_bases_exist.append(
                                             simulation.ss_bases_exist(source_sim_obj_dir)
                                         )
+                                else:
+                                    potentials_exist.append(simulation.potentials_exist(sim_obj_dir))
+                                    
 
                             else:
                                 if not os.path.exists(sim_obj_dir):
@@ -274,10 +279,8 @@ class Runner(Exceptionable, Configurable):
                                     .validate_srcs(sim_obj_dir) \
                                     .save(sim_obj_file)
 
-                                potentials_exist.append(simulation.potentials_exist(sim_obj_dir))
-
-                                if 'supersampled_bases' in simulation.configs['sims'].keys():
-                                    if simulation.configs['sims']['supersampled_bases']['use']:
+                                if 'supersampled_bases' in simulation.configs['sims'].keys() and \
+                                    simulation.configs['sims']['supersampled_bases']['use']:
                                         source_sim = simulation.configs['sims']['supersampled_bases']['source_sim']
 
                                         source_sim_obj_dir = os.path.join(
@@ -291,16 +294,22 @@ class Runner(Exceptionable, Configurable):
                                         )
 
                                         # do Sim.fibers.xy_parameters match between Sim and source_sim?
-                                        source_sim: simulation = load_obj(os.path.join(sim_obj_dir, 'sim.obj'))
+                                        source_sim: simulation = load_obj(os.path.join(source_sim_obj_dir, 'sim.obj'))
                                         source_xy_dict: dict = source_sim.configs['sims']['fibers']['xy_parameters']
                                         xy_dict: dict = simulation.configs['sims']['fibers']['xy_parameters']
-
+                                        
                                         if not source_xy_dict == xy_dict:
-                                            self.throw(82)
+                                            if xy_dict['mode']=='EXPLICIT':
+                                                print('\t\tWarning: cannot verify supersampled xy match as fiber xy mode is EXPLICIT')
+                                            else:
+                                                self.throw(82)
 
                                         ss_bases_exist.append(
                                             simulation.ss_bases_exist(source_sim_obj_dir)
                                         )
+                                else:
+                                    potentials_exist.append(simulation.potentials_exist(sim_obj_dir))
+
                 if self.configs[Config.CLI_ARGS.value].get('break_point')=='pre_java' or \
                         (('break_points' in self.configs[Config.RUN.value].keys()) and \
                          self.search(Config.RUN, 'break_points').get('pre_java')==True):

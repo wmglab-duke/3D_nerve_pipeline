@@ -216,9 +216,13 @@ class HocWriter(Exceptionable, Configurable, Saveable):
         protocol: dict = self.search(Config.SIM, "protocol")
 
         protocol_mode_name: str = self.search(Config.SIM, 'protocol', 'mode')
-        protocol_mode: NeuronRunMode = \
-            [mode for mode in NeuronRunMode if str(mode).split('.')[-1] == protocol_mode_name][0]
-
+        try:
+            protocol_mode: NeuronRunMode = \
+                [mode for mode in NeuronRunMode if str(mode).split('.')[-1] == protocol_mode_name][0]
+        except:
+            print('{} is not a valid protocol'.format(protocol_mode_name))
+            self.throw(9001)
+            
         if protocol_mode != NeuronRunMode.FINITE_AMPLITUDES:
             find_thresh = 1
             if protocol_mode == NeuronRunMode.ACTIVATION_THRESHOLD:

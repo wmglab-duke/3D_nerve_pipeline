@@ -145,6 +145,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
         fibersets_directory = os.path.join(sim_directory, 'fibersets')
         if not os.path.exists(fibersets_directory):
             os.makedirs(fibersets_directory)
+        
+        source_sim = self.search(Config.SIM, 'supersampled_bases', 'source_sim')
+        source_sim_dir = os.path.join(os.path.split(sim_directory)[0],str(source_sim))
 
         self.fibersets = []
         fiberset_factors = {key: value for key, value in self.factors.items() if key.split('->')[0] == 'fibers'}
@@ -168,7 +171,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, sim_copy) \
                 .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                .generate_from_ss(sim_directory) \
+                .generate_from_ss(source_sim_dir) \
                 .write(WriteMode.DATA, fiberset_directory)
 
             self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
