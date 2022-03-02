@@ -1639,7 +1639,7 @@ of the file.
     ```
 1.  Properties:
 
-    `“n\_dimensions”`: The value (Integer) is the number of parameters in
+    `“n_dimensions”`: The value (Integer) is the number of parameters in
     ***Sim*** for which a list is provided rather than a single value. The
     user sets the number of parameters they are looping over (e.g., if
     looping over waveform pulse width and fiber diameter, `n_dimensions =
@@ -1902,7 +1902,7 @@ of the file.
     The user can only loop parameters for one type of waveform in a
     ***Sim***.
 
-    Note: the “digits” parameter for the following “WareformModes” sets the
+    Note: the “digits” parameter for the following “WaveformModes” sets the
     precision of the unscaled current amplitude. For waveforms that are only
     ever +/-1 and 0 (e.g., `MONOPHASIC_PULSE_TRAIN`, `BIPHASIC_FULL_DUTY`,
     `BIPHASIC_PULSE_TRAIN`), the user can represent the waveform faithfully

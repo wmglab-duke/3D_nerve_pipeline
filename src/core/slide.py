@@ -71,7 +71,7 @@ class Slide(Exceptionable):
             area_sum += area
 
         return (x_sum / area_sum), (y_sum / area_sum)
-    
+
     def validation(self, specific: bool = True, die: bool = True, tolerance: float = None) -> bool:
         """
         Checks to make sure nerve geometry is not overlapping itself
@@ -167,7 +167,7 @@ class Slide(Exceptionable):
             shift = list(point - center) + [0]
         # apply shift to nerve trace and all fascicles
         self.nerve.shift(shift)
-        
+
         for fascicle in self.fascicles:
             fascicle.shift(shift)
 
@@ -195,7 +195,7 @@ class Slide(Exceptionable):
              title: str = None,
              final: bool = True,
              inner_format: str = 'b-',
-             fix_aspect_ratio: bool = False,
+             fix_aspect_ratio: bool = True,
              fascicle_colors: List[Tuple[float, float, float, float]] = None,
              ax: plt.Axes = None,
              outers_flag: bool = True,
@@ -229,7 +229,7 @@ class Slide(Exceptionable):
 
         # loop through constituents and plot each
         if not self.monofasc():
-            self.nerve.plot(plot_format='k-', ax=ax, centroid = centroids)
+            self.nerve.plot(plot_format='k-', ax=ax, centroid = centroids,linewidth=1.5)
 
         if fascicle_colors is not None:
             if not len(self.fascicles) == len(fascicle_colors):
@@ -251,7 +251,7 @@ class Slide(Exceptionable):
 
         if title is not None:
             ax.title.set_text(title)
-            
+
         if axlabel is not None:
             ax.set_xlabel(axlabel)
             ax.set_ylabel(axlabel)
@@ -273,13 +273,13 @@ class Slide(Exceptionable):
 
         for fascicle in self.fascicles:
             fascicle.scale(factor, center)
-            
+
     def smooth_traces(self, n_distance, i_distance):
         """
         Smooth traces for the slide
         :param n_distance: distance to inflate and deflate the nerve trace
         :param i_distance: distance to inflate and deflate the fascicle traces        """
-        
+
         if i_distance is None: self.throw(113)
         for trace in self.trace_list():
             if isinstance(trace,Nerve):
@@ -290,7 +290,7 @@ class Slide(Exceptionable):
     def generate_perineurium(self,fit: dict):
         for fascicle in self.fascicles:
             fascicle.perineurium_setup(fit=fit)
-        
+
     def rotate(self, angle: float):
         """
         :param angle: angle in radians, only knows how to rotate around its own centroid
@@ -313,7 +313,7 @@ class Slide(Exceptionable):
         """
         allbound = np.array([trace.bounds() for trace in self.trace_list() if trace is not None])
         return (min(allbound[:,0]),min(allbound[:,1]),max(allbound[:,2]),max(allbound[:,3]))
-    
+
     def trace_list(self):
         """
         :return: list of all traces in the slide
@@ -390,17 +390,17 @@ class Slide(Exceptionable):
             points = (points-dim_min+buffer)[:,0:2].astype(int)
             points = tuple(zip(points[:,0],points[:,1]))
             return points
-        if len(ids)>0: fnt = ImageFont.truetype("/config/system/arial.ttf", id_font)       
+        if len(ids)>0: fnt = ImageFont.truetype("/config/system/arial.ttf", id_font)
         dim_min = [min(x) for x in dims]
         dim = [max(x) for x in dims]
         imdim = [dim[0]+abs(dim_min[0])+buffer*2,dim[1]+abs(dim_min[1])+buffer*2]
         if not separate: #draw contours and ids if provided
             img = Image.new('RGB',imdim)
             draw = ImageDraw.Draw(img)
-            if nerve: 
+            if nerve:
                 draw.polygon(prep_points(self.nerve.points[:,0:2]), fill = colors['n'])
             for fascicle in self.fascicles:
-                if outers: 
+                if outers:
                     draw.polygon(prep_points(fascicle.outer.points[:,0:2]),fill = colors['p'])
             for fascicle in self.fascicles:
                 for inner in fascicle.inners:
@@ -430,7 +430,7 @@ class Slide(Exceptionable):
                     if outer_minus_inner:
                         for fascicle in self.fascicles:
                             for inner in fascicle.inners:
-                                draw.polygon(prep_points(inner.points[:,0:2]),fill = 0)    
+                                draw.polygon(prep_points(inner.points[:,0:2]),fill = 0)
                 imgp = imgp.transpose(Image.FLIP_TOP_BOTTOM)
                 imgp = factor_resize(imgp,resize_factor)
                 imgp.save(path['p'])
@@ -440,7 +440,7 @@ class Slide(Exceptionable):
                 for fascicle in self.fascicles:
                     for inner in fascicle.inners:
                         draw.polygon(prep_points(inner.points[:,0:2]),fill = 1)
-                imgi = imgi.transpose(Image.FLIP_TOP_BOTTOM)  
+                imgi = imgi.transpose(Image.FLIP_TOP_BOTTOM)
                 iddraw = ImageDraw.Draw(imgi)
                 if len(ids)>0: #prints the fascicle ids
                     for i,row in ids.iterrows():
@@ -448,7 +448,7 @@ class Slide(Exceptionable):
                         iddraw.text(location,str(int(row['id'])),font = fnt,fill=0)
                 imgi = factor_resize(imgi,resize_factor)
                 imgi.save(path['i'])
-                
+
     # %% DISCLAIMER: this is depreciated and not well documented
     def reposition_fascicles(self, new_nerve: Nerve, minimum_distance: float = 10, seed: int = None):
         """

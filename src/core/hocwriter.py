@@ -220,9 +220,8 @@ class HocWriter(Exceptionable, Configurable, Saveable):
             protocol_mode: NeuronRunMode = \
                 [mode for mode in NeuronRunMode if str(mode).split('.')[-1] == protocol_mode_name][0]
         except:
-            print('{} is not a valid protocol'.format(protocol_mode_name))
-            self.throw(9001)
-            
+            self.throw(135)
+
         if protocol_mode != NeuronRunMode.FINITE_AMPLITUDES:
             find_thresh = 1
             if protocol_mode == NeuronRunMode.ACTIVATION_THRESHOLD:

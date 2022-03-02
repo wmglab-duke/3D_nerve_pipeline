@@ -106,7 +106,7 @@ class Trace(Exceptionable):
         # cleanup
         self.__update()
         pco.Clear()
-        
+
         return distance
 
     def smooth(self,distance,area_compensation=True):
@@ -127,7 +127,7 @@ class Trace(Exceptionable):
         else:
             self.scale(1)
         self.points = np.flip(self.points,axis = 0) # set points to opencv orientation
-        
+
 
     def scale(self, factor: float = 1, center: Union[List[float], str] = 'centroid'):
         """
@@ -433,7 +433,7 @@ class Trace(Exceptionable):
         return Trace(points, self.configs[Config.EXCEPTIONS.value])
 
     # %% output
-    def plot(self, plot_format: str = 'k-', color: Tuple[float, float, float, float] = None, ax: plt.Axes = None,centroid = False):
+    def plot(self, plot_format: str = 'k-', color: Tuple[float, float, float, float] = None, ax: plt.Axes = None,centroid = False, linewidth=1):
         """
         :param ax:
         :param color:
@@ -449,7 +449,7 @@ class Trace(Exceptionable):
         if color is not None:
             ax.fill(points[:, 0], points[:, 1], color=color)
 
-        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=1)
+        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth)
 
         if centroid:
             ax.axes.scatter(self.centroid()[0],self.centroid()[1],c = color)
