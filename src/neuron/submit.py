@@ -18,6 +18,17 @@ import numpy as np
 import warnings
 import pickle
 import argparse
+import pandas as pd
+#Set up parser and top level args
+parser = argparse.ArgumentParser(description='ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds')
+parser.add_argument('run_indices', type=int, nargs = '+', help = 'Space separated indices to submit NEURON sims for')
+parser.add_argument('-p','--partition', help = 'If submitting on a cluster, overrides slurm_params.json')
+parser.add_argument('-n','--num-cpu', type=int, help = 'For local submission: set number of CPUs to use, overrides run.json')
+parser.add_argument('-m','--job-mem', type=int, help = 'For cluster submission: set amount of RAM per job (in MB), overrides slurm_params.json')
+parser.add_argument('-j','--num-jobs', type=int, help = 'For cluster submission: set number of jobs per array, overrides slurm_params.json')
+submit_context_group = parser.add_mutually_exclusive_group()
+submit_context_group.add_argument('-L','--local-submit', action='store_true', help = 'Set submission context to local, overrides run.json')
+submit_context_group.add_argument('-C','--cluster-submit', action='store_true', help = 'Set submission context to cluster, overrides run.json')
 
 ALLOWED_SUBMISSION_CONTEXTS = ['cluster', 'local','auto']
 OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else 'WINDOWS'
@@ -103,7 +114,7 @@ def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
     sim_config = load(os.path.join(sim_dir, sim_name, '{}.json'.format(n_sim)))
 
     if sim_config['protocol']['mode'] == 'ACTIVATION_THRESHOLD' or sim_config['protocol']['mode'] == 'BLOCK_THRESHOLD':
-        if 'scout_sim' in sim_config['protocol']['bounds_search'].keys() and sim_config['protocol']['bounds_search']['scout_sim']==True:
+        if 'scout_sim' in sim_config['protocol']['bounds_search'].keys() and sim_config['protocol']['bounds_search']['scout_sim']!=False:
             # load in threshold from scout_sim (example use: run centroid first, then any other xy-mode after)
 
             scout_sim = sim_config['protocol']['bounds_search']['scout_sim']
@@ -221,6 +232,7 @@ def local_submit(my_local_args: dict):
 
 
 def cluster_submit(run_number: int, partition: str, mem: int=2000, array_length_max: int = 10):
+    
     # configuration is not empty
     assert array_length_max > 0, 'SLURM Job Array length is not > 0: array_length_max={}'.format(array_length_max)
 
@@ -435,14 +447,14 @@ def cluster_submit(run_number: int, partition: str, mem: int=2000, array_length_
                             # allow job to start before removing slurm file
                             time.sleep(1.0)
 
-                            array_index = 1
+                            array_index = 0
                             sim_array_batch += 1
                             start_paths_list = []
                             inner_index_tally = []
                             fiber_index_tally = []
 
 
-def make_local_submission_list(run_number: int):
+def make_local_submission_list(run_number: int,printout = True):
     # build configuration filename
     filename = os.path.join('runs', run_number + '.json')
 
@@ -467,7 +479,7 @@ def make_local_submission_list(run_number: int):
             sim_name_base = '{}_{}_{}_'.format(sample, model, sim)
 
             for sim_name in [x for x in os.listdir(sim_dir) if sim_name_base in x]:
-                print('\n\n################ {} ################\n\n'.format(sim_name))
+                if printout: print('\n\n################ {} ################\n\n'.format(sim_name))
 
                 sim_path = os.path.join(sim_dir, sim_name)
                 fibers_path = os.path.abspath(os.path.join(sim_path, 'data', 'inputs'))
@@ -511,7 +523,7 @@ def make_local_submission_list(run_number: int):
                     thresh_path = os.path.join(output_path,
                                                'thresh_inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
                     if os.path.exists(thresh_path):
-                        print('Found {} -->\t\tskipping inner ({}) fiber ({})'.format(thresh_path, inner_ind,
+                        if printout: print('Found {} -->\t\tskipping inner ({}) fiber ({})'.format(thresh_path, inner_ind,
                                                                                       fiber_ind))
                         continue
 
@@ -548,20 +560,10 @@ def make_local_submission_list(run_number: int):
 
     return local_args_list
 
-
-def get_args():
-    #Set up parser and top level args
-    parser = argparse.ArgumentParser(description='ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds')
-    parser.add_argument('run_indices', nargs = '+', help = 'Space separated indices to submit NEURON sims for')
-    parser.add_argument('-p','--partition', help = 'If submitting on a cluster, overrides default partition assignment')
-    args = parser.parse_args()
-    return args
-
 def main():
-    #parse args
-    args = get_args()
 
     #validate inputs
+    args = parser.parse_args()
     run_inds = args.run_indices
     runs = []
     submission_contexts = []
@@ -571,7 +573,12 @@ def main():
     compiled: bool = False
     compiled = auto_compile()
 
+    summary = []
+    rundata = []
+
     for run_number in run_inds:
+
+        run_number = str(run_number)
         # run number is numeric
         assert re.search('[0-9]+', run_number), 'Encountered non-number run number argument: {}'.format(run_number)
 
@@ -608,6 +615,38 @@ def main():
         auto_compile_flag = run.get('override_compiled_mods', False)
         auto_compile_flags.append(auto_compile_flag)
 
+        #get list of fibers to run
+        print('Generating run list for run {}'.format(run_number))
+        summary.append(make_local_submission_list(run_number, printout=False))
+        rundata.append({'RUN':run_number,
+             'SAMPLE':run['sample'],
+             'MODELS':run['models'],
+             'SIMS':run['sims']})
+    #check that all submission contexts are the same
+    if args.local_submit==True:
+        submission_contexts=['local' for i in submission_contexts]
+    if args.cluster_submit==True:
+        submission_contexts=['cluster' for i in submission_contexts]
+    if not np.all([x==submission_contexts[0] for x in submission_contexts]):
+        sys.exit('Runs with different submission contexts cannot be submitted at the same time')
+
+    #format run data
+    n_fibers = sum([len(x) for x in summary])
+    df = pd.DataFrame(rundata)
+    df.RUN = df.RUN.astype(int)
+    df = df.sort_values('RUN')
+    #print out and check that the user is happy
+    print('Submitting the following runs (submission_context={}):'.format(submission_contexts[0]))
+    print(df.to_string(index = False))
+    print('Will result in running {} fiber simulations'.format(n_fibers))
+    proceed = input('\t Would you like to proceed?\n'
+                '\t\t 0 = NO\n'
+                '\t\t 1 = YES\n')
+    if not int(proceed)==1:
+        quit()
+    else:
+        print('Proceeding...')
+
     # submit_lists, sub_contexts, run_filenames = make_submission_list()
     for sub_context, run_index, auto_compile_flag in zip(submission_contexts, runs, auto_compile_flags):
 
@@ -618,7 +657,15 @@ def main():
             filename = os.path.join('runs', run_index + '.json')
             run = load(filename)
 
-            if 'local_avail_cpus' in run:
+            if args.num_cpu is not None:
+                cpus = args.num_cpu
+
+                if cpus > multiprocessing.cpu_count() - 1:
+                    raise ValueError('num_cpu argument is more than cpu_count-1 CPUs')
+
+                print(f"Submitting Run {run_index} locally to {cpus} CPUs (defined by num_cpu argument)")
+
+            elif 'local_avail_cpus' in run:
                 cpus = run.get('local_avail_cpus')
 
                 if cpus > multiprocessing.cpu_count() - 1:
@@ -639,12 +686,9 @@ def main():
             slurm_params = load(os.path.join('config', 'system', 'slurm_params.json'))
 
             #assign params for array submission
-            if args.partition is None:
-                partition = slurm_params['partition']
-            else:
-                partition = args.partition
-            njobs = slurm_params.get("jobs_per_array")
-            mem = slurm_params.get("memory_per_fiber")
+            partition = slurm_params['partition'] if args.partition is None else args.partition
+            njobs = slurm_params['jobs_per_array'] if args.num_jobs is None else args.num_jobs
+            mem = slurm_params['memory_per_fiber'] if args.job_mem is None else args.job_mem
 
             cluster_submit(run_index,partition,array_length_max=njobs,mem=mem)
 
@@ -652,6 +696,6 @@ def main():
             # something went horribly wrong
             pass
 
-
 if __name__ == "__main__":  # Allows for the safe importing of the main module
     main()
+    print('done')

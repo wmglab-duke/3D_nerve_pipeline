@@ -30,8 +30,9 @@ import java.util.regex.Pattern;
  * assigning physics, and extracting potentials. This class houses the "meaty" operations of actually interacting with
  * the model object when creating parts in the static class model.Parts.
  */
-public class ModelWrapper {
 
+@SuppressWarnings({"unchecked","rawtypes","path"})
+public class ModelWrapper {
 
     // UNION PSEUDONYM CONSTANTS
     public static final String ALL_NERVE_PARTS_UNION = "allNervePartsUnion";
@@ -1030,6 +1031,7 @@ public class ModelWrapper {
             boolean save = true;
             if (! new File(mphFile).exists()) {
                 model.sol("sol1").runAll();
+                model.component("comp1").mesh("mesh1").clearMesh();
             } else {
                 save = false;
                 System.out.println("\tSkipping solving and saving for basis " + key_on + " because found existing file: " + mphFile);
@@ -1141,7 +1143,13 @@ public class ModelWrapper {
         try {
             ModelUtil.connect("localhost", 2036);
         } catch(FlException e) {
-            ModelUtil.connect("localhost", 2037);
+            System.out.println("Could not connect to COMSOL server on port 2036, trying on port 2037...");
+            try {
+                ModelUtil.connect("localhost", 2037);
+            } catch(FlException exc) {
+                System.out.println("Could not connect to COMSOL server on port 2037, trying without specifying a port...");
+                ModelUtil.connect();
+            }
         }
 
         TimeUnit.SECONDS.sleep(5);
@@ -1149,32 +1157,28 @@ public class ModelWrapper {
 //        ModelUtil.showProgress(null); // if you want to see COMSOL progress (as it makes all geometry, runs, etc.)
 
         //checkout comsol license
-        if (cli_args.has("wait_for_license"));
-        {
-            if (!cli_args.isNull("wait_for_license")) {
-                long wait_hours = cli_args.getLong("wait_for_license");
-                System.out.println("Attempting to check out COMSOL license. System will wait up to " + String.valueOf(wait_hours) + " hours for an available license seat.");
-                boolean lic = false;
-                long start = System.currentTimeMillis();
-                long stop = wait_hours * 60 * 60 * 1000 + start;
-                while (System.currentTimeMillis() < stop) {
-                    lic = ModelUtil.checkoutLicense("COMSOL");
-                    if (lic == true) {
-                        long now = System.currentTimeMillis();
-                        double elapsed = (Long.valueOf(now).doubleValue()-Long.valueOf(start).doubleValue())/(60 * 60 * 1000);
-                        System.out.printf("COMSOL license seat obtained (took %.3f hours).%n", elapsed);
-                        break;
-                    } else {
-                        TimeUnit.SECONDS.sleep(600);
-                    }
-                }
-                if (lic == false) {
-                    System.out.println("A COMSOL license did not become available within the specified time window. Exiting...");
-                    System.exit(1);
+        if (cli_args.has("wait_for_license") && !cli_args.isNull("wait_for_license")) {
+            long wait_hours = cli_args.getLong("wait_for_license");
+            System.out.println("Attempting to check out COMSOL license. System will wait up to " + String.valueOf(wait_hours) + " hours for an available license seat.");
+            boolean lic = false;
+            long start = System.currentTimeMillis();
+            long stop = wait_hours * 60 * 60 * 1000 + start;
+            while (System.currentTimeMillis() < stop) {
+                lic = ModelUtil.checkoutLicense("COMSOL");
+                if (lic == true) {
+                    long now = System.currentTimeMillis();
+                    double elapsed = (Long.valueOf(now).doubleValue()-Long.valueOf(start).doubleValue())/(60 * 60 * 1000);
+                    System.out.printf("COMSOL license seat obtained (took %.3f hours).%n", elapsed);
+                    break;
+                } else {
+                    TimeUnit.SECONDS.sleep(600);
                 }
             }
+            if (lic == false) {
+                System.out.println("A COMSOL license did not become available within the specified time window. Exiting...");
+                System.exit(1);
+            }
         }
-
 
         // Take projectPath input to ModelWrapper and assign to string.
         String projectPath = args[0];
@@ -1196,6 +1200,14 @@ public class ModelWrapper {
         }
         else if (run.has("break_points")) {
                 break_points = run.getJSONObject("break_points");
+        }
+
+        Boolean endo_only_solution = false;
+        if (cli_args.has("endo_only_solution") && cli_args.getBoolean("endo_only_solution")) {
+            endo_only_solution = true;
+        }
+        else if (run.has("endo_only_solution") && run.getBoolean("endo_only_solution")) {
+            endo_only_solution = true;
         }
 
         boolean nerve_only = false;
@@ -1982,6 +1994,10 @@ public class ModelWrapper {
                     model.study("std1").feature("stat").set("notsolnum", "1");
                     model.study("std1").feature("stat").set("listsolnum", 1);
                     model.study("std1").feature("stat").set("solnum", "1");
+                    if (endo_only_solution) {
+                        model.study("std1").feature("stat").set("usestoresel", "selection");
+                        model.study("std1").feature("stat").set("storesel", new String[]{"geom1_" + mw.im.get("endoUnionCsel") + "_dom"});
+                    }
 
                     model.sol("sol1").create("st1", "StudyStep");
                     model.sol("sol1").feature("st1").set("study", "std1");
