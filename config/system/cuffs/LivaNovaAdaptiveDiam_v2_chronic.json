@@ -1,0 +1,262 @@
+{
+  "code": "LN",
+  "instances": [
+    {
+      "type": "CuffFill_Primitive",
+      "label": "LivaNova Cuff Fill 3: outer encap",
+      "def": {
+        "Radius": "r_nerve+thk_medium_gap1_LN+2*thk_medium_gap2_LN+thk_cuff_LN+thk_medium_gap3_LN",
+        "Thk": "NaN",
+        "L": "2*L_cuff_LN_PD+w_cuff_LN+2*thk_medium_gap2_LN+2*thk_medium_gap3_LN+sep_elec_LN",
+        "Center": "(z_nerve/2)",
+        "x_shift": "0",
+        "y_shift": "0"
+      },
+      "materials": [
+        {
+          "info": "fill",
+          "label_index": 0
+        }
+      ]
+    },
+    {
+      "type": "CuffFill_Primitive",
+      "label": "LivaNova Cuff Fill 2: saline",
+      "def": {
+        "Radius": "r_nerve+thk_medium_gap1_LN+2*thk_medium_gap2_LN+thk_cuff_LN",
+        "Thk": "NaN",
+        "L": "2*L_cuff_LN_PD+w_cuff_LN+2*thk_medium_gap2_LN+sep_elec_LN",
+        "Center": "(z_nerve/2)",
+        "x_shift": "0",
+        "y_shift": "0"
+      },
+      "materials": [
+        {
+          "info": "inner_fill",
+          "label_index": 0
+        }
+      ]
+    },
+    {
+      "type": "CuffFill_Primitive",
+      "label": "LivaNova Cuff Fill 1: inner encap",
+      "def": {
+        "Radius": "r_nerve+thk_medium_gap1_LN",
+        "Thk": "NaN",
+        "L": "2*L_cuff_LN_PD+w_cuff_LN+sep_elec_LN",
+        "Center": "(z_nerve/2)",
+        "x_shift": "0",
+        "y_shift": "0"
+      },
+      "materials": [
+        {
+          "info": "fill",
+          "label_index": 0
+        }
+      ]
+    },
+    {
+      "type": "LivaNova_Primitive",
+      "label": "LivaNova Cuff 1",
+      "def": {
+        "Center": "(z_nerve/2)-(sep_elec_LN/2)",
+        "Corr": "corr_LN"
+      },
+      "materials": [
+        {
+          "info": "insulator",
+          "label_index": 12
+        },
+        {
+          "info": "conductor",
+          "label_index": 9
+        },
+        {
+          "info": "recess",
+          "label_index": 3
+        }
+      ]
+    },
+    {
+      "type": "LivaNova_Primitive",
+      "label": "LivaNova Cuff 2",
+      "def": {
+        "Center": "(z_nerve/2)+(sep_elec_LN/2)",
+        "Corr": "corr_LN"
+      },
+      "materials": [
+        {
+          "info": "insulator",
+          "label_index": 12
+        },
+        {
+          "info": "conductor",
+          "label_index": 9
+        },
+        {
+          "info": "recess",
+          "label_index": 3
+        }
+      ]
+    }
+  ],
+
+  "params": [
+    {
+      "name": "rev_BD_insul_LN",
+      "expression": "2.5",
+      "description": ""
+    },
+    {
+      "name": "r_cuff_in_pre_LN",
+      "expression": "(1.5*(r_nerve+thk_medium_gap_internal_LN>(ID_30230_LN/2))+0.99*(r_nerve+thk_medium_gap_internal_LN<=(ID_30230_LN/2))) [mm]",
+      "description": "",
+      "adaptive": true,
+      "condition": [
+        {
+          "min": {
+            "value": null,
+            "inclusive": true
+          },
+          "max": {
+            "value": "1.5 [mm]",
+            "inclusive": false
+          },
+          "parameter": "0.99 [mm]"
+        },
+        {
+          "min": {
+            "value": "1.5 [mm]",
+            "inclusive": true
+          },
+          "max": {
+            "value": null,
+            "inclusive": true
+          },
+          "parameter": "1.5 [mm]"
+        }
+      ]
+    },
+    {
+      "name": "ID_30220_LN",
+      "expression": "1.98 [mm]",
+      "description": ""
+    },
+    {
+      "name": "ID_30230_LN",
+      "expression": "3 [mm]",
+      "description": ""
+    },
+    {
+      "name": "r_cuff_in_LN",
+      "expression": "max(r_nerve+thk_medium_gap_internal_LN,r_cuff_in_pre_LN)",
+      "description": ""
+    },
+    {
+      "name": "insul_arc_length_LN",
+      "expression": "rev_BD_insul_LN*sqrt((helix_pitch_LN)^2+(2*pi*r_cuff_in_pre_LN)^2)",
+      "description": ""
+    },
+    {
+      "name": "helix_pitch_LN",
+      "expression": "1.7145 [mm]",
+      "description": ""
+    },
+    {
+      "name": "thk_cuff_LN",
+      "expression": "(0.673*(r_cuff_in_LN>(ID_30230_LN/2))+0.610*(r_cuff_in_LN<=(ID_30230_LN/2))) [mm]",
+      "description": "adaptive"
+    },
+    {
+      "name": "rev_PD_insul_LN",
+      "expression": "insul_arc_length_LN/(sqrt((helix_pitch_LN)^2+(2*pi*(r_cuff_in_LN))^2))",
+      "description": ""
+    },
+    {
+      "name": "L_cuff_LN_BD",
+      "expression": "helix_pitch_LN*rev_BD_insul_LN",
+      "description": ""
+    },
+    {
+      "name": "L_cuff_LN_PD",
+      "expression": "helix_pitch_LN*rev_PD_insul_LN",
+      "description": ""
+    },
+    {
+      "name": "w_cuff_LN",
+      "expression": "1.41 [mm]",
+      "description": ""
+    },
+    {
+      "name": "thk_elec_LN",
+      "expression": "0.05 [mm]",
+      "description": ""
+    },
+    {
+      "name": "rev_PD_cond_LN",
+      "expression": "cond_arc_length_LN/(sqrt((helix_pitch_LN)^2+(2*pi*(r_cuff_in_LN+recess_LN))^2))",
+      "description": ""
+    },
+    {
+      "name": "rev_BD_cond_LN",
+      "expression": "(346.5/360)*(r_cuff_in_LN>(ID_30230_LN/2))+(338.5/360)*(r_cuff_in_LN<=(ID_30230_LN/2))",
+      "description": ""
+    },
+    {
+      "name": "cond_arc_length_LN",
+      "expression": "(rev_BD_cond_LN)*sqrt((helix_pitch_LN)^2+(2*pi*(r_cuff_in_pre_LN+recess_LN))^2)",
+      "description": ""
+    },
+    {
+      "name": "recess_LN",
+      "expression": "0 [mm]",
+      "description": ""
+    },
+    {
+      "name": "w_elec_LN",
+      "expression": "0.775 [mm]",
+      "description": ""
+    },
+    {
+      "name": "corr_LN",
+      "expression": "(90-1*(360*((rev_PD_insul_LN/2)-(rev_PD_cond_LN/2) + ((rev_PD_insul_LN/2)+(rev_PD_cond_LN/2)-(rev_PD_insul_LN/2)+(rev_PD_cond_LN/2))/2))) [deg]",
+      "description": ""
+    },
+    {
+      "name": "thk_medium_gap_internal_LN",
+      "expression": "350 [um]",
+      "description": "thk_medium_gap3_LN+thk_medium_gap2_LN"
+    },
+    {
+      "name": "Thk_fill_LN",
+      "expression": "100 [um]",
+      "description": ""
+    },
+    {
+      "name": "sep_elec_LN",
+      "expression": "8 [mm]",
+      "description": ""
+    },
+    {
+      "name": "thk_medium_gap1_LN",
+      "expression": "250 [um]",
+      "description": "saline"
+    },
+    {
+      "name": "thk_medium_gap2_LN",
+      "expression": "100 [um]",
+      "description": "encap"
+    },
+    {
+      "name": "thk_medium_gap3_LN",
+      "expression": "250 [um]",
+      "description": "encap"
+    }
+  ],
+
+  "expandable": true,
+  "fixed_point": "center",
+  "angle_to_contacts_deg": 90,
+  "offset": {
+  }
+}
