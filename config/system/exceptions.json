@@ -521,22 +521,15 @@
   },
   {
     "code": 132,
-    "text": "r_f is not in the range of any of the conditions for r_cuff_in_pre_LN conditions in the preset cuff JSON file"
+    "text": "Query run did not return any sample results. Check your indices and try again."
   },
   {
     "code": 133,
-    "text": "One or more of the conditions for r_cuff_in_pre have Nones for min and max in the preset cuff JSON file"
+    "text": "Shrinkage parameter (s) derived from your input (Sample->shrinkage->scale) results in further shrinkage, \nrather than expansion, which is not expected functionality."
   },
   {
     "code": 134,
-    "text": "There is more than one max with None or more than one min with None in the preset cuff JSON file"
-  },
-  {
-    "code": 135,
-    "text": "The conditions for determining r_cuff_in_pre based on nerve/thk_medium_gap_internal size did not yield any results"
-  },
-  {
-    "code": 136,
-    "text": "The conditions for determining r_cuff_in_pre are not mutually exclusive and resulted in multiple compatible parameter values in the preset cuff JSON file"
+    "text": "Invalid ShrinkageMode defined in sample.json"
   }
 ]
+
