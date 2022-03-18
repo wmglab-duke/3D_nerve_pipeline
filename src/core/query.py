@@ -790,7 +790,7 @@ class Query(Exceptionable, Configurable, Saveable):
                                                                sim_object.fiberset_product[fiberset_index]):
 
                             if fib_key_name == 'fibers->z_parameters->diameter':
-                                title = u'{} fiber diameter: {} \u03bcm'.format(title, fib_key_value)
+                                title = u'{} Fiber Diameter: {} \u03bcm'.format(title, fib_key_value)
                             else:
                                 # default title
                                 title = '{} {}:{}'.format(title, fib_key_name, fib_key_value)
@@ -798,7 +798,7 @@ class Query(Exceptionable, Configurable, Saveable):
                         for wave_key_name, wave_key_value in zip(sim_object.wave_key,
                                                                  sim_object.wave_product[waveform_index]):
                             if wave_key_name == 'waveform->BIPHASIC_PULSE_TRAIN->pulse_width':
-                                title = '{} pulse width: {} ms'.format(title, wave_key_value)
+                                title = '{} Pulse Width: {} ms'.format(title, wave_key_value)
                             else:
                                 title = '{} {}:{}'.format(title, wave_key_name, wave_key_value)
 

@@ -22,9 +22,9 @@ from src.core.query import Query
 import pandas as pd
 import seaborn as sb
 
-threed = 473
+threed = 253
 
-samples = [470]
+samples = [252]
 
 samplename = '4R'
 

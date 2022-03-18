@@ -21,16 +21,6 @@ import matplotlib.pyplot as plt
 from src.core.query import Query
 import pandas as pd
 import os
-os.environ['R_HOME'] = r'C:\Users\dpm42\Anaconda3\envs\ascent\lib\R'
-import rpy2.robjects as robjects
-import rpy2
-import pandas as pd
-from rpy2.robjects.packages import importr
-from rpy2.robjects import r, pandas2ri
-pandas2ri.activate()
-import rpy2.robjects.lib.ggplot2 as ggplot2
-rprint = robjects.globalenv.find("print")
-ggpubr = importr("ggpubr")
 
 
 import os
@@ -47,15 +37,15 @@ from src.core.query import Query
 # set default fig size
 plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
-threed = 473
+threed = 253
 
-samples = [470,472]
+samples = [250,252]
 
 models = [0]
 
 sims = [33]
 
-sampname = '4R'
+sampname = '2L'
 
 
 q = Query({
