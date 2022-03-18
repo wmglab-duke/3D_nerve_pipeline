@@ -9,6 +9,7 @@ The source code can be found on the following GitHub repository: https://github.
 import random
 import warnings
 from typing import List, Tuple
+import shutil
 
 from shapely.affinity import scale
 from shapely.geometry import LineString, Point
@@ -72,7 +73,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         """
         :return:
         """
-        
+
         fibers = []
         fiberfiles = [int(os.path.splitext(x)[0]) for x in os.listdir(sim_directory+'/ss_coords') if x.endswith('.dat')]
         fiberfiles.sort()
@@ -275,18 +276,17 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                 points.append(point)
 
             elif xy_mode == FiberXYMode.EXPLICIT:
-                
-                if not os.path.exists(os.path.join(sim_directory, 'explicit.txt')):
-                    explicit_source = self.search(Config.SIM, 'fibers', 'xy_parameters', 'source_sim',optional=True)
-                    if explicit_source is not None:
-                        source = os.path.join(os.path.split(sim_directory)[0],str(explicit_source),'explicit.txt')
-                        dest = os.path.join(sim_directory,'explicit.txt')
-                        try:
-                            shutil.copyfile(source,dest)
-                        except:
-                            self.throw(9001)
-                    else:
-                        self.throw(83)
+
+                explicit_index = self.search(Config.SIM, 'fibers','xy_parameters','explicit_fiberset_index',optional=True)
+
+                if explicit_index is not None:
+                    explicit_source = os.path.join(sim_directory.split(os.sep)[0],os.sep,*sim_directory.split(os.sep)[1:-4],'explicit_fibersets','{}.txt'.format(explicit_index))
+                    explicit_dest = os.path.join(sim_directory,'explicit.txt')
+                    shutil.copyfile(explicit_source,explicit_dest)
+                else:
+                    print('\t\tWARNING: Explicit fiberset index not specified.'
+                          '\n\t\tProceeding with backwards compatible check for explicit.txt in:'
+                          '\n\t\t{}'.format(sim_directory))
 
                 with open(os.path.join(sim_directory, 'explicit.txt')) as f:
                     # advance header
@@ -307,7 +307,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 self.sample.slides[0].plot(final=False, fix_aspect_ratio='True',axlabel=u"\u03bcm",title = 'Fiber locations for nerve model')
                 for point in points:
                     plt.plot(point[0], point[1], 'r.', markersize = 1)
-                if self.search(Config.SIM, 'plot_folder',optional = True) == True: 
+                if self.search(Config.SIM, 'plot_folder',optional = True) == True:
                     plt.savefig(sim_directory+'/plots/fibers_xy.png',dpi=300)
                     fig.clear
                     plt.close(fig)
@@ -409,7 +409,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 modshift = 0
             else:
                 modshift = shift % delta_z
-            
+
             my_z_shift_to_center_in_fiber_range = half_model_length - sum(z_steps) + modshift
 
             reverse_z_steps = z_steps.copy()
@@ -435,10 +435,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             # get offset param - NOTE: raw value is a FRACTION of dz (explanation for multiplication by dz)
 
             offset = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value,'offset',optional=True)
-            
+
             if override_shift is not None:
                 offset = 0
-            elif offset is None: 
+            elif offset is None:
                 offset = 0
                 random_offset_value = dz * (random.random() - 0.5)
             else:
@@ -446,7 +446,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     offset = offset*dz
                 else:
                     self.throw(99)
-             
+
             # compute offset z coordinate
             z_offset = [my_z + offset + random_offset_value + additional_offset for my_z in z_values]
 
@@ -464,7 +464,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             return my_fiber
 
-      
+
         # %% START ALGORITHM
 
         # get top-level fiber z generation
@@ -475,7 +475,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             model_length = self.search(Config.MODEL, 'nerve_length') if (
                     override_length is None) else override_length
-            
+
             if not 'min' in self.configs['sims']['fibers']['z_parameters'].keys() or \
                     not 'max' in self.configs['sims']['fibers']['z_parameters'].keys() or \
                     override_length is not None:
@@ -491,7 +491,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             else:
                 if self.configs['sims']['fibers']['z_parameters'].get('full_nerve_length')==True:
                     self.throw(127)
-                    
+
                 min_fiber_z_limit = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'min')
                 max_fiber_z_limit = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'max')
 
@@ -506,12 +506,12 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                            'longitudinally_centered',optional=True) is False:
                 print('WARNING: the sim>fibers>z_parameters>longitudinally_centered parameter is deprecated.\
                       \nFibers will be centered to the model.')
-                      
+
             shift =  self.search(Config.SIM,
                            'fibers',
                            FiberZMode.parameters.value,
                            'absolute_offset',optional=True)
-            
+
             half_model_length = model_length / 2
 
             assert model_length >= fiber_length, 'proximal length: ({}) < fiber length: ({})'.format(model_length,
