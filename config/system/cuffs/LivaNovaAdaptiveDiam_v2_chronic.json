@@ -32,7 +32,7 @@
       },
       "materials": [
         {
-          "info": "inner_fill",
+          "info": "fill",
           "label_index": 0
         }
       ]
