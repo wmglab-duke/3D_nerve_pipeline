@@ -80,7 +80,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         for fiber in fiberfiles:
             half_nerve_length = self.search(Config.MODEL,'nerve_length')/2
             absolute_shift = self.search(Config.SIM,'fibers','z_parameters','absolute_shift',optional = True)
-            absolute_shift = 400
             fiber_3d = np.loadtxt('{}/3D_fiberset/{}.dat'.format(sim_directory,fiber),skiprows=1)
             longit = np.loadtxt('{}/ss_coords/{}.dat'.format(sim_directory,fiber),skiprows=1)
             shiftpoint = np.where(fiber_3d[:,2]<absolute_shift+half_nerve_length)[0][-1]
