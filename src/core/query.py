@@ -9,6 +9,7 @@ The source code can be found on the following GitHub repository: https://github.
 import os
 import pickle
 import re
+import json
 from typing import Union, List, Tuple
 
 import numpy as np
@@ -350,7 +351,7 @@ class Query(Exceptionable, Configurable, Saveable):
                         sim_object.master_product_indices):
 
                     # fetch outer->inner->fiber and out->inner maps
-                    out_in_fib, out_in = sim_object.fiberset_map_pairs[nsim_index]
+                    out_in_fib, out_in = sim_object.fiberset_map_pairs[potentials_product_index]
 
                     # build base dirs for fetching thresholds
                     sim_dir = self.build_path(Object.SIMULATION,
@@ -368,7 +369,7 @@ class Query(Exceptionable, Configurable, Saveable):
 
                         for local_fiber_index, _ in enumerate(out_in_fib[outer][out_in[outer].index(inner)]):
 
-                            master_index = sim_object.indices_n_to_fib(nsim_index,inner,local_fiber_index)
+                            master_index = sim_object.indices_n_to_fib(potentials_product_index,inner,local_fiber_index)
 
                             thresh_path = os.path.join(n_sim_dir,
                                                        'data',
@@ -451,11 +452,10 @@ class Query(Exceptionable, Configurable, Saveable):
                  thresh_source_sample = None,
                  cbar_axs = None,
                  tick_width = 3,
-                 tick_length = 8
+                 tick_length = 8,
                  alltitle = True,
                  microamps=False,
                  suptitle_override=None,
-                 dotsize=10,
                  cbar_label_func = 'title' #'title' or 'label'
                  ):
 
@@ -845,7 +845,7 @@ class Query(Exceptionable, Configurable, Saveable):
                             else:
                                 cax = ax
                                 caxyes=None
-                            # cb_label = r'mA'
+                            cb_label = r'mA'
                             cb: cbar.Colorbar = plt.colorbar(
                                 mappable=plt.cm.ScalarMappable(
                                     cmap=cmap,
@@ -1781,7 +1781,6 @@ class Query(Exceptionable, Configurable, Saveable):
 
         # warning
         print('NOTE: assumes a SINGLE dimension for the selected sim (functionality defined otherwise)')
-
         # validation
         if self._result is None:
             self.throw(66)
@@ -1823,21 +1822,6 @@ class Query(Exceptionable, Configurable, Saveable):
             n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
 
             print('sample: {}'.format(sample_index))
-
-            # init fig, ax
-            fig: plt.Figure
-            ax: plt.Axes
-            fig, ax = plt.subplots()
-
-            # x label
-            xlabel = comparison_key.split('->')[-1]
-            if xlabel == 'diameter':
-                ax.set_xlabel('Axon Diameter (µm)')
-            else:
-                # ax.set_xlabel(xlabel)
-                ax.set_xlabel('Pulse Width (\u03bcs)')
-            # y label
-            ax.set_ylabel('Activation Threshold (mA)')
 
             # init x group labels
             xlabels = []
@@ -3110,41 +3094,48 @@ class Query(Exceptionable, Configurable, Saveable):
                                 inner_index,fiber_index = 0,master_index
                             # path of the first inner, first fiber vm(t) data
                             vm_t_path = os.path.join(outputs_path, 'Vm_time_inner{}_fiber{}_amp0.dat'.format(inner_index,fiber_index))
-
-                            rmpaths.append(vm_t_path)
-
-                            # load vm(t) data (see path above)
-                            # each row is a snapshot of the voltages at each node [mV]
-                            # the first column is the time [ms]
-                            # first row is holds column labels, so this is skipped (time, node0, node1, ...)
-                            vm_t_data = np.loadtxt(vm_t_path, skiprows=1)
-
-                            # find V-nought be averaging voltage of all nodes at first timestep (assuming no stimulation at time=0)
-                            V_o = np.mean(vm_t_data[0, 1:])
-                            # if using absolute voltage, set an absolute delta V (i.e., -30mV)
-                            if absolute_voltage:
-                                V_o = 0
-
-                            # find dt by rounding first timestep
-                            dt = round(vm_t_data[1, 0] - vm_t_data[0, 0], rounding_precision)
-
-                            # initialize value AP time, node (locations), voltages at time
-                            time, node, voltages = None, None, None
-
-                            # loop through and enumerate each timestep
-                            rows = vm_t_data[:, 1:]
-                            index = int(len(rows) / 2)
-                            for i, row in enumerate(rows):
-                                # get list of node indices that satisfy deflection condition
-                                found_nodes = np.where(row >= V_o + delta_V)[0]
-                                # that list contains any elements, set time and node (location), then break out of loop
-                                if len(found_nodes) > 0:
-                                    time = round(i * dt, rounding_precision)
-                                    node = found_nodes[0]
-                                    voltages = row
-                                    index = i
-                                    break
-
+                            if os.path.exists(vm_t_path):
+                                rmpaths.append(vm_t_path)
+    
+                                # load vm(t) data (see path above)
+                                # each row is a snapshot of the voltages at each node [mV]
+                                # the first column is the time [ms]
+                                # first row is holds column labels, so this is skipped (time, node0, node1, ...)
+                                vm_t_data = np.loadtxt(vm_t_path, skiprows=1)
+    
+                                # find V-nought be averaging voltage of all nodes at first timestep (assuming no stimulation at time=0)
+                                V_o = np.mean(vm_t_data[0, 1:])
+                                # if using absolute voltage, set an absolute delta V (i.e., -30mV)
+                                if absolute_voltage:
+                                    V_o = 0
+    
+                                # find dt by rounding first timestep
+                                dt = round(vm_t_data[1, 0] - vm_t_data[0, 0], rounding_precision)
+    
+                                # initialize value AP time, node (locations), voltages at time
+                                time, node, voltages = None, None, None
+    
+                                # loop through and enumerate each timestep
+                                rows = vm_t_data[:, 1:]
+                                index = int(len(rows) / 2)
+                                for i, row in enumerate(rows):
+                                    # get list of node indices that satisfy deflection condition
+                                    found_nodes = np.where(row >= V_o + delta_V)[0]
+                                    # that list contains any elements, set time and node (location), then break out of loop
+                                    if len(found_nodes) > 0:
+                                        time = round(i * dt, rounding_precision)
+                                        node = found_nodes[0]
+                                        voltages = row
+                                        index = i
+                                        break
+                                fiber_node_count = len(vm_t_data[0, 1:])
+                            else:
+                                vm_culled_path = os.path.join(outputs_path, 'Vm_time_inner{}_fiber{}_amp0.json'.format(inner_index,fiber_index))
+                                with open(vm_culled_path,'r') as f:
+                                    this_vm = json.load(f)
+                                time = this_vm['time']
+                                node = this_vm['node']-1
+                                fiber_node_count = this_vm['fiber_node_count']
                             # if no AP found, skip
                             if time is None or node is None:
                                 print('\t\t\t\t(no AP found)')
@@ -3162,7 +3153,7 @@ class Query(Exceptionable, Configurable, Saveable):
                                 if sample_override is None:
                                     nsim_data.append({
                                         'sample':sample_index,
-                                        'model':  model_index,
+                                        'model':model_index,
                                         'sim':sim_index,
                                         'nsim':n_sim_index,
                                         'inner':inner_index,
@@ -3171,12 +3162,12 @@ class Query(Exceptionable, Configurable, Saveable):
                                         'activation_zpos':fiber[11 * node, 2],
                                         'ap_time':time,
                                         'ap_init_node': node+1,
-                                        'fiber_node_count':len(vm_t_data[0, 1:])
+                                        'fiber_node_count':fiber_node_count
                                         })
                                 else:
                                     nsim_data.append({
                                         'sample':sample_index,
-                                        'model':  model_index,
+                                        'model':model_index,
                                         'sim':sim_index,
                                         'nsim':n_sim_index,
                                         'index':master_index,
@@ -3184,7 +3175,7 @@ class Query(Exceptionable, Configurable, Saveable):
                                         'activation_zpos':np.nan,
                                         'ap_time':time,
                                         'ap_init_node': node+1,
-                                        'fiber_node_count':len(vm_t_data[0, 1:])
+                                        'fiber_node_count':fiber_node_count
                                         })
                         locdata.extend(nsim_data)
                         pd.DataFrame(nsim_data).to_csv(os.path.join(outputs_path, 'AP_info.csv'),index=False)

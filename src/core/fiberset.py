@@ -287,7 +287,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     print('\t\tWARNING: Explicit fiberset index not specified.'
                           '\n\t\tProceeding with backwards compatible check for explicit.txt in:'
                           '\n\t\t{}'.format(sim_directory))
-
+                    
                 with open(os.path.join(sim_directory, 'explicit.txt')) as f:
                     # advance header
                     next(f)
