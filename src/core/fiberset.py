@@ -79,16 +79,18 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         fiberfiles.sort()
         for fiber in fiberfiles:
             half_nerve_length = self.search(Config.MODEL,'nerve_length')/2
-            absolute_shift = self.search(Config.SIM,'fibers','z_parameters','absolute_shift',optional = True)
+            absolute_offset = self.search(Config.SIM,'fibers','z_parameters','absolute_offset',optional = True)
+            absoff = 0 if absolute_offset is None else absolute_offset
             fiber_3d = np.loadtxt('{}/3D_fiberset/{}.dat'.format(sim_directory,fiber),skiprows=1)
             longit = np.loadtxt('{}/ss_coords/{}.dat'.format(sim_directory,fiber),skiprows=1)
-            shiftpoint = np.where(fiber_3d[:,2]<absolute_shift+half_nerve_length)[0][-1]
+            shiftpoint = np.where(fiber_3d[:,2]<absoff+half_nerve_length)[0][-1]
             shiftloc = longit[shiftpoint,2]
             length = float(np.loadtxt('{}/ss_lengths/{}.dat'.format(sim_directory,fiber)))
             override_shift = shiftloc-length/2
             fib = self._generate_z([(0,0)],override_length=length-2,override_shift = override_shift)
             fib[0] = [(x[0],x[1],x[2]+1) for x in fib[0]]
             fibers.extend(fib)
+            #TODO: modulus by INL
         self.fibers = fibers
         return self
 
@@ -403,7 +405,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             # account for difference between last node z and half fiber length -> must shift extra distance
             if override_shift is not None:
-                modshift = override_shift
+                modshift = override_shift % delta_z
             elif shift is None:
                 modshift = 0
             else:
