@@ -117,6 +117,9 @@ class Runner(Exceptionable, Configurable):
         # load all json configs into memory
         all_configs = self.load_configs()
 
+        run_pseudonym = self.configs[Config.RUN.value].get('pseudonym')
+        if run_pseudonym is not None: print('Run pseudonym:',run_pseudonym)
+
         def load_obj(path: str):
             """
             :param path: path to python obj file
@@ -148,7 +151,11 @@ class Runner(Exceptionable, Configurable):
             'sample.obj'
         )
 
-        print('SAMPLE {}'.format(self.configs[Config.RUN.value]['sample']))
+        sample_pseudonym = all_configs[Config.SAMPLE.value][0].get('pseudonym')
+
+        print('SAMPLE {}'.format(self.configs[Config.RUN.value]['sample']),
+              '- {}'.format(sample_pseudonym) if sample_pseudonym is not None else '')
+
         if self.configs[Config.RUN.value].get("post_java_only")!=True:
             # instantiate sample
             if smart and os.path.exists(sample_file):
@@ -247,7 +254,7 @@ class Runner(Exceptionable, Configurable):
 
                                         source_xy_dict: dict = source_sim.configs['sims']['fibers']['xy_parameters']
                                         xy_dict: dict = simulation.configs['sims']['fibers']['xy_parameters']
-                                        
+
                                         if not source_xy_dict == xy_dict:
                                             if xy_dict['mode']=='EXPLICIT':
                                                 print('\t\tWarning: cannot verify supersampled xy match since fiber xy mode is EXPLICIT')
@@ -259,7 +266,7 @@ class Runner(Exceptionable, Configurable):
                                         )
                                 else:
                                     potentials_exist.append(simulation.potentials_exist(sim_obj_dir))
-                                    
+
 
                             else:
                                 if not os.path.exists(sim_obj_dir):
@@ -297,7 +304,7 @@ class Runner(Exceptionable, Configurable):
                                         source_sim: simulation = load_obj(os.path.join(source_sim_obj_dir, 'sim.obj'))
                                         source_xy_dict: dict = source_sim.configs['sims']['fibers']['xy_parameters']
                                         xy_dict: dict = simulation.configs['sims']['fibers']['xy_parameters']
-                                        
+
                                         if not source_xy_dict == xy_dict:
                                             if xy_dict['mode']=='EXPLICIT':
                                                 print('\t\tWarning: cannot verify supersampled xy match as fiber xy mode is EXPLICIT')
@@ -468,7 +475,7 @@ class Runner(Exceptionable, Configurable):
         if sys.platform.startswith('darwin'):  # macOS
 
             subprocess.Popen(['{}/bin/comsol'.format(comsol_path), 'server'], close_fds=True)
-            time.sleep(30)        
+            time.sleep(10)
             os.chdir('src')
             os.system(
                 '{}/javac -classpath ../bin/json-20190722.jar:{}/plugins/* model/*.java -d ../bin'.format(jdk_path,
@@ -487,7 +494,7 @@ class Runner(Exceptionable, Configurable):
         elif sys.platform.startswith('linux'):  # linux
 
             subprocess.Popen(['{}/bin/comsol'.format(comsol_path), 'server'], close_fds=True)
-            time.sleep(30)
+            time.sleep(10)
             os.chdir('src')
             os.system(
                 '{}/javac -classpath ../bin/json-20190722.jar:{}/plugins/* model/*.java -d ../bin'.format(jdk_path,
@@ -505,7 +512,7 @@ class Runner(Exceptionable, Configurable):
 
         else:  # assume to be 'win64'
             subprocess.Popen(['{}\\bin\\win64\\comsolmphserver.exe'.format(comsol_path)], close_fds=True)
-            time.sleep(30)
+            time.sleep(10)
             os.chdir('src')
             os.system('""{}\\javac" '
                       '-Xlint -cp "..\\bin\\json-20190722.jar";"{}\\plugins\\*" '

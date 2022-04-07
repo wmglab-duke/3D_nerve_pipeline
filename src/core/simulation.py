@@ -60,6 +60,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 if type(value) == list and len(value) > 1:
                     # print('adding key {} to sub {}'.format(key, sub))
                     self.factors[path + '->' + key] = value
+                elif type(value) == list and len(value) <= 1:
+                    print("ERROR:",key,"is a list, but has length",len(value))
+                    self.throw(137)
                 elif type(value) == dict:
                     # print('recurse: {}'.format(value))
                     search(value, path + '->' + key)
@@ -843,9 +846,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
                     shutil.rmtree(os.path.join(sim_dir, product_index))
                 shutil.copytree(os.path.join(source, dirname), os.path.join(sim_dir, product_index))
                 if delete: shutil.rmtree(os.path.join(source, dirname))
-    
+
     def thresholds_exist(sample: int, model: int, sim: int, sim_dir: str, source: str):
-        
+
         allthresh = True
         for dirname in [f for f in os.listdir(source) if os.path.isdir(os.path.join(source, f))]:
             this_sample, this_model, this_sim, product_index = tuple(dirname.split('_'))
@@ -858,7 +861,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                         print('Missing threshold {}'.format(os.path.join(outdir,'thresh_'+file)))
                         allthresh=False
         return allthresh
-    
+
     def potentials_exist(self, sim_dir: str) -> bool:
         """
         Return bool deciding if potentials have already been written
