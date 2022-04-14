@@ -463,7 +463,7 @@ class Sample(Exceptionable, Configurable, Saveable):
             slide.plot(final=False, fix_aspect_ratio='True', axlabel=u"\u03bcm",
                        title='Initial sample from morphology masks')
             if plot_folder == True:
-                plt.savefig(plotpath + '/sample_initial')
+                plt.savefig(plotpath + '/sample_initial',dpi=300)
                 plt.clf()
                 plt.close('all')
             else:
@@ -576,7 +576,6 @@ class Sample(Exceptionable, Configurable, Saveable):
 
             # shift slide about (0,0)
             slide.move_center(np.array([0, 0]))
-            sys.exit()
             # Generate orientation point so src/core/query.py is happy
             if slide.orientation_angle is not None:
                 # choose outer (based on if nerve is present)
@@ -604,7 +603,7 @@ class Sample(Exceptionable, Configurable, Saveable):
             slide.plot(final=False, fix_aspect_ratio='True', axlabel=u"\u03bcm",
                        title='Final sample after any user specified processing')
             if plot_folder == True:
-                plt.savefig(plotpath + '/sample_final')
+                plt.savefig(plotpath + '/sample_final',dpi=300)
                 plt.clf()
                 plt.close()
             else:

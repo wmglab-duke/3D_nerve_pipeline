@@ -17,6 +17,7 @@ import pygame
 from pygame.locals import DOUBLEBUF, HWSURFACE, RESIZABLE
 from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE
 from pygame.colordict import THECOLORS
+from scipy.spatial import distance
 
 # ascent
 from src.core import Trace, Slide
@@ -254,7 +255,7 @@ class Deformable(Exceptionable):
             start_positions.append(np.array(body.position))
             dist = distance.euclidean(np.array(body.position),self.end.centroid())
             start_rotations.append(body.angle)
-            spring = pymunk.constraints.DampedSpring(centerbody,body,(0,0),(0,0), dist,1,10)
+            spring = pymunk.constraints.DampedSpring(centerbody,body,(0,0),(0,0), dist/4,.01,10)
             space.add(spring)
             anchorpoint = (def_coords[i][0][0],def_coords[i][1][0])
             endpoint = (def_coords[i][0][-1],def_coords[i][1][-1])
@@ -311,7 +312,7 @@ class Deformable(Exceptionable):
                     add_boundary()
     
             # update physics
-            step_physics(space, 50)
+            step_physics(space, 100)
     
             # draw screen
             if render:
