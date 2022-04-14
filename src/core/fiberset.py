@@ -288,7 +288,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     print('\t\tWARNING: Explicit fiberset index not specified.'
                           '\n\t\tProceeding with backwards compatible check for explicit.txt in:'
                           '\n\t\t{}'.format(sim_directory))
-                    
+
                 with open(os.path.join(sim_directory, 'explicit.txt')) as f:
                     # advance header
                     next(f)
@@ -439,7 +439,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             if override_shift is not None:
                 offset = 0
-            elif offset is None:
+            elif offset is None or offset=='random':
+                warnings.warn('No offset specified. Proceeding with (original default functionality) of randomized offset. Suppress this warning by including the parameter "offset":"random" in fiber z_parameters.')
                 offset = 0
                 random_offset_value = dz * (random.random() - 0.5)
             else:
