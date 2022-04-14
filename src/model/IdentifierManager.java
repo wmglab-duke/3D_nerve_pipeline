@@ -1,6 +1,6 @@
 /*
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 */
 
@@ -10,6 +10,7 @@ import org.json.JSONObject;
 
 import java.util.*;
 
+@SuppressWarnings({"unchecked","rawtypes","path"})
 public class IdentifierManager {
 
     private HashMap<String, Integer> identifierStates = new HashMap<>();
@@ -74,6 +75,7 @@ public class IdentifierManager {
             identifierPseudonyms.put(pseudonym, id);
             return id; // pseudonym was NOT already in use!
         }
+        System.out.println("WARNING: Attempted to use extant identifier manager pseudonym: "+pseudonym);
         return null; // pseudonym was already in use!
     }
 

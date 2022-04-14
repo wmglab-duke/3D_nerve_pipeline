@@ -2,34 +2,33 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
 # builtins
 import os
-import time
-
-import sys
+import shutil
+import subprocess
 from typing import List, Tuple, Union
 
 # packages
 import cv2
-import shutil
-import numpy as np
 import matplotlib.pyplot as plt
-import subprocess
-from shapely.geometry import LineString
+import numpy as np
+import sys
+import warnings
 from scipy.ndimage.morphology import binary_fill_holes
+from shapely.geometry import LineString
 from skimage import morphology
 
 
 # ascent
 from src.core import Slide, Map, Fascicle, Nerve, Trace
-from .deformable import Deformable
 from src.utils import Exceptionable, Configurable, Saveable, SetupMode, Config, MaskFileNames, NerveMode, \
     MaskInputMode, ReshapeNerveMode, DeformationMode, PerineuriumThicknessMode, WriteMode, CuffInnerMode, \
-    TemplateOutput, TemplateMode, ScaleInputMode
+    TemplateOutput, TemplateMode, ScaleInputMode, ShrinkageMode
+from .deformable import Deformable
 
 
 class Sample(Exceptionable, Configurable, Saveable):
@@ -135,7 +134,8 @@ class Sample(Exceptionable, Configurable, Saveable):
 
         if self.search(Config.SAMPLE, 'image_preprocessing', 'fill_holes', optional=True) == True:
             if self.search_mode(MaskInputMode, Config.SAMPLE) == MaskInputMode.INNER_AND_OUTER_COMPILED:
-                print('WARNING: Skipping fill holes since MaskInputMode is INNER_AND_OUTER_COMPILED. Change fill_holes to False to suppress this warning.')
+                print(
+                    'WARNING: Skipping fill holes since MaskInputMode is INNER_AND_OUTER_COMPILED. Change fill_holes to False to suppress this warning.')
             else:
                 img = binary_fill_holes(img)
         removal_size = self.search(Config.SAMPLE, 'image_preprocessing', 'object_removal_area', optional=True)
@@ -143,7 +143,6 @@ class Sample(Exceptionable, Configurable, Saveable):
             if removal_size < 0: self.throw(119)
             img = morphology.remove_small_objects(img, removal_size)
         cv2.imwrite(path, img.astype(int) * 255)
-
 
     def get_factor(self, scale_bar_mask_path: str, scale_bar_length: float, scale_bar_is_literal: bool) -> 'Sample':
         """
@@ -202,7 +201,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         # ADDITION: if only one slide present, check if names abide by <NAME>_0_0_<CODE>.tif format
         #           if not abiding, rename files so that they abide
         if len(self.map.slides) == 1:
-            print('Renaming input files to conform with map input interface where necessary.')
+            #print('Renaming input files to conform with map input interface where necessary.')
             source_dir = os.path.join(*self.map.slides[0].data()[3])
             source_files = os.listdir(source_dir)
             for mask_fname in [f.value for f in MaskFileNames if f.value in source_files]:
@@ -344,7 +343,7 @@ class Sample(Exceptionable, Configurable, Saveable):
 
             # preprocess binary masks
             mask_dims = []
-            for mask in ["COMPILED", "INNERS", "OUTERS", "NERVE","ORIENTATION"]:
+            for mask in ["COMPILED", "INNERS", "OUTERS", "NERVE", "ORIENTATION"]:
                 maskfile = getattr(MaskFileNames, mask)
                 if exists(maskfile):
                     mask_dims.append(cv2.imread(getattr(maskfile, 'value')).shape)
@@ -354,7 +353,8 @@ class Sample(Exceptionable, Configurable, Saveable):
             scalemask = getattr(MaskFileNames, "SCALE_BAR")
             if exists(scalemask):
                 mask_dims.append(cv2.imread(getattr(scalemask, 'value')).shape)
-                if not np.all(np.array(mask_dims) == mask_dims[0]): print('WARNING: Scale bar mask has a different resolution than morphology masks. \nProgram will continue and assume that the scale bar mask microns/pixel ratio is correct.')
+                if not np.all(np.array(mask_dims) == mask_dims[0]): print(
+                    'WARNING: Scale bar mask has a different resolution than morphology masks. \nProgram will continue and assume that the scale bar mask microns/pixel ratio is correct.')
             # fascicles list
             fascicles: List[Fascicle] = []
 
@@ -434,7 +434,30 @@ class Sample(Exceptionable, Configurable, Saveable):
                 slide.orientation_angle = np.arctan2(ori_y - outer_y, ori_x - outer_x)
 
             # shrinkage correction
-            slide.scale(1 + self.search(Config.SAMPLE, "scale", "shrinkage"))
+            s_mode = self.search_mode(ShrinkageMode, Config.SAMPLE, optional=True)
+            s_pre = self.search(Config.SAMPLE, "scale", "shrinkage")
+            if s_mode is None:
+                print('WARNING: ShrinkageMode in Config.Sample is not defined or mode provided is not a known option. '
+                      'Proceeding with backwards compatible (i.e., original default functionality) of LENGTH_FORWARDS'
+                      ' shrinkage correction.\n')
+                shrinkage_correction = 1 + s_pre
+            else:
+                shrinkage_correction = None
+                if s_mode == ShrinkageMode.LENGTH_BACKWARDS:
+                    shrinkage_correction = 1 / (1 - s_pre)
+                elif s_mode == ShrinkageMode.LENGTH_FORWARDS:
+                    shrinkage_correction = s_pre + 1
+                elif s_mode == ShrinkageMode.AREA_BACKWARDS:
+                    shrinkage_correction = 1 / np.sqrt(1 - s_pre)
+                elif s_mode == ShrinkageMode.AREA_FORWARDS:
+                    shrinkage_correction = np.sqrt(1 + s_pre)
+                else:
+                    self.throw(134)
+
+            if shrinkage_correction < 1:
+                self.throw(133)
+
+            slide.scale(shrinkage_correction)
 
             self.slides.append(slide)
 
@@ -454,9 +477,10 @@ class Sample(Exceptionable, Configurable, Saveable):
 
         if plot == True:
             plt.figure()
-            slide.plot(final=False, fix_aspect_ratio='True',axlabel=u"\u03bcm",title='Initial sample from morphology masks')
+            slide.plot(final=False, fix_aspect_ratio='True', axlabel=u"\u03bcm",
+                       title='Initial sample from morphology masks')
             if plot_folder == True:
-                plt.savefig(plotpath + '/sample_initial')
+                plt.savefig(plotpath + '/sample_initial',dpi=300)
                 plt.clf()
                 plt.close('all')
             else:
@@ -485,16 +509,17 @@ class Sample(Exceptionable, Configurable, Saveable):
 
         # repositioning!
         for i, slide in enumerate(self.slides):
-            print('\tslide {} of {}'.format(1 + i, len(self.slides)))
+            #print('\tslide {} of {}'.format(1 + i, len(self.slides)))
             # title = ''
 
             if nerve_mode == NerveMode.NOT_PRESENT and deform_mode is not DeformationMode.NONE:
                 self.throw(40)
 
             partially_deformed_nerve = None
+            slide.move_center(np.array([0, 0]))
 
             if deform_mode == DeformationMode.PHYSICS:
-                print('\t\tsetting up physics')
+                #print('\tsetting up physics')
                 if 'morph_count' in self.search(Config.SAMPLE).keys():
                     morph_count = self.search(Config.SAMPLE, 'morph_count')
                 else:
@@ -502,7 +527,7 @@ class Sample(Exceptionable, Configurable, Saveable):
 
                 if 'deform_ratio' in self.search(Config.SAMPLE).keys():
                     deform_ratio = self.search(Config.SAMPLE, 'deform_ratio')
-                    print('\t\tdeform ratio set to {}'.format(deform_ratio))
+                    print('\tdeform ratio set to {}'.format(deform_ratio))
                 else:
                     self.throw(118)
 
@@ -510,11 +535,11 @@ class Sample(Exceptionable, Configurable, Saveable):
                 sep_fascicles = self.search(Config.SAMPLE, "boundary_separation", "fascicles")
                 sep_nerve = None
 
-                print('\t\tensuring minimum fascicle separation of {} um'.format(sep_fascicles))
+                print('\tensuring minimum fascicle separation of {} um'.format(sep_fascicles))
 
                 if 'nerve' in self.search(Config.SAMPLE, 'boundary_separation').keys():
                     sep_nerve = self.search(Config.SAMPLE, 'boundary_separation', 'nerve')
-                    print('\t\tensuring minimum nerve:fascicle separation of {} um'.format(sep_nerve))
+                    print('\tensuring minimum nerve:fascicle separation of {} um'.format(sep_nerve))
 
                 #scale nerve trace down by sep nerve, will be scaled back up later
                 pre_area = slide.nerve.area()
@@ -525,7 +550,7 @@ class Sample(Exceptionable, Configurable, Saveable):
 
                 deformable = Deformable.from_slide(slide, ReshapeNerveMode.CIRCLE)
 
-                movements, rotations = deformable.deform(morph_count=morph_count,
+                movements, rotations = deformable.spring_deform(morph_count=morph_count,
                                                          render=deform_animate,
                                                          minimum_distance=sep_fascicles,
                                                          ratio=deform_ratio)
@@ -561,14 +586,13 @@ class Sample(Exceptionable, Configurable, Saveable):
                     slide.nerve = slide.reshaped_nerve(reshape_nerve_mode)
                 #deforms+offsets usually shrinks the area a bit, so reset back to the original area
                 if slide.nerve.area()<pre_area:
-                    slide.scale((pre_area/slide.nerve.area())**.5)
+                    slide.nerve.scale((pre_area/slide.nerve.area())**.5)
                 else:
                     print('Note: nerve area before deformation was {}, post deformation is {}'.format(
                         pre_area, self.nerve.area()))
 
             # shift slide about (0,0)
             slide.move_center(np.array([0, 0]))
-
             # Generate orientation point so src/core/query.py is happy
             if slide.orientation_angle is not None:
                 # choose outer (based on if nerve is present)
@@ -583,6 +607,9 @@ class Sample(Exceptionable, Configurable, Saveable):
                 # find intersection point with outer (interpolated)
                 slide.orientation_point = np.array(ray.intersection(outer.polygon().boundary))
 
+            #ensure that nothing went wrong in slide processing
+            slide.validation()
+
         # scale with ratio = 1 (no scaling happens, but connects the ends of each trace to itself)
         self.scale(1)
 
@@ -590,9 +617,10 @@ class Sample(Exceptionable, Configurable, Saveable):
 
         if plot == True:
             plt.figure()
-            slide.plot(final=False, fix_aspect_ratio='True',axlabel=u"\u03bcm",title='Final sample after any user specified processing')
+            slide.plot(final=False, fix_aspect_ratio='True', axlabel=u"\u03bcm",
+                       title='Final sample after any user specified processing')
             if plot_folder == True:
-                plt.savefig(plotpath + '/sample_final')
+                plt.savefig(plotpath + '/sample_final',dpi=300)
                 plt.clf()
                 plt.close()
             else:

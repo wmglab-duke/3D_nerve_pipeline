@@ -2,13 +2,14 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
 import random
 import warnings
 from typing import List, Tuple
+import shutil
 
 from shapely.affinity import scale
 from shapely.geometry import LineString, Point
@@ -17,6 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import scipy.stats as stats
+import shutil
 
 # ascent
 from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberGeometry,
@@ -71,15 +73,24 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         """
         :return:
         """
-        
+
         fibers = []
         fiberfiles = [int(os.path.splitext(x)[0]) for x in os.listdir(sim_directory+'/ss_coords') if x.endswith('.dat')]
         fiberfiles.sort()
         for fiber in fiberfiles:
+            half_nerve_length = self.search(Config.MODEL,'nerve_length')/2
+            absolute_offset = self.search(Config.SIM,'fibers','z_parameters','absolute_offset',optional = True)
+            absoff = 0 if absolute_offset is None else absolute_offset
+            fiber_3d = np.loadtxt('{}/3D_fiberset/{}.dat'.format(sim_directory,fiber),skiprows=1)
+            longit = np.loadtxt('{}/ss_coords/{}.dat'.format(sim_directory,fiber),skiprows=1)
+            shiftpoint = np.where(fiber_3d[:,2]<absoff+half_nerve_length)[0][-1]
+            shiftloc = longit[shiftpoint,2]
             length = float(np.loadtxt('{}/ss_lengths/{}.dat'.format(sim_directory,fiber)))
-            fib = self._generate_z([(0,0)],override_length=length-2)
+            override_shift = shiftloc-length/2
+            fib = self._generate_z([(0,0)],override_length=length-2,override_shift = override_shift)
             fib[0] = [(x[0],x[1],x[2]+1) for x in fib[0]]
             fibers.extend(fib)
+            #TODO: modulus by INL
         self.fibers = fibers
         return self
 
@@ -267,8 +278,16 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             elif xy_mode == FiberXYMode.EXPLICIT:
 
-                if not os.path.exists(os.path.join(sim_directory, 'explicit.txt')):
-                    self.throw(83)
+                explicit_index = self.search(Config.SIM, 'fibers','xy_parameters','explicit_fiberset_index',optional=True)
+
+                if explicit_index is not None:
+                    explicit_source = os.path.join(sim_directory.split(os.sep)[0],os.sep,*sim_directory.split(os.sep)[1:-4],'explicit_fibersets','{}.txt'.format(explicit_index))
+                    explicit_dest = os.path.join(sim_directory,'explicit.txt')
+                    shutil.copyfile(explicit_source,explicit_dest)
+                else:
+                    print('\t\tWARNING: Explicit fiberset index not specified.'
+                          '\n\t\tProceeding with backwards compatible check for explicit.txt in:'
+                          '\n\t\t{}'.format(sim_directory))
 
                 with open(os.path.join(sim_directory, 'explicit.txt')) as f:
                     # advance header
@@ -289,7 +308,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 self.sample.slides[0].plot(final=False, fix_aspect_ratio='True',axlabel=u"\u03bcm",title = 'Fiber locations for nerve model')
                 for point in points:
                     plt.plot(point[0], point[1], 'r.', markersize = 1)
-                if self.search(Config.SIM, 'plot_folder',optional = True) == True: 
+                if self.search(Config.SIM, 'plot_folder',optional = True) == True:
                     plt.savefig(sim_directory+'/plots/fibers_xy.png',dpi=300)
                     fig.clear
                     plt.close(fig)
@@ -306,7 +325,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         for fiber_ind, fiber in enumerate(self.fibers):
             ax.plot(fiber[0][0], fiber[0][1], color=fiber_colors[fiber_ind], marker='o', markersize=size)
 
-    def _generate_z(self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False) -> np.ndarray:
+    def _generate_z(self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False, override_shift = None) -> np.ndarray:
 
         fibers = []
 
@@ -375,7 +394,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     inter_length = eval(inter_length_str)
 
             z_steps: List = []
-            while (sum(z_steps) - half_fiber_length) < 1:
+            while (sum(z_steps) - half_model_length) < 1:
                 z_steps += [(node_length / 2) + (paranodal_length_1 / 2),
                             (paranodal_length_1 / 2) + (paranodal_length_2 / 2),
                             (paranodal_length_2 / 2) + (inter_length / 2),
@@ -385,7 +404,14 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                             (paranodal_length_1 / 2) + (node_length / 2)]
 
             # account for difference between last node z and half fiber length -> must shift extra distance
-            my_z_shift_to_center_in_fiber_range = half_fiber_length - sum(z_steps)
+            if override_shift is not None:
+                modshift = override_shift % delta_z
+            elif shift is None:
+                modshift = 0
+            else:
+                modshift = shift % delta_z
+
+            my_z_shift_to_center_in_fiber_range = half_model_length - sum(z_steps) + modshift
 
             reverse_z_steps = z_steps.copy()
             reverse_z_steps.reverse()
@@ -410,8 +436,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             # get offset param - NOTE: raw value is a FRACTION of dz (explanation for multiplication by dz)
 
             offset = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value,'offset',optional=True)
-            
-            if offset is None: 
+
+            if override_shift is not None:
+                offset = 0
+            elif offset is None or offset=='random':
+                warnings.warn('No offset specified. Proceeding with (original default functionality) of randomized offset. Suppress this warning by including the parameter "offset":"random" in fiber z_parameters.')
                 offset = 0
                 random_offset_value = dz * (random.random() - 0.5)
             else:
@@ -419,7 +448,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     offset = offset*dz
                 else:
                     self.throw(99)
-             
+
             # compute offset z coordinate
             z_offset = [my_z + offset + random_offset_value + additional_offset for my_z in z_values]
 
@@ -437,7 +466,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             return my_fiber
 
-      
+
         # %% START ALGORITHM
 
         # get top-level fiber z generation
@@ -464,7 +493,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             else:
                 if self.configs['sims']['fibers']['z_parameters'].get('full_nerve_length')==True:
                     self.throw(127)
-                    
+
                 min_fiber_z_limit = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'min')
                 max_fiber_z_limit = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'max')
 
@@ -473,30 +502,22 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
                 fiber_length = (max_fiber_z_limit - min_fiber_z_limit) if override_length is None else override_length
 
-            half_fiber_length = fiber_length / 2
+            if self.search(Config.SIM,
+                           'fibers',
+                           FiberZMode.parameters.value,
+                           'longitudinally_centered',optional=True) is False:
+                print('WARNING: the sim>fibers>z_parameters>longitudinally_centered parameter is deprecated.\
+                      \nFibers will be centered to the model.')
 
-            if not ('longitudinally_centered' in self.configs['sims']['fibers']['z_parameters'].keys()):
-                longitudinally_centered = True
-            else:
-                longitudinally_centered = self.search(Config.SIM,
-                                                      'fibers',
-                                                      FiberZMode.parameters.value,
-                                                      'longitudinally_centered')
+            shift =  self.search(Config.SIM,
+                           'fibers',
+                           FiberZMode.parameters.value,
+                           'absolute_offset',optional=True)
 
-            if longitudinally_centered:
-                z_shift_to_center_in_model_range = (model_length - fiber_length) / 2
-            else:
-                z_shift_to_center_in_model_range = 0
-
-            # xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
-            # xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
-
-            # check that proximal model length is greater than or equal to fiber length (fibers only in nerve trunk)
-            # override this functionality if using SL (not in nerve trunk)
+            half_model_length = model_length / 2
 
             assert model_length >= fiber_length, 'proximal length: ({}) < fiber length: ({})'.format(model_length,
                                                                                                      fiber_length)
-
             fiber_geometry_mode_name: str = self.search(Config.SIM, 'fibers', 'mode')
 
             # use key from above to get myelination mode from fiber_z
@@ -608,7 +629,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                                         myelinated,
                                                         delta_z,
                                                         x, y,
-                                                        z_shift_to_center_in_model_range + z_shift_to_center_in_fiber_range)
+                                                        z_shift_to_center_in_fiber_range)
                     if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(np.array(fiber_pre)[:, 2]) > fiber_length:
                         self.throw(119)
                     if diam_distribution:
@@ -631,9 +652,9 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                                           fiber_geometry_mode_name,
                                           'delta_zs')
 
-                z_top_half = np.arange(fiber_length / 2, fiber_length + delta_z, delta_z)
-                z_bottom_half = -np.flip(z_top_half) + fiber_length
-                while z_top_half[-1] > fiber_length:
+                z_top_half = np.arange(model_length / 2, model_length + delta_z, delta_z)
+                z_bottom_half = -np.flip(z_top_half) + model_length
+                while z_top_half[-1] > model_length:
                     # trim top of top half
                     z_top_half = z_top_half[:-1]
                     z_bottom_half = z_bottom_half[1:]
@@ -646,8 +667,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     fiber_pre = build_fiber_with_offset(list(np.concatenate((z_bottom_half[:-1], z_top_half))),
                                                         myelinated,
                                                         delta_z,
-                                                        x, y,
-                                                        z_shift_to_center_in_model_range)
+                                                        x, y)
                     if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(
                             np.array(fiber_pre)[:, 2]) > fiber_length: self.throw(119)
                     if diam_distribution:

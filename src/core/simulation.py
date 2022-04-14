@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -55,23 +55,22 @@ class Simulation(Exceptionable, Configurable, Saveable):
         if len(self.factors.items()) > 0:
             self.factors = dict()
 
-        def search(dictionary, remaining_n_dims, path):
-            if remaining_n_dims < 1:
-                return
+        def search(dictionary, path):
             for key, value in dictionary.items():
                 if type(value) == list and len(value) > 1:
                     # print('adding key {} to sub {}'.format(key, sub))
                     self.factors[path + '->' + key] = value
-                    remaining_n_dims -= 1
+                elif type(value) == list and len(value) <= 1:
+                    print("ERROR:",key,"is a list, but has length",len(value))
+                    self.throw(137)
                 elif type(value) == dict:
                     # print('recurse: {}'.format(value))
-                    search(value, remaining_n_dims, path + '->' + key)
+                    search(value, path + '->' + key)
 
         for flag in ['fibers', 'waveform', 'supersampled_bases']:
             if flag in self.configs[Config.SIM.value].keys():
                 search(
                     self.configs[Config.SIM.value][flag],
-                    self.search(Config.SIM, "n_dimensions"),
                     flag
                 )
 
@@ -149,6 +148,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
         fibersets_directory = os.path.join(sim_directory, 'fibersets')
         if not os.path.exists(fibersets_directory):
             os.makedirs(fibersets_directory)
+        
+        source_sim = self.search(Config.SIM, 'supersampled_bases', 'source_sim')
+        source_sim_dir = os.path.join(os.path.split(sim_directory)[0],str(source_sim))
 
         self.fibersets = []
         fiberset_factors = {key: value for key, value in self.factors.items() if key.split('->')[0] == 'fibers'}
@@ -172,7 +174,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, sim_copy) \
                 .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                .generate_from_ss(sim_directory) \
+                .generate_from_ss(source_sim_dir) \
                 .write(WriteMode.DATA, fiberset_directory)
 
             self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
@@ -829,9 +831,10 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         # fiber_z.json files
         shutil.copy2(os.path.join(os.environ[Env.PROJECT_PATH.value], 'config', 'system', 'fiber_z.json'), target)
+        shutil.copy2(os.path.join(os.environ[Env.PROJECT_PATH.value], 'config', 'system', 'slurm_params.json'), target)
 
     @staticmethod
-    def import_n_sims(sample: int, model: int, sim: int, sim_dir: str, source: str):
+    def import_n_sims(sample: int, model: int, sim: int, sim_dir: str, source: str, delete: bool=False):
         print(f'sample: {sample}, model: {model}, sim: {sim}, sim_dir: {sim_dir}, source: {source}')
 
         sim_dir = os.path.join(sim_dir, 'n_sims')
@@ -842,6 +845,22 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 if os.path.isdir(os.path.join(sim_dir, product_index)):
                     shutil.rmtree(os.path.join(sim_dir, product_index))
                 shutil.copytree(os.path.join(source, dirname), os.path.join(sim_dir, product_index))
+                if delete: shutil.rmtree(os.path.join(source, dirname))
+
+    def thresholds_exist(sample: int, model: int, sim: int, sim_dir: str, source: str):
+
+        allthresh = True
+        for dirname in [f for f in os.listdir(source) if os.path.isdir(os.path.join(source, f))]:
+            this_sample, this_model, this_sim, product_index = tuple(dirname.split('_'))
+            if sample == int(this_sample) and model == int(this_model) and sim == int(this_sim):
+                nsim_dir = os.path.join(source,dirname)
+                outdir = os.path.join(nsim_dir,'data','outputs')
+                indir = os.path.join(nsim_dir,'data','inputs')
+                for file in [f for f in os.listdir(indir) if f.startswith('inner') and f.endswith('.dat')]:
+                    if not os.path.exists(os.path.join(outdir,'thresh_'+file)):
+                        print('Missing threshold {}'.format(os.path.join(outdir,'thresh_'+file)))
+                        allthresh=False
+        return allthresh
 
     def potentials_exist(self, sim_dir: str) -> bool:
         """

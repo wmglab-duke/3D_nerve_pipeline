@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -109,6 +109,8 @@ class Trace(Exceptionable):
         
         return distance
 
+        return distance
+
     def smooth(self,distance,area_compensation=True):
         """
         Smooths a contour using a dilation followed by erosion
@@ -127,6 +129,7 @@ class Trace(Exceptionable):
         else:
             self.scale(1)
         self.points = np.flip(self.points,axis = 0) # set points to opencv orientation
+
 
     def scale(self, factor: float = 1, center: Union[List[float], str] = 'centroid'):
         """
@@ -432,7 +435,7 @@ class Trace(Exceptionable):
         return Trace(points, self.configs[Config.EXCEPTIONS.value])
 
     # %% output
-    def plot(self, plot_format: str = 'k-', color: Tuple[float, float, float, float] = None, ax: plt.Axes = None,centroid = True):
+    def plot(self, plot_format: str = 'k-', color: Tuple[float, float, float, float] = None, ax: plt.Axes = None,centroid = False, linewidth=1):
         """
         :param ax:
         :param color:
@@ -448,9 +451,10 @@ class Trace(Exceptionable):
         if color is not None:
             ax.fill(points[:, 0], points[:, 1], color=color)
 
-        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=1)
+        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth)
 
-        ax.axes.scatter(self.centroid()[0],self.centroid()[1],c = color)
+        if centroid:
+            ax.axes.scatter(self.centroid()[0],self.centroid()[1],c = color)
 
 
     def plot_centroid(self, plot_format: str = 'k*'):

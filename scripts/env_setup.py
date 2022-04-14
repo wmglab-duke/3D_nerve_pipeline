@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -19,7 +19,7 @@ def run(args, env_path = os.path.join('config', 'system', 'env.json')):
         while True:
             value = input('Enter path for {}: '.format(key))
 
-            if os.path.exists(value):
+            if os.path.exists(value) or key=='ASCENT_NSIM_EXPORT_PATH':
                 result[key] = value
                 break
             else:

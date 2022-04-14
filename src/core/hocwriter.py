@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -216,8 +216,11 @@ class HocWriter(Exceptionable, Configurable, Saveable):
         protocol: dict = self.search(Config.SIM, "protocol")
 
         protocol_mode_name: str = self.search(Config.SIM, 'protocol', 'mode')
-        protocol_mode: NeuronRunMode = \
-            [mode for mode in NeuronRunMode if str(mode).split('.')[-1] == protocol_mode_name][0]
+        try:
+            protocol_mode: NeuronRunMode = \
+                [mode for mode in NeuronRunMode if str(mode).split('.')[-1] == protocol_mode_name][0]
+        except:
+            self.throw(135)
 
         if protocol_mode != NeuronRunMode.FINITE_AMPLITUDES:
             find_thresh = 1

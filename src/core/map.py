@@ -2,7 +2,7 @@
 
 """
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
+Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
@@ -127,7 +127,7 @@ class Map(Exceptionable, Configurable):
 
         else:
             # the above if statements are exhaustive, so this should be unreachable
-            print('how the hell?')
+            self.throw(136)
 
     def find(self, cassette: str, number: int) -> 'SlideInfo':
         """

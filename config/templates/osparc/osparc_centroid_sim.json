@@ -1,46 +1,40 @@
 {
-  "pseudonym": "beta sim",
-  "n_dimensions": 0,
+  "n_dimensions": "osparc",
+  "plot_folder" : true,
   "active_srcs": {
-    "Purdue.json": [[1, -1]],
-    "default": [[1, -1]]
+    "default": [[-1, 1]],
+    "M18HumanBipolar45.json": [[-1, 1]],
+    "M18HumanBipolar360.json": [[-1, 1]],
+    "M18HumanMonopolar45.json": [[1]],
+    "M18HumanMonopolar360.json": [[1]],
+    "M18RatBipolar45.json": [[-1, 1]],
+    "M18RatBipolar360.json": [[-1, 1]],
+    "M18RatMonopolar45.json": [[1]],
+    "M18RatMonopolar360.json": [[1]]
   },
   "fibers": {
-    "plot": false,
-    "mode": "MRG_DISCRETE",
+    "plot": true,
+    "mode": "MRG_INTERPOLATION",
     "xy_trace_buffer": 5.0,
     "z_parameters": {
-      "diameter": 8.7,
-      "min": 0,
-      "max": 12500,
+      "diameter": "osparc",
+      "full_nerve_length": true,
       "offset": 0,
-      "seed": 123
+      "seed": 123,
     },
     "xy_parameters": {
-      "mode": "WHEEL",
-      "spoke_count": 6,
-      "point_count_per_spoke": 2,
-      "find_centroid": true,
-      "angle_offset_is_in_degrees": true,
-      "angle_offset": 0
+      "mode": "CENTROID"
     }
   },
   "waveform": {
+    "plot": true,
     "global": {
-      "unit": "ms",
       "dt": 0.001,
-      "start": 0,
       "on": 1,
       "off": 49,
       "stop": 50
     },
-    "BIPHASIC_PULSE_TRAIN_Q_BALANCED_UNEVEN_PW": {
-      "pulse_width_1": 0.1,
-      "inter_phase": 0.1,
-      "pulse_width_2": 0.4,
-      "pulse_repetition_freq": 1,
-      "digits": 1
-    }
+    "osparc": "osparc"
   },
   "intracellular_stim": {
     "times": {
@@ -59,10 +53,10 @@
       "times": [0]
     },
     "time": {
-      "vm": false,
+      "vm": true,
       "gating": false,
       "istim": false,
-      "locs": [0]
+      "locs": [0.7]
     },
     "runtimes": false
   },
@@ -77,9 +71,10 @@
     },
     "bounds_search": {
       "mode": "PERCENT_INCREMENT",
-      "step": 10,
       "top": -1,
-      "bottom": -0.01
+      "bottom": -0.01,
+      "step": 10,
+      "scout_sim": false
     },
     "termination_criteria": {
       "mode": "PERCENT_DIFFERENCE",
@@ -88,8 +83,8 @@
   },
   "supersampled_bases": {
     "generate": false,
-    "use": false,
-    "dz": 0,
-    "source_sim": 0
+    "use": true,
+    "dz": 1,
+    "source_sim": 1
   }
 }
