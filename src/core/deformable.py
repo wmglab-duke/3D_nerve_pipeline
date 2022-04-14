@@ -59,7 +59,7 @@ class Deformable(Exceptionable):
         :param minimum_distance: separation between original inputs
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
-        render=True
+        render=False
         # copy the "contents" so multiple deformations are possible
         contents = [trace.deepcopy() for trace in self.contents]
 
@@ -179,7 +179,6 @@ class Deformable(Exceptionable):
         movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
         rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
         import sys
-        sys.exit()
         return movements, rotations
     
     def spring_deform(self,
@@ -251,20 +250,29 @@ class Deformable(Exceptionable):
         fascicles = [trace.pymunk_poly() for trace in contents]
         for i, (body, shape) in enumerate(fascicles):
             shape.elasticity = 0.0
+            body.moment=float('inf')
             space.add(body, shape)
+            body.moment=float('inf')
+            print(body.moment)
             start_positions.append(np.array(body.position))
             dist = distance.euclidean(np.array(body.position),self.end.centroid())
             start_rotations.append(body.angle)
-            spring = pymunk.constraints.DampedSpring(centerbody,body,(0,0),(0,0), dist/4,.01,10)
-            space.add(spring)
             anchorpoint = (def_coords[i][0][0],def_coords[i][1][0])
             endpoint = (def_coords[i][0][-1],def_coords[i][1][-1])
             anchor = pymunk.Body(body_type=pymunk.Body.KINEMATIC)      
             anchor.position = endpoint
             space.add(anchor)
             anchordist = distance.euclidean(anchorpoint,body.position)
-            anchorspring = pymunk.constraints.DampedSpring(anchor,body,(0,0),(0,0),anchordist,1,10)
+            enddist = distance.euclidean(endpoint,body.position)
+            use = anchordist if anchordist>enddist else enddist
+            diff = anchordist-enddist
+            spring = pymunk.constraints.DampedSpring(centerbody,body,(0,0),(0,0), dist-diff,.1,20)
+            space.add(spring)
+            anchorspring = pymunk.constraints.DampedSpring(anchor,body,(0,0),(0,0),anchordist,.1,20)
+            assert((dist-diff+anchordist-distance.euclidean(endpoint,self.end.centroid()))<1)
             space.add(anchorspring)
+            print(body.moment)
+
     
         def add_boundary():
             for seg in morph_step:
@@ -426,8 +434,11 @@ class Deformable(Exceptionable):
             a = end.mean_radius()
             points = [nrdoi,(troid[0] + (1 * a * np.cos(angle)), troid[1] + (1 * a * np.sin(angle)))]
             ray = LineString(points)
-    
-            start_intersection = ray.intersection(start.polygon().boundary).coords[0]
+            
+            #startbound = start.polygon().boundary
+            startbound = start.to_ellipse().polygon().boundary
+            
+            start_intersection = ray.intersection(startbound).coords[0]
             end_intersection = ray.intersection(end.polygon().boundary).coords[0]
             coords = [np.linspace(start_intersection[0],end_intersection[0],num=count),
                       np.linspace(start_intersection[1],end_intersection[1],num=count)]
