@@ -106,6 +106,8 @@ class Trace(Exceptionable):
         # cleanup
         self.__update()
         pco.Clear()
+        
+        return distance
 
     def smooth(self,distance,area_compensation=True):
         """

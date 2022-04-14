@@ -222,7 +222,7 @@ class Fascicle(Exceptionable):
         self.inners = [self.outer.deepcopy()]
 
         # scale up outer trace
-        self.outer.offset(fit=fit)
+        self.outer.thickness = self.outer.offset(fit=fit)
         
         #check for any bad traces
         self.validate()
