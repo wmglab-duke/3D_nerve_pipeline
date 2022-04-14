@@ -59,7 +59,6 @@ class Deformable(Exceptionable):
         :param minimum_distance: separation between original inputs
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
-        render=True
         # copy the "contents" so multiple deformations are possible
         contents = [trace.deepcopy() for trace in self.contents]
 
@@ -184,7 +183,6 @@ class Deformable(Exceptionable):
         movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
         rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
         import sys
-        sys.exit()
         return movements, rotations
 
     def spring_deform(self,
@@ -192,7 +190,7 @@ class Deformable(Exceptionable):
                morph_index_step: int = 10,
                render: bool = True,
                minimum_distance: float = 0.0,
-               ratio: float = None) -> Tuple[List[tuple], List[float]]:
+               ratio: float = None, comp = False, progress_bar = True) -> Tuple[List[tuple], List[float]]:
         """
         :param ratio:
         :param morph_count: number of incremental traces including the start and end of boundary
@@ -202,7 +200,6 @@ class Deformable(Exceptionable):
         :param minimum_distance: separation between original inputs
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
-        render=True
         # copy the "contents" so multiple deformations are possible
         contents = [trace.deepcopy() for trace in self.contents]
 
@@ -302,7 +299,7 @@ class Deformable(Exceptionable):
             if loop_count % morph_index_step == 0:
                 # print('PRINT PRINT PRINT')
                 morph_index += 1
-                Deformable.printProgressBar(morph_index,
+                if progress_bar: Deformable.printProgressBar(morph_index,
                                             len(morph_steps),
                                             prefix='\t\tdeforming',
                                             suffix='complete',
@@ -564,7 +561,7 @@ class Deformable(Exceptionable):
             nrdoi = end.centroid()
             angle = math.atan2(troid[1]-nrdoi[1], troid[0]-nrdoi[0])
             a = end.mean_radius()
-            points = [nrdoi,(troid[0] + (1 * a * np.cos(angle)), troid[1] + (1 * a * np.sin(angle)))]
+            points = [nrdoi,(troid[0] + (5 * a * np.cos(angle)), troid[1] + (5 * a * np.sin(angle)))]
             ray = LineString(points)
 
             start_intersection = ray.intersection(start.polygon().boundary).coords[0]
@@ -587,7 +584,7 @@ class Deformable(Exceptionable):
         return defcoords
 
     @staticmethod
-    def from_slide(slide: Slide, mode: ReshapeNerveMode, sep_nerve: float = None) -> 'Deformable':
+    def from_slide(slide: Slide, mode: ReshapeNerveMode, sep_nerve: float = None,override_r=None) -> 'Deformable':
         # method in slide will pull out each trace and add to a list of contents, go through traces and build polygons
 
         # exception configuration data
