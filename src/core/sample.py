@@ -630,7 +630,7 @@ class Sample(Exceptionable, Configurable, Saveable):
             # slide.nerve.plot()
             # plt.plot(*tuple(slide.nerve.points[slide.orientation_point_index][:2]), 'b*')
             # plt.show()
-
+        sys.exit()
         return self
 
     def io_from_compiled(self, imgin, i_out, o_out):

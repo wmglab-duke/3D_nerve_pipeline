@@ -533,7 +533,7 @@ class Trace(Exceptionable):
         radius = 1
         vertices = [tuple(point[:2]) for point in copy.points]
         inertia = pymunk.moment_for_poly(mass, vertices)
-        body = pymunk.Body(mass, inertia)
+        body = pymunk.Body(mass,1)
         body.position = self.centroid()  # position is tracked from trace centroid
         shape = pymunk.Poly(body, vertices, radius=radius)
         shape.density = 0.01  # all fascicles have same density so this value does not matter
