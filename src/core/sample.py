@@ -499,6 +499,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                 self.throw(40)
 
             partially_deformed_nerve = None
+            slide.move_center(np.array([0, 0]))
 
             if deform_mode == DeformationMode.PHYSICS:
                 #print('\tsetting up physics')
@@ -532,7 +533,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                 
                 deformable = Deformable.from_slide(slide, ReshapeNerveMode.CIRCLE)
 
-                movements, rotations = deformable.deform(morph_count=morph_count,
+                movements, rotations = deformable.spring_deform(morph_count=morph_count,
                                                          render=deform_animate,
                                                          minimum_distance=sep_fascicles,
                                                          ratio=deform_ratio)
@@ -575,7 +576,7 @@ class Sample(Exceptionable, Configurable, Saveable):
 
             # shift slide about (0,0)
             slide.move_center(np.array([0, 0]))
-
+            sys.exit()
             # Generate orientation point so src/core/query.py is happy
             if slide.orientation_angle is not None:
                 # choose outer (based on if nerve is present)

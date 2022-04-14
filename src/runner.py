@@ -23,10 +23,10 @@ import subprocess
 from copy import deepcopy
 from quantiphy import Quantity
 from shapely.geometry import Point
-import pymunkoptions
+# import pymunkoptions
 import traceback
 
-pymunkoptions.options["debug"] = False
+# pymunkoptions.options["debug"] = False
 
 # ascent
 from src.core import Sample, Simulation, Waveform

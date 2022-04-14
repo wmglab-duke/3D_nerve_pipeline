@@ -58,7 +58,7 @@ class Deformable(Exceptionable):
         :param minimum_distance: separation between original inputs
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
-
+        render=True
         # copy the "contents" so multiple deformations are possible
         contents = [trace.deepcopy() for trace in self.contents]
 
@@ -70,7 +70,7 @@ class Deformable(Exceptionable):
         # offset all the traces to provide for an effective minimum distance for original fascicles
         for trace in contents:
             trace.offset(distance=minimum_distance / 2.0)
-
+            
         # initialize drawing vars, regardless of whether or not actually rendering
         # these have been moved below (if render...)
         drawing_screen = options = display_dimensions = None
@@ -164,7 +164,7 @@ class Deformable(Exceptionable):
                     add_boundary()
 
             # update physics
-            step_physics(space, 3)
+            step_physics(space, 20)
 
             # draw screen
             if render:
@@ -197,6 +197,176 @@ class Deformable(Exceptionable):
             end_positions.append(np.array(body.position))
             end_rotations.append(body.angle)
 
+        # return total movement vectors (dx, dy)
+        movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
+        rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
+        import sys
+        sys.exit()
+        return movements, rotations
+    
+    def spring_deform(self,
+               morph_count: int = 100,
+               morph_index_step: int = 10,
+               render: bool = True,
+               minimum_distance: float = 0.0,
+               ratio: float = None) -> Tuple[List[tuple], List[float]]:
+        """
+        :param ratio:
+        :param morph_count: number of incremental traces including the start and end of boundary
+        :param morph_index_step: steps between loops of updating outer boundary, i.e. 1 is every loop,
+        2 is every other loop...
+        :param render: True if you care to see it happen... makes this method WAY slower
+        :param minimum_distance: separation between original inputs
+        :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
+        """
+        render=True
+        # copy the "contents" so multiple deformations are possible
+        contents = [trace.deepcopy() for trace in self.contents]
+    
+        bounds = self.start.polygon().bounds
+        width = int(1 * (bounds[2]+bounds[0]))
+        height = int(1 * (bounds[3]+bounds[1]))
+        im_ratio=height/width
+    
+        # offset all the traces to provide for an effective minimum distance for original fascicles
+        for trace in contents:
+            trace.offset(distance=minimum_distance / 2.0)
+            
+        # initialize drawing vars, regardless of whether or not actually rendering
+        # these have been moved below (if render...)
+        drawing_screen = options = display_dimensions = None
+    
+        # initialize the physics space (gravity is 0)
+        space = pymunk.Space()
+        morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps(self.start,
+                                                                                       self.end,
+                                                                                       morph_count,
+                                                                                       ratio)]
+
+        # referencing the deform_steps method below
+        def_coords = Deformable.deform_steps_spring(self.start,self.end,morph_count,ratio,contents=self.contents)
+    
+        # draw the deformation
+        if render:
+            # packages
+    
+            screen = pygame.display.set_mode((800, int(800*im_ratio)),HWSURFACE|DOUBLEBUF|RESIZABLE)
+            # fake_screen = pygame.display.set_mode((width, height),HWSURFACE|DOUBLEBUF|RESIZABLE)
+    
+            # drawing_screen.blit(zoomed_screen,(1600,800))
+            drawsurf = pygame.surface.Surface((width, height))
+            # pygame.init()
+            # drawing_screen = pygame.Surface((width, height))
+            options = pymunk.pygame_util.DrawOptions(drawsurf)
+            options.shape_outline_color = (0, 0, 0, 255)
+            options.shape_static_color = (0, 0, 0, 255)
+            
+        # init vector of start positions
+        start_positions: List[np.ndarray] = []
+        start_rotations: List[float] = []
+
+        centerbody = pymunk.Body(body_type=pymunk.Body.STATIC)
+        centerbody.position = self.end.centroid()
+        space.add(centerbody)
+        anchors = []
+        # TODO: add fascicle specific distance 1/2 the distance to centroid, then add kinematic bodies for each anchor point and move with each deform step
+        fascicles = [trace.pymunk_poly() for trace in contents]
+        for i, (body, shape) in enumerate(fascicles):
+            shape.elasticity = 0.0
+            space.add(body, shape)
+            start_positions.append(np.array(body.position))
+            dist = distance.euclidean(np.array(body.position),self.end.centroid())
+            start_rotations.append(body.angle)
+            spring = pymunk.constraints.DampedSpring(centerbody,body,(0,0),(0,0), dist,1,10)
+            space.add(spring)
+            anchorpoint = (def_coords[i][0][0],def_coords[i][1][0])
+            endpoint = (def_coords[i][0][-1],def_coords[i][1][-1])
+            anchor = pymunk.Body(body_type=pymunk.Body.KINEMATIC)      
+            anchor.position = endpoint
+            space.add(anchor)
+            anchordist = distance.euclidean(anchorpoint,body.position)
+            anchorspring = pymunk.constraints.DampedSpring(anchor,body,(0,0),(0,0),anchordist,1,10)
+            space.add(anchorspring)
+    
+        def add_boundary():
+            for seg in morph_step:
+                seg.elasticity = 0.0
+                seg.group = 1
+            space.add(*morph_step)
+    
+        def step_physics(space: pymunk.Space, count: int):
+            dt = 1.0 / 60.0
+            for x in range(count):
+                space.step(dt)
+    
+        running = True
+        loop_count = morph_index_step
+        morph_index = 0
+        morph_step = morph_steps[morph_index]
+        add_boundary()
+    
+        while running:
+            # if the loop count is divisible by the index step, update morph
+            if render:
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        running = False
+                    elif event.type == KEYDOWN and event.key == K_ESCAPE:
+                        running = False
+                    elif event.type == KEYDOWN and event.key == K_SPACE:
+                        pass
+    
+            if loop_count % morph_index_step == 0:
+                # print('PRINT PRINT PRINT')
+                morph_index += 1
+                Deformable.printProgressBar(morph_index,
+                                            len(morph_steps),
+                                            prefix='\t\tdeforming',
+                                            suffix='complete',
+                                            length=50)
+                # print('\tmorph step {} of {}'.format(morph_index, len(morph_steps)))
+    
+                if morph_index == len(morph_steps):
+                    running = False
+                else:
+                    space.remove(*morph_step)
+                    morph_step = morph_steps[morph_index]
+                    add_boundary()
+    
+            # update physics
+            step_physics(space, 50)
+    
+            # draw screen
+            if render:
+                drawsurf.fill(THECOLORS["white"])
+    
+                # draw the actual screen
+                space.debug_draw(options)
+    
+                # temp_surf = drawing_screen.copy()
+                # drawing_screen.fill((0,0,0))  # here, you can fill the screen with whatever you want to take the place of what was there before
+                # drawing_screen.blit(temp_surf, (width/2,-height/2))
+    
+                # pygame.display.update()
+    
+                # drawing_screen = pygame.transform.scale(drawing_screen, display_dimensions)#, screen)
+                # fake_screen.fill(THECOLORS["white"])
+                # fake_screen.blit(drawsurf, (0, 0))
+                screen.blit(pygame.transform.flip(pygame.transform.scale(drawsurf, (800,int(800*im_ratio))),False,True), (0, 0))
+                pygame.display.flip()
+                pygame.display.set_caption('nerve morph step {} of {}'.format(morph_index, len(morph_steps)))
+                
+            loop_count += 1
+    
+        step_physics(space, 500)
+    
+        # get end positions
+        end_positions: List[np.ndarray] = []
+        end_rotations: List[float] = []
+        for body, _ in fascicles:
+            end_positions.append(np.array(body.position))
+            end_rotations.append(body.angle)
+    
         # return total movement vectors (dx, dy)
         movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
         rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
@@ -266,6 +436,39 @@ class Deformable(Exceptionable):
         return def_traces
 
     @staticmethod
+    def deform_steps_spring(start: Trace, end: Trace, count: int = 2, deform_ratio: float = 1.0, slide: Slide = None, contents=None) \
+            -> List[Trace]:
+        import math
+        import matplotlib.pyplot as plt
+        defcoords= []
+        for trace in contents:
+            troid = trace.centroid()
+            nrdoi = end.centroid()
+            angle = math.atan2(troid[1]-nrdoi[1], troid[0]-nrdoi[0])        
+            a = end.mean_radius()
+            points = [nrdoi,(troid[0] + (1 * a * np.cos(angle)), troid[1] + (1 * a * np.sin(angle)))]
+            ray = LineString(points)
+    
+            start_intersection = ray.intersection(start.polygon().boundary).coords[0]
+            end_intersection = ray.intersection(end.polygon().boundary).coords[0]
+            coords = [np.linspace(start_intersection[0],end_intersection[0],num=count),
+                      np.linspace(start_intersection[1],end_intersection[1],num=count)]
+            # plt.plot(*ray.xy)
+            # trace.plot()
+            # start.plot()
+            # end.plot()
+            # plt.scatter(start_intersection[0],start_intersection[1])
+            # plt.scatter(end_intersection[0],end_intersection[1])
+            # plt.scatter(coords[0],coords[1])
+            if deform_ratio !=0: 
+                coords = [dim[:int((deform_ratio if deform_ratio is not None else 1) * count)] for dim in coords]
+            else: #still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
+                coords = [x[0] for x in coords]
+            defcoords.append(coords)
+
+        return defcoords
+
+    @staticmethod
     def from_slide(slide: Slide, mode: ReshapeNerveMode, sep_nerve: float = None) -> 'Deformable':
         # method in slide will pull out each trace and add to a list of contents, go through traces and build polygons
 
@@ -276,7 +479,7 @@ class Deformable(Exceptionable):
         width = int(1.5 * (bounds[2] - bounds[0])) / 2
         height = int(1.5 * (bounds[3] - bounds[1])) / 2
 
-        slide.move_center(np.array([1.5 * width, 1.5 * height]))
+        slide.move_center(np.array([width, height]))
 
         # settle the inners
         # for fascicle in slide.fascicles:
