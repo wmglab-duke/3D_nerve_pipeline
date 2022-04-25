@@ -226,6 +226,8 @@ public class ModelWrapper {
                         e.printStackTrace();
                         return false;
 
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
             }
