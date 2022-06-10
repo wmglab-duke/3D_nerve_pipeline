@@ -138,7 +138,7 @@ data/tmp/
 data/*.pickle
 
 input/
-*/user/*
+#*/user/*
 
 # samples
 *.class*
