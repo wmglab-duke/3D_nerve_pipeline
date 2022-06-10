@@ -428,12 +428,37 @@ class Fiber(Exceptionable, Configurable):
                 f.write("\n")
         return self
 
-    def run(self, stimamp, fiber_path, waveform_path, n_tsteps):
+    def run(self, stimamp, fiber_path, waveform_path, n_tsteps, plot=False):
+        if plot:
+            ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
+            node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
+            plot_node = plt.figure(title='node[' + str(node_index) + '] at stimamp = ' + str(stimamp),
+                                   x_axis_label='t (ms)', y_axis_label='v (mV)')
+            v_node = h.Vector().record(self.sec[node_index](0.5)._ref_v)
+            t = h.Vector().record(h._ref_t)
+
+        for sec in self.sec:
+            if sec.v != -55:
+                print('sec.v wrong prior to initialize')
+                break
+
+        h.finitialize(self.v_init)
+
+        for sec in self.sec:
+            if sec.v != -55:
+                print('sec.v wrong after initialize')
+                break
+
         if self.fiber_type == 3:
             if self.channels_type == 2 and self.passive_end_nodes == 1:
                 raise Exception("Program cannot balance Tigerholm for passive_end_nodes=1, must be 0.")
             elif self.channels_type == 2 and self.passive_end_nodes == 0:
                 self.balance()
+
+        for sec in self.sec:
+            if sec.v != -55:
+                print('sec.v wrong after balance')
+                break
 
         stimulation_vectors = ExtracellularStimulation()
         stimulation_vectors \
@@ -451,8 +476,6 @@ class Fiber(Exceptionable, Configurable):
         protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
         t_initSS = self.search(Config.SIM, 'protocol', 'initSS')
         dt_initSS = self.search(Config.SIM, 'protocol', 'dt_initSS')
-
-        h.finitialize(self.v_init)
 
         if self.fiber_type == 2:
             for sec in self.node:
@@ -477,7 +500,6 @@ class Fiber(Exceptionable, Configurable):
         h.fcurrent()
         h.frecord_init()
         h.celsius = self.temperature
-
 
         # Set up APcount
         apc = []
@@ -523,20 +545,21 @@ class Fiber(Exceptionable, Configurable):
                     sec(0.5).e_extracellular = scaled_stim[x]
             h.fadvance()
 
-        if self.passive_end_nodes:
-            ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
-            node_index = int((self.axonnodes-1)*self.delta_z*ap_detect_location/self.delta_z)
-            if apc[node_index].n >= 1:
-                self.last_run = True
-            else:
-                self.last_run = False
+        if plot:
+            plot_node.line(t, list(v_node), line_width=2)
+            plt.show(plot_node)
+
+            outfile = open('model_tiger_data', 'wb')
+            pickle.dump([t, list(v_node)], outfile)
+            outfile.close()
+
+
+        ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
+        node_index = int((self.axonnodes-1)*self.delta_z*ap_detect_location/self.delta_z)
+        if apc[node_index].n >= 1:
+            self.last_run = True
         else:
-            ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
-            node_index = int((self.axonnodes-1)*self.delta_z*ap_detect_location/self.delta_z)
-            if apc[node_index].n >= 1:
-                self.last_run = True
-            else:
-                self.last_run = False
+            self.last_run = False
         return self
 
 

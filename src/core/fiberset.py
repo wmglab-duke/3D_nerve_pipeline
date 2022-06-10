@@ -101,21 +101,21 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 print("Running stimamp_top = " + str(stimamp_top))
                 fiber.run(stimamp_top, fiber_path, waveform_path, n_tsteps)
 
-            if fiber.last_run == False:
-                print("ERROR: Initial stimamp_top value does not elicit an AP (find_block_thresh = 0) or does not block (find_block_thresh = 1) - need to increase its magnitude and/or increase tstop to detect evoked AP")
-                stimamp_top = stimamp_top*(1+0.1)
-            else:
-                check_top_flag = 1
+                if fiber.last_run == False:
+                    print("ERROR: Initial stimamp_top value does not elicit an AP (find_block_thresh = 0) or does not block (find_block_thresh = 1) - need to increase its magnitude and/or increase tstop to detect evoked AP")
+                    stimamp_top = stimamp_top*(1+0.1)
+                else:
+                    check_top_flag = 1
 
             if check_bottom_flag == 0:
                 print("Running stimamp_bottom = " + str(stimamp_bottom))
                 fiber.run(stimamp_bottom, fiber_path, waveform_path, n_tsteps)
 
-            if fiber.last_run == True:
-                print("ERROR: Initial stimamp_bottom value elicits an AP (find_block_thresh = 0) or blocks (find_block_thresh = 1) - need to decrease its magnitude and/or increase tstop to detect block test pulses")
-                stimamp_bottom = stimamp_bottom*(1-0.1)
-            else:
-                check_bottom_flag = 1
+                if fiber.last_run == True:
+                    print("ERROR: Initial stimamp_bottom value elicits an AP (find_block_thresh = 0) or blocks (find_block_thresh = 1) - need to decrease its magnitude and/or increase tstop to detect block test pulses")
+                    stimamp_bottom = stimamp_bottom*(1-0.1)
+                else:
+                    check_bottom_flag = 1
 
             if check_bottom_flag == 1 and check_top_flag == 1:
                 print('Bounds set - entering binary search')
@@ -143,7 +143,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 if fiber.last_run == False:
                     stimamp = stimamp_prev
                 print("Done searching! stimamp: " + str(stimamp) + "mA for extracellular and nA for intracellular (check flag_whichstim)")
-                fiber.run(stimamp, fiber_path, waveform_path, n_tsteps)
+                fiber.run(stimamp, fiber_path, waveform_path, n_tsteps, plot=True)
                 break
             elif fiber.last_run == True:
                 stimamp_top = stimamp
