@@ -24,6 +24,7 @@ from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberG
                        FiberXYMode, FiberZMode, MyelinatedSamplingType, MyelinationMode, Saveable,
                        SetupMode, WriteMode)
 from .sample import Sample
+from src.core.fiber import Fiber
 
 
 class FiberSet(Exceptionable, Configurable, Saveable):
@@ -54,7 +55,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             self.throw(78)
         return self
 
-    def generate(self, sim_directory: str, super_sample: bool = False):
+    def generate(self, sim_directory: str,  sim_copy, super_sample: bool = False, model_number=0, sample_number=0):
         """
         :return:
         """
@@ -66,7 +67,94 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
 
+        self.fiber_list = []
+        for ind, xyz in enumerate(zip(self.fibers)):
+            fiber = Fiber()
+            fiber \
+                .add(SetupMode.OLD, Config.SIM, sim_copy) \
+                .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
+                .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_number), 'models',
+                                                               str(model_number), 'model.json')) \
+                .inherit(xyz, ind)
+            fiber.generate()
+            self.fiber_list.append(fiber)
+
+        for fiber in self.fiber_list:
+            self.findThresh(fiber)
+            exit()
         return self
+
+    def findThresh(self, fiber):
+        print("Running threshold bounds for fiber #" + str(fiber.index))
+        stimamp_top = self.search(Config.SIM, 'protocol', 'bounds_search', 'top')
+        stimamp_bottom = self.search(Config.SIM, 'protocol', 'bounds_search', 'bottom')
+
+        check_top_flag = 0  # 0 for upper-bound not yet found, value changes to 1 when the upper-bound is found
+        check_bottom_flag = 0  # 0 for lower-bound not yet found, value changes to 1 when the lower-bound is found
+        # enter binary search when both are found
+
+        if fiber.fiber_type == 1:
+            fiber.v_init = -88.3
+        elif fiber.fiber_type == 2:
+            fiber.v_init = -80
+        elif fiber.fiber_type == 3:
+            fiber.v_init = fiber.v_init_c_fiber
+
+        iter = 1
+        while True:
+            if check_top_flag == 0:
+                print("Running stimamp_top = " + str(stimamp_top))
+                fiber.run(stimamp_top)
+
+            if fiber.last_run == False:
+                print("ERROR: Initial stimamp_top value does not elicit an AP (find_block_thresh = 0) or does not block (find_block_thresh = 1) - need to increase its magnitude and/or increase tstop to detect evoked AP")
+                stimamp_top = stimamp_top*(1+0.1)
+            else:
+                check_top_flag = 1
+
+            if check_bottom_flag == 0:
+                print("Running stimamp_bottom = " + str(stimamp_bottom))
+                fiber.run(stimamp_bottom)
+
+            if fiber.last_run == True:
+                print("ERROR: Initial stimamp_bottom value elicits an AP (find_block_thresh = 0) or blocks (find_block_thresh = 1) - need to decrease its magnitude and/or increase tstop to detect block test pulses")
+                stimamp_bottom = stimamp_bottom*(1-0.1)
+            else:
+                check_bottom_flag = 1
+
+            if check_bottom_flag == 1 and check_top_flag == 1:
+                print('Bounds set - entering binary search')
+                break
+
+            iter += 1
+
+            if iter >= 100:
+                print("maximum number of bounds searching steps reached. breaking.")
+                quit()
+
+        while True:
+            stimamp_prev = stimamp_top
+
+            stimamp = (stimamp_bottom + stimamp_top) / 2
+            print("stimamp_bottom = " + str(stimamp_bottom) + "     stimamp_top = " + str(stimamp_top))
+            print("Running stimamp: " + str(stimamp))
+            fiber.run(stimamp)
+
+            rel_thresh_resoln = 0.0100
+            thresh_resoln = abs(rel_thresh_resoln)
+            tolerance = abs((stimamp_bottom - stimamp_top) / stimamp_top)
+
+            if tolerance < thresh_resoln:
+                if fiber.last_run == False:
+                    stimamp = stimamp_prev
+                print("Done searching! stimamp: " + str(stimamp) + "mA for extracellular and nA for intracellular (check flag_whichstim)")
+                fiber.run(stimamp)
+                break
+            elif fiber.last_run == True:
+                stimamp_top = stimamp
+            elif fiber.last_run == False:
+                stimamp_bottom = stimamp
+        return stimamp
 
     def write(self, mode: WriteMode, path: str):
         """
