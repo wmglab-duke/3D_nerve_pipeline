@@ -76,15 +76,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_number), 'models',
                                                                str(model_number), 'model.json')) \
                 .inherit(xyz, ind)
-            fiber.generate()
             self.fiber_list.append(fiber)
-
-        for fiber in self.fiber_list:
-            self.findThresh(fiber)
-            exit()
         return self
 
-    def findThresh(self, fiber):
+    def findThresh(self, fiber, fiber_path, waveform_path, n_tsteps):
         print("Running threshold bounds for fiber #" + str(fiber.index))
         stimamp_top = self.search(Config.SIM, 'protocol', 'bounds_search', 'top')
         stimamp_bottom = self.search(Config.SIM, 'protocol', 'bounds_search', 'bottom')
@@ -104,7 +99,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         while True:
             if check_top_flag == 0:
                 print("Running stimamp_top = " + str(stimamp_top))
-                fiber.run(stimamp_top)
+                fiber.run(stimamp_top, fiber_path, waveform_path, n_tsteps)
 
             if fiber.last_run == False:
                 print("ERROR: Initial stimamp_top value does not elicit an AP (find_block_thresh = 0) or does not block (find_block_thresh = 1) - need to increase its magnitude and/or increase tstop to detect evoked AP")
@@ -114,7 +109,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             if check_bottom_flag == 0:
                 print("Running stimamp_bottom = " + str(stimamp_bottom))
-                fiber.run(stimamp_bottom)
+                fiber.run(stimamp_bottom, fiber_path, waveform_path, n_tsteps)
 
             if fiber.last_run == True:
                 print("ERROR: Initial stimamp_bottom value elicits an AP (find_block_thresh = 0) or blocks (find_block_thresh = 1) - need to decrease its magnitude and/or increase tstop to detect block test pulses")
@@ -138,7 +133,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             stimamp = (stimamp_bottom + stimamp_top) / 2
             print("stimamp_bottom = " + str(stimamp_bottom) + "     stimamp_top = " + str(stimamp_top))
             print("Running stimamp: " + str(stimamp))
-            fiber.run(stimamp)
+            fiber.run(stimamp, fiber_path, waveform_path, n_tsteps)
 
             rel_thresh_resoln = 0.0100
             thresh_resoln = abs(rel_thresh_resoln)
@@ -148,7 +143,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 if fiber.last_run == False:
                     stimamp = stimamp_prev
                 print("Done searching! stimamp: " + str(stimamp) + "mA for extracellular and nA for intracellular (check flag_whichstim)")
-                fiber.run(stimamp)
+                fiber.run(stimamp, fiber_path, waveform_path, n_tsteps)
                 break
             elif fiber.last_run == True:
                 stimamp_top = stimamp

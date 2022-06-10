@@ -438,6 +438,19 @@ class Runner(Exceptionable, Configurable):
                 self.handoff(self.number)
                 print('\nNEURON Simulations NOT created since no Sim indices indicated in Config.SIM\n')
 
+        n_sim = 0
+        n_tsteps = len(simulation.waveforms[n_sim].wave)
+        sim_path = os.path.join(sim_dir, str(sim_num), 'n_sims', str(n_sim))
+        fibers_path = os.path.abspath(os.path.join(sim_path, 'data', 'inputs'))
+
+        for fiberset in simulation.fibersets:
+            for fiber in fiberset.fiber_list:
+                fiber_path = os.path.join(fibers_path, 'inner{}_fiber{}.dat'.format(0, fiber.index))
+                waveform_path = os.path.join(fibers_path, 'waveform.dat')
+                fiber.generate(fiber_path)
+                fiberset.findThresh(fiber, fiber_path, waveform_path, n_tsteps)
+                exit()
+
     def handoff(self, run_number: int):
         comsol_path = os.environ[Env.COMSOL_PATH.value]
         jdk_path = os.environ[Env.JDK_PATH.value]

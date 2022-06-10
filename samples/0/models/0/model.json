@@ -46,7 +46,7 @@
   "frequency": 1,
   "solution": {
     "name": "COMSOL Multiphysics 5.5 (Build: 359)",
-    "sol_time": 30661.721376
+    "sol_time": 40008.821446
   },
   "inner_interp_tol": 0.01,
   "temperature": 37,
@@ -77,8 +77,8 @@
     },
     "stats": {
       "mesh_times": {
-        "distal": 991.321785,
-        "proximal": 12531.311661
+        "distal": 978.100332,
+        "proximal": 14518.620701
       },
       "volume": 977000000000.0,
       "quality_measure_used": "vollength",

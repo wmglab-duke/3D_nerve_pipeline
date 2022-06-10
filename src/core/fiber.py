@@ -75,7 +75,7 @@ class Fiber(Exceptionable, Configurable):
         self.temperature = self.search(Config.MODEL, 'temperature')
         return self
 
-    def generate(self):
+    def generate(self, fiber_path):
         """
         Build fiber sections based on fiber type
         Reads in geometric properties from JSON files
@@ -160,11 +160,8 @@ class Fiber(Exceptionable, Configurable):
             self.paraD2 = 0.02361 * self.diameter ** 2 + 0.3673 * self.diameter + 0.7122
             self.axonD = self.paraD2
 
-        fibers_path = 'samples/0/models/0/sims/0/n_sims/0/data/inputs/'    # todo: figure out what I'm doing with these
-        inner_ind_solo = 0                                                 # todo: figure out what I'm doing with these
-        fiber_ve_path = os.path.join(fibers_path,
-                                     'inner{}_fiber{}.dat'.format(inner_ind_solo, self.index))
-        fiber_ve = np.loadtxt(fiber_ve_path)
+
+        fiber_ve = np.loadtxt(fiber_path)
         n_fiber_coords = int(fiber_ve[0])
 
         if self.neuron_flag == 2:
@@ -431,21 +428,19 @@ class Fiber(Exceptionable, Configurable):
                 f.write("\n")
         return self
 
-    def run(self, stimamp):
+    def run(self, stimamp, fiber_path, waveform_path, n_tsteps):
         if self.fiber_type == 3:
             if self.channels_type == 2 and self.passive_end_nodes == 1:
                 raise Exception("Program cannot balance Tigerholm for passive_end_nodes=1, must be 0.")
             elif self.channels_type == 2 and self.passive_end_nodes == 0:
                 self.balance()
 
-        # todo: automate this
-        space_file = 'samples/0/models/0/sims/0/n_sims/0/data/inputs/inner0_fiber' + str(self.index) + '.dat'
-        time_file = 'samples/0/models/0/sims/0/n_sims/0/data/inputs/waveform.dat'
         stimulation_vectors = ExtracellularStimulation()
         stimulation_vectors \
-            .load_space(space_file) \
-            .load_time(time_file)
+            .load_space(fiber_path) \
+            .load_time(waveform_path)
         t_step = stimulation_vectors.dt
+        tstop = stimulation_vectors.tstop
 
         # Determine which gating parameters to save
         space_gating: bool = self.search(Config.SIM, 'saving', 'space', 'gating')
@@ -456,9 +451,6 @@ class Fiber(Exceptionable, Configurable):
         protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
         t_initSS = self.search(Config.SIM, 'protocol', 'initSS')
         dt_initSS = self.search(Config.SIM, 'protocol', 'dt_initSS')
-
-        ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
-        node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
 
         h.finitialize(self.v_init)
 
@@ -499,11 +491,9 @@ class Fiber(Exceptionable, Configurable):
                 apc[i].thresh = self.search(Config.SIM, "protocol", "threshold", "value")
 
         # Begin time loop
-        n_tsteps = 49998    #todo: automate this
-        tstop = 50
         for i in range(0, n_tsteps):
             if i%(int(n_tsteps/5)) == 0:
-               print(str(i) + '/' + str(n_tsteps))
+               print(str(i) + '/' + str(n_tsteps) + " time steps")
             if i*t_step > tstop:
                 break
             amp = stimulation_vectors.VeTime_data[i]
