@@ -170,4 +170,4 @@ tmp
 bin/
 projects/
 
-~/model_tiger_data
+~/model_*_data
