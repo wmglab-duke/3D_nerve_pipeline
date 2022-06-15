@@ -212,7 +212,7 @@ class Fiber(Exceptionable, Configurable):
 
         # Create the axon sections
         for i in range(0, axonnodes):
-            new_node = node_creator(i, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive_end_nodes, axonnodes,
+            new_node = Node_creator(i, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive_end_nodes, axonnodes,
                                     node_channels, nl, Rpn0, celsius)
             self.node.append(new_node.node)
         for i in range(0, paranodes1):
@@ -432,33 +432,25 @@ class Fiber(Exceptionable, Configurable):
         if plot:
             ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
             node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
-            plot_node = plt.figure(title='node[' + str(node_index) + '] at stimamp = ' + str(stimamp),
-                                   x_axis_label='t (ms)', y_axis_label='v (mV)')
-            v_node = h.Vector().record(self.sec[node_index](0.5)._ref_v)
-            t = h.Vector().record(h._ref_t)
+            if self.myelination:
+                plot_node = plt.figure(title='node[' + str(node_index) + '] at stimamp = ' + str(stimamp),
+                                       x_axis_label='t (ms)', y_axis_label='v (mV)')
+                v_node = h.Vector().record(self.node[node_index](0.5)._ref_v)
+                t = h.Vector().record(h._ref_t)
+            else:
+                plot_node = plt.figure(title='node[' + str(node_index) + '] at stimamp = ' + str(stimamp),
+                                       x_axis_label='t (ms)', y_axis_label='v (mV)')
+                v_node = h.Vector().record(self.sec[node_index](0.5)._ref_v)
+                t = h.Vector().record(h._ref_t)
 
-        for sec in self.sec:
-            if sec.v != -55:
-                print('sec.v wrong prior to initialize')
-                break
 
         h.finitialize(self.v_init)
-
-        for sec in self.sec:
-            if sec.v != -55:
-                print('sec.v wrong after initialize')
-                break
 
         if self.fiber_type == 3:
             if self.channels_type == 2 and self.passive_end_nodes == 1:
                 raise Exception("Program cannot balance Tigerholm for passive_end_nodes=1, must be 0.")
             elif self.channels_type == 2 and self.passive_end_nodes == 0:
                 self.balance()
-
-        for sec in self.sec:
-            if sec.v != -55:
-                print('sec.v wrong after balance')
-                break
 
         stimulation_vectors = ExtracellularStimulation()
         stimulation_vectors \
@@ -514,8 +506,6 @@ class Fiber(Exceptionable, Configurable):
 
         # Begin time loop
         for i in range(0, n_tsteps):
-            if i%(int(n_tsteps/5)) == 0:
-               print(str(i) + '/' + str(n_tsteps) + " time steps")
             if i*t_step > tstop:
                 break
             amp = stimulation_vectors.VeTime_data[i]
@@ -548,11 +538,6 @@ class Fiber(Exceptionable, Configurable):
         if plot:
             plot_node.line(t, list(v_node), line_width=2)
             plt.show(plot_node)
-
-            outfile = open('model_tiger_data', 'wb')
-            pickle.dump([t, list(v_node)], outfile)
-            outfile.close()
-
 
         ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
         node_index = int((self.axonnodes-1)*self.delta_z*ap_detect_location/self.delta_z)
@@ -606,10 +591,7 @@ class MYSA_creator():
         self.obj.xraxial[0] = Rpn1
         self.obj.xc[0] = mycm / (nl * 2)  # short circuit
         self.obj.xg[0] = mygm / (nl * 2)  # short circuit
-        # for ind in range(0, 2):
-        #     self.obj.xraxial[ind] = Rpn1
-        #     self.obj.xc[ind] = mycm / (nl * 2)  # short circuit
-        #     self.obj.xg[ind] = mygm / (nl * 2)  # short circuit
+
         return
 
 class FLUT_creator():
@@ -628,11 +610,6 @@ class FLUT_creator():
         self.obj.xraxial[0] = Rpn2
         self.obj.xc[0] = mycm / (nl * 2)  # short circuit
         self.obj.xg[0] = mygm / (nl * 2)  # short circuit
-
-        # for ind in range(0, 2):
-        #     self.obj.xraxial[ind] = Rpn2
-        #     self.obj.xc[ind] = mycm / (nl * 2)  # short circuit
-        #     self.obj.xg[ind] = mygm / (nl * 2)  # short circuit
 
         return
 
@@ -653,14 +630,9 @@ class STIN_creator():
         self.obj.xc[0] = mycm / (nl * 2)  # short circuit
         self.obj.xg[0] = mygm / (nl * 2)  # short circuit
 
-        # for ind in range(0, 2):
-        #     self.obj.xraxial[ind] = Rpx
-        #     self.obj.xc[ind] = mycm / (nl * 2)  # short circuit
-        #     self.obj.xg[ind] = mygm / (nl * 2)  # short circuit
-
         return
 
-class node_creator():
+class Node_creator():
     def __init__(self, index, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive, axonnodes, node_channels, nl, Rpn0, celsius):
         self.node = Section(name='node ' + str(index))
         self.node.nseg = 1
@@ -676,9 +648,6 @@ class node_creator():
             self.node.insert('extracellular')
             self.node.xc[0] = mycm / (nl * 2)  # short circuit
             self.node.xg[0] = mygm / (nl * 2)  # short circuit
-            # for ind in range(0, 2):
-            #     self.node.xc[ind] = mycm / (nl * 2)  # short circuit
-            #     self.node.xg[ind] = mygm / (nl * 2)  # short circuit
 
         else:
             if node_channels == 0:
@@ -748,9 +717,6 @@ class node_creator():
             self.node.xraxial[0] = Rpn0
             self.node.xc[0] = 0  # short circuit
             self.node.xg[0] = 1e10  # short circuit
-            # for ind in range(0, 2):
-            #     self.node.xraxial[ind] = Rpn0
-            #     self.node.xc[ind] = 0         # short circuit
-            #     self.node.xg[ind] = 1e10      # short circuit
+
         return
 

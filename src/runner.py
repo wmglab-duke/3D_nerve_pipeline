@@ -449,7 +449,7 @@ class Runner(Exceptionable, Configurable):
                 waveform_path = os.path.join(fibers_path, 'waveform.dat')
                 fiber.generate(fiber_path)
                 fiberset.findThresh(fiber, fiber_path, waveform_path, n_tsteps)
-                exit()
+        exit()
 
     def handoff(self, run_number: int):
         comsol_path = os.environ[Env.COMSOL_PATH.value]
