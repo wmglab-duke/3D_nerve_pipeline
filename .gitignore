@@ -137,6 +137,7 @@ samples/
 submit/
 data/tmp/
 data/*.pickle
+plot_*
 
 input/
 */user/*
@@ -170,5 +171,4 @@ tmp
 bin/
 projects/
 
-~/model_*_data
-~/plot_*
+
