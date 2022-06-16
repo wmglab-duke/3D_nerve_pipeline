@@ -101,7 +101,7 @@ def ensure_dir(directory):
         os.makedirs(directory)
 
 def auto_compile(override: bool = False):
-    if (not os.path.exists(os.path.join('MOD_Files/x86_64')) and OS == 'UNIX-LIKE') or \
+    if (not os.path.exists(os.path.join('../../x86_64')) and OS == 'UNIX-LIKE') or \
             (not os.path.exists(os.path.join('MOD_Files', 'nrnmech.dll')) and OS == 'WINDOWS') or override:
         print('compile')
         os.chdir(os.path.join('MOD_Files'))

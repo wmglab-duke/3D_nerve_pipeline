@@ -2,14 +2,14 @@
 
  NEURON {
  		 POINT_PROCESS trainIClamp
- 		 RANGE del, PW, train, amp, freq, i, conv, pulsecount, onoff
+ 		 RANGE delay, PW, train, amp, freq, i, conv, pulsecount, onoff
  		 ELECTRODE_CURRENT i
  }
 
  UNITS { (na) = (nanoamp) }
 
  PARAMETER{
- 		del (ms)
+ 		delay (ms)
  		PW (ms)
  		train (ms)
  		amp (na)
@@ -29,15 +29,15 @@
             k =  (train/conv)/freq
  			i = 0
  			FROM j = 0 TO k  {
- 				at_time (del + (j*(conv/freq)))
-		 		at_time (del + PW + (j*(conv/freq)))
+ 				at_time (delay + (j*(conv/freq)))
+		 		at_time (delay + PW + (j*(conv/freq)))
  		  	}
- 		  	at_time (del + train)
+ 		  	at_time (delay + train)
  }
 
  BREAKPOINT {
-		 		if (t < del + train && t > del) {
-		 				if (t > del + (pulsecount*(conv/freq)) && t < del + (pulsecount*(conv/freq)) + PW)  {
+		 		if (t < delay + train && t > delay) {
+		 				if (t > delay + (pulsecount*(conv/freq)) && t < delay + (pulsecount*(conv/freq)) + PW)  {
 		 						i = amp
 		 						onoff = 1
 		 				} else {
