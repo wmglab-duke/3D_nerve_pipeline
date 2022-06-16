@@ -80,7 +80,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         return self
 
     def findThresh(self, fiber, fiber_path, waveform_path, n_tsteps):
-        print("Running threshold bounds for fiber #" + str(fiber.index))
+        print("Running threshold bounds for fiber #{0}".format(fiber.index))
         stimamp_top = self.search(Config.SIM, 'protocol', 'bounds_search', 'top')
         stimamp_bottom = self.search(Config.SIM, 'protocol', 'bounds_search', 'bottom')
 
@@ -98,7 +98,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         iter = 1
         while True:
             if check_top_flag == 0:
-                print("Running stimamp_top = " + str(stimamp_top))
+                print("Running stimamp_top = {:.6f}".format(stimamp_top))
                 fiber.run(stimamp_top, fiber_path, waveform_path, n_tsteps)
 
                 if fiber.last_run == False:
@@ -108,7 +108,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     check_top_flag = 1
 
             if check_bottom_flag == 0:
-                print("Running stimamp_bottom = " + str(stimamp_bottom))
+                print("Running stimamp_bottom = {:.6f}".format(stimamp_bottom))
                 fiber.run(stimamp_bottom, fiber_path, waveform_path, n_tsteps)
 
                 if fiber.last_run == True:
@@ -131,8 +131,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             stimamp_prev = stimamp_top
 
             stimamp = (stimamp_bottom + stimamp_top) / 2
-            print("stimamp_bottom = " + str(stimamp_bottom) + "     stimamp_top = " + str(stimamp_top))
-            print("Running stimamp: " + str(stimamp))
+            print("stimamp_bottom = {:.6f}      stimamp_top = {:.6f}".format(stimamp_bottom, stimamp_top))
+            print("Running stimamp: {:.6f}".format(stimamp))
             fiber.run(stimamp, fiber_path, waveform_path, n_tsteps)
 
             rel_thresh_resoln = 0.0100
@@ -142,7 +142,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             if tolerance < thresh_resoln:
                 if fiber.last_run == False:
                     stimamp = stimamp_prev
-                print("Done searching! stimamp: " + str(stimamp) + "mA for extracellular and nA for intracellular (check flag_whichstim)")
+                print("Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)".format(stimamp))
                 fiber.run(stimamp, fiber_path, waveform_path, n_tsteps, plot=True)
                 break
             elif fiber.last_run == True:
