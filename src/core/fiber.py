@@ -640,11 +640,9 @@ class Fiber(Exceptionable, Configurable):
             # Intracellular stimulation -- attach current, set attributes
             IntraStim_PulseTrain_ind = self.search(Config.SIM, 'intracellular_stim', 'ind')
             intracellular_stim = h.trainIClamp(self.sec[IntraStim_PulseTrain_ind](0.5))
-            intracellular_stim.delay = self.search(Config.SIM, 'intracellular_stim', 'times',
-                                                   'IntraStim_PulseTrain_delay')
+            intracellular_stim.delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
             intracellular_stim.PW = self.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
-            intracellular_stim.train = self.search(Config.SIM, 'intracellular_stim', 'times',
-                                                   'IntraStim_PulseTrain_dur')
+            intracellular_stim.train = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
             intracellular_stim.freq = self.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
             intracellular_stim.amp = self.search(Config.SIM, 'intracellular_stim', 'amp')
 
