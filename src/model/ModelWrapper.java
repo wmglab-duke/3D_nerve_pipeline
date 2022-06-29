@@ -911,7 +911,7 @@ public class ModelWrapper {
                         "CIRCLE (or NONE) is not yet implemented");
                 System.exit(0);
             }
-            
+
             if (nerveMode.equals("PRESENT")) {
                 if (deform_ratio == 1 && reshapenerveMode.equals("CIRCLE")) { //Use a circle otherwise
                     Part.createNervePartInstance("Epi_circle", 0,
@@ -1160,7 +1160,7 @@ public class ModelWrapper {
 
         TimeUnit.SECONDS.sleep(5);
         ModelUtil.initStandalone(false);
-        
+
         if (cli_args.has("comsol_progress") && cli_args.getBoolean("comsol_progress")) {
             ModelUtil.showProgress(null); // if you want to see COMSOL progress (as it makes all geometry, runs, etc.)
         }

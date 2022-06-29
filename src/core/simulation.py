@@ -80,7 +80,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         return self
 
-    def write_fibers(self, sim_directory: str) -> 'Simulation':
+    def write_fibers(self, sim_directory: str, sample_num: int, model_num: int) -> 'Simulation':
         # loop PARAMS in here, but loop HISTOLOGY in FiberSet object
 
         fibersets_directory = os.path.join(sim_directory, 'fibersets')
@@ -109,7 +109,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, sim_copy) \
                 .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                .generate(sim_directory, sim_copy) \
+                .generate(sim_directory, sim_copy, sample_num, model_num) \
                 .write(WriteMode.DATA, fiberset_directory)
 
             self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
@@ -135,7 +135,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, self.configs[Config.SIM.value]) \
                 .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                .generate(sim_directory, super_sample=generate_ss_bases) \
+                .generate(sim_directory, sim_copy, sample_num, model_num, super_sample=generate_ss_bases) \
                 .write(WriteMode.DATA, ss_fibercoords_directory)
 
             self.ss_fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
@@ -652,3 +652,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
         return all(
             os.path.exists(os.path.join(sim_dir, 'ss_bases', str(basis))) for basis, _ in self.ss_product
         )
+
+    def submit(self):
+        for fiberset in self.fibersets:
+            fiberset.submit(self)

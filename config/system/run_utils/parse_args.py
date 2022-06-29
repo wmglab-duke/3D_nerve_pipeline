@@ -17,6 +17,7 @@ parser.add_argument('-l','--list',choices=['runs','samples','sims'],help='List a
 #add subparsers
 subparsers = parser.add_subparsers(help = 'which script to run', dest='script')
 pipeline_parser = subparsers.add_parser('pipeline', help = 'main ASCENT pipeline')
+submit_parser = subparsers.add_parser('submit', help = 'submit ASCENT runs')
 install_parser = subparsers.add_parser('install', help = 'install ASCENT')
 env_parser = subparsers.add_parser('env_setup', help = 'Set ASCENT environment variables')
 cs_parser = subparsers.add_parser('clean_samples', help = 'Remove all files except those specified from Sample directories')
@@ -33,6 +34,7 @@ pipeline_parser.add_argument('-E','--export-behavior',choices = ["overwrite","er
 pipeline_parser.add_argument('-e','--endo-only-solution',action='store_true',help ="Store basis solutions for endoneurial geometry ONLY")
 pipeline_parser.add_argument('-r','--render_deform',action='store_true',help ="Pop-up window will render deformation operations")
 pipeline_parser.add_argument('-S','--auto-submit',action='store_true',help="Automatically submit fibers after each run")
+submit_parser.add_argument('run_indices', type=int, nargs = '+', help = 'Space separated indices to run the pipeline over')
 prog_group = pipeline_parser.add_mutually_exclusive_group()
 prog_group.add_argument('-c','--comsol-progress',action='store_true',help ="Print COMSOL progress to stdout")
 prog_group.add_argument('-C','--comsol-progress-popup',action='store_true',help ="Show COMSOL progress in a pop-up window")

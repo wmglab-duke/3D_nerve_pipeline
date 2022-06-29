@@ -55,7 +55,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             self.throw(78)
         return self
 
-    def generate(self, sim_directory: str, sim_copy, super_sample: bool = False, model_number=0, sample_number=0):
+    def generate(self, sim_directory: str, sim_copy, sample_num, model_num, super_sample: bool = False):
         """
         :return:
         """
@@ -68,140 +68,24 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
 
         self.fiber_list = []
-        for ind, xyz in enumerate(zip(self.fibers)):
+        for index, xyz in enumerate(self.fibers):
             fiber = Fiber()
             fiber \
                 .add(SetupMode.OLD, Config.SIM, sim_copy) \
                 .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
-                .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_number), 'models',
-                                                               str(model_number), 'model.json')) \
-                .inherit(xyz, ind)
+                .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_num), 'models',
+                                                               str(model_num), 'model.json')) \
+                .inherit(xyz, index)
             self.fiber_list.append(fiber)
         return self
 
-    def findThresh(self, fiber, fiber_path, waveform_path, n_tsteps):
-        find_thresh = 1
-
-        protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
-        if protocol_mode == 'ACTIVATION_THRESHOLD':
-            find_block_thresh = NeuronRunMode.ACTIVATION_THRESHOLD.value
-        elif protocol_mode == 'BLOCK_THRESHOLD':
-            find_block_thresh = NeuronRunMode.BLOCK_THRESHOLD.value
-
-        bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
-        if bounds_search_mode == 'PERCENT_INCREMENT':       # relative increment (increase bound by a certain percentage of the previous value)
-            increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
-            step = self.search(Config.SIM, "protocol", "bounds_search", "step")
-            rel_increment = round(step/100, 4)
-        elif bounds_search_mode == 'ABSOLUTE_INCREMENT':    # absolute increment (increase bound by a a certain amount + previous value)
-            increment_flag = SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value
-            step = self.search(Config.SIM, "protocol", "bounds_search", "step")
-            abs_increment = round(step, 4)
-
-        termination_criteria_mode = self.search(Config.SIM, "protocol", "termination_criteria", "mode")
-        if termination_criteria_mode == 'ABSOLUTE_DIFFERENCE':
-            termination_flag = TerminationCriteriaMode.ABSOLUTE_DIFFERENCE.value
-            res = self.search(Config.SIM, "protocol", "termination_criteria", "tolerance")
-            abs_thresh_resoln = round(res, 4)
-        elif termination_criteria_mode == 'PERCENT_DIFFERENCE':
-            termination_flag = TerminationCriteriaMode.PERCENT_DIFFERENCE.value
-            res = self.search(Config.SIM, "protocol", "termination_criteria", "percent")
-            rel_thresh_resoln = round(res / 100, 4)
-
-        if fiber.fiber_type == 1:
-            v_init = -88.3
-        elif fiber.fiber_type == 2:
-            v_init = -80
-        elif fiber.fiber_type == 3:
-            channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', fiber.fiber_mode, 'channels_type')
-            v_init_c_fibers = [-60, -55, -82, -48]  # resting potentials for Sundt, Tigerholm, Rattay and Aberham, and Schild C-Fiber models
-            v_init = v_init_c_fibers[channels_type-1]
-
-        print("Running threshold bounds for fiber #{0}".format(fiber.index))
-        stimamp_top = self.search(Config.SIM, 'protocol', 'bounds_search', 'top')
-        stimamp_bottom = self.search(Config.SIM, 'protocol', 'bounds_search', 'bottom')
-
-        check_top_flag = 0  # 0 for upper-bound not yet found, value changes to 1 when the upper-bound is found
-        check_bottom_flag = 0  # 0 for lower-bound not yet found, value changes to 1 when the lower-bound is found
-        # enter binary search when both are found
-
-        iter = 1
-        while True:
-            if check_top_flag == 0:
-                print("Running stimamp_top = {:.6f}".format(stimamp_top))
-                fiber.run(stimamp_top, fiber_path, waveform_path, n_tsteps, v_init, find_thresh, find_block_thresh)
-
-                if fiber.n_aps == 0:
-                    if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
-                        print("ERROR: Initial stimamp_top value does not elicit an AP - need to increase its magnitude and/or increase tstop to detect evoked AP")
-                    else:
-                        print("WARNING: Initial stimamp_top value does not block - need to increase its magnitude and/or increase tstop to block test pulse evoked AP")
-                    if increment_flag == SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value:
-                        stimamp_top = stimamp_top + abs_increment
-                    elif increment_flag == SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value:
-                        stimamp_top = stimamp_top * (1 + rel_increment)
-                else:
-                    check_top_flag = 1
-
-            if check_bottom_flag == 0:
-                print("Running stimamp_bottom = {:.6f}".format(stimamp_bottom))
-                fiber.run(stimamp_bottom, fiber_path, waveform_path, n_tsteps, v_init, find_thresh, find_block_thresh)
-
-                if fiber.n_aps != 0:
-                    if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
-                        print("ERROR: Initial stimamp_bottom value elicits an AP - need to decrease its magnitude and/or increase tstop to detect block test pulses")
-                    else:
-                        print("WARNING: Initial stimamp_bottom value blocks - need to decrease its magnitude and/or increase tstop to detect test pulse evoked AP")
-                    if increment_flag == SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value:
-                        stimamp_bottom = stimamp_bottom - abs_increment
-                    elif increment_flag == SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value:
-                        stimamp_bottom = stimamp_bottom * (1 - rel_increment)
-                else:
-                    check_bottom_flag = 1
-
-            if check_bottom_flag == 1 and check_top_flag == 1:
-                print('Bounds set - entering binary search')
-                break
-
-            iter += 1
-
-            if iter >= 100:
-                print("maximum number of bounds searching steps reached. breaking.")
-                quit()
-
-        # enter binary search
-        while True:
-            stimamp_prev = stimamp_top
-
-            stimamp = (stimamp_bottom + stimamp_top) / 2
-            print("stimamp_bottom = {:.6f}      stimamp_top = {:.6f}".format(stimamp_bottom, stimamp_top))
-            print("Running stimamp: {:.6f}".format(stimamp))
-            fiber.run(stimamp, fiber_path, waveform_path, n_tsteps, v_init, find_thresh, find_block_thresh)
-
-            if termination_flag == TerminationCriteriaMode.PERCENT_DIFFERENCE.value:
-                thresh_resoln = abs(rel_thresh_resoln)
-                tolerance = abs((stimamp_bottom - stimamp_top) / stimamp_top)
-            elif termination_flag == TerminationCriteriaMode.ABSOLUTE_DIFFERENCE.value:
-                thresh_resoln = abs(abs_thresh_resoln)
-                tolerance = abs(stimamp_bottom - stimamp_top)
-
-
-            if tolerance < thresh_resoln:
-                if fiber.last_run == False:
-                    stimamp = stimamp_prev
-                print("Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)\n".format(stimamp))
-                fiber.run(stimamp, fiber_path, waveform_path, n_tsteps, v_init, find_thresh, find_block_thresh, plot=True)
-                break
-            elif fiber.last_run == True:
-                stimamp_top = stimamp
-            elif fiber.last_run == False:
-                stimamp_bottom = stimamp
-
-        if fiber.index == 0:
-            outfile = open('validation/threshold/python/thresh_' + str(fiber.fiber_mode), 'w')
-            outfile.write("{:.6f}".format(stimamp))
-            outfile.close()
-        return stimamp
+    def submit(self, sim_obj):
+        for fiber in self.fiber_list:
+            n_fiber_coords = len(fiber.xyz)
+            fiber \
+                .generate(n_fiber_coords) \
+                .submit(sim_obj)
+            exit()
 
     def write(self, mode: WriteMode, path: str):
         """

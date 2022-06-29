@@ -11,6 +11,7 @@ import os
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
 import pickle
+import shutil
 from typing import List
 
 # packages
@@ -130,7 +131,7 @@ class Runner(Exceptionable, Configurable):
 
         def load_obj(path: str):
             """
-            :param path: path to python obj file
+            :param path: path to Python obj file
             :return: obj file
             """
             return pickle.load(open(path, 'rb')).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value])
@@ -293,7 +294,7 @@ class Runner(Exceptionable, Configurable):
                                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
                                 .resolve_factors() \
                                 .write_waveforms(sim_obj_dir) \
-                                .write_fibers(sim_obj_dir) \
+                                .write_fibers(sim_obj_dir, sample_num, model_num) \
                                 .validate_srcs(sim_obj_dir) \
                                 .save(sim_obj_file)
 
@@ -395,6 +396,25 @@ class Runner(Exceptionable, Configurable):
                             simulation: Simulation = load_obj(sim_obj_path)
                             simulation.build_n_sims(sim_dir, sim_num)
 
+                            for fiberset in simulation.fibersets:
+                                for fiber in fiberset.fiber_list:
+                                    potentials_path = os.path.join(sim_dir, str(sim_num), 'potentials')
+                                    potentials_nums = os.listdir(potentials_path)[1:]
+                                    for potentials_num in potentials_nums:
+                                        potentials_file = os.path.join(potentials_path,
+                                                                       potentials_num,
+                                                                       str(fiber.index) + '.dat')
+                                        fiber.inherit_potentials(potentials_file)
+
+                            simulation.save(sim_obj_file)
+
+                            # delete folder containing fiberset .txt files
+                            delete = None
+                            if self.configs[Config.RUN.value].get('delete_fibersets') is not None:
+                                delete = self.configs[Config.RUN.value]['delete_fibersets']
+                                if delete:
+                                    shutil.rmtree(os.path.join(sim_obj_dir, 'fibersets'))
+
                             #get export behavior
                             export_behavior = None
                             if self.configs[Config.CLI_ARGS.value].get('export_behavior') is not None:
@@ -438,18 +458,6 @@ class Runner(Exceptionable, Configurable):
                 self.handoff(self.number)
                 print('\nNEURON Simulations NOT created since no Sim indices indicated in Config.SIM\n')
 
-        n_sim = 0
-        n_tsteps = len(simulation.waveforms[n_sim].wave)
-        sim_path = os.path.join(sim_dir, str(sim_num), 'n_sims', str(n_sim))
-        fibers_path = os.path.abspath(os.path.join(sim_path, 'data', 'inputs'))
-
-        for fiberset in simulation.fibersets:
-            for fiber in fiberset.fiber_list:
-                fiber_path = os.path.join(fibers_path, 'inner{}_fiber{}.dat'.format(0, fiber.index))
-                waveform_path = os.path.join(fibers_path, 'waveform.dat')
-                fiber.generate(fiber_path)
-                fiberset.findThresh(fiber, fiber_path, waveform_path, n_tsteps)
-        exit()
 
     def handoff(self, run_number: int):
         comsol_path = os.environ[Env.COMSOL_PATH.value]
@@ -823,3 +831,43 @@ class Runner(Exceptionable, Configurable):
             distal_exists = model_config['medium']['distal']['exist']
             if distal_exists and model_config['medium']['proximal']['distant_ground'] == True:
                 self.throw(107)
+
+    def submit(self, run):
+        def load_obj(path: str):
+            """
+            :param path: path to Python obj file
+            :return: obj file
+            """
+            return pickle.load(open(path, 'rb')).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value])
+
+        all_configs = self.load_configs()
+
+        run_pseudonym = self.configs[Config.RUN.value].get('pseudonym')
+        if run_pseudonym is not None: print('Run pseudonym:', run_pseudonym)
+
+        sample_num = self.configs[Config.RUN.value]['sample']
+        sample_pseudonym = all_configs[Config.SAMPLE.value][sample_num].get('pseudonym')
+
+        print('SAMPLE {}'.format(self.configs[Config.RUN.value]['sample']),
+              '- {}'.format(sample_pseudonym) if sample_pseudonym is not None else '')
+
+        for model in self.configs[Config.RUN.value]['models']:
+            model_pseudonym = all_configs[Config.MODEL.value][model].get('pseudonym')
+            print('\tMODEL {}'.format(model),
+                  '- {}'.format(model_pseudonym) if model_pseudonym is not None else '')
+
+            for sim in self.configs[Config.RUN.value]['sims']:
+                sim_pseudonym = all_configs[Config.SIM.value][0].get('pseudonym')
+                print('\t\tSIM {}'.format(sim),
+                      '- {}'.format(sim_pseudonym) if sim_pseudonym is not None else '')
+
+                sim_dir = os.path.join(os.getcwd(),
+                                       'samples',
+                                       str(sample_num),
+                                       'models',
+                                       str(model),
+                                       'sims',
+                                       str(sim))
+                sim_obj_file = os.path.join(sim_dir, 'sim.obj')
+                simulation: Simulation = load_obj(sim_obj_file)
+                simulation.submit()

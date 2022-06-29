@@ -45,7 +45,7 @@ def run(args):
                   'All arguments must be positive integers.'.format(argument))
             sys.exit()
 
-        print('\n\n########## STARTING RUN {} ##########\n\n'.format(argument))
+        print('\n\n########## SUBMITTING RUN {} ##########\n\n'.format(argument))
 
         run_path = os.path.join('config', 'user', 'runs', '{}.json'.format(argument))
         if not os.path.exists(run_path):
@@ -67,24 +67,12 @@ def run(args):
         runner.populate_env_vars()
 
         # ready, set, GO!
-        runner.run()
+        runner.submit(argument)
 
         # END timer
         end = time.time()
         elapsed = end - start
 
-        if args.auto_submit or runner.search(Config.RUN,'auto_submit_fibers', optional=True)==True:
-            print('Auto submitting fibers for run {}'.format(argument))
-            #submit fibers before moving on to next run
-            reset_dir = os.getcwd()
-            export_path = runner.search(Config.ENV, Env.NSIM_EXPORT_PATH.value)
-            os.chdir(export_path)
-            with open(os.devnull, 'wb') as devnull:
-                #-s flag to skip summary
-                exit_code = subprocess.check_call(['Python','submit.py', '-s',str(argument)], stdout=devnull, stderr=devnull)
-                if exit_code !=0: print('WARNING: Non-zero exit code during fiber submission. Continuing to next run...')
-            os.chdir(reset_dir)
-            
         print('\nruntime: {} (hh:mm:ss)'.format(time.strftime('%H:%M:%S', time.gmtime(elapsed))))
 
     # cleanup for console viewing/inspecting

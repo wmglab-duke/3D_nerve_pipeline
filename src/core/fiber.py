@@ -5,14 +5,16 @@ import json
 
 from neuron import h
 
-from src.utils import (Config, Configurable, Exceptionable, MyelinationMode, SetupMode, WriteMode)
+from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberGeometry,
+                       FiberXYMode, FiberZMode, MyelinatedSamplingType, MyelinationMode, Saveable,
+                       SetupMode, WriteMode, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
 from src.core.stimulation import ExtracellularStimulation
 
+import itertools
 import math
 import numpy as np
 import os
-import bokeh.plotting as plt
-from bokeh.layouts import row
+import matplotlib.pyplot as plt
 import pickle
 
 Section = h.Section
@@ -54,6 +56,7 @@ class Fiber(Exceptionable, Configurable):
         self.FLUT = []
         self.STIN = []
         self.sec = []
+        self.potentials = []
         self.last_run = bool
         return
 
@@ -73,7 +76,7 @@ class Fiber(Exceptionable, Configurable):
         self.temperature = self.search(Config.MODEL, 'temperature')
         return self
 
-    def generate(self, fiber_path):
+    def generate(self, n_fiber_coords):
         """
         Build fiber sections based on fiber type
         Reads in geometric properties from JSON files
@@ -151,21 +154,18 @@ class Fiber(Exceptionable, Configurable):
             paraD2 = 0.02361 * self.diameter ** 2 + 0.3673 * self.diameter + 0.7122
             axonD = paraD2
 
-        fiber_ve = np.loadtxt(fiber_path)
-        n_fiber_coords = int(fiber_ve[0])
-
         if neuron_flag == 2:
             self.axonnodes = int(1 + (n_fiber_coords - 1) / 11)
         elif neuron_flag == 3:
             self.axonnodes = int(n_fiber_coords)
-            len = self.delta_z*self.axonnodes
+            length = self.delta_z*self.axonnodes
 
         if self.myelination:
             self.createMyelinatedFiber(node_channels, self.axonnodes, self.diameter, self.temperature, axonD,
                                        nodeD, paraD1, paraD2, self.delta_z, paranodal_length_2,
                                        nl, self.passive_end_nodes)
         elif not self.myelination:
-            self.createUnmyelinatedFiber(self.diameter, len, c_fiber_model_type=self.channels_type, celsius=self.temperature,
+            self.createUnmyelinatedFiber(self.diameter, length, c_fiber_model_type=self.channels_type, celsius=self.temperature,
                                          delta_z=self.delta_z, passive_end_nodes=self.passive_end_nodes)
 
         return self
@@ -383,12 +383,12 @@ class Fiber(Exceptionable, Configurable):
             self.node[i+1].connect(self.MYSA[2*i+1])
         return self
 
-    def createUnmyelinatedFiber(self, fiberD=6, len=21, c_fiber_model_type=1, celsius=37, delta_z=50/6, insert97na=0,
+    def createUnmyelinatedFiber(self, fiberD=6, length=21, c_fiber_model_type=1, celsius=37, delta_z=50/6, insert97na=0,
                      conductances97=0, passive_end_nodes=0):
         """
         Create a list of Neuron Sections for an unmyelinated fiber
         """
-        nsegments = int(len/delta_z)
+        nsegments = int(length/delta_z)
 
         self.sec = []
         for i in range(0, nsegments):
@@ -567,23 +567,189 @@ class Fiber(Exceptionable, Configurable):
                 f.write("\n")
         return self
 
-    def run(self, stimamp, fiber_path, waveform_path, n_tsteps, v_init, find_thresh, find_block_thresh, plot=False):
+    def inherit_potentials(self, potentials_path):
+        potentials_file = open(potentials_path, 'r')
+        axontotal = int(potentials_file.readline())
+        file_lines = potentials_file.read().splitlines()
+        potentials_data = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
+        potentials_file.close()
+
+        if len(potentials_data) != axontotal:
+            raise Exception("Need axontotal from VeSpace file to match axontotal used in Python")
+        self.potentials.append(potentials_data)
+
+    def findThresh(self, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop):
+        bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
+        if bounds_search_mode == 'PERCENT_INCREMENT':  # relative increment (increase bound by a certain percentage of the previous value)
+            increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
+            step = self.search(Config.SIM, "protocol", "bounds_search", "step")
+            rel_increment = round(step / 100, 4)
+        elif bounds_search_mode == 'ABSOLUTE_INCREMENT':  # absolute increment (increase bound by a a certain amount + previous value)
+            increment_flag = SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value
+            step = self.search(Config.SIM, "protocol", "bounds_search", "step")
+            abs_increment = round(step, 4)
+
+        termination_criteria_mode = self.search(Config.SIM, "protocol", "termination_criteria", "mode")
+        if termination_criteria_mode == 'ABSOLUTE_DIFFERENCE':
+            termination_flag = TerminationCriteriaMode.ABSOLUTE_DIFFERENCE.value
+            res = self.search(Config.SIM, "protocol", "termination_criteria", "tolerance")
+            abs_thresh_resoln = round(res, 4)
+        elif termination_criteria_mode == 'PERCENT_DIFFERENCE':
+            termination_flag = TerminationCriteriaMode.PERCENT_DIFFERENCE.value
+            res = self.search(Config.SIM, "protocol", "termination_criteria", "percent")
+            rel_thresh_resoln = round(res / 100, 4)
+
+        print("Running threshold bounds for fiber #{0}".format(self.index))
+        stimamp_top = self.search(Config.SIM, 'protocol', 'bounds_search', 'top')
+        stimamp_bottom = self.search(Config.SIM, 'protocol', 'bounds_search', 'bottom')
+
+        check_top_flag = 0  # 0 for upper-bound not yet found, value changes to 1 when the upper-bound is found
+        check_bottom_flag = 0  # 0 for lower-bound not yet found, value changes to 1 when the lower-bound is found
+        # enter binary search when both are found
+
+        iter = 1
+        while True:
+            if check_top_flag == 0:
+                print("Running stimamp_top = {:.6f}".format(stimamp_top))
+                self.run(stimamp_top, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+
+                if self.n_aps == 0:
+                    if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
+                        print(
+                            "ERROR: Initial stimamp_top value does not elicit an AP - need to increase its magnitude and/or increase tstop to detect evoked AP")
+                    else:
+                        print(
+                            "WARNING: Initial stimamp_top value does not block - need to increase its magnitude and/or increase tstop to block test pulse evoked AP")
+                    if increment_flag == SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value:
+                        stimamp_top = stimamp_top + abs_increment
+                    elif increment_flag == SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value:
+                        stimamp_top = stimamp_top * (1 + rel_increment)
+                else:
+                    check_top_flag = 1
+
+            if check_bottom_flag == 0:
+                print("Running stimamp_bottom = {:.6f}".format(stimamp_bottom))
+                self.run(stimamp_bottom, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+
+                if self.n_aps != 0:
+                    if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
+                        print(
+                            "ERROR: Initial stimamp_bottom value elicits an AP - need to decrease its magnitude and/or increase tstop to detect block test pulses")
+                    else:
+                        print(
+                            "WARNING: Initial stimamp_bottom value blocks - need to decrease its magnitude and/or increase tstop to detect test pulse evoked AP")
+                    if increment_flag == SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value:
+                        stimamp_bottom = stimamp_bottom - abs_increment
+                    elif increment_flag == SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value:
+                        stimamp_bottom = stimamp_bottom * (1 - rel_increment)
+                else:
+                    check_bottom_flag = 1
+
+            if check_bottom_flag == 1 and check_top_flag == 1:
+                print('Bounds set - entering binary search')
+                break
+
+            iter += 1
+
+            if iter >= 100:
+                print("maximum number of bounds searching steps reached. breaking.")
+                quit()
+
+        # enter binary search
+        while True:
+            stimamp_prev = stimamp_top
+
+            stimamp = (stimamp_bottom + stimamp_top) / 2
+            print("stimamp_bottom = {:.6f}      stimamp_top = {:.6f}".format(stimamp_bottom, stimamp_top))
+            print("Running stimamp: {:.6f}".format(stimamp))
+            self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+
+            if termination_flag == TerminationCriteriaMode.PERCENT_DIFFERENCE.value:
+                thresh_resoln = abs(rel_thresh_resoln)
+                tolerance = abs((stimamp_bottom - stimamp_top) / stimamp_top)
+            elif termination_flag == TerminationCriteriaMode.ABSOLUTE_DIFFERENCE.value:
+                thresh_resoln = abs(abs_thresh_resoln)
+                tolerance = abs(stimamp_bottom - stimamp_top)
+
+            if tolerance < thresh_resoln:
+                if self.last_run == False:
+                    stimamp = stimamp_prev
+                print(
+                    "Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)\n".format(
+                        stimamp))
+                self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+                break
+            elif self.last_run == True:
+                stimamp_top = stimamp
+            elif self.last_run == False:
+                stimamp_bottom = stimamp
+
+        if self.index == 0:
+            outfile = open('validation/intracellular_stim/threshold/Python/thresh_' + str(self.fiber_mode), 'w')
+            outfile.write("{:.6f}".format(stimamp))
+            outfile.close()
+        return stimamp
+
+    def submit(self, sim_obj):
+        # determine protocol, binary search, and
+        protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
+        if protocol_mode != 'FINITE_AMPLITUDES':
+            find_thresh = True
+            if protocol_mode == 'BLOCK_THRESHOLD':
+                find_block_thresh = NeuronRunMode.BLOCK_THRESHOLD.value
+            elif protocol_mode == 'ACTIVATION_THRESHOLD':
+                find_block_thresh = NeuronRunMode.ACTIVATION_THRESHOLD.value
+        elif protocol_mode == 'FINITE_AMPLITUDES':
+            find_thresh == False
+
+        for waveform_obj, potentials in itertools.product(*[sim_obj.waveforms, self.potentials]):
+            waveform = waveform_obj.wave.tolist()
+            n_tsteps = len(waveform)
+            dt = waveform_obj.dt
+            tstop = waveform_obj.stop
+
+            if find_thresh:
+                self.findThresh(potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
+            else:
+                amps = [0, 1, 10] # todo: finish FINITE AMPLITUDES
+                for amp in amps:
+                    self.run(amp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+
+
+        print('fiber successfully created, in submit')
+
+    def run(self, stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True, final_run=False):
         """
         Run a simulation for a single stimulation amplitude
         """
         if plot:
             ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
             node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
+
+            plt.style.use('seaborn-white')
+            fig = plt.figure()
+            ax1 = fig.add_subplot(111)
+            ax1.set_ylabel('v (mV)', fontsize=14)
+            ax1.set_xlabel('t (ms)', fontsize=14)
+            ax1.spines["top"].set_visible(False)
+            ax1.spines["right"].set_visible(False)
+            ax1.set_title("node[{}] at stimamp={:.6f}".format(node_index, stimamp))
+
             if self.myelination:
-                plot_node = plt.figure(title='node[' + str(node_index) + '] at stimamp = ' + str(stimamp),
-                                       x_axis_label='t (ms)', y_axis_label='v (mV)')
                 v_node = h.Vector().record(self.node[node_index](0.5)._ref_v)
                 t = h.Vector().record(h._ref_t)
             else:
-                plot_node = plt.figure(title='node[' + str(node_index) + '] at stimamp = ' + str(stimamp),
-                                       x_axis_label='t (ms)', y_axis_label='v (mV)')
                 v_node = h.Vector().record(self.sec[node_index](0.5)._ref_v)
                 t = h.Vector().record(h._ref_t)
+
+        if self.fiber_type == 1:
+            v_init = -88.3
+        elif self.fiber_type == 2:
+            v_init = -80
+        elif self.fiber_type == 3:
+            channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
+            v_init_c_fibers = [-60, -55, -82, -48] # v_rest for  Sundt, Tigerholm, Rattay and Aberham, and Schild C-Fiber models
+            v_init = v_init_c_fibers[channels_type - 1]
 
         h.finitialize(v_init)
 
@@ -594,21 +760,7 @@ class Fiber(Exceptionable, Configurable):
             elif self.channels_type == 2 and self.passive_end_nodes == 0:
                 self.balance()
 
-        # Load in Extracellular Stimulation vectors
-        stimulation_vectors = ExtracellularStimulation()
-        stimulation_vectors \
-            .load_space(fiber_path) \
-            .load_time(waveform_path)
-        t_step = stimulation_vectors.dt
-        tstop = stimulation_vectors.tstop
-
-        # Determine which gating parameters to save
-        space_gating: bool = self.search(Config.SIM, 'saving', 'space', 'gating')
-        time_gating: bool = self.search(Config.SIM, 'saving', 'time', 'gating')
-        runtimes: bool = self.search(Config.SIM, 'saving', 'runtimes')
-
         # Determine protocol
-        protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
         t_initSS = self.search(Config.SIM, 'protocol', 'initSS')
         dt_initSS = self.search(Config.SIM, 'protocol', 'dt_initSS')
 
@@ -646,15 +798,13 @@ class Fiber(Exceptionable, Configurable):
             intracellular_stim.freq = self.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
             intracellular_stim.amp = self.search(Config.SIM, 'intracellular_stim', 'amp')
 
-
-
         # Allow system to reach steady-state by using a large dt before simulation
         h.t = t_initSS      # Start before t=0
         h.dt = dt_initSS    # Large dt
         while (h.t <= -dt_initSS):
             h.fadvance()
 
-        h.dt = t_step
+        h.dt = dt
         h.t = 0
         h.fcurrent()
         h.frecord_init()
@@ -673,10 +823,10 @@ class Fiber(Exceptionable, Configurable):
 
         # Begin time loop -- actual simulation begins
         for i in range(0, n_tsteps):
-            if i*t_step > tstop:
+            if i*dt > tstop:
                 break
-            amp = stimulation_vectors.VeTime_data[i]
-            scaled_stim = [stimamp*amp*j for j in stimulation_vectors.VeSpace_data]
+            amp = waveform[i]
+            scaled_stim = [stimamp*amp*x for x in potentials]
             if self.fiber_type == 2:
                 node_stim, FLUT_stim, MYSA_stim, STIN_stim = [], [], [], []
                 for ind in range(1, len(scaled_stim)+1):
@@ -703,41 +853,41 @@ class Fiber(Exceptionable, Configurable):
             h.fadvance()
 
         if plot:
-            plot_node.line(t, list(v_node), line_width=2)
-            plt.show(plot_node)
+            ax1.plot(list(t), list(v_node), c='black', alpha=0.5)
+            plt.show()
 
             if self.index == 0:
-                outfile = open('validation/vm/python/Vm_' + str(self.fiber_mode), 'wb')
+                # outfile = open('validation/intracellular_stim/vm/Python/Vm_' + str(self.fiber_mode), 'wb')
+                outfile = open('Vm_' + str(self.fiber_mode), 'wb')
                 pickle.dump([list(t), list(v_node)], outfile)
                 outfile.close()
 
         # Simulation complete
 
         # Check for APs if ACTIVATION_THRESHOLD or BLOCK_THRESHOLD
-        if find_thresh:
+        if not final_run:
             print("Checking for an AP...", end=" ")
-            self.n_aps = 0
 
-            ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
-            n_min_aps = self.search(Config.SIM, 'protocol', 'threshold', 'n_min_aps')
-            node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
+        ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
+        n_min_aps = self.search(Config.SIM, 'protocol', 'threshold', 'n_min_aps')
+        node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
 
-            if find_block_thresh:
-                IntraStim_PulseTrain_delay = self.search(Config.SIM, 'times', 'IntraStim_PulseTrain_delay')
-                if apc[node_index].time > IntraStim_PulseTrain_delay:
-                    self.last_run = False
-                    self.n_aps = 0
-                else:
-                    self.last_run = True
-                    self.n_aps = 1
+        if find_block_thresh:
+            IntraStim_PulseTrain_delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
+            if apc[node_index].time > IntraStim_PulseTrain_delay:
+                self.last_run = False
+                self.n_aps = 0
             else:
-                if apc[node_index].n >= n_min_aps:
-                    self.last_run = True
-                    self.n_aps = apc[node_index].n
-                else:
-                    self.last_run = False
-                    self.n_aps = apc[node_index].n
-                print("{0} AP(s) detected".format(self.n_aps))
+                self.last_run = True
+                self.n_aps = 1
+        else:
+            if apc[node_index].n >= n_min_aps:
+                self.last_run = True
+                self.n_aps = apc[node_index].n
+            else:
+                self.last_run = False
+                self.n_aps = apc[node_index].n
+        print("{0} AP(s) detected".format(self.n_aps))
         return self
 
 class GeometryObject():

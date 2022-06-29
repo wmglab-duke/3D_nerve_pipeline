@@ -18,7 +18,7 @@ if args.script!='install':
     if env is not None and os.path.split(env)[-1]!='ascent':
         sys.exit('''
             ASCENT must be run in the "ascent" environment.
-            If you have not installed ascent yet, please do so (python run install).
+            If you have not installed ascent yet, please do so (Python run install).
             Otherwise, please activate the "ascent" environment (conda activate ascent) before running.''')
 
 welcome.welcome()
