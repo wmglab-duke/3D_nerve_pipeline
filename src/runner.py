@@ -396,18 +396,6 @@ class Runner(Exceptionable, Configurable):
                             simulation: Simulation = load_obj(sim_obj_path)
                             simulation.build_n_sims(sim_dir, sim_num)
 
-                            for fiberset in simulation.fibersets:
-                                for fiber in fiberset.fiber_list:
-                                    potentials_path = os.path.join(sim_dir, str(sim_num), 'potentials')
-                                    potentials_nums = os.listdir(potentials_path)[1:]
-                                    for potentials_num in potentials_nums:
-                                        potentials_file = os.path.join(potentials_path,
-                                                                       potentials_num,
-                                                                       str(fiber.index) + '.dat')
-                                        fiber.inherit_potentials(potentials_file)
-
-                            simulation.save(sim_obj_file)
-
                             # delete folder containing fiberset .txt files
                             delete = None
                             if self.configs[Config.RUN.value].get('delete_fibersets') is not None:
@@ -832,7 +820,7 @@ class Runner(Exceptionable, Configurable):
             if distal_exists and model_config['medium']['proximal']['distant_ground'] == True:
                 self.throw(107)
 
-    def submit(self, run):
+    def submit(self):
         def load_obj(path: str):
             """
             :param path: path to Python obj file

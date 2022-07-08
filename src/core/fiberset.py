@@ -67,25 +67,14 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
 
-        self.fiber_list = []
-        for index, xyz in enumerate(self.fibers):
-            fiber = Fiber()
-            fiber \
-                .add(SetupMode.OLD, Config.SIM, sim_copy) \
-                .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
-                .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_num), 'models',
-                                                               str(model_num), 'model.json')) \
-                .inherit(xyz, index)
-            self.fiber_list.append(fiber)
+        self.fiber = Fiber()
+        self.fiber \
+            .add(SetupMode.OLD, Config.SIM, sim_copy) \
+            .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
+            .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_num), 'models',
+                                                           str(model_num), 'model.json')) \
+            .inherit()
         return self
-
-    def submit(self, sim_obj):
-        for fiber in self.fiber_list:
-            n_fiber_coords = len(fiber.xyz)
-            fiber \
-                .generate(n_fiber_coords) \
-                .submit(sim_obj)
-            exit()
 
     def write(self, mode: WriteMode, path: str):
         """

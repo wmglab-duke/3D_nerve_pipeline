@@ -8,9 +8,8 @@ from neuron import h
 from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberGeometry,
                        FiberXYMode, FiberZMode, MyelinatedSamplingType, MyelinationMode, Saveable,
                        SetupMode, WriteMode, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
-from src.core.stimulation import ExtracellularStimulation
 
-import itertools
+
 import math
 import numpy as np
 import os
@@ -30,10 +29,9 @@ def dz_calculator() -> list:
     return []
 
 
-class Fiber(Exceptionable, Configurable):
+class Fiber(Exceptionable, Configurable, Saveable):
     def __init__(self):
         exceptions_file = os.path.join('config', 'system', 'exceptions.json')
-
         with open(exceptions_file, "r") as handle:
             exceptions_config: dict = json.load(handle)
 
@@ -51,6 +49,8 @@ class Fiber(Exceptionable, Configurable):
         self.fiber_type = None
         self.myelination = None
         self.temperature = None
+        self.axonnodes = None
+        self.delta_z = None
         self.node = []
         self.MYSA = []
         self.FLUT = []
@@ -60,12 +60,10 @@ class Fiber(Exceptionable, Configurable):
         self.last_run = bool
         return
 
-    def inherit(self, xyz: tuple, index: int):
+    def inherit(self):
         """
         Inherit known properties of the fiber based on sim config
         """
-        self.index = index
-        self.xyz = xyz
         self.diameter = self.search(Config.SIM, 'fibers', 'z_parameters', 'diameter')
         self.min = self.search(Config.SIM, 'fibers', 'z_parameters', 'min')
         self.max = self.search(Config.SIM, 'fibers', 'z_parameters', 'max')
@@ -549,36 +547,7 @@ class Fiber(Exceptionable, Configurable):
             else:
                 s.gkleak_leak = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (Vrest - s.ek)
 
-    def write(self, mode: WriteMode, path: str):
-        """
-        :param mode:
-        :param path:
-        :return:
-        """
-
-        diams = []
-        with open(os.path.join(path, WriteMode.file_endings.value[mode.value]), 'w') as f:
-            for row in [len(self.z)] + list(self.z):
-                if not isinstance(row, int):
-                    for el in row:
-                        f.write(str(el) + ' ')
-                else:
-                    f.write(str(row) + ' ')
-                f.write("\n")
-        return self
-
-    def inherit_potentials(self, potentials_path):
-        potentials_file = open(potentials_path, 'r')
-        axontotal = int(potentials_file.readline())
-        file_lines = potentials_file.read().splitlines()
-        potentials_data = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
-        potentials_file.close()
-
-        if len(potentials_data) != axontotal:
-            raise Exception("Need axontotal from VeSpace file to match axontotal used in Python")
-        self.potentials.append(potentials_data)
-
-    def findThresh(self, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop):
+    def findThresh(self, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving):
         bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
         if bounds_search_mode == 'PERCENT_INCREMENT':  # relative increment (increase bound by a certain percentage of the previous value)
             increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
@@ -599,7 +568,6 @@ class Fiber(Exceptionable, Configurable):
             res = self.search(Config.SIM, "protocol", "termination_criteria", "percent")
             rel_thresh_resoln = round(res / 100, 4)
 
-        print("Running threshold bounds for fiber #{0}".format(self.index))
         stimamp_top = self.search(Config.SIM, 'protocol', 'bounds_search', 'top')
         stimamp_bottom = self.search(Config.SIM, 'protocol', 'bounds_search', 'bottom')
 
@@ -611,7 +579,7 @@ class Fiber(Exceptionable, Configurable):
         while True:
             if check_top_flag == 0:
                 print("Running stimamp_top = {:.6f}".format(stimamp_top))
-                self.run(stimamp_top, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+                self.run(stimamp_top, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving)
 
                 if self.n_aps == 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
@@ -629,7 +597,7 @@ class Fiber(Exceptionable, Configurable):
 
             if check_bottom_flag == 0:
                 print("Running stimamp_bottom = {:.6f}".format(stimamp_bottom))
-                self.run(stimamp_bottom, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+                self.run(stimamp_bottom, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving)
 
                 if self.n_aps != 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
@@ -662,7 +630,7 @@ class Fiber(Exceptionable, Configurable):
             stimamp = (stimamp_bottom + stimamp_top) / 2
             print("stimamp_bottom = {:.6f}      stimamp_top = {:.6f}".format(stimamp_bottom, stimamp_top))
             print("Running stimamp: {:.6f}".format(stimamp))
-            self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+            self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving)
 
             if termination_flag == TerminationCriteriaMode.PERCENT_DIFFERENCE.value:
                 thresh_resoln = abs(rel_thresh_resoln)
@@ -677,20 +645,22 @@ class Fiber(Exceptionable, Configurable):
                 print(
                     "Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)\n".format(
                         stimamp))
-                self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+                self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=saving)
+
+                # save threshold to submit/n_sims/#/data/outputs/thresh_inner#_fiber#.dat
+
+                thresh_path = os.path.join(saving.output_path, 'thresh_inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
+                thresh_file = open(thresh_path, 'w')
+                thresh_file.write("{:.6f} mA".format(stimamp))
+                thresh_file.close()
                 break
             elif self.last_run == True:
                 stimamp_top = stimamp
             elif self.last_run == False:
                 stimamp_bottom = stimamp
-
-        if self.index == 0:
-            outfile = open('validation/intracellular_stim/threshold/Python/thresh_' + str(self.fiber_mode), 'w')
-            outfile.write("{:.6f}".format(stimamp))
-            outfile.close()
         return stimamp
 
-    def submit(self, sim_obj):
+    def submit(self, potentials, waveform, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving):
         # determine protocol, binary search, and
         protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
         if protocol_mode != 'FINITE_AMPLITUDES':
@@ -702,46 +672,37 @@ class Fiber(Exceptionable, Configurable):
         elif protocol_mode == 'FINITE_AMPLITUDES':
             find_thresh == False
 
-        for waveform_obj, potentials in itertools.product(*[sim_obj.waveforms, self.potentials]):
-            waveform = waveform_obj.wave.tolist()
-            n_tsteps = len(waveform)
-            dt = waveform_obj.dt
-            tstop = waveform_obj.stop
 
-            if find_thresh:
-                self.findThresh(potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
-            else:
-                amps = [0, 1, 10] # todo: finish FINITE AMPLITUDES
-                for amp in amps:
-                    self.run(amp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True)
+        if find_thresh:
+            self.findThresh(potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving)
+        else:
+            amps = [0, 1, 10] # todo: finish FINITE AMPLITUDES
+            for amp in amps:
+                self.run(amp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=saving)
 
-
-        print('fiber successfully created, in submit')
-
-    def run(self, stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, plot=True, final_run=False):
+    def run(self, stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=None):
         """
         Run a simulation for a single stimulation amplitude
         """
-        if plot:
-            ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
-            node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
+        # If saving Vm(t), create recording vectors for Vm at specified nodes and t
+        vm_recording_vectors = []
+        if saving is not None:
+            if saving.time_vm:
+                t_vector = h.Vector().record(h._ref_t)
+                for node_ind in saving.node_inds:
+                    if self.myelination:
+                        v_node = h.Vector().record(self.node[node_ind](0.5)._ref_v)
+                        vm_recording_vectors.append(v_node)
+                    else:
+                        vm_recording_vectors.append(h.Vector().record(self.sec[node_ind](0.5)._ref_v))
 
-            plt.style.use('seaborn-white')
-            fig = plt.figure()
-            ax1 = fig.add_subplot(111)
-            ax1.set_ylabel('v (mV)', fontsize=14)
-            ax1.set_xlabel('t (ms)', fontsize=14)
-            ax1.spines["top"].set_visible(False)
-            ax1.spines["right"].set_visible(False)
-            ax1.set_title("node[{}] at stimamp={:.6f}".format(node_index, stimamp))
+            if saving.time_gating:
+                gating_h_vectors = [[] for node in saving.node_inds]
+                gating_m_vectors = [[] for node in saving.node_inds]
+                gating_mp_vectors = [[] for node in saving.node_inds]
+                gating_s_vectors = [[] for node in saving.node_inds]
 
-            if self.myelination:
-                v_node = h.Vector().record(self.node[node_index](0.5)._ref_v)
-                t = h.Vector().record(h._ref_t)
-            else:
-                v_node = h.Vector().record(self.sec[node_index](0.5)._ref_v)
-                t = h.Vector().record(h._ref_t)
-
+        # Determine starting voltage of system
         if self.fiber_type == 1:
             v_init = -88.3
         elif self.fiber_type == 2:
@@ -760,13 +721,8 @@ class Fiber(Exceptionable, Configurable):
             elif self.channels_type == 2 and self.passive_end_nodes == 0:
                 self.balance()
 
-        # Determine protocol
-        t_initSS = self.search(Config.SIM, 'protocol', 'initSS')
-        dt_initSS = self.search(Config.SIM, 'protocol', 'dt_initSS')
-
-        # Initialize extracellular and intracellular stimulation
+        # Initialize extracellular stimulation -- set stimulation at each segment to zero
         if self.fiber_type == 2:
-            # Extracellular stimulation -- set stimulation at each segment to zero
             for sec in self.node:
                 sec(0.5).e_extracellular = 0
             for sec in self.MYSA:
@@ -775,30 +731,13 @@ class Fiber(Exceptionable, Configurable):
                 sec(0.5).e_extracellular = 0
             for sec in self.STIN:
                 sec(0.5).e_extracellular = 0
-
-            # Intracellular stimulation -- attach current, set attributes
-            IntraStim_PulseTrain_ind = self.search(Config.SIM, 'intracellular_stim', 'ind')
-            intracellular_stim = h.trainIClamp(self.node[IntraStim_PulseTrain_ind](0.5))
-            intracellular_stim.delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
-            intracellular_stim.PW = self.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
-            intracellular_stim.train = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
-            intracellular_stim.freq = self.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
-            intracellular_stim.amp = self.search(Config.SIM, 'intracellular_stim', 'amp')
         else:
-            # Extracellular stimulation -- set stimulation at each segment to zero
             for sec in self.sec:
                 sec(0.5).e_extracellular = 0
 
-            # Intracellular stimulation -- attach current, set attributes
-            IntraStim_PulseTrain_ind = self.search(Config.SIM, 'intracellular_stim', 'ind')
-            intracellular_stim = h.trainIClamp(self.sec[IntraStim_PulseTrain_ind](0.5))
-            intracellular_stim.delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
-            intracellular_stim.PW = self.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
-            intracellular_stim.train = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
-            intracellular_stim.freq = self.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
-            intracellular_stim.amp = self.search(Config.SIM, 'intracellular_stim', 'amp')
-
         # Allow system to reach steady-state by using a large dt before simulation
+        t_initSS = self.search(Config.SIM, 'protocol', 'initSS')
+        dt_initSS = self.search(Config.SIM, 'protocol', 'dt_initSS')
         h.t = t_initSS      # Start before t=0
         h.dt = dt_initSS    # Large dt
         while (h.t <= -dt_initSS):
@@ -821,9 +760,9 @@ class Fiber(Exceptionable, Configurable):
                 apc.append(h.APCount(node(0.5)))
                 apc[i].thresh = self.search(Config.SIM, "protocol", "threshold", "value")
 
-        # Begin time loop -- actual simulation begins
+        ############    Begin simulation     ############
         for i in range(0, n_tsteps):
-            if i*dt > tstop:
+            if h.t > tstop:
                 break
             amp = waveform[i]
             scaled_stim = [stimamp*amp*x for x in potentials]
@@ -852,25 +791,20 @@ class Fiber(Exceptionable, Configurable):
                     sec(0.5).e_extracellular = scaled_stim[x]
             h.fadvance()
 
-        if plot:
-            ax1.plot(list(t), list(v_node), c='black', alpha=0.5)
-            plt.show()
+        ############    Done with simulation     ############
 
-            if self.index == 0:
-                # outfile = open('validation/intracellular_stim/vm/Python/Vm_' + str(self.fiber_mode), 'wb')
-                outfile = open('Vm_' + str(self.fiber_mode), 'wb')
-                pickle.dump([list(t), list(v_node)], outfile)
-                outfile.close()
+        # Save variables that are functions of time
+        if saving is not None and saving.time_vm:
+            saving.save_data('time', 'vm', t_vector, vm_recording_vectors)
 
-        # Simulation complete
 
         # Check for APs if ACTIVATION_THRESHOLD or BLOCK_THRESHOLD
-        if not final_run:
+        if saving is None:
             print("Checking for an AP...", end=" ")
 
         ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
         n_min_aps = self.search(Config.SIM, 'protocol', 'threshold', 'n_min_aps')
-        node_index = int((self.axonnodes - 1) * self.delta_z * ap_detect_location / self.delta_z)
+        node_index = int((self.axonnodes - 1) * ap_detect_location)
 
         if find_block_thresh:
             IntraStim_PulseTrain_delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')

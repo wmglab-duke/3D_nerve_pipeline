@@ -299,6 +299,10 @@ class Simulation(Exceptionable, Configurable, Saveable):
             self._build_file_structure(os.path.join(sim_dir, str(sim_num)), t)
             nsim_inputs_directory = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'data', 'inputs')
 
+            # save general fiber object as sim/#/n_sims/t/fiber.obj
+            nsim_fiber_obj = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'fiber.obj')
+            fiberset.fiber.save(nsim_fiber_obj)
+
             # copy corresponding waveform to sim/#/n_sims/t/data/inputs
             source_waveform_path = os.path.join(sim_dir, str(sim_num), "waveforms", "{}.dat".format(waveform_ind))
             destination_waveform_path = os.path.join(sim_dir, str(sim_num), "n_sims", str(t), "data", "inputs",
@@ -340,6 +344,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, sim_copy) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
                 .build_hoc(n_tsteps)
+
 
             # copy in potentials data into neuron simulation data/inputs folder
             # the potentials files are matched to their inner and fiber index, and saved in destination folder with
@@ -594,6 +599,26 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         submit_source = os.path.join('src', 'neuron', 'submit.py')
         shutil.copy2(submit_source, submit_target)
+
+        # create directory for python scripts
+        python_directory = os.path.join(target, 'python_files')
+        if not os.path.exists(python_directory):
+            os.makedirs(python_directory)
+
+        # copy local_run_controls.py to submit/python_scripts/local_run_controls.py
+        source_runcontrol_path = os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'core', 'local_run_controls.py')
+        destination_runcontrol_path = os.path.join(python_directory, 'local_run_controls.py')
+        shutil.copyfile(source_runcontrol_path, destination_runcontrol_path)
+
+        # copy stimulation.py to submit/python_scripts/stimulation.py
+        source_stimulation_path = os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'core', 'stimulation.py')
+        destination_stimulation_path = os.path.join(python_directory, 'stimulation.py')
+        shutil.copyfile(source_stimulation_path, destination_stimulation_path)
+
+        # copy local_run_controls.py to submit/python_scripts/local_run_controls.py
+        source_runcontrol_path = os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'core', 'saving.py')
+        destination_runcontrol_path = os.path.join(python_directory, 'saving.py')
+        shutil.copyfile(source_runcontrol_path, destination_runcontrol_path)
 
     @staticmethod
     def export_system_config_files(target: str):

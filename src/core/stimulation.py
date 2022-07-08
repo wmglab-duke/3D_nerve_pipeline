@@ -1,45 +1,55 @@
-"""
-Extracellular Stimulation class
-
-MISSING: error checks from original .hoc files
-"""
 from neuron import h
-import pickle
+import os
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../')))
+from src.utils import (Config, Configurable)
 h.load_file('stdrun.hoc')
 
-class ExtracellularStimulation():
+class Stimulation(Configurable):
     def __init__(self):
-        self.VeSpace_data = []
-        self.VeTime_data =[]
+        Configurable.__init__(self)
 
-    def load_space(self, space_file):
-        """
-        :param fname: file name containing Extracellular Stim Space data
-        :return: Ve(x) -- vector of potentials from FEM
-        """
-        spacefile = open(space_file, 'r')
-        self.axontotal = int(spacefile.readline())
-        file_lines = spacefile.read().splitlines()
-        VeSpace_data = [float(i)*1000 for i in file_lines]  # Need to convert to V -> mV
-        spacefile.close()
+        self.potentials = []
+        self.waveform = []
+        self.dt = None
+        self.tstop = None
+        return
 
-        if len(VeSpace_data) != self.axontotal:
-            raise Exception("Need axontotal from VeSpace file to match axontotal used in Python")
-        self.VeSpace_data = VeSpace_data
+    def load_potentials(self, potentials_path):
+        """
+        :param potentials_path: file name containing Extracellular Stim potentials data
+        Creates Ve(x) -- vector of potentials from FEM
+        """
+        potentials_file = open(potentials_path, 'r')
+        axontotal = int(potentials_file.readline())
+        file_lines = potentials_file.read().splitlines()
+        self.potentials = [float(i)*1000 for i in file_lines]  # Need to convert to V -> mV
+        potentials_file.close()
+
+        if len(self.potentials) != axontotal:
+            raise Exception("Need axontotal from potentials file to match axontotal used in Python")
         return self
 
-
-    def load_time(self, time_file):
+    def load_waveform(self, waveform_path):
         """
-        :param fname: file name containing Extracellular Stim Time data
-        :return: I(t) -- vector of amplitudes at each time step of the FEM
+        :param waveform_path: file name containing Extracellular Stim waveform data
+        Creates I(t) -- vector of amplitudes at each time step of the FEM
+        Also reads in time step and time stop
         """
-        timefile = open(time_file, 'r')
-        self.dt = float(timefile.readline().strip())           # time step
-        self.tstop = int(timefile.readline().strip())          # stop time
-        file_lines = timefile.read().splitlines()
-        VeTime_data = [float(i) for i in file_lines]
-        timefile.close()
-
-        self.VeTime_data = VeTime_data
+        waveform_file = open(waveform_path, 'r')
+        self.dt = float(waveform_file.readline().strip())           # time step
+        self.tstop = int(waveform_file.readline().strip())          # stop time
+        file_lines = waveform_file.read().splitlines()
+        self.waveform = [float(i) for i in file_lines]
+        waveform_file.close()
         return self
+
+    def apply_intracellular(self, fiber_sections):
+        IntraStim_PulseTrain_ind = self.search(Config.SIM, 'intracellular_stim', 'ind')
+        intracellular_stim = h.trainIClamp(fiber_sections[IntraStim_PulseTrain_ind](0.5))
+        intracellular_stim.delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
+        intracellular_stim.PW = self.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
+        intracellular_stim.train = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
+        intracellular_stim.freq = self.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
+        intracellular_stim.amp = self.search(Config.SIM, 'intracellular_stim', 'amp')
