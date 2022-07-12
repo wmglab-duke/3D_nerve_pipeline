@@ -13,10 +13,11 @@ import sys
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
+import matplotlib.pyplot as plt
 import numpy as np
+
 os.chdir('D:/ASCENT/fresh')
 
-import matplotlib.pyplot as plt
 from src.core.query import Query
 
 # set default fig size
@@ -53,15 +54,13 @@ plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 #     }
 # }).run()
 
-q = Query({
-    'partial_matches': False,
-    'include_downstream': True,
-    'indices': {
-        'sample': [3070,3150,3230],
-        'model': [0],
-        'sim': [3000]
+q = Query(
+    {
+        'partial_matches': False,
+        'include_downstream': True,
+        'indices': {'sample': [3008], 'model': [0, 1, 2], 'sim': [3001]},
     }
-}).run()
+).run()
 
 # builds heatmaps
 # q.barcharts_compare_models(logscale=False,

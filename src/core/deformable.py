@@ -6,27 +6,27 @@ Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
-# builtin
 from typing import List, Tuple
 
-# packages
-import pymunk.pygame_util
 import numpy as np
-from shapely.geometry import LineString, Point
 import pygame
-from pygame.locals import DOUBLEBUF, HWSURFACE, RESIZABLE
-from pygame.locals import KEYDOWN, K_ESCAPE, QUIT, K_SPACE
+import pymunk.pygame_util
 from pygame.colordict import THECOLORS
-from scipy.spatial import distance
+from pygame.locals import DOUBLEBUF, HWSURFACE, K_ESCAPE, K_SPACE, KEYDOWN, QUIT, RESIZABLE
+from shapely.geometry import LineString, Point
 
-# ascent
-from src.core import Trace, Slide
-from src.utils import Exceptionable, SetupMode, ReshapeNerveMode, Config
+from src.core import Slide, Trace
+from src.utils import Config, Exceptionable, ReshapeNerveMode, SetupMode
 
 
 class Deformable(Exceptionable):
-
-    def __init__(self, exception_config: list, boundary_start: Trace, boundary_end: Trace, contents: List[Trace]):
+    def __init__(
+        self,
+        exception_config: list,
+        boundary_start: Trace,
+        boundary_end: Trace,
+        contents: List[Trace],
+    ):
         """
         :param exception_config: pre-loaded data
         :param boundary_start: original start trace
@@ -44,13 +44,15 @@ class Deformable(Exceptionable):
         self.end = boundary_end
         self.contents = contents
 
-    def deform(self,
-               morph_count: int = 100,
-               morph_index_step: int = 10,
-               render: bool = True,
-               minimum_distance: float = 0.0,
-               sep_fasc_is_percent = False,
-               ratio: float = None, comp = False, progress_bar = True) -> Tuple[List[tuple], List[float]]:
+    def deform(
+        self,
+        morph_count: int = 100,
+        morph_index_step: int = 10,
+        render: bool = True,
+        minimum_distance: float = 0.0,
+        ratio: float = None,
+        progress_bar=True,
+    ) -> Tuple[List[tuple], List[float]]:
         """
         :param ratio:
         :param morph_count: number of incremental traces including the start and end of boundary
@@ -64,41 +66,35 @@ class Deformable(Exceptionable):
         contents = [trace.deepcopy() for trace in self.contents]
 
         bounds = self.start.polygon().bounds
-        width = int(1 * (bounds[2]+bounds[0]))
-        height = int(1 * (bounds[3]+bounds[1]))
-        im_ratio=height/width
+        width = int(1 * (bounds[2] + bounds[0]))
+        height = int(1 * (bounds[3] + bounds[1]))
+        im_ratio = height / width
 
         # offset all the traces to provide for an effective minimum distance for original fascicles
         for trace in contents:
             if not sep_fasc_is_percent:
                 trace.offset(distance=minimum_distance / 2.0)
             else:
-                trace.offset(distance=minimum_distance*trace.thickness)
+                trace.offset(distance=minimum_distance * trace.thickness)
 
         # initialize drawing vars, regardless of whether or not actually rendering
         # these have been moved below (if render...)
-        drawing_screen = options = display_dimensions = None
+        options = None
 
         # initialize the physics space (gravity is 0)
         space = pymunk.Space()
 
         # referencing the deform_steps method below
-        if not comp:
-            morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps(self.start,
-                                                                                       self.end,
-                                                                                       morph_count,
-                                                                                       ratio)]
-        else:
-            morph_steps = [step.pymunk_segments(space) for step in Deformable.deform_steps_complex(self.start,
-                                                                                       self.end,
-                                                                                       morph_count,
-                                                                                       ratio)]
+        morph_steps = [
+            step.pymunk_segments(space) for step in Deformable.deform_steps(self.start, self.end, morph_count, ratio)
+        ]
+
         # draw the deformation
         if render:
-            #Initialize screen and surface which each frame will be drawn on
-            screen = pygame.display.set_mode((800, int(800*im_ratio)),HWSURFACE|DOUBLEBUF|RESIZABLE)
+            # Initialize screen and surface which each frame will be drawn on
+            screen = pygame.display.set_mode((800, int(800 * im_ratio)), HWSURFACE | DOUBLEBUF | RESIZABLE)
             drawsurf = pygame.surface.Surface((width, height))
-            #pygame debug draw options
+            # pygame debug draw options
             options = pymunk.pygame_util.DrawOptions(drawsurf)
             options.shape_outline_color = (0, 0, 0, 255)
             options.shape_static_color = (0, 0, 0, 255)
@@ -146,11 +142,10 @@ class Deformable(Exceptionable):
             if loop_count % morph_index_step == 0:
                 # print('PRINT PRINT PRINT')
                 morph_index += 1
-                if progress_bar: Deformable.printProgressBar(morph_index,
-                                            len(morph_steps),
-                                            prefix='\t\tdeforming',
-                                            suffix='complete',
-                                            length=50)
+                if progress_bar:
+                    Deformable.printProgressBar(
+                        morph_index, len(morph_steps), prefix='\t\tdeforming', suffix='complete', length=50
+                    )
                 # print('\tmorph step {} of {}'.format(morph_index, len(morph_steps)))
 
                 if morph_index == len(morph_steps):
@@ -165,11 +160,18 @@ class Deformable(Exceptionable):
 
             # draw screen
             if render:
-                #add white fill and draw objects on surface
+                # add white fill and draw objects on surface
                 drawsurf.fill(THECOLORS["white"])
                 space.debug_draw(options)
-                #resize surface and project on screen
-                screen.blit(pygame.transform.flip(pygame.transform.scale(drawsurf, (800,int(800*im_ratio))),False,True), (0, 0))
+                # resize surface and project on screen
+                screen.blit(
+                    pygame.transform.flip(
+                        pygame.transform.scale(drawsurf, (800, int(800 * im_ratio))),
+                        False,
+                        True,
+                    ),
+                    (0, 0),
+                )
                 pygame.display.flip()
                 pygame.display.set_caption('nerve morph step {} of {}'.format(morph_index, len(morph_steps)))
 
@@ -187,11 +189,17 @@ class Deformable(Exceptionable):
         movements = [tuple(end - start) for start, end in zip(start_positions, end_positions)]
         rotations = [end - start for start, end in zip(start_rotations, end_rotations)]
         import sys
+
         return movements, rotations
 
     @staticmethod
-    def deform_steps(start: Trace, end: Trace, count: int = 2, deform_ratio: float = 1.0, slide: Slide = None) \
-            -> List[Trace]:
+    def deform_steps(
+        start: Trace,
+        end: Trace,
+        count: int = 2,
+        deform_ratio: float = 1.0,
+        slide: Slide = None,
+    ) -> List[Trace]:
 
         # Find point along old_nerve that is closest to major axis of best fit ellipse
         (x, y), (a, b), angle = start.ellipse()  # returns degrees
@@ -246,9 +254,9 @@ class Deformable(Exceptionable):
             for i, point in enumerate(trace.points):
                 point += vectors[i] * ratio
             traces.append(trace)
-        if deform_ratio !=0:
-            def_traces = traces[:int((deform_ratio if deform_ratio is not None else 1) * count)]
-        else: #still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
+        if deform_ratio != 0:
+            def_traces = traces[: int((deform_ratio if deform_ratio is not None else 1) * count)]
+        else:  # still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
             def_traces = [traces[0]]
         return def_traces
 
@@ -282,7 +290,7 @@ class Deformable(Exceptionable):
         # get end boundary
         if sep_nerve is None:
             sep_nerve = 0.0
-        boundary_end = slide.reshaped_nerve(mode, buffer=sep_nerve,override_r=override_r).deepcopy()
+        boundary_end = slide.reshaped_nerve(mode, buffer=sep_nerve, override_r=override_r).deepcopy()
 
         # get contents
         contents = [fascicle.outer.deepcopy() for fascicle in slide.fascicles]

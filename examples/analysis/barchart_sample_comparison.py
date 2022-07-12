@@ -10,13 +10,14 @@ The source code can be found on the following GitHub repository: https://github.
 
 import os
 import sys
+
 os.chdir('D:/ASCENT/ascent')
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
+import matplotlib.pyplot as plt
 import numpy as np
 
-import matplotlib.pyplot as plt
 from src.core.query import Query
 
 # set default fig size
@@ -71,18 +72,16 @@ plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 #         'sim': [3]
 #     }
 # }).run()
-#axC = qC.barcharts_compare_samples(merge_bars=True, calculation='i50')
+# axC = qC.barcharts_compare_samples(merge_bars=True, calculation='i50')
 
 # _-Madison Pig
-qMonoPolar = Query({
-    'partial_matches': True,
-    'include_downstream': True,
-    'indices': {
-        'sample': [2,3],  # add 71, 74
-        'model': [0],
-        'sim': [3]
+qMonoPolar = Query(
+    {
+        'partial_matches': True,
+        'include_downstream': True,
+        'indices': {'sample': [80], 'model': [0], 'sim': [10]},  # add 71, 74
     }
-}).run()
+).run()
 
 axMonoPolar = qMonoPolar.barcharts_compare_samples(save_path='out/analysis')
 

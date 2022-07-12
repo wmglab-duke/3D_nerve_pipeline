@@ -262,9 +262,7 @@ class Runner(Exceptionable, Configurable):
 
         if not source_xy_dict == xy_dict:
             if xy_dict['mode'] == 'EXPLICIT':
-                print(
-                    '\t\tWarning: cannot verify supersampled xy match since fiber xy mode is EXPLICIT'
-                )
+                print('\t\tWarning: cannot verify supersampled xy match since fiber xy mode is EXPLICIT')
             else:
                 self.throw(82)
         return source_sim_obj_dir
@@ -335,7 +333,7 @@ class Runner(Exceptionable, Configurable):
         if 'models' not in all_configs.keys():
             print('NO MODELS TO MAKE IN Config.RUN - killing process')
             return
-        if self.configs[Config.RUN.value].get("post_java_only")!=True:
+        if self.configs[Config.RUN.value].get("post_java_only") != True:
             for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
                 # loop through each model
                 model_num = self.prep_model(all_configs, model_index, model_config, sample, sample_num)
@@ -421,8 +419,8 @@ class Runner(Exceptionable, Configurable):
                             '\t Model Index: {} \n'
                             'since COMSOL failed to create required potentials. \n'.format(model_num)
                         )
-            #3D block
-	        else:
+            # 3D block
+            else:
                 for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
                     model_num = self.configs[Config.RUN.value]['models'][model_index]
                     for sim_index, sim_config in enumerate(all_configs['sims']):

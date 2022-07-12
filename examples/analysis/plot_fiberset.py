@@ -11,12 +11,12 @@ import sys
 
 root = os.path.abspath(os.path.join(*'../../'.split('/')))
 sys.path.append(root)
-os.chdir(root)
-from src.core import Simulation
-from src.core import Sample
+
+import matplotlib.pyplot as plt
+
+from src.core import Sample, Simulation
 from src.core.query import Query
 from src.utils import Object
-import matplotlib.pyplot as plt
 
 cwd = os.getcwd()
 os.chdir(root)
@@ -24,11 +24,7 @@ os.chdir(root)
 criteria = {
     'partial_matches': True,
     'include_downstream': True,
-    'indices': {
-        'sample': [672],
-        'model': [0],
-        'sim': [33]
-    }
+    'indices': {'sample': [1016], 'model': [7], 'sim': [1042]},
 }
 
 q = Query(criteria)
@@ -47,20 +43,17 @@ for fiberset_ind, fiberset in enumerate(sim.fibersets):
     slide = sample.slides[0]
     fig, ax = plt.subplots(1, 1)
     plt.title('Fibers for 6R cathodic leading sample')
-    slide.plot(fix_aspect_ratio=True, final=False, ax=ax,centroids = False)
+    slide.plot(fix_aspect_ratio=True, final=False, ax=ax, centroids=False)
     ax.set_aspect('equal', adjustable='box')
 
     for fiber in fiberset.fibers:
         plt.plot(fiber[0][0], fiber[0][1], 'r*', markersize=2)
-    
+
     plt.xlabel('\u03bcm')
     plt.ylabel('\u03bcm')
     plt.show()
 
-    fname = '{}_{}_{}_{}'.format(str(sample_index),
-                                 str(model_index),
-                                 str(sim_index),
-                                 str(fiberset_ind))
+    fname = '{}_{}_{}_{}'.format(str(sample_index), str(model_index), str(sim_index), str(fiberset_ind))
     fmt = 'png'
 
     dest = os.path.join('out', 'analysis')
