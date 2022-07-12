@@ -26,7 +26,7 @@ UNITS {
 PARAMETER {
     naiinf	= 11.4		(mM)		: 63.4
     naoinf	= 154.0		(mM)
-    theta	= 29.0e-3	(um)
+    theta	= 29.0e-3   (um)
     D		= 0.1e-6 	(m/s)			: Scriven1981
 }
 

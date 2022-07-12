@@ -16,14 +16,14 @@ TITLE Motor Axon Node channels
 INDEPENDENT {t FROM 0 TO 1 WITH 1 (ms)}
 
 NEURON {
-	SUFFIX axnode_myel
+	SUFFIX axnodeMyel
 	NONSPECIFIC_CURRENT ina
 	NONSPECIFIC_CURRENT inap
 	NONSPECIFIC_CURRENT ik
 	NONSPECIFIC_CURRENT il
 	RANGE gnapbar, gnabar, gkbar, gl, ena, ek, el
-	RANGE mp_inf, m_inf, h_inf, s_inf
-	RANGE tau_mp, tau_m, tau_h, tau_s
+	RANGE mpinf, minf, hinf, sinf
+	RANGE taump, taum, tauh, taus
 }
 
 
@@ -80,17 +80,17 @@ ASSIGNED {
 	ina	(mA/cm2)
 	ik      (mA/cm2)
 	il      (mA/cm2)
-	mp_inf
-	m_inf
-	h_inf
-	s_inf
-	tau_mp
-	tau_m
-	tau_h
-	tau_s
-	q10_1
-	q10_2
-	q10_3
+	mpinf
+	minf
+	hinf
+	sinf
+	taump
+	taum
+	tauh
+	taus
+	q101
+	q102
+	q103
 }
 
 BREAKPOINT {
@@ -103,10 +103,10 @@ BREAKPOINT {
 
 DERIVATIVE states {   : exact Hodgkin-Huxley equations
     evaluate_fct(v)
-	mp'= (mp_inf - mp) / tau_mp
-	m' = (m_inf - m) / tau_m
-	h' = (h_inf - h) / tau_h
-	s' = (s_inf - s) / tau_s
+	mp'= (mpinf - mp) / taump
+	m' = (minf - m) / taum
+	h' = (hinf - h) / tauh
+	s' = (sinf - s) / taus
 }
 
 UNITSOFF
@@ -116,40 +116,40 @@ INITIAL {
 :	Q10 adjustment
 :
 
-	q10_1 = 2.2 ^ ((celsius-20)/ 10 )
-	q10_2 = 2.9 ^ ((celsius-20)/ 10 )
-	q10_3 = 3.0 ^ ((celsius-36)/ 10 )
+	q101 = 2.2 ^ ((celsius-20)/ 10 )
+	q102 = 2.9 ^ ((celsius-20)/ 10 )
+	q103 = 3.0 ^ ((celsius-36)/ 10 )
 
 	evaluate_fct(v)
-	mp = mp_inf
-	m = m_inf
-	h = h_inf
-	s = s_inf
+	mp = mpinf
+	m = minf
+	h = hinf
+	s = sinf
 }
 
 PROCEDURE evaluate_fct(v(mV)) { LOCAL a,b,v2
 
-	a = q10_1*vtrap1(v)
-	b = q10_1*vtrap2(v)
-	tau_mp = 1 / (a + b)
-	mp_inf = a / (a + b)
+	a = q101*vtrap1(v)
+	b = q101*vtrap2(v)
+	taump = 1 / (a + b)
+	mpinf = a / (a + b)
 
-	a = q10_1*vtrap6(v)
-	b = q10_1*vtrap7(v)
-	tau_m = 1 / (a + b)
-	m_inf = a / (a + b)
+	a = q101*vtrap6(v)
+	b = q101*vtrap7(v)
+	taum = 1 / (a + b)
+	minf = a / (a + b)
 
-	a = q10_2*vtrap8(v)
-	b = q10_2*vtrap9(v)
-	tau_h = 1 / (a + b)
-	h_inf = a / (a + b)
+	a = q102*vtrap8(v)
+	b = q102*vtrap9(v)
+	tauh = 1 / (a + b)
+	hinf = a / (a + b)
 
 	v2 = v - vtraub : convert to traub convention
 
-	a = q10_3*vtrap10(v)
-	b = q10_3*vtrap11(v)
-	tau_s = 1 / (a + b)
-	s_inf = a / (a + b)
+	a = q103*vtrap10(v)
+	b = q103*vtrap11(v)
+	taus = 1 / (a + b)
+	sinf = a / (a + b)
 }
 
 :FUNCTION vtrap(x) {

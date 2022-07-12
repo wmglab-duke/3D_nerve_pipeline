@@ -1,6 +1,7 @@
 import pickle
 import os
 import sys
+import time
 
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../')))
 from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberGeometry,
@@ -10,6 +11,8 @@ from stimulation import Stimulation
 from saving import Saving
 
 def main(fiber_path, inner_ind, fiber_ind, potentials_path, waveform_path, sim_path):
+    start_time = time.time()
+
     # load in fiber object
     fiber = pickle.load(open(fiber_path, 'rb'))
 
@@ -43,13 +46,14 @@ def main(fiber_path, inner_ind, fiber_ind, potentials_path, waveform_path, sim_p
     saving = Saving()
     saving \
         .add(SetupMode.NEW, Config.SIM, sim_config_path) \
-        .inherit(sim_path, fiber.axonnodes, fiber.delta_z)
+        .inherit(sim_path, dt, fiber.axonnodes)
 
     # submit fiber for simulation
     fiber.submit(potentials, waveform, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving)
 
     # save data
-    saving.write2file(inner_ind, fiber_ind)
+    runtime = time.time()-start_time
+    saving.write2file(runtime, inner_ind, fiber_ind)
 
 # load in arguments from command line
 if __name__ == "__main__":  # Allows for the safe importing of the main module
@@ -61,7 +65,6 @@ if __name__ == "__main__":  # Allows for the safe importing of the main module
     sim_path = sys.argv[6]
 
     main(fiber_path, inner_ind, fiber_ind, potentials_path, waveform_path, sim_path)
-    print('done with local_run_controls.py')
 
 
 

@@ -22,7 +22,6 @@ ion_style = h.ion_style
 
 h.load_file('stdrun.hoc')
 
-
 """ For an unmyelinated fiber, return a list of variable density, 
 such that the center of the fiber has greater density than the edges"""
 def dz_calculator() -> list:
@@ -253,8 +252,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
         else:
             if node_channels == 0:
                 node.cm = 2
-                node.insert('axnode_myel')
-
+                node.insert('axnodeMyel')
             elif node_channels == 1:
                 node.cm = 1.149452367   # [uF/cm^2] specific membrane capacitance (Schild 1994, A-type)
                 F = 96500                    # [C/mole] Faraday'node Constant from Schild 1994
@@ -579,7 +577,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
         while True:
             if check_top_flag == 0:
                 print("Running stimamp_top = {:.6f}".format(stimamp_top))
-                self.run(stimamp_top, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving)
+                self.run(stimamp_top, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
 
                 if self.n_aps == 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
@@ -597,7 +595,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
 
             if check_bottom_flag == 0:
                 print("Running stimamp_bottom = {:.6f}".format(stimamp_bottom))
-                self.run(stimamp_bottom, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving)
+                self.run(stimamp_bottom, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
 
                 if self.n_aps != 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
@@ -630,7 +628,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
             stimamp = (stimamp_bottom + stimamp_top) / 2
             print("stimamp_bottom = {:.6f}      stimamp_top = {:.6f}".format(stimamp_bottom, stimamp_top))
             print("Running stimamp: {:.6f}".format(stimamp))
-            self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving)
+            self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
 
             if termination_flag == TerminationCriteriaMode.PERCENT_DIFFERENCE.value:
                 thresh_resoln = abs(rel_thresh_resoln)
@@ -670,13 +668,13 @@ class Fiber(Exceptionable, Configurable, Saveable):
             elif protocol_mode == 'ACTIVATION_THRESHOLD':
                 find_block_thresh = NeuronRunMode.ACTIVATION_THRESHOLD.value
         elif protocol_mode == 'FINITE_AMPLITUDES':
-            find_thresh == False
-
+            find_thresh = False
+            find_block_thresh = False
+            amps = self.search(Config.SIM, 'protocol', 'amplitudes')
 
         if find_thresh:
             self.findThresh(potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving)
         else:
-            amps = [0, 1, 10] # todo: finish FINITE AMPLITUDES
             for amp in amps:
                 self.run(amp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=saving)
 
@@ -687,20 +685,24 @@ class Fiber(Exceptionable, Configurable, Saveable):
         # If saving Vm(t), create recording vectors for Vm at specified nodes and t
         vm_recording_vectors = []
         if saving is not None:
-            if saving.time_vm:
-                t_vector = h.Vector().record(h._ref_t)
-                for node_ind in saving.node_inds:
-                    if self.myelination:
-                        v_node = h.Vector().record(self.node[node_ind](0.5)._ref_v)
-                        vm_recording_vectors.append(v_node)
-                    else:
-                        vm_recording_vectors.append(h.Vector().record(self.sec[node_ind](0.5)._ref_v))
-
+            t_vector = h.Vector().record(h._ref_t)
+            for node_ind in range(0, self.axonnodes):
+                if self.myelination:
+                    v_node = h.Vector().record(self.node[node_ind](0.5)._ref_v)
+                    vm_recording_vectors.append(v_node)
+                else:
+                    vm_recording_vectors.append(h.Vector().record(self.sec[node_ind](0.5)._ref_v))
             if saving.time_gating:
-                gating_h_vectors = [[] for node in saving.node_inds]
-                gating_m_vectors = [[] for node in saving.node_inds]
-                gating_mp_vectors = [[] for node in saving.node_inds]
-                gating_s_vectors = [[] for node in saving.node_inds]
+                gating_inds = [i for i in range(0, self.axonnodes)]
+                if self.passive_end_nodes:
+                    del gating_inds[0]
+                    del gating_inds[-1]
+                gating_h_vectors = [[] for node_ind in gating_inds]
+                gating_m_vectors = [[] for node_ind in gating_inds]
+                gating_mp_vectors = [[] for node_ind in gating_inds]
+                gating_s_vectors = [[] for node_ind in gating_inds]
+            if saving.istim:
+                istim_vector = []
 
         # Determine starting voltage of system
         if self.fiber_type == 1:
@@ -789,18 +791,66 @@ class Fiber(Exceptionable, Configurable, Saveable):
             else:
                 for x, sec in enumerate(self.sec):
                     sec(0.5).e_extracellular = scaled_stim[x]
+
+            # Save data
+            if saving is not None:
+                if saving.time_gating:
+                    for j, node_ind in enumerate(gating_inds):
+                        if self.myelination:
+                            gating_h_vectors[j].append(self.node[node_ind].hinf_axnodeMyel)
+                            gating_m_vectors[j].append(self.node[node_ind].minf_axnodeMyel)
+                            gating_mp_vectors[j].append(self.node[node_ind].mpinf_axnodeMyel)
+                            gating_s_vectors[j].append(self.node[node_ind].sinf_axnodeMyel)
+                        else:
+                            pass
+                if saving.istim:
+                    istim_vector.append()
             h.fadvance()
+
+        if saving is not None and saving.time_gating:
+            for j, node_ind in enumerate(gating_inds):
+                gating_h_vectors[j].append(self.node[node_ind].hinf_axnodeMyel)
+                gating_m_vectors[j].append(self.node[node_ind].minf_axnodeMyel)
+                gating_mp_vectors[j].append(self.node[node_ind].mpinf_axnodeMyel)
+                gating_s_vectors[j].append(self.node[node_ind].sinf_axnodeMyel)
 
         ############    Done with simulation     ############
 
         # Save variables that are functions of time
-        if saving is not None and saving.time_vm:
-            saving.save_data('time', 'vm', t_vector, vm_recording_vectors)
+        if saving is not None:
+            t_vector = list(t_vector)
+            vm_recording_vectors = [list(vec) for vec in vm_recording_vectors]
+            if saving.time_vm:
+                vm_time_vectors = [vec for i, vec in enumerate(vm_recording_vectors) if i in saving.node_inds]
+                saving.save_data('time', 'vm', t_vector, vm_time_vectors)
+            if saving.time_gating or saving.space_gating:
+                gating_params, gating_vectors = ['h', 'm', 'mp', 's'], [gating_h_vectors, gating_m_vectors,
+                                                                        gating_mp_vectors, gating_s_vectors]
+                if self.passive_end_nodes:
+                    passive_values = [0 for i in range(0, n_tsteps+1)]
+                    for gating_vector in gating_vectors:
+                        gating_vector.insert(0, passive_values)
+                        gating_vector.append(passive_values)
+            if saving.time_gating:
+                for gating_param, gating_vector in zip(gating_params, gating_vectors):
+                    saving.save_data('time', 'gating_{}'.format(gating_param), t_vector, gating_vector)
 
+            node_nums = [i for i in range(1, self.axonnodes + 1)]
+            if saving.space_vm:
+                vm_space_vectors = [[] for t in saving.times]
+                for space_vec, time in zip(vm_space_vectors, saving.times):
+                    for vec in vm_recording_vectors:
+                        space_vec.append(vec[time])
+                saving.save_data('space', 'vm', node_nums, vm_space_vectors)
+            if saving.space_gating:
+                for gating_param, gating_vector in zip(gating_params, gating_vectors):
+                    gating_space_vectors = [[] for t in saving.times]
+                    for t, time in enumerate(saving.times):
+                        for gating_node in gating_vector:
+                            gating_space_vectors[t].append(gating_node[time])
+                    saving.save_data('space', 'gating_{}'.format(gating_param), node_nums, gating_space_vectors)
 
         # Check for APs if ACTIVATION_THRESHOLD or BLOCK_THRESHOLD
-        if saving is None:
-            print("Checking for an AP...", end=" ")
 
         ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
         n_min_aps = self.search(Config.SIM, 'protocol', 'threshold', 'n_min_aps')
@@ -821,7 +871,8 @@ class Fiber(Exceptionable, Configurable, Saveable):
             else:
                 self.last_run = False
                 self.n_aps = apc[node_index].n
-        print("{0} AP(s) detected".format(self.n_aps))
+        if saving is None:
+            print("{0} AP(s) detected".format(self.n_aps))
         return self
 
 class GeometryObject():
