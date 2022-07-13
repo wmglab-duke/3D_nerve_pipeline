@@ -179,6 +179,27 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         return self
 
+    def validate_sim_configs(self):
+        # Make sure that saving parameters in sim config are valid
+        saving_dict = self.search(Config.SIM, 'saving')
+        for time in saving_dict['space']['times']:
+            for waveform in self.waveforms:
+                time = time/waveform.dt
+                if time < 0 or time > waveform.wave.size:
+                    self.throw(145)
+        locs = saving_dict['time']['locs']
+        if locs != 'all':
+            for loc in locs:
+                if loc < 0 or loc > 1:
+                    self.throw(146)
+        fiber_mode = self.search(Config.SIM, 'fibers', 'mode')
+        if fiber_mode != 'MRG_DISCRETE' and fiber_mode != 'MRG_INTERPOLATION':
+            if saving_dict['space']['gating'] or saving_dict['time']['gating']:
+                self.throw(147)
+
+        return self
+
+
     def validate_srcs(self, sim_directory) -> 'Simulation':
         # potentials key (s) = (r x p)
         # index of line in output is s, write row containing of (r and p) to file
@@ -615,10 +636,15 @@ class Simulation(Exceptionable, Configurable, Saveable):
         destination_stimulation_path = os.path.join(python_directory, 'stimulation.py')
         shutil.copyfile(source_stimulation_path, destination_stimulation_path)
 
-        # copy local_run_controls.py to submit/python_scripts/local_run_controls.py
-        source_runcontrol_path = os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'core', 'saving.py')
-        destination_runcontrol_path = os.path.join(python_directory, 'saving.py')
-        shutil.copyfile(source_runcontrol_path, destination_runcontrol_path)
+        # copy saving.py to submit/python_scripts/saving.py
+        source_saving_path = os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'core', 'saving.py')
+        destination_saving_path = os.path.join(python_directory, 'saving.py')
+        shutil.copyfile(source_saving_path, destination_saving_path)
+
+        # copy recording.py to submit/python_scripts/recording.py
+        source_recording_path = os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'core', 'recording.py')
+        destination_recording_path = os.path.join(python_directory, 'recording.py')
+        shutil.copyfile(source_recording_path, destination_recording_path)
 
     @staticmethod
     def export_system_config_files(target: str):

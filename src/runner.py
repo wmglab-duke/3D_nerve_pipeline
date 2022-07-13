@@ -296,6 +296,7 @@ class Runner(Exceptionable, Configurable):
                                 .write_waveforms(sim_obj_dir) \
                                 .write_fibers(sim_obj_dir, sample_num, model_num) \
                                 .validate_srcs(sim_obj_dir) \
+                                .validate_sim_configs() \
                                 .save(sim_obj_file)
 
                             if 'supersampled_bases' in simulation.configs['sims'].keys() and simulation.configs['sims']['supersampled_bases']['use']:

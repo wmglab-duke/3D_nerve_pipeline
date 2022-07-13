@@ -57,6 +57,10 @@ class Fiber(Exceptionable, Configurable, Saveable):
         self.sec = []
         self.potentials = []
         self.last_run = bool
+        self.n_aps = None
+        self.inner_ind = None
+        self.fiber_ind = None
+        self.v_init = None
         return
 
     def inherit(self):
@@ -151,12 +155,24 @@ class Fiber(Exceptionable, Configurable, Saveable):
             paraD2 = 0.02361 * self.diameter ** 2 + 0.3673 * self.diameter + 0.7122
             axonD = paraD2
 
+        # Determine number of axonnodes
         if neuron_flag == 2:
             self.axonnodes = int(1 + (n_fiber_coords - 1) / 11)
         elif neuron_flag == 3:
             self.axonnodes = int(n_fiber_coords)
             length = self.delta_z*self.axonnodes
 
+        # Determine starting voltage of system
+        if self.fiber_type == 1:
+            self.v_init = -88.3
+        elif self.fiber_type == 2:
+            self.v_init = -80
+        elif self.fiber_type == 3:
+            channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
+            v_init_c_fibers = [-60, -55, -82, -48] # v_rest for  Sundt, Tigerholm, Rattay and Aberham, and Schild C-Fiber models
+            self.v_init = v_init_c_fibers[channels_type - 1]
+
+        # Create fiber sections
         if self.myelination:
             self.createMyelinatedFiber(node_channels, self.axonnodes, self.diameter, self.temperature, axonD,
                                        nodeD, paraD1, paraD2, self.delta_z, paranodal_length_2,
@@ -545,7 +561,11 @@ class Fiber(Exceptionable, Configurable, Saveable):
             else:
                 s.gkleak_leak = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (Vrest - s.ek)
 
-    def findThresh(self, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving):
+    def findThresh(self, stimulation, saving, recording, find_block_thresh=False):
+        self.run(-3.819125, stimulation, recording, find_block_thresh, saving=saving)
+        saving.saveThresh(self, -3.819125)
+        return
+
         bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
         if bounds_search_mode == 'PERCENT_INCREMENT':  # relative increment (increase bound by a certain percentage of the previous value)
             increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
@@ -577,7 +597,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
         while True:
             if check_top_flag == 0:
                 print("Running stimamp_top = {:.6f}".format(stimamp_top))
-                self.run(stimamp_top, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
+                self.run(stimamp_top, stimulation, recording, find_block_thresh)
 
                 if self.n_aps == 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
@@ -595,7 +615,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
 
             if check_bottom_flag == 0:
                 print("Running stimamp_bottom = {:.6f}".format(stimamp_bottom))
-                self.run(stimamp_bottom, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
+                self.run(stimamp_bottom, stimulation, recording, find_block_thresh)
 
                 if self.n_aps != 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
@@ -628,7 +648,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
             stimamp = (stimamp_bottom + stimamp_top) / 2
             print("stimamp_bottom = {:.6f}      stimamp_top = {:.6f}".format(stimamp_bottom, stimamp_top))
             print("Running stimamp: {:.6f}".format(stimamp))
-            self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop)
+            self.run(stimamp, stimulation, recording, find_block_thresh)
 
             if termination_flag == TerminationCriteriaMode.PERCENT_DIFFERENCE.value:
                 thresh_resoln = abs(rel_thresh_resoln)
@@ -643,14 +663,8 @@ class Fiber(Exceptionable, Configurable, Saveable):
                 print(
                     "Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)\n".format(
                         stimamp))
-                self.run(stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=saving)
-
-                # save threshold to submit/n_sims/#/data/outputs/thresh_inner#_fiber#.dat
-
-                thresh_path = os.path.join(saving.output_path, 'thresh_inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
-                thresh_file = open(thresh_path, 'w')
-                thresh_file.write("{:.6f} mA".format(stimamp))
-                thresh_file.close()
+                self.run(stimamp, stimulation, recording, find_block_thresh, saving=saving)
+                saving.saveThresh(self, stimamp)
                 break
             elif self.last_run == True:
                 stimamp_top = stimamp
@@ -658,8 +672,8 @@ class Fiber(Exceptionable, Configurable, Saveable):
                 stimamp_bottom = stimamp
         return stimamp
 
-    def submit(self, potentials, waveform, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving):
-        # determine protocol, binary search, and
+    def submit(self, stimulation, saving, recording):
+        # determine protocol
         protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
         if protocol_mode != 'FINITE_AMPLITUDES':
             find_thresh = True
@@ -673,55 +687,29 @@ class Fiber(Exceptionable, Configurable, Saveable):
             amps = self.search(Config.SIM, 'protocol', 'amplitudes')
 
         if find_thresh:
-            self.findThresh(potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving)
+            self.findThresh(stimulation, saving, recording, find_block_thresh)
         else:
-            for amp in amps:
-                self.run(amp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=saving)
+            pass
+            # for amp in amps:
+            #     self.run(amp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=saving)
 
-    def run(self, stimamp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=None):
+    def run(self, stimamp, stimulation, recording, find_block_thresh=False, saving=None):
         """
         Run a simulation for a single stimulation amplitude
         """
+        potentials, waveform = stimulation.potentials, stimulation.waveform
+
         # If saving Vm(t), create recording vectors for Vm at specified nodes and t
-        vm_recording_vectors = []
         if saving is not None:
-            t_vector = h.Vector().record(h._ref_t)
-            for node_ind in range(0, self.axonnodes):
-                if self.myelination:
-                    v_node = h.Vector().record(self.node[node_ind](0.5)._ref_v)
-                    vm_recording_vectors.append(v_node)
-                else:
-                    vm_recording_vectors.append(h.Vector().record(self.sec[node_ind](0.5)._ref_v))
-            if saving.time_gating:
-                gating_inds = [i for i in range(0, self.axonnodes)]
-                if self.passive_end_nodes:
-                    del gating_inds[0]
-                    del gating_inds[-1]
-                gating_h_vectors = [[] for node_ind in gating_inds]
-                gating_m_vectors = [[] for node_ind in gating_inds]
-                gating_mp_vectors = [[] for node_ind in gating_inds]
-                gating_s_vectors = [[] for node_ind in gating_inds]
-            if saving.istim:
-                istim_vector = []
+            if saving.time_vm or saving.space_vm:
+                recording.record_vm(self)
 
-        # Determine starting voltage of system
-        if self.fiber_type == 1:
-            v_init = -88.3
-        elif self.fiber_type == 2:
-            v_init = -80
-        elif self.fiber_type == 3:
-            channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
-            v_init_c_fibers = [-60, -55, -82, -48] # v_rest for  Sundt, Tigerholm, Rattay and Aberham, and Schild C-Fiber models
-            v_init = v_init_c_fibers[channels_type - 1]
-
-        h.finitialize(v_init)
+        # Initialize the simulation
+        h.finitialize(self.v_init)
 
         # Check to see if C-Fiber built from Tigerholm. If so, need to balance membrane currents
-        if self.fiber_type == 3:
-            if self.channels_type == 2 and self.passive_end_nodes == 1:
-                raise Exception("Program cannot balance Tigerholm for passive_end_nodes=1, must be 0.")
-            elif self.channels_type == 2 and self.passive_end_nodes == 0:
-                self.balance()
+        if self.fiber_mode == 'TIGERHOLM':
+            self.balance()
 
         # Initialize extracellular stimulation -- set stimulation at each segment to zero
         if self.fiber_type == 2:
@@ -745,26 +733,19 @@ class Fiber(Exceptionable, Configurable, Saveable):
         while (h.t <= -dt_initSS):
             h.fadvance()
 
-        h.dt = dt
+        h.dt = stimulation.dt
         h.t = 0
         h.fcurrent()
         h.frecord_init()
         h.celsius = self.temperature
 
         # Set up APcount
-        apc = []
-        if self.fiber_type == 2:
-            for i, node in enumerate(self.node):
-                apc.append(h.APCount(node(0.5)))
-                apc[i].thresh = self.search(Config.SIM, "protocol", "threshold", "value")
-        else:
-            for i, node in enumerate(self.sec):
-                apc.append(h.APCount(node(0.5)))
-                apc[i].thresh = self.search(Config.SIM, "protocol", "threshold", "value")
+        recording.record_ap(self)
 
         ############    Begin simulation     ############
+        n_tsteps = len(waveform)
         for i in range(0, n_tsteps):
-            if h.t > tstop:
+            if h.t > stimulation.tstop:
                 break
             amp = waveform[i]
             scaled_stim = [stimamp*amp*x for x in potentials]
@@ -794,83 +775,24 @@ class Fiber(Exceptionable, Configurable, Saveable):
 
             # Save data
             if saving is not None:
-                if saving.time_gating:
-                    for j, node_ind in enumerate(gating_inds):
-                        if self.myelination:
-                            gating_h_vectors[j].append(self.node[node_ind].hinf_axnodeMyel)
-                            gating_m_vectors[j].append(self.node[node_ind].minf_axnodeMyel)
-                            gating_mp_vectors[j].append(self.node[node_ind].mpinf_axnodeMyel)
-                            gating_s_vectors[j].append(self.node[node_ind].sinf_axnodeMyel)
-                        else:
-                            pass
+                if saving.time_gating or saving.space_gating:
+                    recording.record_gating(self)
                 if saving.istim:
-                    istim_vector.append()
+                    recording.record_istim(stimulation.istim.i)
             h.fadvance()
 
-        if saving is not None and saving.time_gating:
-            for j, node_ind in enumerate(gating_inds):
-                gating_h_vectors[j].append(self.node[node_ind].hinf_axnodeMyel)
-                gating_m_vectors[j].append(self.node[node_ind].minf_axnodeMyel)
-                gating_mp_vectors[j].append(self.node[node_ind].mpinf_axnodeMyel)
-                gating_s_vectors[j].append(self.node[node_ind].sinf_axnodeMyel)
+        # Save data at final tstep
+        if saving is not None:
+            if saving.time_gating or saving.space_gating:
+                recording.record_gating(self, self.passive_end_nodes)
+            if saving.istim:
+                recording.record_istim(stimulation.istim.i)
 
         ############    Done with simulation     ############
 
-        # Save variables that are functions of time
-        if saving is not None:
-            t_vector = list(t_vector)
-            vm_recording_vectors = [list(vec) for vec in vm_recording_vectors]
-            if saving.time_vm:
-                vm_time_vectors = [vec for i, vec in enumerate(vm_recording_vectors) if i in saving.node_inds]
-                saving.save_data('time', 'vm', t_vector, vm_time_vectors)
-            if saving.time_gating or saving.space_gating:
-                gating_params, gating_vectors = ['h', 'm', 'mp', 's'], [gating_h_vectors, gating_m_vectors,
-                                                                        gating_mp_vectors, gating_s_vectors]
-                if self.passive_end_nodes:
-                    passive_values = [0 for i in range(0, n_tsteps+1)]
-                    for gating_vector in gating_vectors:
-                        gating_vector.insert(0, passive_values)
-                        gating_vector.append(passive_values)
-            if saving.time_gating:
-                for gating_param, gating_vector in zip(gating_params, gating_vectors):
-                    saving.save_data('time', 'gating_{}'.format(gating_param), t_vector, gating_vector)
-
-            node_nums = [i for i in range(1, self.axonnodes + 1)]
-            if saving.space_vm:
-                vm_space_vectors = [[] for t in saving.times]
-                for space_vec, time in zip(vm_space_vectors, saving.times):
-                    for vec in vm_recording_vectors:
-                        space_vec.append(vec[time])
-                saving.save_data('space', 'vm', node_nums, vm_space_vectors)
-            if saving.space_gating:
-                for gating_param, gating_vector in zip(gating_params, gating_vectors):
-                    gating_space_vectors = [[] for t in saving.times]
-                    for t, time in enumerate(saving.times):
-                        for gating_node in gating_vector:
-                            gating_space_vectors[t].append(gating_node[time])
-                    saving.save_data('space', 'gating_{}'.format(gating_param), node_nums, gating_space_vectors)
-
         # Check for APs if ACTIVATION_THRESHOLD or BLOCK_THRESHOLD
+        self.last_run, self.n_aps = recording.ap_checker(self, find_block_thresh)
 
-        ap_detect_location = self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
-        n_min_aps = self.search(Config.SIM, 'protocol', 'threshold', 'n_min_aps')
-        node_index = int((self.axonnodes - 1) * ap_detect_location)
-
-        if find_block_thresh:
-            IntraStim_PulseTrain_delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
-            if apc[node_index].time > IntraStim_PulseTrain_delay:
-                self.last_run = False
-                self.n_aps = 0
-            else:
-                self.last_run = True
-                self.n_aps = 1
-        else:
-            if apc[node_index].n >= n_min_aps:
-                self.last_run = True
-                self.n_aps = apc[node_index].n
-            else:
-                self.last_run = False
-                self.n_aps = apc[node_index].n
         if saving is None:
             print("{0} AP(s) detected".format(self.n_aps))
         return self

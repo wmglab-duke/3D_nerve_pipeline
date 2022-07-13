@@ -9,51 +9,41 @@ from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberG
                        SetupMode, WriteMode, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
 from stimulation import Stimulation
 from saving import Saving
+from recording import Recording
 
 def main(fiber_path, inner_ind, fiber_ind, potentials_path, waveform_path, sim_path):
     start_time = time.time()
 
     # load in fiber object
     fiber = pickle.load(open(fiber_path, 'rb'))
-
-    sim_config_path = os.path.join(sim_path, '0.json')
+    fiber.inner_ind, fiber.fiber_ind = inner_ind, fiber_ind
 
     # create stimulation object instance
-    stim = Stimulation()
-    stim \
-        .add(SetupMode.NEW, Config.SIM, sim_config_path) \
+    stimulation = Stimulation()
+    stimulation \
         .load_potentials(potentials_path) \
         .load_waveform(waveform_path)
 
-    # create necessary variables for simulation
-    potentials = stim.potentials
-    waveform = stim.waveform
-    dt = stim.dt
-    tstop = stim.tstop
-    n_fiber_coords = len(stim.potentials)
-    n_tsteps = len(waveform)
-
     # create NEURON fiber sections
+    n_fiber_coords = len(stimulation.potentials)
     fiber.generate(n_fiber_coords)
 
     # attach intracellular stimulation
-    if fiber.myelination:
-        stim.apply_intracellular(fiber.node)
-    else:
-        stim.apply_intracellular(fiber.sec)
+    stimulation.apply_intracellular(fiber)
 
     # create saving object instance
     saving = Saving()
-    saving \
-        .add(SetupMode.NEW, Config.SIM, sim_config_path) \
-        .inherit(sim_path, dt, fiber.axonnodes)
+    saving.inherit(sim_path, stimulation.dt, fiber)
+
+    # create recording object instance
+    recording = Recording(fiber)
 
     # submit fiber for simulation
-    fiber.submit(potentials, waveform, n_tsteps, dt, tstop, inner_ind, fiber_ind, saving)
+    fiber.submit(stimulation, saving, recording)
 
     # save data
     runtime = time.time()-start_time
-    saving.write2file(runtime, inner_ind, fiber_ind)
+    saving.write2file(recording, runtime, fiber, stimulation.dt)
 
 # load in arguments from command line
 if __name__ == "__main__":  # Allows for the safe importing of the main module

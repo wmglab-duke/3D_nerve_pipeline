@@ -14,6 +14,7 @@ class Stimulation(Configurable):
         self.waveform = []
         self.dt = None
         self.tstop = None
+        self.istim = None
         return
 
     def load_potentials(self, potentials_path):
@@ -45,11 +46,23 @@ class Stimulation(Configurable):
         waveform_file.close()
         return self
 
-    def apply_intracellular(self, fiber_sections):
-        IntraStim_PulseTrain_ind = self.search(Config.SIM, 'intracellular_stim', 'ind')
+    def apply_intracellular(self, fiber):
+        if fiber.myelination:
+            fiber_sections = fiber.node
+        else:
+            fiber_sections = fiber.sec
+        IntraStim_PulseTrain_ind = fiber.search(Config.SIM, 'intracellular_stim', 'ind')
         intracellular_stim = h.trainIClamp(fiber_sections[IntraStim_PulseTrain_ind](0.5))
-        intracellular_stim.delay = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
-        intracellular_stim.PW = self.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
-        intracellular_stim.train = self.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
-        intracellular_stim.freq = self.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
-        intracellular_stim.amp = self.search(Config.SIM, 'intracellular_stim', 'amp')
+        intracellular_stim.delay = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
+        intracellular_stim.PW = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
+        intracellular_stim.train = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
+        intracellular_stim.freq = fiber.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
+        intracellular_stim.amp = fiber.search(Config.SIM, 'intracellular_stim', 'amp')
+        self.istim = intracellular_stim
+        return self
+
+    def initialize_extracellular(self, fiber):
+        pass
+
+    def update_extracellular(self, fiber, e_stims):
+        pass

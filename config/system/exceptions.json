@@ -574,5 +574,21 @@
   {
     "code": 144,
     "text": "Issue during loading of JSON file, see warning above for the specific file."
+  },
+  {
+    "code": 145,
+    "text": "Cannot record/save time outside of simulation. Check sim config file for saving/space/times/."
+  },
+  {
+    "code": 146,
+    "text": "Cannot record/save location outside of the fiber. Check sim config file for saving/time/locs/."
+  },
+  {
+    "code": 147,
+    "text": "Recording gating parameters is only currently supported for MRG_DISCRETE and MRG_INTERPOLATION fiber models"
+  },
+  {
+    "code": 148,
+    "text": "Program cannot balance Tigerholm for passive_end_nodes=1, must be 0."
   }
 ]
