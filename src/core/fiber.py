@@ -55,7 +55,6 @@ class Fiber(Exceptionable, Configurable, Saveable):
         self.FLUT = []
         self.STIN = []
         self.sec = []
-        self.potentials = []
         self.last_run = bool
         self.n_aps = None
         self.inner_ind = None
@@ -562,10 +561,6 @@ class Fiber(Exceptionable, Configurable, Saveable):
                 s.gkleak_leak = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (Vrest - s.ek)
 
     def findThresh(self, stimulation, saving, recording, find_block_thresh=False):
-        self.run(-3.819125, stimulation, recording, find_block_thresh, saving=saving)
-        saving.saveThresh(self, -3.819125)
-        return
-
         bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
         if bounds_search_mode == 'PERCENT_INCREMENT':  # relative increment (increase bound by a certain percentage of the previous value)
             increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
@@ -697,8 +692,6 @@ class Fiber(Exceptionable, Configurable, Saveable):
         """
         Run a simulation for a single stimulation amplitude
         """
-        potentials, waveform = stimulation.potentials, stimulation.waveform
-
         # If saving Vm(t), create recording vectors for Vm at specified nodes and t
         if saving is not None:
             if saving.time_vm or saving.space_vm:
@@ -712,18 +705,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
             self.balance()
 
         # Initialize extracellular stimulation -- set stimulation at each segment to zero
-        if self.fiber_type == 2:
-            for sec in self.node:
-                sec(0.5).e_extracellular = 0
-            for sec in self.MYSA:
-                sec(0.5).e_extracellular = 0
-            for sec in self.FLUT:
-                sec(0.5).e_extracellular = 0
-            for sec in self.STIN:
-                sec(0.5).e_extracellular = 0
-        else:
-            for sec in self.sec:
-                sec(0.5).e_extracellular = 0
+        stimulation.initialize_extracellular(self)
 
         # Allow system to reach steady-state by using a large dt before simulation
         t_initSS = self.search(Config.SIM, 'protocol', 'initSS')
@@ -732,7 +714,6 @@ class Fiber(Exceptionable, Configurable, Saveable):
         h.dt = dt_initSS    # Large dt
         while (h.t <= -dt_initSS):
             h.fadvance()
-
         h.dt = stimulation.dt
         h.t = 0
         h.fcurrent()
@@ -743,35 +724,14 @@ class Fiber(Exceptionable, Configurable, Saveable):
         recording.record_ap(self)
 
         ############    Begin simulation     ############
-        n_tsteps = len(waveform)
+
+        n_tsteps = len(stimulation.waveform)
         for i in range(0, n_tsteps):
             if h.t > stimulation.tstop:
                 break
-            amp = waveform[i]
-            scaled_stim = [stimamp*amp*x for x in potentials]
-            if self.fiber_type == 2:
-                node_stim, FLUT_stim, MYSA_stim, STIN_stim = [], [], [], []
-                for ind in range(1, len(scaled_stim)+1):
-                    if ind%11 == 1:
-                        node_stim.append(scaled_stim[ind-1])
-                    elif ind%11 == 2 or ind%11 == 0:
-                        MYSA_stim.append(scaled_stim[ind-1])
-                    elif ind%11 == 3 or ind%11 == 10:
-                        FLUT_stim.append(scaled_stim[ind-1])
-                    else:
-                        STIN_stim.append(scaled_stim[ind-1])
-
-                for x, sec in enumerate(self.node):
-                    sec(0.5).e_extracellular = node_stim[x]
-                for x, sec in enumerate(self.MYSA):
-                    sec(0.5).e_extracellular = MYSA_stim[x]
-                for x, sec in enumerate(self.FLUT):
-                    sec(0.5).e_extracellular = FLUT_stim[x]
-                for x, sec in enumerate(self.STIN):
-                    sec(0.5).e_extracellular = STIN_stim[x]
-            else:
-                for x, sec in enumerate(self.sec):
-                    sec(0.5).e_extracellular = scaled_stim[x]
+            amp = stimulation.waveform[i]
+            scaled_stim = [stimamp*amp*x for x in stimulation.potentials]
+            stimulation.update_extracellular(self, scaled_stim)
 
             # Save data
             if saving is not None:

@@ -62,7 +62,41 @@ class Stimulation(Configurable):
         return self
 
     def initialize_extracellular(self, fiber):
-        pass
+        if fiber.fiber_type == 2:
+            for sec in fiber.node:
+                sec(0.5).e_extracellular = 0
+            for sec in fiber.MYSA:
+                sec(0.5).e_extracellular = 0
+            for sec in fiber.FLUT:
+                sec(0.5).e_extracellular = 0
+            for sec in fiber.STIN:
+                sec(0.5).e_extracellular = 0
+        else:
+            for sec in fiber.sec:
+                sec(0.5).e_extracellular = 0
+        return 
 
     def update_extracellular(self, fiber, e_stims):
-        pass
+        if fiber.fiber_type == 2:
+            node_stim, FLUT_stim, MYSA_stim, STIN_stim = [], [], [], []
+            for ind in range(1, len(e_stims) + 1):
+                if ind % 11 == 1:
+                    node_stim.append(e_stims[ind - 1])
+                elif ind % 11 == 2 or ind % 11 == 0:
+                    MYSA_stim.append(e_stims[ind - 1])
+                elif ind % 11 == 3 or ind % 11 == 10:
+                    FLUT_stim.append(e_stims[ind - 1])
+                else:
+                    STIN_stim.append(e_stims[ind - 1])
+
+            for x, sec in enumerate(fiber.node):
+                sec(0.5).e_extracellular = node_stim[x]
+            for x, sec in enumerate(fiber.MYSA):
+                sec(0.5).e_extracellular = MYSA_stim[x]
+            for x, sec in enumerate(fiber.FLUT):
+                sec(0.5).e_extracellular = FLUT_stim[x]
+            for x, sec in enumerate(fiber.STIN):
+                sec(0.5).e_extracellular = STIN_stim[x]
+        else:
+            for x, sec in enumerate(fiber.sec):
+                sec(0.5).e_extracellular = e_stims[x]
