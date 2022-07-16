@@ -478,8 +478,8 @@ class Runner(Exceptionable, Configurable):
             argbase = base64.b64encode(argbytes)
             argfinal = argbase.decode('ascii')
         else:
-            arginal=run_type
-
+            argfinal=run_type
+        
         if sys.platform.startswith('win'):  # windows
             server_command = ['{}\\bin\\win64\\comsolmphserver.exe'.format(comsol_path)]
             compile_command = (

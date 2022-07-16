@@ -456,9 +456,6 @@ class Trace(Exceptionable):
 
         ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth)
 
-        if centroid:
-            ax.axes.scatter(self.centroid()[0], self.centroid()[1], c=color)
-
     def plot_centroid(self, plot_format: str = 'k*'):
         """
         :param plot_format: the plt.plot format spec (see matplotlib docs)
