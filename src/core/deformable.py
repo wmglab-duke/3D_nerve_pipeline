@@ -72,11 +72,8 @@ class Deformable(Exceptionable):
 
         # offset all the traces to provide for an effective minimum distance for original fascicles
         for trace in contents:
-            if not sep_fasc_is_percent:
-                trace.offset(distance=minimum_distance / 2.0)
-            else:
-                trace.offset(distance=minimum_distance * trace.thickness)
-
+            trace.offset(distance=minimum_distance / 2.0)
+            
         # initialize drawing vars, regardless of whether or not actually rendering
         # these have been moved below (if render...)
         options = None

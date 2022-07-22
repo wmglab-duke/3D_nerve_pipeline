@@ -177,7 +177,8 @@ class Runner(Exceptionable, Configurable):
         print('\tMODEL {}'.format(model_num), '- {}'.format(model_pseudonym) if model_pseudonym is not None else '')
 
         # use current model index to computer maximum cuff shift (radius) .. SAVES to file in method
-        model_config = self.compute_cuff_shift(model_config, sample, all_configs[Config.SAMPLE.value][0])
+        x, y, r_bound, nerve_copy, slide = self.compute_nerve_bounds(sample,  all_configs[Config.SAMPLE.value][0])
+        model_config = self.compute_cuff_shift(model_config, [x, y], r_bound, nerve_copy, slide)
 
         model_config_file_name = os.path.join(
             os.getcwd(), 'samples', str(sample_num), 'models', str(model_num), 'model.json'
@@ -363,7 +364,8 @@ class Runner(Exceptionable, Configurable):
             if 'models' in all_configs.keys() and 'sims' not in all_configs.keys():
                 # Model Configs Provided, but not Sim Configs
                 print('\nTO JAVA\n')
-                self.handoff(self.number)
+                run_config = os.path.join(os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', '{}.json'.format(self.run_number))
+                self.handoff(run_config)
                 print('\nNEURON Simulations NOT created since no Sim indices indicated in Config.SIM\n')
                 return
 
@@ -467,20 +469,20 @@ class Runner(Exceptionable, Configurable):
                     )
                 )
 
-    def handoff(self, run_number: int):
+    def handoff(self, config_path, run_type=None, class_name = 'ModelWrapper'):
         comsol_path = os.environ[Env.COMSOL_PATH.value]
         jdk_path = os.environ[Env.JDK_PATH.value]
         project_path = os.environ[Env.PROJECT_PATH.value]
-        run_path = os.path.join(project_path, 'config', 'user', 'runs', '{}.json'.format(run_number))
-
-        core_name = 'ModelWrapper'
 
         # Encode command line args as jason string, then encode to base64 for passing to java
-        argstring = json.dumps(self.configs[Config.CLI_ARGS.value])
-        argbytes = argstring.encode('ascii')
-        argbase = base64.b64encode(argbytes)
-        argfinal = argbase.decode('ascii')
-
+        if run_type is None:
+            argstring = json.dumps(self.configs[Config.CLI_ARGS.value])
+            argbytes = argstring.encode('ascii')
+            argbase = base64.b64encode(argbytes)
+            argfinal = argbase.decode('ascii')
+        else:
+            argfinal=run_type
+        
         if sys.platform.startswith('win'):  # windows
             server_command = ['{}\\bin\\win64\\comsolmphserver.exe'.format(comsol_path)]
             compile_command = (
@@ -494,9 +496,9 @@ class Runner(Exceptionable, Configurable):
                 'model.{} "{}" "{}" "{}""'.format(
                     comsol_path,
                     comsol_path,
-                    core_name,
+                    class_name,
                     project_path,
-                    run_path,
+                    config_path,
                     argfinal,
                 )
             )
@@ -518,9 +520,9 @@ class Runner(Exceptionable, Configurable):
                 'tr \' \' \':\'):../bin/json-20190722.jar:../bin model.{} "{}" "{}" "{}"'.format(
                     java_comsol_path,
                     comsol_path,
-                    core_name,
+                    class_name,
                     project_path,
-                    run_path,
+                    config_path,
                     argfinal,
                 )
             )
@@ -540,11 +542,10 @@ class Runner(Exceptionable, Configurable):
             self.throw(141)
         os.chdir('..')
 
-    def compute_cuff_shift(self, model_config: dict, sample: Sample, sample_config: dict):
+    def compute_nerve_bounds(self, sample: Sample, sample_config: dict):
         # NOTE: ASSUMES SINGLE SLIDE
 
         # add temporary model configuration
-        self.add(SetupMode.OLD, Config.MODEL, model_config)
         self.add(SetupMode.OLD, Config.SAMPLE, sample_config)
 
         # fetch slide
@@ -562,7 +563,24 @@ class Runner(Exceptionable, Configurable):
                 self.throw(109)
         else:
             deform_ratio = None
+            
+        # get center and radius of nerve's min_bound circle
+        nerve_copy = deepcopy(slide.nerve if nerve_mode == NerveMode.PRESENT else slide.fascicles[0].outer)
 
+        # Get the boundary and center information for computing cuff shift
+        if self.search_mode(ReshapeNerveMode, Config.SAMPLE) and not slide.monofasc() and deform_ratio == 1:
+            x, y = 0, 0
+            r_bound = np.sqrt(sample_config['Morphology']['Nerve']['area'] / np.pi)
+        else:
+            x, y, r_bound = nerve_copy.make_circle()
+            
+        # remove sample config
+        self.remove(Config.SAMPLE)
+        
+        return x, y, r_bound, nerve_copy, slide, deform_ratio
+    
+    def compute_cuff_shift(self, model_config: dict, centroid, r_bound, nerve_copy, slide, deform_ratio):
+        x,y = centroid
         # fetch cuff config
         cuff_config: dict = self.load(
             os.path.join(os.getcwd(), "config", "system", "cuffs", model_config['cuff']['preset'])
@@ -587,15 +605,6 @@ class Runner(Exceptionable, Configurable):
             scale='um',
         ).real  # [um] (scaled from any arbitrary length unit)
 
-        # get center and radius of nerve's min_bound circle
-        nerve_copy = deepcopy(slide.nerve if nerve_mode == NerveMode.PRESENT else slide.fascicles[0].outer)
-
-        # Get the boundary and center information for computing cuff shift
-        if self.search_mode(ReshapeNerveMode, Config.SAMPLE) and not slide.monofasc() and deform_ratio == 1:
-            x, y = 0, 0
-            r_bound = np.sqrt(sample_config['Morphology']['Nerve']['area'] / np.pi)
-        else:
-            x, y, r_bound = nerve_copy.make_circle()
 
         # next calculate the angle of the "centroid" to the center of min bound circle
         # if mono fasc, just use 0, 0 as centroid (i.e., centroid of nerve same as centroid of all fasc)
@@ -663,8 +672,7 @@ class Runner(Exceptionable, Configurable):
             ).real  # [um] (scaled from any arbitrary length unit)
             offset += coef * value
 
-        # remove sample config
-        self.remove(Config.SAMPLE)
+
 
         cuff_shift_mode: CuffShiftMode = self.search_mode(CuffShiftMode, Config.MODEL)
 
