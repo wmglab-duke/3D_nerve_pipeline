@@ -11,13 +11,17 @@ import os
 import random
 import shutil
 import warnings
+import shapely
 from typing import List, Tuple
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 from shapely.affinity import scale
 from shapely.geometry import LineString, Point
+from shapely.strtree import STRtree
+from shapely.ops import unary_union
 
 from src.utils import (
     Config,
@@ -337,17 +341,45 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                         points.append(tuple([float(row[0]), float(row[1])]))
 
                 # check that all fibers are within exactly one inner
-                for fiber in points:
-                    if not any(
-                        [
-                            Point(fiber).within(inner.polygon())
-                            for fascicle in self.sample.slides[0].fascicles
-                            for inner in fascicle.inners
-                        ]
-                    ):
-                        print("Explicit fiber coordinate: {} does not fall in an inner".format(fiber))
-                        self.throw(71)
+                for i,fiber in enumerate(points):
+                    innertraces = [inner.deepcopy()
+                        for fascicle in self.sample.slides[0].fascicles
+                        for inner in fascicle.inners
+                    ]
+                    innerbuffer = [x.deepcopy() for x in innertraces]
+                    [x.offset(distance = -buffer) for x in innerbuffer]
+                    innershapes = [x.polygon() for x in innerbuffer]
+                    if not Point(fiber).within(unary_union(innershapes)):
+                        if not True: # todo add point adjust param and buffer amt
+                            print("Explicit fiber coordinate: {} does not fall in an inner".format(fiber))
+                            self.throw(71)
+                        else:
+                            warnings.warn("assuming you want to adjust bad point because not implemented")
+                            def distpoint(a, b, distance):
+                                def slope(p1, p2):
+                                    return math.atan2(
+                                        (p2[1] - p1[1]), (p2[0] - p1[0])
+                                    )
+                                
+                                def spherical_to_cartesian(r, theta):
+                                    x = r * math.cos(theta)
+                                    y = r * math.sin(theta)
+                                    return x, y
+                                
+                                def add_points(p1, p2):
+                                    return p1[0] + p2[0], p1[1] + p2[1]
 
+                                slp = slope(a, b)
+                                new_p = spherical_to_cartesian(distance, slp)
+                                res = add_points(a, new_p)
+                                return res
+                            tree = STRtree(innershapes)
+                            correct_fascicle = tree.nearest(Point(fiber))
+                            movedist = Point(fiber).distance(correct_fascicle)
+                            dest = (correct_fascicle.centroid.x,correct_fascicle.centroid.y)
+                            newpoint = distpoint(fiber,dest,movedist)
+                            assert Point(newpoint).within(unary_union([x.polygon() for x in innertraces]))
+                        points[i]=fiber
             fig = plt.figure()
             self.sample.slides[0].plot(
                 final=False,

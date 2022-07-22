@@ -324,16 +324,16 @@ class Runner(Exceptionable, Configurable):
         # TODO: change all configs to use self.configs
         all_configs = self.setup_run()
 
-        self.potentials_exist: List[bool] = []  # if all of these are true, skip Java
-        self.ss_bases_exist: List[bool] = []  # if all of these are true, skip Java
-
-        sample, sample_num = self.generate_sample(all_configs, smart=smart)
-
         # iterate through models
         if 'models' not in all_configs.keys():
             print('NO MODELS TO MAKE IN Config.RUN - killing process')
             return
         if self.configs[Config.RUN.value].get("post_java_only") != True:
+                
+            self.potentials_exist: List[bool] = []  # if all of these are true, skip Java
+            self.ss_bases_exist: List[bool] = []  # if all of these are true, skip Java
+
+            sample, sample_num = self.generate_sample(all_configs, smart=smart)
             for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
                 # loop through each model
                 model_num = self.prep_model(all_configs, model_index, model_config, sample, sample_num)
@@ -419,50 +419,53 @@ class Runner(Exceptionable, Configurable):
                             '\t Model Index: {} \n'
                             'since COMSOL failed to create required potentials. \n'.format(model_num)
                         )
-            # 3D block
-            else:
-                for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
-                    model_num = self.configs[Config.RUN.value]['models'][model_index]
-                    for sim_index, sim_config in enumerate(all_configs['sims']):
-                        sim_num = self.configs[Config.RUN.value]['sims'][sim_index]
-                        sim_obj_dir = os.path.join(
-                            os.getcwd(), 'samples', str(sample_num), 'models', str(model_num), 'sims', str(sim_num)
-                        )
-                        sim_dir = os.path.join(
-                            os.getcwd(),
-                            'samples',
-                            str(self.configs[Config.RUN.value]['sample']),
-                            'models',
-                            str(model_num),
-                            'sims',
-                        )
-                        # load up correct simulation and build required sims
-                        simulation: Simulation = Simulation(None, self.configs[Config.EXCEPTIONS.value])
-                        simulation.add(SetupMode.OLD, Config.MODEL, model_config).add(
-                            SetupMode.OLD, Config.SIM, sim_config
-                        ).add(
-                            SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
-                        ).resolve_factors().write_waveforms(
-                            sim_obj_dir
-                        ).write_fibers_ssgen(
-                            sim_obj_dir
-                        ).validate_srcs(
-                            sim_obj_dir
-                        )
-                        simulation.build_ss_n_sims(sim_dir, sim_num)
-                        # export simulations
-                        Simulation.export_n_sims(
-                            sample_num, model_num, sim_num, sim_dir, os.environ[Env.NSIM_EXPORT_PATH.value]
-                        )
-                        # ensure run configuration is present
-                        Simulation.export_run(
-                            self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value]
-                        )
-                    print(
-                        'Model {} data exported to appropriate folders in {}'.format(
-                            model_num, os.environ[Env.NSIM_EXPORT_PATH.value]
-                        )
+        # 3D block
+        else:
+            sample_num = self.configs[Config.RUN.value]['sample']
+            for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
+                model_num = self.configs[Config.RUN.value]['models'][model_index]
+                for sim_index, sim_config in enumerate(all_configs['sims']):
+                    sim_num = self.configs[Config.RUN.value]['sims'][sim_index]
+                    sim_obj_dir = os.path.join(
+                        os.getcwd(), 'samples', str(sample_num), 'models', str(model_num), 'sims', str(sim_num)
                     )
+                    sim_dir = os.path.join(
+                        os.getcwd(),
+                        'samples',
+                        str(self.configs[Config.RUN.value]['sample']),
+                        'models',
+                        str(model_num),
+                        'sims',
+                    )
+                    # load up correct simulation and build required sims
+                    simulation: Simulation = Simulation(None, self.configs[Config.EXCEPTIONS.value])
+                    simulation.add(SetupMode.OLD, Config.MODEL, model_config).add(
+                        SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]
+                    ).add(
+                        SetupMode.OLD, Config.SIM, sim_config
+                    ).add(
+                        SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
+                    ).resolve_factors().write_waveforms(
+                        sim_obj_dir
+                    ).write_fibers_ssgen(
+                        sim_obj_dir
+                    ).validate_srcs(
+                        sim_obj_dir
+                    )
+                    simulation.build_ss_n_sims(sim_dir, sim_num)
+                    # export simulations
+                    Simulation.export_n_sims(
+                        sample_num, model_num, sim_num, sim_dir, os.environ[Env.NSIM_EXPORT_PATH.value]
+                    )
+                    # ensure run configuration is present
+                    Simulation.export_run(
+                        self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value]
+                    )
+                print(
+                    'Model {} data exported to appropriate folders in {}'.format(
+                        model_num, os.environ[Env.NSIM_EXPORT_PATH.value]
+                    )
+                )
 
     def handoff(self, run_number: int):
         comsol_path = os.environ[Env.COMSOL_PATH.value]

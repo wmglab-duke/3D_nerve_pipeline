@@ -594,11 +594,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
             wave_vals = self.wave_product[waveform_ind]
             fiberset_vals = self.fiberset_product[fiberset_ind]
 
-            # pair down simulation config to no lists of parameters (corresponding to the neuron simulation index t)
-            # print('active_src_ind: {}'.format(str(active_src_ind)))
-            # print('src_key: {}'.format(str(self.src_key)))
-            # print('active_src_vals: {}'.format(str(active_src_vals)))
-
+            # pare down simulation config to no lists of parameters (corresponding to the neuron simulation index t)
             sim_copy = self._copy_and_edit_config(
                 self.configs[Config.SIM.value], self.src_key, active_src_vals, copy_again=False
             )
@@ -625,8 +621,6 @@ class Simulation(Exceptionable, Configurable, Saveable):
             # this naming convention... this allows for control of upper/lower bounds for thresholds by fascicle
             # (useful since within a fascicle thresholds should be similar)
             p = fiberset_ind
-            inner_list = []
-            fiber_list = []
 
             # fetch xy mode to check for override necessity
             xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
@@ -651,8 +645,6 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
                 if not os.path.exists(source_sim_obj_dir):
                     self.throw(94)
-
-                source_sim_obj_file = os.path.join(source_sim_obj_dir, 'sim.obj')
 
                 source_dz = supersampled_bases['dz']
 
