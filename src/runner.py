@@ -480,6 +480,7 @@ class Runner(Exceptionable, Configurable):
             argbytes = argstring.encode('ascii')
             argbase = base64.b64encode(argbytes)
             argfinal = argbase.decode('ascii')
+            config_path = os.path.join(project_path, 'config', 'user', 'runs', '{}.json'.format(config_path))
         else:
             argfinal=run_type
         
