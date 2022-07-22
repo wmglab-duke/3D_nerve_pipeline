@@ -131,14 +131,14 @@ def auto_compile(override: bool = False):
     return compiled
 
 
-def make_task(my_os: str, start_p: str, sim_p: str, fiber_path: str, inner_ind: int, fiber_ind: int,
+def make_task(my_os: str, sub_con: str, start_p: str, sim_p: str, fiber_path: str, inner_ind: int, fiber_ind: int,
               potentials_path: str, waveform_path: str):
     with open(start_p, 'w+') as handle:
         if my_os == 'UNIX-LIKE':
             lines = [
                 '#!/bin/bash\n',
                 'cd ../../\n',
-                'python python_files/local_run_controls.py \"{}\" \"{}\" \"{}\" \"{}\" \"{}\" \"{}\"\n' \
+                'python NEURON_Files/local_run_controls.py \"{}\" \"{}\" \"{}\" \"{}\" \"{}\" \"{}\"\n' \
                     .format(fiber_path,
                             inner_ind,
                             fiber_ind,
@@ -150,6 +150,9 @@ def make_task(my_os: str, start_p: str, sim_p: str, fiber_path: str, inner_ind: 
             # copy special files ahead of time to avoid 'text file busy error'
             if not os.path.exists('special'):
                 shutil.copy(os.path.join('MOD_Files', 'x86_64', 'special'), sim_p)
+
+            if sub_con == 'cluster':
+                lines.remove('cd ../../\n')
 
         # else:  # OS is 'WINDOWS'
         #     sim_path_win = os.path.join(*sim_p.split(os.pathsep)).replace('\\', '\\\\')
@@ -301,7 +304,8 @@ def cluster_submit(run_number: int, partition: str, args, mem: int = 2000, array
                         potentials_path = os.path.join(sim_path, 'data', 'inputs',
                                                        'inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
                         waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
-                        make_task(OS, start_path_solo, sim_path, fiber_path, inner_ind, fiber_ind, potentials_path,
+                        make_task(OS, 'cluster', start_path_solo, sim_path, fiber_path, inner_ind, fiber_ind,
+                                  potentials_path,
                                   waveform_path)
 
                         # submit batch job for fiber
@@ -356,8 +360,11 @@ def cluster_submit(run_number: int, partition: str, args, mem: int = 2000, array
                                 potentials_path = os.path.join(sim_path, 'data', 'inputs',
                                                                'inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
                                 waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
-                                make_task(OS, start_path, sim_path, fiber_path, inner_ind, fiber_ind, potentials_path,
+                                make_task(OS, 'cluster', start_path, sim_path, fiber_path, inner_ind, fiber_ind,
+                                          potentials_path,
                                           waveform_path)
+                                array_index += 1
+                                job_count += 1
 
                             if array_index == array_length_max or fiber_file_ind == max_fibers_files_ind:
                                 # output key, since we lose this in array method
@@ -384,12 +391,24 @@ def cluster_submit(run_number: int, partition: str, args, mem: int = 2000, array
                                 # submit batch job for fiber
                                 job_name = f"{sim_name}_{sim_array_batch}"
 
-                                sp_string = args.slurm_params + ' ' if args.slurm_params is not None else ''
-                                exit_code = os.system(
-                                    f"sbatch {sp_string}--job-name={job_name} --output={out_dir}%a.log "
-                                    f"--error={err_dir}%a.log --array={start}-{job_count - 1} "
-                                    f"--mem={mem} --cpus-per-task=1 "
-                                    f"--partition={partition} array_launch.slurm {start_path_base}")
+                                command = [
+                                    'sbatch{}'.format(' ' + args.slurm_params if args.slurm_params is not None else ''),
+                                    '--job-name={}'.format(job_name),
+                                    '--output={}%a.log'.format(out_dir),
+                                    '--error={}%a.log'.format(err_dir),
+                                    '--array={}-{}'.format(start, job_count - 1),
+                                    '--mem={}'.format(mem),
+                                    '--partition={}'.format(partition),
+                                    '--cpus-per-task=1',
+                                    'array_launch.slurm',
+                                    start_path_base
+                                ]
+
+                                if not args.verbose:
+                                    with open(os.devnull, 'wb') as devnull:
+                                        exit_code = subprocess.check_call(command, stdout=devnull)
+                                else:
+                                    exit_code = subprocess.check_call(command)
                                 if exit_code != 0:
                                     sys.exit('Non-zero exit code during job array submission. Exiting.')
 
@@ -488,7 +507,8 @@ def make_local_submission_list(run_number: int, args, summary_gen=False):
                         potentials_path = os.path.join(sim_path, 'data', 'inputs',
                                                        'inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
                         waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
-                        if not summary_gen: make_task(OS, start_path, sim_path, fiber_path, inner_ind, fiber_ind,
+                        if not summary_gen: make_task(OS, 'local', start_path, sim_path, fiber_path, inner_ind,
+                                                      fiber_ind,
                                                       potentials_path, waveform_path)
 
                         # submit batch job for fiber

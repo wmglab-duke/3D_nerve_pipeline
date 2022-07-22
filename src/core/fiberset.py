@@ -46,6 +46,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         # initialize empty lists of fiber points
         self.sample = sample
         self.fibers = None
+        self.fiber_obj = None
         self.out_to_fib = None
         self.out_to_in = None
         self.add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json'))
@@ -67,8 +68,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
 
-        self.fiber = Fiber()
-        self.fiber \
+        self.fiber_obj = Fiber()
+        self.fiber_obj \
             .add(SetupMode.OLD, Config.SIM, sim_copy) \
             .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
             .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_num), 'models',

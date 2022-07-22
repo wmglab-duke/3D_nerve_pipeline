@@ -1,4 +1,3 @@
-# LATEST COMMIT
 """
 Fiber class: fiber object with relevant attributes
 """
@@ -29,34 +28,26 @@ def dz_calculator() -> list:
     return []
 
 
-class Fiber(Exceptionable, Configurable, Saveable):
+class Fiber(Configurable, Saveable):
     def __init__(self):
-        exceptions_file = os.path.join('config', 'system', 'exceptions.json')
-        with open(exceptions_file, "r") as handle:
-            exceptions_config: dict = json.load(handle)
-
         Configurable.__init__(self)
-        Exceptionable.__init__(self, SetupMode.OLD, exceptions_config)
 
-        self.index = None
-        self.xyz = tuple()
         self.diameter = None
         self.min = None
         self.max = None
         self.offset = None
         self.seed = None
         self.fiber_mode = None
-        self.fiber_type = None
         self.myelination = None
         self.temperature = None
         self.axonnodes = None
         self.delta_z = None
+        self.passive_end_nodes = None
         self.node = []
         self.MYSA = []
         self.FLUT = []
         self.STIN = []
         self.sec = []
-        self.last_run = bool
         self.n_aps = None
         self.inner_ind = None
         self.fiber_ind = None
@@ -85,12 +76,12 @@ class Fiber(Exceptionable, Configurable, Saveable):
         """
 
         if self.fiber_mode != 'MRG_DISCRETE' and self.fiber_mode != 'MRG_INTERPOLATION':
-            self.fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
+            fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
             node_channels = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_channels')
             self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')
             self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes')
-            self.channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
+            channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
 
         elif self.fiber_mode == 'MRG_DISCRETE':
             diameters, my_delta_zs, paranodal_length_2s = (
@@ -104,7 +95,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
             paranodal_length_2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
                                              'paranodal_length_2s')[diameter_index]
             self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes')
-            self.fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
+            fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
 
             if self.diameter == 1:
                 g, axonD, nodeD, paraD1, paraD2, nl = None, 0.8, 0.7, 0.7, 0.8, 15
@@ -138,7 +129,6 @@ class Fiber(Exceptionable, Configurable, Saveable):
                                              'paranodal_length_1')
             fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
             self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,'passive_end_nodes')
-            self.fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
 
             if self.diameter >= 5.643:
                 self.delta_z = eval(self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
@@ -163,11 +153,11 @@ class Fiber(Exceptionable, Configurable, Saveable):
             length = self.delta_z*self.axonnodes
 
         # Determine starting voltage of system
-        if self.fiber_type == 1:
+        if fiber_type == 1:
             self.v_init = -88.3
-        elif self.fiber_type == 2:
+        elif fiber_type == 2:
             self.v_init = -80
-        elif self.fiber_type == 3:
+        elif fiber_type == 3:
             channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
             v_init_c_fibers = [-60, -55, -82, -48] # v_rest for  Sundt, Tigerholm, Rattay and Aberham, and Schild C-Fiber models
             self.v_init = v_init_c_fibers[channels_type - 1]
@@ -178,165 +168,166 @@ class Fiber(Exceptionable, Configurable, Saveable):
                                        nodeD, paraD1, paraD2, self.delta_z, paranodal_length_2,
                                        nl, self.passive_end_nodes)
         elif not self.myelination:
-            self.createUnmyelinatedFiber(self.diameter, length, c_fiber_model_type=self.channels_type, celsius=self.temperature,
+            self.createUnmyelinatedFiber(self.diameter, length, c_fiber_model_type=channels_type, celsius=self.temperature,
                                          delta_z=self.delta_z, passive_end_nodes=self.passive_end_nodes)
 
         return self
 
-    def create_MYSA(self, i, fiberD, paralength1, rhoa, paraD1, e_pas_Vrest, Rpn1, mycm, mygm, nl):
-        """
-        Create a MYSA segment for MRG_DISCRETE fiber type
-        """
-        MYSA = Section(name='MYSA ' + str(i))
-        MYSA.nseg = 1
-        MYSA.diam = fiberD
-        MYSA.L = paralength1
-        MYSA.Ra = rhoa * (1 / (paraD1 / fiberD) ** 2) / 10000
-        MYSA.cm = 2 * paraD1 / fiberD
-        MYSA.insert('pas')
-        MYSA.g_pas = 0.001 * paraD1 / fiberD
-        MYSA.e_pas = e_pas_Vrest
-
-        MYSA.insert('extracellular')
-        MYSA.xraxial[0] = Rpn1
-        MYSA.xc[0] = mycm / (nl * 2)  # short circuit
-        MYSA.xg[0] = mygm / (nl * 2)  # short circuit
-
-        return MYSA
-
-    def create_FLUT(self, i, fiberD, paralength2, rhoa, paraD2, e_pas_Vrest, Rpn2, mycm, mygm, nl):
-        """
-        Create a FLUT segment for MRG_DISCRETE fiber type
-        """
-        FLUT = Section(name='FLUT ' + str(i))
-        FLUT.nseg = 1
-        FLUT.diam = fiberD
-        FLUT.L = paralength2
-        FLUT.Ra = rhoa * (1 / (paraD2 / fiberD) ** 2) / 10000
-        FLUT.cm = 2 * paraD2 / fiberD
-        FLUT.insert('pas')
-        FLUT.g_pas = 0.0001 * paraD2 / fiberD
-        FLUT.e_pas = e_pas_Vrest
-
-        FLUT.insert('extracellular')
-        FLUT.xraxial[0] = Rpn2
-        FLUT.xc[0] = mycm / (nl * 2)  # short circuit
-        FLUT.xg[0] = mygm / (nl * 2)  # short circuit
-
-        return FLUT
-
-    def create_STIN(self, i, fiberD, interlength, rhoa, axonD, e_pas_Vrest, Rpx, mycm, mygm, nl):
-        """
-        Create a STIN segment for MRG_DISCRETE fiber type
-        """
-        STIN = Section(name='STIN ' + str(i))
-        STIN.nseg = 1
-        STIN.diam = fiberD
-        STIN.L = interlength
-        STIN.Ra = rhoa * (1 / (axonD / fiberD) ** 2) / 10000
-        STIN.cm = 2 * axonD / fiberD
-        STIN.insert('pas')
-        STIN.g_pas = 0.0001 * axonD / fiberD
-        STIN.e_pas = e_pas_Vrest
-
-        STIN.insert('extracellular')
-        STIN.xraxial[0] = Rpx
-        STIN.xc[0] = mycm / (nl * 2)  # short circuit
-        STIN.xg[0] = mygm / (nl * 2)  # short circuit
-
-        return STIN
-
-    def create_node(self, index, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive, axonnodes, node_channels, nl, Rpn0, celsius):
-        """
-        Create a node of Ranvier for MRG_DISCRETE fiber type
-        """
-        node = Section(name='node ' + str(index))
-        node.nseg = 1
-        node.diam = nodeD
-        node.L = nodelength
-        node.Ra = rhoa/10000
-
-        if passive and (index == 0 or index == axonnodes - 1):
-            node.cm = 2
-            node.insert('pas')
-            node.g_pas = 0.0001
-            node.e_pas = -70
-            node.insert('extracellular')
-            node.xc[0] = mycm / (nl * 2)  # short circuit
-            node.xg[0] = mygm / (nl * 2)  # short circuit
-
-        else:
-            if node_channels == 0:
-                node.cm = 2
-                node.insert('axnodeMyel')
-            elif node_channels == 1:
-                node.cm = 1.149452367   # [uF/cm^2] specific membrane capacitance (Schild 1994, A-type)
-                F = 96500                    # [C/mole] Faraday'node Constant from Schild 1994
-                R = 8314                     # [J/(kg*mole*K)] Gas Constant from Schild 1994
-
-                # Based on Schild 1994 ion channels
-                node.insert('leakSchild')
-                node.insert('naf')
-                node.insert('nas')
-                node.insert('kd')
-                node.insert('ka')
-                node.insert('can')
-                node.insert('cat')
-                node.insert('kds')
-                node.insert('kca')
-
-                node.insert('caextscale')
-                node.insert('caintscale')
-                node.insert('CaPump')
-                node.insert('NaCaPump')
-                node.insert('NakpumpSchild')
-
-                node.L_caintscale = node.L
-                node.nseg_caintscale = node.nseg
-                node.L_caextscale = node.L
-                node.nseg_caextscale = node.nseg
-
-                # Ionic concentrations
-                node.cao0_ca_ion = 2.0  # [mM] Initial Cao Concentration
-                node.cai0_ca_ion = 0.000117  # [mM] Initial Cai Concentrations
-                node.ko = 5.4  # [mM] External K Concentration
-                node.ki = 145.0  # [mM] Internal K Concentration
-                kstyle = ion_style("k_ion", 1, 2, 0, 0, 0)  # Allows ek to be calculated manually
-                node.ek = ((R * (celsius + 273.15)) / F) * np.log10(
-                    node.ko / node.ki)  # Manual Calculation of ek in order to use Schild F and R values
-
-                node.nao = 154  # [mM] External Na Concentration
-                node.nai = 8.9  # [mM] Internal Na Concentration
-                nastyle = ion_style("na_ion", 1, 2, 0, 0, 0)  # Allows ena to be calculated manually
-                node.ena = ((R * (celsius + 273.15)) / F) * np.log10(
-                    node.nao / node.nai)  # Manual Calculation of ena in order to use Schild F and R values
-
-                node.gbar_naf = 3 # 0.072503919  # NOTE: Does not conduct with original Schild 1994 value of 0.072503919; does not conduct at 0.5, but does at 1; increased to MRG value of 3
-                node.shiftnaf_naf = 0  # [mV]
-                node.gbar_nas = 3.53678E-07
-                node.shiftnas_nas = 0
-                node.gbar_kd = 0.000194523
-                node.shiftkd_kd = 0
-                node.gbar_ka = 0.001237872
-                node.shiftka_ka = 0
-                node.gbar_kds = 0.000353678
-                node.shiftkds_kds = 0
-                node.gbar_kca = 0.00022989
-                node.gbar_can = 3.53678E-05
-                node.shiftcan_can = 0
-                node.gbar_cat = 1.23787E-05
-                node.shiftcan_cat = 0
-                node.gbna_leak = 1.14945E-05
-
-            node.insert('extracellular')
-            node.xraxial[0] = Rpn0
-            node.xc[0] = 0  # short circuit
-            node.xg[0] = 1e10  # short circuit
-
-        return node
-
     def createMyelinatedFiber(self, node_channels, axonnodes, fiberD, celsius, axonD, nodeD, paraD1, paraD2, deltaz,
                               paralength2, nl, passive_end_nodes):
+        def create_MYSA(i, fiberD, paralength1, rhoa, paraD1, e_pas_Vrest, Rpn1, mycm, mygm, nl):
+            """
+            Create a MYSA segment for MRG_DISCRETE fiber type
+            """
+            MYSA = Section(name='MYSA ' + str(i))
+            MYSA.nseg = 1
+            MYSA.diam = fiberD
+            MYSA.L = paralength1
+            MYSA.Ra = rhoa * (1 / (paraD1 / fiberD) ** 2) / 10000
+            MYSA.cm = 2 * paraD1 / fiberD
+            MYSA.insert('pas')
+            MYSA.g_pas = 0.001 * paraD1 / fiberD
+            MYSA.e_pas = e_pas_Vrest
+
+            MYSA.insert('extracellular')
+            MYSA.xraxial[0] = Rpn1
+            MYSA.xc[0] = mycm / (nl * 2)  # short circuit
+            MYSA.xg[0] = mygm / (nl * 2)  # short circuit
+
+            return MYSA
+
+        def create_FLUT(i, fiberD, paralength2, rhoa, paraD2, e_pas_Vrest, Rpn2, mycm, mygm, nl):
+            """
+            Create a FLUT segment for MRG_DISCRETE fiber type
+            """
+            FLUT = Section(name='FLUT ' + str(i))
+            FLUT.nseg = 1
+            FLUT.diam = fiberD
+            FLUT.L = paralength2
+            FLUT.Ra = rhoa * (1 / (paraD2 / fiberD) ** 2) / 10000
+            FLUT.cm = 2 * paraD2 / fiberD
+            FLUT.insert('pas')
+            FLUT.g_pas = 0.0001 * paraD2 / fiberD
+            FLUT.e_pas = e_pas_Vrest
+
+            FLUT.insert('extracellular')
+            FLUT.xraxial[0] = Rpn2
+            FLUT.xc[0] = mycm / (nl * 2)  # short circuit
+            FLUT.xg[0] = mygm / (nl * 2)  # short circuit
+
+            return FLUT
+
+        def create_STIN(i, fiberD, interlength, rhoa, axonD, e_pas_Vrest, Rpx, mycm, mygm, nl):
+            """
+            Create a STIN segment for MRG_DISCRETE fiber type
+            """
+            STIN = Section(name='STIN ' + str(i))
+            STIN.nseg = 1
+            STIN.diam = fiberD
+            STIN.L = interlength
+            STIN.Ra = rhoa * (1 / (axonD / fiberD) ** 2) / 10000
+            STIN.cm = 2 * axonD / fiberD
+            STIN.insert('pas')
+            STIN.g_pas = 0.0001 * axonD / fiberD
+            STIN.e_pas = e_pas_Vrest
+
+            STIN.insert('extracellular')
+            STIN.xraxial[0] = Rpx
+            STIN.xc[0] = mycm / (nl * 2)  # short circuit
+            STIN.xg[0] = mygm / (nl * 2)  # short circuit
+
+            return STIN
+
+        def create_node(index, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive, axonnodes, node_channels, nl,
+                        Rpn0, celsius):
+            """
+            Create a node of Ranvier for MRG_DISCRETE fiber type
+            """
+            node = Section(name='node ' + str(index))
+            node.nseg = 1
+            node.diam = nodeD
+            node.L = nodelength
+            node.Ra = rhoa / 10000
+
+            if passive and (index == 0 or index == axonnodes - 1):
+                node.cm = 2
+                node.insert('pas')
+                node.g_pas = 0.0001
+                node.e_pas = -70
+                node.insert('extracellular')
+                node.xc[0] = mycm / (nl * 2)  # short circuit
+                node.xg[0] = mygm / (nl * 2)  # short circuit
+
+            else:
+                if node_channels == 0:
+                    node.cm = 2
+                    node.insert('axnode_myel')
+                elif node_channels == 1:
+                    node.cm = 1.149452367  # [uF/cm^2] specific membrane capacitance (Schild 1994, A-type)
+                    F = 96500  # [C/mole] Faraday'node Constant from Schild 1994
+                    R = 8314  # [J/(kg*mole*K)] Gas Constant from Schild 1994
+
+                    # Based on Schild 1994 ion channels
+                    node.insert('leakSchild')
+                    node.insert('naf')
+                    node.insert('nas')
+                    node.insert('kd')
+                    node.insert('ka')
+                    node.insert('can')
+                    node.insert('cat')
+                    node.insert('kds')
+                    node.insert('kca')
+
+                    node.insert('caextscale')
+                    node.insert('caintscale')
+                    node.insert('CaPump')
+                    node.insert('NaCaPump')
+                    node.insert('NakpumpSchild')
+
+                    node.L_caintscale = node.L
+                    node.nseg_caintscale = node.nseg
+                    node.L_caextscale = node.L
+                    node.nseg_caextscale = node.nseg
+
+                    # Ionic concentrations
+                    node.cao0_ca_ion = 2.0  # [mM] Initial Cao Concentration
+                    node.cai0_ca_ion = 0.000117  # [mM] Initial Cai Concentrations
+                    node.ko = 5.4  # [mM] External K Concentration
+                    node.ki = 145.0  # [mM] Internal K Concentration
+                    kstyle = ion_style("k_ion", 1, 2, 0, 0, 0)  # Allows ek to be calculated manually
+                    node.ek = ((R * (celsius + 273.15)) / F) * np.log10(
+                        node.ko / node.ki)  # Manual Calculation of ek in order to use Schild F and R values
+
+                    node.nao = 154  # [mM] External Na Concentration
+                    node.nai = 8.9  # [mM] Internal Na Concentration
+                    nastyle = ion_style("na_ion", 1, 2, 0, 0, 0)  # Allows ena to be calculated manually
+                    node.ena = ((R * (celsius + 273.15)) / F) * np.log10(
+                        node.nao / node.nai)  # Manual Calculation of ena in order to use Schild F and R values
+
+                    node.gbar_naf = 3  # 0.072503919  # NOTE: Does not conduct with original Schild 1994 value of 0.072503919; does not conduct at 0.5, but does at 1; increased to MRG value of 3
+                    node.shiftnaf_naf = 0  # [mV]
+                    node.gbar_nas = 3.53678E-07
+                    node.shiftnas_nas = 0
+                    node.gbar_kd = 0.000194523
+                    node.shiftkd_kd = 0
+                    node.gbar_ka = 0.001237872
+                    node.shiftka_ka = 0
+                    node.gbar_kds = 0.000353678
+                    node.shiftkds_kds = 0
+                    node.gbar_kca = 0.00022989
+                    node.gbar_can = 3.53678E-05
+                    node.shiftcan_can = 0
+                    node.gbar_cat = 1.23787E-05
+                    node.shiftcan_cat = 0
+                    node.gbna_leak = 1.14945E-05
+
+                node.insert('extracellular')
+                node.xraxial[0] = Rpn0
+                node.xc[0] = 0  # short circuit
+                node.xg[0] = 1e10  # short circuit
+
+            return node
+
         # Electrical parameters
         rhoa = 0.7e6        # [ohm-um]
         mycm = 0.1          # lamella membrane; [uF/cm2]
@@ -367,17 +358,17 @@ class Fiber(Exceptionable, Configurable, Saveable):
 
         # Create the axon sections
         for i in range(0, axonnodes):
-            new_node = self.create_node(i, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive_end_nodes, axonnodes,
+            new_node = create_node(i, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive_end_nodes, axonnodes,
                                     node_channels, nl, Rpn0, celsius)
             self.node.append(new_node)
         for i in range(0, paranodes1):
-            new_MYSA = self.create_MYSA(i, fiberD, paralength1, rhoa, paraD1, e_pas_Vrest, Rpn1, mycm, mygm, nl)
+            new_MYSA = create_MYSA(i, fiberD, paralength1, rhoa, paraD1, e_pas_Vrest, Rpn1, mycm, mygm, nl)
             self.MYSA.append(new_MYSA)
         for i in range(0, paranodes2):
-            new_FLUT = self.create_FLUT(i, fiberD, paralength2, rhoa, paraD2, e_pas_Vrest, Rpn2, mycm, mygm, nl)
+            new_FLUT = create_FLUT(i, fiberD, paralength2, rhoa, paraD2, e_pas_Vrest, Rpn2, mycm, mygm, nl)
             self.FLUT.append(new_FLUT)
         for i in range(0, axoninter):
-            new_STIN = self.create_STIN(i, fiberD, interlength, rhoa, axonD, e_pas_Vrest, Rpx, mycm, mygm, nl)
+            new_STIN = create_STIN(i, fiberD, interlength, rhoa, axonD, e_pas_Vrest, Rpx, mycm, mygm, nl)
             self.STIN.append(new_STIN)
 
         # Connect the axon sections
@@ -548,20 +539,13 @@ class Fiber(Exceptionable, Configurable, Saveable):
 
         return self
 
-    def balance(self):
-        Vrest = -55
-        for s in self.sec:
-            if (-(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump)/(Vrest - s.ena)) < 0:
-                s.pumpina_extrapump = -(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump)
-            else:
-                s.gnaleak_leak = -(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump) / (Vrest - s.ena)
-
-            if (-(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (Vrest - s.ek)) < 0:
-                s.pumpik_extrapump = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna)
-            else:
-                s.gkleak_leak = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (Vrest - s.ek)
-
     def findThresh(self, stimulation, saving, recording, find_block_thresh=False):
+        stimamp = -0.027281
+        self.run(stimamp, stimulation, recording, find_block_thresh, saving=saving)
+        return stimamp
+
+
+        n_min_aps = self.search(Config.SIM, "protocol", "threshold", "n_min_aps")
         bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
         if bounds_search_mode == 'PERCENT_INCREMENT':  # relative increment (increase bound by a certain percentage of the previous value)
             increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
@@ -654,7 +638,7 @@ class Fiber(Exceptionable, Configurable, Saveable):
                 tolerance = abs(stimamp_bottom - stimamp_top)
 
             if tolerance < thresh_resoln:
-                if self.last_run == False:
+                if self.n_aps < n_min_aps:
                     stimamp = stimamp_prev
                 print(
                     "Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)\n".format(
@@ -662,9 +646,9 @@ class Fiber(Exceptionable, Configurable, Saveable):
                 self.run(stimamp, stimulation, recording, find_block_thresh, saving=saving)
                 saving.saveThresh(self, stimamp)
                 break
-            elif self.last_run == True:
+            elif self.n_aps >= n_min_aps:
                 stimamp_top = stimamp
-            elif self.last_run == False:
+            elif self.n_aps < n_min_aps:
                 stimamp_bottom = stimamp
         return stimamp
 
@@ -693,17 +677,36 @@ class Fiber(Exceptionable, Configurable, Saveable):
         """
         Run a simulation for a single stimulation amplitude
         """
-        # If saving Vm(t), create recording vectors for Vm at specified nodes and t
+        def balance(fiber):
+            Vrest = -55
+            for s in fiber.sec:
+                if (-(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump) / (Vrest - s.ena)) < 0:
+                    s.pumpina_extrapump = -(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump)
+                else:
+                    s.gnaleak_leak = -(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump) / (
+                                Vrest - s.ena)
+
+                if (-(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (Vrest - s.ek)) < 0:
+                    s.pumpik_extrapump = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna)
+                else:
+                    s.gkleak_leak = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (
+                                Vrest - s.ek)
+
+        # If saving vm/gating/istim, need to record vm/gating/istim
         if saving is not None:
             if saving.time_vm or saving.space_vm:
                 recording.record_vm(self)
+            if saving.time_gating or saving.space_gating:
+                recording.record_gating(self)
+            if saving.istim:
+                recording.record_istim(stimulation.istim)
 
         # Initialize the simulation
         h.finitialize(self.v_init)
 
         # Check to see if C-Fiber built from Tigerholm. If so, need to balance membrane currents
         if self.fiber_mode == 'TIGERHOLM':
-            self.balance()
+            balance(self)
 
         # Initialize extracellular stimulation -- set stimulation at each segment to zero
         stimulation.initialize_extracellular(self)
@@ -734,28 +737,20 @@ class Fiber(Exceptionable, Configurable, Saveable):
             scaled_stim = [stimamp*amp*x for x in stimulation.potentials]
             stimulation.update_extracellular(self, scaled_stim)
 
-            # Save data
-            if saving is not None:
-                if saving.time_gating or saving.space_gating:
-                    recording.record_gating(self)
-                if saving.istim:
-                    recording.record_istim(stimulation.istim.i)
             h.fadvance()
-
-        # Save data at final tstep
-        if saving is not None:
-            if saving.time_gating or saving.space_gating:
-                recording.record_gating(self, self.passive_end_nodes)
-            if saving.istim:
-                recording.record_istim(stimulation.istim.i)
 
         ############    Done with simulation     ############
 
+        # Insert vectors of 0's for gating parameters at passive end nodes
+        if saving is not None:
+            if saving.time_gating or saving.space_gating:
+                recording.record_gating(self, fix_passive=True)
+
         # Check for APs if ACTIVATION_THRESHOLD or BLOCK_THRESHOLD
-        self.last_run, self.n_aps = recording.ap_checker(self, find_block_thresh)
+        self.n_aps = recording.ap_checker(self, find_block_thresh)
 
         if saving is None:
-            print("{0} AP(s) detected".format(self.n_aps))
+            print(f'{int(self.n_aps)} AP(s) detected')
         return self
 
 class GeometryObject():

@@ -1,0 +1,85 @@
+import os
+import sys
+from neuron import h
+
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../../')))
+from src.utils import (Config, Configurable)
+h.load_file('stdrun.hoc')
+
+class Recording(Configurable):
+    def __init__(self, fiber):
+        self.time = h.Vector().record(h._ref_t)
+        self.space = [i for i in range(0, fiber.axonnodes)]
+        self.vm = []
+
+        self.gating_inds = [i for i in range(0, fiber.axonnodes)]
+        if fiber.passive_end_nodes:
+            del self.gating_inds[0]
+            del self.gating_inds[-1]
+
+        self.gating_h = []
+        self.gating_m = []
+        self.gating_mp = []
+        self.gating_s = []
+        self.gating = [self.gating_h, self.gating_m, self.gating_mp, self.gating_s]
+
+        self.istim = []
+
+        self.apc = []
+
+    def record_ap(self, fiber):
+        if fiber.myelination:
+            for i, node in enumerate(fiber.node):
+                self.apc.append(h.APCount(node(0.5)))
+                self.apc[i].thresh = fiber.search(Config.SIM, "protocol", "threshold", "value")
+        else:
+            for i, node in enumerate(fiber.sec):
+                self.apc.append(h.APCount(node(0.5)))
+                self.apc[i].thresh = fiber.search(Config.SIM, "protocol", "threshold", "value")
+
+    def record_vm(self, fiber):
+        for node_ind in range(0, fiber.axonnodes):
+            if fiber.myelination:
+                v_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_v)
+                self.vm.append(v_node)
+            else:
+                v_node = h.Vector().record(fiber.sec[node_ind](0.5)._ref_v)
+                self.vm.append(v_node)
+        return
+
+    def record_istim(self, istim):
+        self.istim = h.Vector().record(istim._ref_i)
+
+    def record_gating(self, fiber, fix_passive=False):
+        if fix_passive is False:
+            for j, node_ind in enumerate(self.gating_inds):
+                h_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_h_inf_axnode_myel)
+                m_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_m_inf_axnode_myel)
+                mp_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_mp_inf_axnode_myel)
+                s_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_s_inf_axnode_myel)
+                self.gating_h.append(h_node)
+                self.gating_m.append(m_node)
+                self.gating_mp.append(mp_node)
+                self.gating_s.append(s_node)
+
+        elif fix_passive and fiber.passive_end_nodes:
+            for gating_vectors in self.gating:
+                size = gating_vectors[0].size()
+                passive_node = h.Vector(size, 0)
+                gating_vectors.insert(0, passive_node)
+                gating_vectors.append(passive_node)
+
+    def ap_checker(self, fiber, find_block_thresh=False):
+        ap_detect_location = fiber.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
+        node_index = int((fiber.axonnodes - 1) * ap_detect_location)
+
+        if find_block_thresh:
+            IntraStim_PulseTrain_delay = fiber.search(Config.SIM, 'intracellular_stim', 'times',
+                                                      'IntraStim_PulseTrain_delay')
+            if self.apc[node_index].time > IntraStim_PulseTrain_delay:
+                n_aps = False
+            else:
+                n_aps = True
+        else:
+            n_aps = self.apc[node_index].n
+        return n_aps
