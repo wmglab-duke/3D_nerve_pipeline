@@ -177,8 +177,8 @@ class Runner(Exceptionable, Configurable):
         print('\tMODEL {}'.format(model_num), '- {}'.format(model_pseudonym) if model_pseudonym is not None else '')
 
         # use current model index to computer maximum cuff shift (radius) .. SAVES to file in method
-        x, y, r_bound, nerve_copy, slide = self.compute_nerve_bounds(sample,  all_configs[Config.SAMPLE.value][0])
-        model_config = self.compute_cuff_shift(model_config, [x, y], r_bound, nerve_copy, slide)
+        x, y, r_bound, nerve_copy, slide, deform_ratio = self.compute_nerve_bounds(sample,  all_configs[Config.SAMPLE.value][0])
+        model_config = self.compute_cuff_shift(model_config, [x, y], r_bound, nerve_copy, slide, deform_ratio)
 
         model_config_file_name = os.path.join(
             os.getcwd(), 'samples', str(sample_num), 'models', str(model_num), 'model.json'
@@ -580,6 +580,10 @@ class Runner(Exceptionable, Configurable):
         return x, y, r_bound, nerve_copy, slide, deform_ratio
     
     def compute_cuff_shift(self, model_config: dict, centroid, r_bound, nerve_copy, slide, deform_ratio):
+        # add temporary model configuration
+        self.add(SetupMode.OLD, Config.MODEL, model_config)
+
+
         x,y = centroid
         # fetch cuff config
         cuff_config: dict = self.load(
