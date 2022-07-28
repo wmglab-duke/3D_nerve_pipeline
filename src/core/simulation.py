@@ -27,7 +27,7 @@ from .fiberset import FiberSet
 from .waveform import Waveform
 from src.core import Sample
 from src.utils import Exceptionable, Configurable, Saveable, SetupMode, Config, WriteMode, FiberXYMode, Env, ExportMode
-
+from src.core.fiber import Fiber
 
 class Simulation(Exceptionable, Configurable, Saveable):
 
@@ -109,7 +109,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, sim_copy) \
                 .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                .generate(sim_directory, sim_copy, sample_num, model_num) \
+                .generate(sim_directory) \
                 .write(WriteMode.DATA, fiberset_directory)
 
             self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
@@ -135,7 +135,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.SIM, self.configs[Config.SIM.value]) \
                 .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                .generate(sim_directory, sim_copy, sample_num, model_num, super_sample=generate_ss_bases) \
+                .generate(sim_directory, super_sample=generate_ss_bases) \
                 .write(WriteMode.DATA, ss_fibercoords_directory)
 
             self.ss_fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
@@ -320,10 +320,6 @@ class Simulation(Exceptionable, Configurable, Saveable):
             self._build_file_structure(os.path.join(sim_dir, str(sim_num)), t)
             nsim_inputs_directory = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'data', 'inputs')
 
-            # save general fiber object as sim/#/n_sims/t/fiber.obj
-            nsim_fiber_obj = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'fiber.obj')
-            fiberset.fiber_obj.save(nsim_fiber_obj)
-
             # copy corresponding waveform to sim/#/n_sims/t/data/inputs
             source_waveform_path = os.path.join(sim_dir, str(sim_num), "waveforms", "{}.dat".format(waveform_ind))
             destination_waveform_path = os.path.join(sim_dir, str(sim_num), "n_sims", str(t), "data", "inputs",
@@ -366,6 +362,15 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
                 .build_hoc(n_tsteps)
 
+            # save general fiber object as sim/#/n_sims/t/fiber.obj
+            nsim_fiber_path = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'fiber.obj')
+            fiber_obj = Fiber()
+            fiber_obj \
+                .add(SetupMode.OLD, Config.SIM, sim_copy) \
+                .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
+                .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
+                .inherit() \
+                .save(nsim_fiber_path)
 
             # copy in potentials data into neuron simulation data/inputs folder
             # the potentials files are matched to their inner and fiber index, and saved in destination folder with

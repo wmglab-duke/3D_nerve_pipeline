@@ -1,20 +1,10 @@
-"""
-Fiber class: fiber object with relevant attributes
-"""
-import json
-
 from neuron import h
-
-from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberGeometry,
-                       FiberXYMode, FiberZMode, MyelinatedSamplingType, MyelinationMode, Saveable,
-                       SetupMode, WriteMode, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
-
+from src.utils import (Config, Configurable, MyelinationMode, Saveable, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
 
 import math
 import numpy as np
-import os
-import matplotlib.pyplot as plt
-import pickle
+import copy
+import time
 
 Section = h.Section
 SectionList = h.SectionList
@@ -540,10 +530,8 @@ class Fiber(Configurable, Saveable):
         return self
 
     def findThresh(self, stimulation, saving, recording, find_block_thresh=False):
-        stimamp = -0.027281
-        self.run(stimamp, stimulation, recording, find_block_thresh, saving=saving)
-        return stimamp
-
+        # self.run(-1, stimulation, recording, find_block_thresh, saving=saving)
+        # return
 
         n_min_aps = self.search(Config.SIM, "protocol", "threshold", "n_min_aps")
         bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
@@ -650,9 +638,9 @@ class Fiber(Configurable, Saveable):
                 stimamp_top = stimamp
             elif self.n_aps < n_min_aps:
                 stimamp_bottom = stimamp
-        return stimamp
+        return
 
-    def submit(self, stimulation, saving, recording):
+    def submit(self, stimulation, saving, recording, start_time):
         # determine protocol
         protocol_mode = self.search(Config.SIM, 'protocol', 'mode')
         if protocol_mode != 'FINITE_AMPLITUDES':
@@ -668,16 +656,27 @@ class Fiber(Configurable, Saveable):
 
         if find_thresh:
             self.findThresh(stimulation, saving, recording, find_block_thresh)
-        else:
-            pass
-            # for amp in amps:
-            #     self.run(amp, potentials, waveform, find_block_thresh, n_tsteps, dt, tstop, saving=saving)
+            saving.write2file(recording, self, stimulation.dt)
+            time_individual = time.time()-start_time
+            saving.saveRuntime(self, time_individual)
 
-    def run(self, stimamp, stimulation, recording, find_block_thresh=False, saving=None):
+        else:
+            time_total = 0
+            for amp_ind, amp in enumerate(amps):
+                print(f'Running amp {amp_ind} of {len(amps)}: {amp} nA')
+                self.run(amp, stimulation, recording, find_block_thresh, saving, finite_amplitudes=True)
+                saving.write2file(recording, self, stimulation.dt, amp_ind)
+                time_individual = time.time() - start_time - time_total
+                saving.saveRuntime(self, time_individual, amp_ind)
+                time_total += time_individual
+                recording.reset()
+
+    def run(self, stimamp, stimulation, recording, find_block_thresh=False, saving=None, finite_amplitudes=False):
         """
         Run a simulation for a single stimulation amplitude
         """
         def balance(fiber):
+            # Balance membrane currents for Tigerholm model
             Vrest = -55
             for s in fiber.sec:
                 if (-(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump) / (Vrest - s.ena)) < 0:
@@ -692,7 +691,20 @@ class Fiber(Configurable, Saveable):
                     s.gkleak_leak = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (
                                 Vrest - s.ek)
 
-        # If saving vm/gating/istim, need to record vm/gating/istim
+        def steady_state(fiber, stim_dt):
+            # Allow system to reach steady-state by using a large dt before simulation
+            t_initSS = fiber.search(Config.SIM, 'protocol', 'initSS')
+            dt_initSS = fiber.search(Config.SIM, 'protocol', 'dt_initSS')
+            h.t = t_initSS      # Start before t=0
+            h.dt = dt_initSS    # Large dt
+            while (h.t <= -dt_initSS):
+                h.fadvance()
+            h.dt = stim_dt
+            h.t = 0
+            h.fcurrent()
+            h.frecord_init()
+
+        # If saving variables, record variables
         if saving is not None:
             if saving.time_vm or saving.space_vm:
                 recording.record_vm(self)
@@ -700,35 +712,22 @@ class Fiber(Configurable, Saveable):
                 recording.record_gating(self)
             if saving.istim:
                 recording.record_istim(stimulation.istim)
+            if saving.ap_end_times:
+                recording.record_ap_end_times(self, saving.ap_end_inds, saving.ap_end_thresh)
 
-        # Initialize the simulation
-        h.finitialize(self.v_init)
-
-        # Check to see if C-Fiber built from Tigerholm. If so, need to balance membrane currents
-        if self.fiber_mode == 'TIGERHOLM':
+        h.finitialize(self.v_init)          # Initialize the simulation
+        if self.fiber_mode == 'TIGERHOLM':  # Balance membrane currents if Tigerholm
             balance(self)
 
-        # Initialize extracellular stimulation -- set stimulation at each segment to zero
-        stimulation.initialize_extracellular(self)
-
-        # Allow system to reach steady-state by using a large dt before simulation
-        t_initSS = self.search(Config.SIM, 'protocol', 'initSS')
-        dt_initSS = self.search(Config.SIM, 'protocol', 'dt_initSS')
-        h.t = t_initSS      # Start before t=0
-        h.dt = dt_initSS    # Large dt
-        while (h.t <= -dt_initSS):
-            h.fadvance()
-        h.dt = stimulation.dt
-        h.t = 0
-        h.fcurrent()
-        h.frecord_init()
-        h.celsius = self.temperature
+        stimulation.initialize_extracellular(self)  # Set extracellular stimulation at each segment to zero
+        steady_state(self, stimulation.dt)          # Allow system to reach steady-state before simulation
+        h.celsius = self.temperature                # Set simulation temperature
 
         # Set up APcount
-        recording.record_ap(self)
+        if not finite_amplitudes:
+            recording.record_ap(self)
 
         ############    Begin simulation     ############
-
         n_tsteps = len(stimulation.waveform)
         for i in range(0, n_tsteps):
             if h.t > stimulation.tstop:
@@ -738,7 +737,6 @@ class Fiber(Configurable, Saveable):
             stimulation.update_extracellular(self, scaled_stim)
 
             h.fadvance()
-
         ############    Done with simulation     ############
 
         # Insert vectors of 0's for gating parameters at passive end nodes
@@ -747,7 +745,8 @@ class Fiber(Configurable, Saveable):
                 recording.record_gating(self, fix_passive=True)
 
         # Check for APs if ACTIVATION_THRESHOLD or BLOCK_THRESHOLD
-        self.n_aps = recording.ap_checker(self, find_block_thresh)
+        if not finite_amplitudes:
+            self.n_aps = recording.ap_checker(self, find_block_thresh)
 
         if saving is None:
             print(f'{int(self.n_aps)} AP(s) detected')

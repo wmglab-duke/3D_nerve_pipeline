@@ -34,11 +34,7 @@ def main(fiber_path, inner_ind, fiber_ind, potentials_path, waveform_path, sim_p
     recording = Recording(fiber)
 
     # submit fiber for simulation
-    fiber.submit(stimulation, saving, recording)
-
-    # save data
-    runtime = time.time()-start_time
-    saving.write2file(recording, runtime, fiber, stimulation.dt)
+    fiber.submit(stimulation, saving, recording, start_time)
 
 # load in arguments from command line
 if __name__ == "__main__":  # Allows for the safe importing of the main module
@@ -50,6 +46,4 @@ if __name__ == "__main__":  # Allows for the safe importing of the main module
     sim_path = sys.argv[6]
 
     main(fiber_path, inner_ind, fiber_ind, potentials_path, waveform_path, sim_path)
-
-
-
+    print('done')

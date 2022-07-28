@@ -26,6 +26,23 @@ class Recording(Configurable):
         self.istim = []
 
         self.apc = []
+        self.ap_end_count = []
+        self.ap_end_times = []
+
+    def reset(self):
+        self.vm = []
+
+        self.gating_h = []
+        self.gating_m = []
+        self.gating_mp = []
+        self.gating_s = []
+        self.gating = [self.gating_h, self.gating_m, self.gating_mp, self.gating_s]
+
+        self.istim = []
+
+        self.apc = []
+        self.ap_end_count = []
+        self.ap_end_times = []
 
     def record_ap(self, fiber):
         if fiber.myelination:
@@ -36,6 +53,20 @@ class Recording(Configurable):
             for i, node in enumerate(fiber.sec):
                 self.apc.append(h.APCount(node(0.5)))
                 self.apc[i].thresh = fiber.search(Config.SIM, "protocol", "threshold", "value")
+
+    def record_ap_end_times(self, fiber, ap_end_inds, ap_end_thresh):
+        self.ap_end_times = [h.Vector(), h.Vector()]
+        for ap_end_vector, ap_end_ind in zip(self.ap_end_times, ap_end_inds):
+            if fiber.myelination:
+                ap_count = h.APCount(fiber.node[ap_end_ind](0.5))
+                ap_count.thresh = ap_end_thresh
+                ap_count.record(ap_end_vector)
+                self.ap_end_count.append(ap_count)
+            else:
+                ap_end_min = h.APCount(fiber.sec[ap_end_ind](0.5))
+                ap_end_min.thresh = ap_end_thresh
+                ap_end_min.record(ap_end_vector)
+                self.ap_end_count.append(ap_count)
 
     def record_vm(self, fiber):
         for node_ind in range(0, fiber.axonnodes):

@@ -138,7 +138,7 @@ def make_task(my_os: str, sub_con: str, start_p: str, sim_p: str, fiber_path: st
             lines = [
                 '#!/bin/bash\n',
                 'cd ../../\n',
-                'python NEURON_Files/local_run_controls.py \"{}\" \"{}\" \"{}\" \"{}\" \"{}\" \"{}\"\n' \
+                'python NEURON_Files/run_controls.py \"{}\" \"{}\" \"{}\" \"{}\" \"{}\" \"{}\"\n' \
                     .format(fiber_path,
                             inner_ind,
                             fiber_ind,

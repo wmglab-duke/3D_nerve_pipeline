@@ -24,8 +24,6 @@ from src.utils import (Config, Configurable, DiamDistMode, Exceptionable, FiberG
                        FiberXYMode, FiberZMode, MyelinatedSamplingType, MyelinationMode, Saveable,
                        SetupMode, WriteMode, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
 from .sample import Sample
-from src.core.fiber import Fiber
-
 
 class FiberSet(Exceptionable, Configurable, Saveable):
     """
@@ -46,7 +44,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         # initialize empty lists of fiber points
         self.sample = sample
         self.fibers = None
-        self.fiber_obj = None
         self.out_to_fib = None
         self.out_to_in = None
         self.add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json'))
@@ -56,7 +53,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             self.throw(78)
         return self
 
-    def generate(self, sim_directory: str, sim_copy, sample_num, model_num, super_sample: bool = False):
+    def generate(self, sim_directory: str, super_sample: bool = False):
         """
         :return:
         """
@@ -68,13 +65,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
 
-        self.fiber_obj = Fiber()
-        self.fiber_obj \
-            .add(SetupMode.OLD, Config.SIM, sim_copy) \
-            .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
-            .add(SetupMode.NEW, Config.MODEL, os.path.join('samples', str(sample_num), 'models',
-                                                           str(model_num), 'model.json')) \
-            .inherit()
         return self
 
     def write(self, mode: WriteMode, path: str):
