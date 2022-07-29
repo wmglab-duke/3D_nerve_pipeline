@@ -27,7 +27,7 @@ class Fascicle(Exceptionable):
         self,
         exception_config,
         outer: Trace,
-        inners: List[Trace] = [],
+        inners: List[Trace] = None,
         outer_scale: dict = None,
     ):
         """
@@ -49,10 +49,10 @@ class Fascicle(Exceptionable):
         self.outer_scale = None
 
         # initialize constituent traces
-        self.inners: List[Trace] = inners
+        self.inners: List[Trace] = inners if inners is not None else []
         self.outer: Trace = outer
 
-        if len(inners) > 0:
+        if len(self.inners) > 0:
             self.validate()
 
     def validate(self):
@@ -179,7 +179,7 @@ class Fascicle(Exceptionable):
             self.outer.plot(ax=ax)
 
         if color is not None:
-            if not len(self.inners) == len(color):
+            if len(self.inners) != len(color):
                 self.throw(145)
         else:
             color = [None] * len(self.inners)
@@ -235,6 +235,10 @@ class Fascicle(Exceptionable):
         if self.outer_scale is None:
             self.throw(14)
 
+        # can only generate perineurium if there are no inners
+        if len(self.inners) != 0:
+            self.throw(149)
+
         # set single inner trace
         self.inners = [self.outer.deepcopy()]
 
@@ -249,6 +253,7 @@ class Fascicle(Exceptionable):
         inner_img_path: str,
         outer_img_path: str,
         exception_config,
+        contour_mode,
         plot: bool = False,
         z: float = 0,
     ) -> List['Fascicle']:
@@ -269,7 +274,7 @@ class Fascicle(Exceptionable):
 
         def build_traces(path: str) -> List[Trace]:
             # default findContours params
-            params = [cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE]
+            params = [cv2.RETR_TREE, contour_mode]
             # default findContours params
 
             img = np.flipud(cv2.imread(path, -1))

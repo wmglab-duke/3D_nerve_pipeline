@@ -1,9 +1,9 @@
-
 # env.json
 
 Named file: `config/system/env.json`
 
 ## Purpose
+
 The file contains key-value pairs for paths. The file can
 be automatically populated by running `env_setup.py` ([Installation](../../Getting_Started.md#installation)). Note that we
 have prepended all of the keys in this file with "ASCENT" because
@@ -12,9 +12,11 @@ so the "ASCENT" key distinguishes these pairs from other paths that
 may be present on your computer.
 
 ## Syntax
+
 To declare this entity in `config/system/env.json`, use the
 following syntax:
-```
+
+```javascript
 {
   "ASCENT_COMSOL_PATH": String,
   "ASCENT_JDK_PATH": String,
@@ -22,6 +24,7 @@ following syntax:
   "ASCENT_NSIM_EXPORT_PATH": String
 }
 ```
+
 ## Properties
 
 `"ASCENT_COMSOL_PATH"`: The value (String) is the path for your local
@@ -38,7 +41,8 @@ pipeline will save NEURON simulation directories to submit.
 <!-- end list -->
 
 Windows:
-```
+
+```javascript
 {
   "ASCENT_COMSOL_PATH": "C:\\Program Files\\COMSOL\\COMSOL55\\Multiphysics",
   "ASCENT_JDK_PATH": "C:\\Program Files\\Java\\jdk1.8.0_221\\bin",
@@ -46,8 +50,10 @@ Windows:
   "ASCENT_NSIM_EXPORT_PATH": "D:\\Documents\\ascent\\submit"
 }
 ```
+
 MacOS
-```
+
+```javascript
 {
   "ASCENT_COMSOL_PATH": "/Applications/COMSOL55/Multiphysics ",
   "ASCENT_JDK_PATH": "/Library/Java/JavaVirtualMachines/jdk1.8.0_221.jdk/Contents/Home/bin/",

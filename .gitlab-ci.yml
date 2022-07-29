@@ -5,7 +5,9 @@
 
 # Official language image. Look for the different tagged releases at:
 # https://hub.docker.com/r/library/python/tags/
-image: python:latest
+
+default:
+  image: python:latest
 
 workflow:
   rules:
@@ -26,7 +28,7 @@ variables:
 # If you want to also cache the installed packages, you have to install
 # them in a virtualenv and cache it as well.
 
-stages:          # List of stages for jobs, and their order of execution
+stages: # List of stages for jobs, and their order of execution
   - lint
   - test
   - deploy
@@ -37,7 +39,7 @@ cache:
     - venv/
 
 before_script:
-  - python --version  # For debugging
+  - python --version # For debugging
   - pip install virtualenv
   - virtualenv venv
   - source venv/bin/activate
@@ -54,30 +56,50 @@ black:
     - pip install black
     - black --check config docs examples scripts src run
 
-#while in the process of adding more files remember to add done files
 flake8:
   stage: lint
   script:
-    - pip install flake8
-    - flake8 src/core
+    - pip install flake8 flake8-eradicate flake8-simplify flake8-bugbear flake8-builtins flake8-comprehensions flake8-fixme
+    - flake8 config docs examples scripts src run
+
+#Here should check that no self.throw(9001) is in repo
+dev_check:
+  stage: lint
+  script:
+    - ( ! grep "self.throw(9001)" --include \*.py -r . )
 
 test_docs:
   stage: test
   script:
-  - pip install -U sphinx mock sphinx-rtd-theme
-  - pip install -Ur docs/rtd_requirements.txt
-  - cd docs/source; sphinx-build -W -b html . ../../public
+    - pip install -U sphinx mock sphinx-rtd-theme
+    - pip install -Ur docs/rtd_requirements.txt
+    - cd docs/source; sphinx-build -W -b html . ../../public
   except:
-  - master
+    - master
+
+compile_java:
+  before_script:
+    - java -version
+  stage: test
+  image: openjdk:8-jdk
+  script:
+    - mkdir bin
+    - mkdir comsolplugins
+    - wget -q -O bin/json-20190722.jar https://repo1.maven.org/maven2/org/json/json/20190722/json-20190722.jar
+    - wget -qO- --header "PRIVATE-TOKEN:$COMSOL_JARS_TOKEN" "https://gitlab.oit.duke.edu/api/v4/projects/27633/repository/archive" | tar -xvz --strip-components 1 -C comsolplugins
+    - javac -classpath bin/json-20190722.jar:comsolplugins/* src/model/*.java -d bin
+
+  artifacts:
+    untracked: true
 
 pages:
   stage: deploy
   script:
-  - pip install -U sphinx mock sphinx-rtd-theme
-  - pip install -Ur docs/rtd_requirements.txt
-  - cd docs/source; sphinx-build -W -b html . ../../public
+    - pip install -U sphinx mock sphinx-rtd-theme
+    - pip install -Ur docs/rtd_requirements.txt
+    - cd docs/source; sphinx-build -W -b html . ../../public
   artifacts:
     paths:
-    - public
+      - public
   only:
-  - master
+    - master

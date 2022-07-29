@@ -1,5 +1,5 @@
 {
-  "pseudonym": "beta model",
+  "pseudonym": "tutorial model",
   "modes": {
     "use_ci": true,
     "cuff_shift": "MIN_CIRCLE_BOUNDARY",
@@ -38,7 +38,7 @@
     }
   },
   "mesh": {
-    "quality_measure":"vollength",
+    "quality_measure": "vollength",
     "shape_order": "quadratic",
     "proximal": {
       "hcurve": 0.2,

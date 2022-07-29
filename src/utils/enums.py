@@ -9,6 +9,8 @@ The source code can be found on the following GitHub repository: https://github.
 import os
 from enum import Enum, unique
 
+import cv2
+
 
 class ASCENTEnum(Enum):
     def __eq__(self, other):
@@ -99,7 +101,6 @@ class MaskInputMode(ASCENTEnum, Enum):
     config = 'mask_input'
 
     INNERS = 0
-    OUTERS = 1
     INNER_AND_OUTER_SEPARATE = 2
     INNER_AND_OUTER_COMPILED = 3
 
@@ -163,8 +164,15 @@ class DeformationMode(ASCENTEnum, Enum):
     config = 'deform'
 
     NONE = None
-    JITTER = 0
     PHYSICS = 1
+
+
+@unique
+class ContourMode(ASCENTEnum, Enum):
+    config = 'contour_approximation'
+
+    NONE = cv2.CHAIN_APPROX_NONE
+    SIMPLE = cv2.CHAIN_APPROX_SIMPLE
 
 
 # %% Fiber Position and Type
@@ -347,11 +355,8 @@ class CuffShiftMode(ASCENTEnum, Enum):
     AUTO_ROTATION_MIN_CIRCLE_BOUNDARY = 0
     AUTO_ROTATION_TRACE_BOUNDARY = 1
     NONE = 2
-    PURPLE = 3
-    NAIVE_ROTATION_MIN_CIRCLE_BOUNDARY = 4  # purple
+    NAIVE_ROTATION_MIN_CIRCLE_BOUNDARY = 4
     NAIVE_ROTATION_TRACE_BOUNDARY = 5
-    MIN_CIRCLE_BOUNDARY = 6
-    TRACE_BOUNDARY = 7
 
 
 # %% Templates

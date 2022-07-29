@@ -4,16 +4,20 @@
 The copyrights of this software are owned by Duke University.
 Please refer to the LICENSE.txt and README.txt files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+
+Generate two sets of heatmaps across multiple n_sims.
+One has a single colorbar for all heatmaps, the other has an individual colorbar for each heatmap.
 """
 
 # RUN THIS FROM REPOSITORY ROOT
 import os
 import sys
 
-sys.path.append(os.path.sep.join([os.getcwd(), '']))
 import matplotlib.pyplot as plt
 
 from src.core.query import Query
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 params = {
     'outpath': 'out/analysis',

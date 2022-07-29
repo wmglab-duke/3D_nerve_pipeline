@@ -4,19 +4,21 @@
 The copyrights of this software are owned by Duke University.
 Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+
+Plot a sample.
 """
 
 import os
 import sys
-
-root = os.path.abspath(os.path.join(*'../../'.split('/')))
-sys.path.append(root)
 
 import matplotlib.pyplot as plt
 
 from src.core import Sample
 from src.core.query import Query
 from src.utils import Object
+
+root = os.path.abspath(os.path.join('..', '..'))
+sys.path.append(root)
 
 cwd = os.getcwd()
 os.chdir(root)
