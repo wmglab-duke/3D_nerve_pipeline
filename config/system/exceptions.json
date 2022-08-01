@@ -577,18 +577,58 @@
   },
   {
     "code": 145,
-    "text": "Cannot record/save time outside of simulation. Check sim config file for saving/space/times/."
+    "text": "Length of fascicle colors list must match number of fascicle inners."
   },
   {
     "code": 146,
-    "text": "Cannot record/save location outside of the fiber. Check sim config file for saving/time/locs/."
+    "text": "A white area which results in a fascicle trace with <3 points was detected. Check your input mask for specks."
   },
   {
     "code": 147,
-    "text": "Recording gating parameters is only currently supported for MRG_DISCRETE and MRG_INTERPOLATION fiber models"
+    "text": "Fiber points were detected too close to an inner boundary (as defined by xy_trace_buffer in SIM)."
   },
   {
     "code": 148,
+    "text": "Could not find the input defined in the 'sample' field of sample.json."
+  },
+  {
+    "code": 149,
+    "text": "Tried to generate perineurium, but fascicle already has an outer and at least one inner."
+  },
+  {
+    "code": 150,
+    "text": "Image provided is not binary"
+  },
+  {
+    "code": 151,
+    "text": "Invalid FiberXYMode in Sim."
+  },
+  {
+    "code": 152,
+    "text": "Invalid MaskInputMode in Sample."
+  },
+  {
+    "code": 153,
+    "text": "Invalid DeformationMode in Sample."
+  },
+  {
+    "code": 154,
+    "text": "Invalid CuffShiftMode in Model."
+  },
+  {
+    "code": 155,
+    "text": "Cannot record/save time outside of simulation. Check sim config file for saving/space/times/."
+  },
+  {
+    "code": 156,
+    "text": "Cannot record/save location outside of the fiber. Check sim config file for saving/time/locs/."
+  },
+  {
+    "code": 157,
+    "text": "Recording gating parameters is only currently supported for MRG_DISCRETE and MRG_INTERPOLATION fiber models"
+  },
+  {
+    "code": 158,
     "text": "Program cannot balance Tigerholm for passive_end_nodes=1, must be 0."
   }
 ]

@@ -4,19 +4,21 @@
 The copyrights of this software are owned by Duke University.
 Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+
+Generate a plot of fiber coordinates overlaid with a plot of the sample.
 """
 
 import os
 import sys
 
-root = os.path.abspath(os.path.join(*'../../'.split('/')))
-sys.path.append(root)
+import matplotlib.pyplot as plt
 
-from src.core import Simulation
-from src.core import Sample
+from src.core import Sample, Simulation
 from src.core.query import Query
 from src.utils import Object
-import matplotlib.pyplot as plt
+
+root = os.path.abspath(os.path.join('..', '..'))
+sys.path.append(root)
 
 cwd = os.getcwd()
 os.chdir(root)
@@ -24,11 +26,7 @@ os.chdir(root)
 criteria = {
     'partial_matches': True,
     'include_downstream': True,
-    'indices': {
-        'sample': [1016],
-        'model': [7],
-        'sim': [1042]
-    }
+    'indices': {'sample': [1016], 'model': [7], 'sim': [1042]},
 }
 
 
@@ -56,10 +54,7 @@ for fiberset_ind, fiberset in enumerate(sim.fibersets):
     plt.ylabel('\u03bcm')
     plt.show()
 
-    fname = '{}_{}_{}_{}'.format(str(sample_index),
-                                 str(model_index),
-                                 str(sim_index),
-                                 str(fiberset_ind))
+    fname = '{}_{}_{}_{}'.format(str(sample_index), str(model_index), str(sim_index), str(fiberset_ind))
     fmt = 'png'
 
     dest = os.path.join('data', 'tmp', 'fiberset')

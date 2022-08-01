@@ -31,7 +31,7 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a Python script from a template
+#  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
@@ -137,7 +137,6 @@ samples/
 submit/
 data/tmp/
 data/*.pickle
-plot_*
 
 input/
 */user/*
@@ -148,7 +147,7 @@ out/
 */system/env.json
 
 # machine-specific neuron mod files
-x86_64/
+src/neuron/MOD_Files/x86_64/
 src/neuron/MOD_Files/*.c
 src/neuron/MOD_Files/*.o
 
@@ -170,5 +169,3 @@ master_index_key.xlsx
 tmp
 bin/
 projects/
-
-
