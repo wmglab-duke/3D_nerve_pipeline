@@ -1,7 +1,9 @@
 import pickle
 import sys
 import time
+import os
 
+sys.path.append(os.getcwd())
 from stimulation import Stimulation
 from saving import Saving
 from recording import Recording

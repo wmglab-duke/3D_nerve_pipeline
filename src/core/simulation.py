@@ -22,7 +22,6 @@ import re
 import numpy as np
 import scipy.interpolate as sci
 
-from .hocwriter import HocWriter
 from .fiberset import FiberSet
 from .waveform import Waveform
 from src.core import Sample
@@ -351,17 +350,6 @@ class Simulation(Exceptionable, Configurable, Saveable):
             with open(os.path.join(sim_dir, str(sim_num), "n_sims", str(t), "{}.json".format(t)), "w") as handle:
                 handle.write(json.dumps(sim_copy, indent=2))
 
-            n_tsteps = len(self.waveforms[waveform_ind].wave)
-
-            # add config and write launch.hoc
-            n_sim_dir = os.path.join(sim_dir, str(sim_num), "n_sims", str(t))
-            hocwriter = HocWriter(os.path.join(sim_dir, str(sim_num)), n_sim_dir, self.configs[Config.EXCEPTIONS.value])
-            hocwriter \
-                .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
-                .add(SetupMode.OLD, Config.SIM, sim_copy) \
-                .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                .build_hoc(n_tsteps)
-
             # save general fiber object as sim/#/n_sims/t/fiber.obj
             nsim_fiber_path = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'fiber.obj')
             fiber_obj = Fiber()
@@ -625,6 +613,34 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         submit_source = os.path.join('src', 'neuron', 'submit.py')
         shutil.copy2(submit_source, submit_target)
+
+    @staticmethod
+    def export_src_files(target: str):
+        # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
+        if not os.path.exists(target):
+            os.makedirs(target)
+
+            utils_target = os.path.join(target, 'utils')
+            if not os.path.exists(utils_target):
+                os.makedirs(utils_target)
+
+            core_target = os.path.join(target, 'core')
+            if not os.path.exists(core_target):
+                os.makedirs(core_target)
+
+        for util_file in ['configurable.py', 'enums.py', 'saveable.py']:
+            file_target = os.path.join(target, 'utils', util_file)
+            file_source = os.path.join('src', 'utils', util_file)
+            if os.path.isfile(file_target):
+                os.remove(file_target)
+
+            shutil.copy2(file_source, file_target)
+
+        fiber_target = os.path.join(target, 'core', 'fiber.py')
+        fiber_source = os.path.join('src', 'core', 'fiber.py')
+        if os.path.isfile(fiber_target):
+            os.remove(fiber_target)
+        shutil.copy2(fiber_source, fiber_target)
 
     @staticmethod
     def export_system_config_files(target: str):

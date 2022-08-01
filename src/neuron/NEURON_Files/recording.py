@@ -1,9 +1,8 @@
-import os
-import sys
 from neuron import h
 
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../../')))
-from src.utils import (Config, Configurable)
+from src.utils.enums import Config
+from src.utils.configurable import Configurable
+
 h.load_file('stdrun.hoc')
 
 class Recording(Configurable):

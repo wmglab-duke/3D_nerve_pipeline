@@ -1,9 +1,10 @@
 from neuron import h
-from src.utils import (Config, Configurable, MyelinationMode, Saveable, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
+from src.utils.enums import (Config, MyelinationMode, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
+from src.utils.configurable import Configurable
+from src.utils.saveable import Saveable
 
 import math
 import numpy as np
-import copy
 import time
 
 Section = h.Section
@@ -533,7 +534,6 @@ class Fiber(Configurable, Saveable):
         # self.run(-1, stimulation, recording, find_block_thresh, saving=saving)
         # return
 
-        n_min_aps = self.search(Config.SIM, "protocol", "threshold", "n_min_aps")
         bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
         if bounds_search_mode == 'PERCENT_INCREMENT':  # relative increment (increase bound by a certain percentage of the previous value)
             increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
@@ -626,7 +626,7 @@ class Fiber(Configurable, Saveable):
                 tolerance = abs(stimamp_bottom - stimamp_top)
 
             if tolerance < thresh_resoln:
-                if self.n_aps < n_min_aps:
+                if self.n_aps < 1:
                     stimamp = stimamp_prev
                 print(
                     "Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)\n".format(
@@ -634,9 +634,9 @@ class Fiber(Configurable, Saveable):
                 self.run(stimamp, stimulation, recording, find_block_thresh, saving=saving)
                 saving.saveThresh(self, stimamp)
                 break
-            elif self.n_aps >= n_min_aps:
+            elif self.n_aps >= 1:
                 stimamp_top = stimamp
-            elif self.n_aps < n_min_aps:
+            elif self.n_aps < 1:
                 stimamp_bottom = stimamp
         return
 

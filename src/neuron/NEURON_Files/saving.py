@@ -1,9 +1,8 @@
 import os
-import sys
 import pandas as pd
 
-sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '../../')))
-from src.utils import (Config, Configurable)
+from src.utils.enums import Config
+from src.utils.configurable import Configurable
 
 class Saving(Configurable):
     def __init__(self):
