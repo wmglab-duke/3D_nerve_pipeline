@@ -626,9 +626,5 @@
   {
     "code": 157,
     "text": "Recording gating parameters is only currently supported for MRG_DISCRETE and MRG_INTERPOLATION fiber models"
-  },
-  {
-    "code": 158,
-    "text": "Program cannot balance Tigerholm for passive_end_nodes=1, must be 0."
   }
 ]

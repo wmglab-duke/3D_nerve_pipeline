@@ -219,10 +219,6 @@ def make_task(my_os: str, sub_con: str, start_p: str, sim_p: str, fiber_path: st
                             sim_p),
             ]
 
-            # copy special files ahead of time to avoid 'text file busy error'
-            if not os.path.exists('special'):
-                shutil.copy(os.path.join('MOD_Files', 'x86_64', 'special'), sim_p)
-
             if sub_con == 'cluster':
                 lines.remove('cd ../../\n')
 
@@ -385,7 +381,7 @@ def cluster_submit(runfibers, sim_name, sim_path, start_path_base):
         time.sleep(1.0)
 
 
-def make_fiber_tasks(submission_list):
+def make_fiber_tasks(submission_list, submission_context):
     """Create all shell scripts for fiber submission tasks.
     :param submission_list: the list of fibers to be submitted
     """
@@ -411,46 +407,10 @@ def make_fiber_tasks(submission_list):
         ]:
             ensure_dir(cur_dir)
 
-        # ensure blank.hoc exists
-        blank_path = os.path.join(sim_path, 'blank.hoc')
-        if not os.path.exists(blank_path):
-            with open(blank_path, 'w') as f:
-                pass
-
-        # load JSON file with binary search amplitudes
-        n_sim = sim_name.split('_')[-1]
-        sim_config = load(os.path.join(sim_path, '{}.json'.format(n_sim)))
-        fiber_model = sim_config['fibers']['mode']
-
-        # load the inner x fiber -> diam key saved in the n_sim folder
-        inner_fiber_diam_key_file = os.path.join(fibers_path, 'inner_fiber_diam_key.obj')
-        inner_fiber_diam_key = None
-        if os.path.exists(inner_fiber_diam_key_file):
-            with open(inner_fiber_diam_key_file, 'rb') as f:
-                inner_fiber_diam_key = pickle.load(f)
-            f.close()
-        else:
-            diameter = sim_config['fibers']['z_parameters']['diameter']
-
+        # load generic instance of Fiber class for given n_sim
+        fiber_path = os.path.join(sim_path, 'fiber.obj')
         for fiber_data in runfibers:
             inner_ind, fiber_ind = fiber_data['inner'], fiber_data['fiber']
-
-            if inner_fiber_diam_key is not None:
-                diameter = get_diameter(inner_fiber_diam_key, inner_ind, fiber_ind)
-            deltaz, neuron_flag = get_deltaz(fiber_model, diameter)
-
-            # get the axonnodes from data/inputs/inner{}_fiber{}.dat top line
-            fiber_ve_path = os.path.join(
-                fibers_path,
-                'inner{}_fiber{}.dat'.format(inner_ind, fiber_ind),
-            )
-            fiber_ve = np.loadtxt(fiber_ve_path)
-            n_fiber_coords = int(fiber_ve[0])
-
-            if neuron_flag == 2:
-                axonnodes = int(1 + (n_fiber_coords - 1) / 11)
-            elif neuron_flag == 3:
-                axonnodes = int(n_fiber_coords)
 
             start_path = '{}{}{}'.format(
                 start_path_base,
@@ -458,20 +418,19 @@ def make_fiber_tasks(submission_list):
                 '.sh' if OS == 'UNIX-LIKE' else '.bat',
             )
 
-            stimamp_top, stimamp_bottom = get_thresh_bounds(sim_dir, sim_name, inner_ind)
-            if stimamp_top is not None and stimamp_bottom is not None:
-                make_task(
-                    OS,
-                    start_path,
-                    sim_path,
-                    inner_ind,
-                    fiber_ind,
-                    stimamp_top,
-                    stimamp_bottom,
-                    diameter,
-                    deltaz,
-                    axonnodes,
-                )
+            potentials_path = os.path.join(sim_path, 'data', 'inputs',
+                                           'inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
+            waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
+            make_task(OS,
+                      submission_context,
+                      start_path,
+                      sim_path,
+                      fiber_path,
+                      inner_ind,
+                      fiber_ind,
+                      potentials_path,
+                      waveform_path,
+            )
 
 
 def make_run_sub_list(run_number: int):
@@ -507,7 +466,6 @@ def make_run_sub_list(run_number: int):
 
                     n_sim = sim_name.split('_')[-1]
                     sim_config = load(os.path.join(sim_path, '{}.json'.format(n_sim)))
-                    fiber_model = sim_config['fibers']['mode']
 
                     fibers_files = [x for x in os.listdir(fibers_path) if re.match('inner[0-9]+_fiber[0-9]+\\.dat', x)]
 
@@ -543,14 +501,7 @@ def make_run_sub_list(run_number: int):
                     # save_submit list as csv
                     pd.DataFrame(submit_list[sim_name]).to_csv(os.path.join(sim_path, 'out_err_key.csv'), index=False)
 
-                        fiber_path = os.path.join(sim_path, 'fiber.obj')
-                        potentials_path = os.path.join(sim_path, 'data', 'inputs',
-                                                       'inner{}_fiber{}.dat'.format(inner_ind, fiber_ind))
-                        waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
-                        if not summary_gen: make_task(OS, 'local', start_path, sim_path, fiber_path, inner_ind,
-                                                      fiber_ind,
-                                                      potentials_path, waveform_path)
-
+    return submit_list
 
 def confirm_submission(n_fibers, rundata, submission_context):
     """Confirm that the user wants to submit the simulations.
@@ -657,16 +608,9 @@ def main():
     n_fibers = sum([len(x) for x in submission_list.values()])
     confirm_submission(n_fibers, rundata, submission_context)
     # make shell scripts for fiber submission
-    make_fiber_tasks(submission_list)
+    make_fiber_tasks(submission_list, submission_context)
     # submit fibers
     submit_fibers(submission_context, submission_list)
-
-    for sub_context, run_index in zip(submission_contexts, runs):
-        try:
-            submit_run(sub_context, run_index, args)
-        except Exception:
-            traceback.print_exc()
-            print('WARNING: Error during submission of run {}. See traceback for more information.\n Proceeding to next run...'.format(run_index))
 
 if __name__ == "__main__":  # Allows for the safe importing of the main module
     main()

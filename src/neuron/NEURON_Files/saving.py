@@ -38,8 +38,8 @@ class Saving(Configurable):
         elif self.locs == 'all':
             self.node_inds = [i for i in range(0, fiber.axonnodes)]
         self.node_inds.sort()
-        saving = fiber.search(Config.SIM, "saving")
-        if saving.get("end_ap_times") is not None:
+        end_ap_times = fiber.search(Config.SIM, "saving", "end_ap_times", optional=True)
+        if end_ap_times is not None:
             self.ap_end_times = True
             loc_min = fiber.search(Config.SIM, "saving", "end_ap_times", "loc_min")
             loc_max = fiber.search(Config.SIM, "saving", "end_ap_times", "loc_max")

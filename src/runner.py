@@ -13,6 +13,7 @@ import os
 import pickle
 import subprocess
 import sys
+import shutil
 import time
 import traceback
 import warnings
@@ -249,18 +250,22 @@ class Runner(Exceptionable, Configurable):
             if not os.path.exists(sim_obj_dir + '/plots'):
                 os.makedirs(sim_obj_dir + '/plots')
 
-                            simulation: Simulation = Simulation(sample, self.configs[Config.EXCEPTIONS.value])
-                            simulation \
-                                .add(SetupMode.OLD, Config.MODEL, model_config) \
-                                .add(SetupMode.OLD, Config.SIM, sim_config) \
-                                .add(SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]) \
-                                .add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]) \
-                                .resolve_factors() \
-                                .write_waveforms(sim_obj_dir) \
-                                .write_fibers(sim_obj_dir, sample_num, model_num) \
-                                .validate_srcs(sim_obj_dir) \
-                                .validate_sim_configs() \
-                                .save(sim_obj_file)
+                simulation: Simulation = Simulation(sample, self.configs[Config.EXCEPTIONS.value])
+                simulation.add(SetupMode.OLD, Config.MODEL, model_config).add(SetupMode.OLD, Config.SIM,
+                                                                              sim_config).add(
+                    SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]
+                ).add(
+                    SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
+                ).resolve_factors().write_waveforms(
+                    sim_obj_dir
+                ).write_fibers(
+                    sim_obj_dir
+                ).validate_srcs(
+                    sim_obj_dir
+                ).validate_sim_configs().save(
+                    sim_obj_file
+                )
+            return simulation, sim_obj_dir
 
     def validate_supersample(self, simulation, sample_num, model_num):
         """Validate supersampling parameters
@@ -321,24 +326,24 @@ class Runner(Exceptionable, Configurable):
         simulation: Simulation = self.load_obj(sim_obj_path)
         simulation.build_n_sims(sim_dir, sim_num)
 
-                            # delete folder containing fiberset .txt files
-                            delete = None
-                            if self.configs[Config.RUN.value].get('delete_fibersets') is not None:
-                                delete = self.configs[Config.RUN.value]['delete_fibersets']
-                                if delete:
-                                    shutil.rmtree(os.path.join(sim_obj_dir, 'fibersets'))
+        # delete folder containing fiberset .txt files
+        delete = None
+        if self.configs[Config.RUN.value].get('delete_fibersets') is not None:
+            delete = self.configs[Config.RUN.value]['delete_fibersets']
+            if delete:
+                shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
 
-                            #get export behavior
-                            export_behavior = None
-                            if self.configs[Config.CLI_ARGS.value].get('export_behavior') is not None:
-                                export_behavior = self.configs[Config.CLI_ARGS.value]['export_behavior']
-                            elif self.configs[Config.RUN.value].get('export_behavior') is not None:
-                                export_behavior = self.configs[Config.RUN.value]['export_behavior']
-                            else:
-                                export_behavior = 'selective'
-                            #check to make sure we have a valid behavior
-                            if not np.any([export_behavior == x.value for x in ExportMode]):
-                                self.throw(139)
+        #get export behavior
+        export_behavior = None
+        if self.configs[Config.CLI_ARGS.value].get('export_behavior') is not None:
+            export_behavior = self.configs[Config.CLI_ARGS.value]['export_behavior']
+        elif self.configs[Config.RUN.value].get('export_behavior') is not None:
+            export_behavior = self.configs[Config.RUN.value]['export_behavior']
+        else:
+            export_behavior = 'selective'
+        #check to make sure we have a valid behavior
+        if not np.any([export_behavior == x.value for x in ExportMode]):
+            self.throw(139)
 
         # export simulations
         Simulation.export_n_sims(
