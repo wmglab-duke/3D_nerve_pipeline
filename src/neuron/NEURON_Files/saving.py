@@ -23,11 +23,18 @@ class Saving(Configurable):
         self.output_path = None
         return
 
-    def inherit(self, sim_path, dt, fiber):
+    def inherit(self, sim_path: str, dt: float, fiber: object):
+        """
+        Assign values to all Saving instance attributes
+        :param sim_path: path to n_sim directory
+        :param dt: user-specified time step for simulation
+        :param fiber: instance of Fiber class
+        :return: Saving object
+        """
         self.space_vm = fiber.search(Config.SIM, "saving", "space", "vm")
         self.space_gating = fiber.search(Config.SIM, "saving", "space", "gating")
         sim_times = fiber.search(Config.SIM, "saving", "space", "times")
-        self.time_inds = [int(t/dt) for t in sim_times]
+        self.time_inds = [int(t/dt) for t in sim_times] # divide by dt to avoid indexing error
         self.time_inds.sort()
         self.time_vm = fiber.search(Config.SIM, "saving", "time", "vm")
         self.time_gating = fiber.search(Config.SIM, "saving", "time", "gating")
@@ -61,19 +68,35 @@ class Saving(Configurable):
 
     def saveRuntime(self, fiber, runtime, amp_ind=0):
         if self.runtime:
+            # save runtime to submit/n_sims/#/data/outputs/runtime_inner#_fiber#_amp#.dat
             runtimes_path = os.path.join(self.output_path, 'runtime_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
             file = open(runtimes_path, 'w')
             file.write('{:.3f}s'.format(runtime))
             file.close()
 
     def saveActivation(self, fiber, amp_ind):
+        # save number of action potentials to submit/n_sims/#/data/outputs/activation_inner#_fiber#_amp#.dat
         output_file_path = os.path.join(self.output_path, 'activation_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind,fiber.fiber_ind, amp_ind))
         file = open(output_file_path, 'w')
         file.write('{:.3f}'.format(fiber.n_aps))
         file.close()
 
-    def saveVariables(self, fiber, recording, dt, amp_ind=0):
+    def saveVariables(self, fiber: object, recording: object, dt: float, amp_ind: int=0):
+        """
+        Write user-specified variables to file
+        :param fiber: instance of Fiber class
+        :param recording: instance of Recording class
+        :param dt: user-specified time step for simulation
+        :param amp_ind: index of amplitude if protocol is FINITE_AMPLITUDES
+        """
         def create_header(save_type: str, var_type: str, units: str = None):
+            """
+            Create a header for text file
+            :param save_type: function of variable to be saved, can be function of time ('time') or space ('space')
+            :param var_type: type of variable to be saved (Vm, h, mp, m, s)
+            :param units: units of variable (mV, nA)
+            :return: list of column headers
+            """
             header = []
             if save_type == 'space':  # F(x) - function of space
                 header.append('Node#')
@@ -94,13 +117,14 @@ class Saving(Configurable):
                     header.append(f'Istim({units})')
             return header
 
+        # Put all recorded data into pandas DataFrame
         vm_data = pd.DataFrame(recording.vm)
         all_gating_data = [pd.DataFrame(gating_vector) for gating_vector in recording.gating]
         istim_data = pd.DataFrame(recording.istim)
 
         if self.space_vm:
             vm_space_path = os.path.join(self.output_path, 'Vm_space_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
-            vm_space_data = vm_data[self.time_inds]
+            vm_space_data = vm_data[self.time_inds] # save data only at user-specified times
             vm_space_data.insert(0, 'Node#', recording.space)
             vm_space_header = create_header('space', 'vm', 'mV')
             vm_space_data.to_csv(vm_space_path, header=vm_space_header, sep='\t', float_format='%.6f', index=False)
@@ -109,14 +133,14 @@ class Saving(Configurable):
             gating_params = ['h', 'm', 'mp', 's']
             for gating_param, gating_data in zip(gating_params, all_gating_data):
                 gating_space_path = os.path.join(self.output_path, 'gating_{}_space_inner{}_fiber{}_amp{}.dat'.format(gating_param, fiber.inner_ind, fiber.fiber_ind, amp_ind))
-                gating_space_data = gating_data[self.time_inds]
+                gating_space_data = gating_data[self.time_inds] # save data only at user-specified times
                 gating_space_data.insert(0, 'Node#', recording.space)
                 gating_space_header = create_header('space', gating_param)
                 gating_space_data.to_csv(gating_space_path, header=gating_space_header, sep='\t', float_format='%.6f', index=False)
 
         if self.time_vm:
             vm_time_path = os.path.join(self.output_path, 'Vm_time_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
-            vm_time_data = vm_data.T[self.node_inds]
+            vm_time_data = vm_data.T[self.node_inds] # save data only at user-specified locations
             vm_time_data.insert(0, 'Time', recording.time)
             vm_time_header = create_header('time', 'vm', 'mV')
             vm_time_data.to_csv(vm_time_path, header=vm_time_header, sep='\t', float_format='%.6f', index=False)
@@ -127,7 +151,7 @@ class Saving(Configurable):
                 gating_time_path = os.path.join(self.output_path,
                                                  'gating_{}_time_inner{}_fiber{}_amp{}.dat'.format(gating_param, fiber.inner_ind,
                                                                                               fiber.fiber_ind, amp_ind))
-                gating_time_data = gating_data.T[self.node_inds]
+                gating_time_data = gating_data.T[self.node_inds] # save data only at user-specified locations
                 gating_time_data.insert(0, 'Time', recording.time)
                 gating_time_header = create_header('time', gating_param)
                 gating_time_data.to_csv(gating_time_path, header=gating_time_header, sep='\t', float_format='%.6f', index=False)

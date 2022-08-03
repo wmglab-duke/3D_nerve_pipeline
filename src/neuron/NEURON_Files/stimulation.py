@@ -16,10 +16,11 @@ class Stimulation(Configurable):
         self.istim = None
         return
 
-    def load_potentials(self, potentials_path):
+    def load_potentials(self, potentials_path: str):
         """
-        :param potentials_path: file name containing Extracellular Stim potentials data
         Creates Ve(x) -- vector of potentials from FEM
+        :param potentials_path: file name containing Extracellular Stim potentials data
+        :return: Stimulation object
         """
         potentials_file = open(potentials_path, 'r')
         axontotal = int(potentials_file.readline())
@@ -31,11 +32,12 @@ class Stimulation(Configurable):
             raise Exception("Need axontotal from potentials file to match axontotal used in Python")
         return self
 
-    def load_waveform(self, waveform_path):
+    def load_waveform(self, waveform_path: str):
         """
-        :param waveform_path: file name containing Extracellular Stim waveform data
         Creates I(t) -- vector of amplitudes at each time step of the FEM
         Also reads in time step and time stop
+        :param waveform_path: file name containing Extracellular Stim waveform data
+        :return: Stimulation object
         """
         waveform_file = open(waveform_path, 'r')
         self.dt = float(waveform_file.readline().strip())           # time step
@@ -45,10 +47,15 @@ class Stimulation(Configurable):
         waveform_file.close()
         return self
 
-    def apply_intracellular(self, fiber):
-        if fiber.myelination:
+    def apply_intracellular(self, fiber: object):
+        """
+        Create instance of trainIClamp for intracellular stimulation
+        :param fiber: instance of Fiber class
+        :return: instance of Stimulation class
+        """
+        if fiber.myelination: # attach at node of Ranvier
             fiber_sections = fiber.node
-        else:
+        else: # unmyelinated fiber, attach at axon segment
             fiber_sections = fiber.sec
         IntraStim_PulseTrain_ind = fiber.search(Config.SIM, 'intracellular_stim', 'ind')
         intracellular_stim = h.trainIClamp(fiber_sections[IntraStim_PulseTrain_ind](0.5))
@@ -60,7 +67,11 @@ class Stimulation(Configurable):
         self.istim = intracellular_stim
         return self
 
-    def initialize_extracellular(self, fiber):
+    def initialize_extracellular(self, fiber: object):
+        """
+        Set extracellular stimulation values to zero along entire fiber
+        :param fiber:
+        """
         if fiber.myelination:
             for sec in fiber.node:
                 sec(0.5).e_extracellular = 0
@@ -75,9 +86,15 @@ class Stimulation(Configurable):
                 sec(0.5).e_extracellular = 0
         return 
 
-    def update_extracellular(self, fiber, e_stims):
+    def update_extracellular(self, fiber: object, e_stims: str):
+        """
+        Update the applied extracellular stimulation all along the fiber length
+        :param fiber: instance of Fiber class
+        :param e_stims: list of extracellular stimulations to apply along fiber length
+        """
         if fiber.myelination:
             node_stim, FLUT_stim, MYSA_stim, STIN_stim = [], [], [], []
+            # Use modulo function to determine order for stimulation based on myelinated fiber segments
             for ind in range(1, len(e_stims) + 1):
                 if ind % 11 == 1:
                     node_stim.append(e_stims[ind - 1])
@@ -88,6 +105,7 @@ class Stimulation(Configurable):
                 else:
                     STIN_stim.append(e_stims[ind - 1])
 
+            # Update all node, MYSA, FLUT, STIN segments
             for x, sec in enumerate(fiber.node):
                 sec(0.5).e_extracellular = node_stim[x]
             for x, sec in enumerate(fiber.MYSA):
@@ -96,6 +114,6 @@ class Stimulation(Configurable):
                 sec(0.5).e_extracellular = FLUT_stim[x]
             for x, sec in enumerate(fiber.STIN):
                 sec(0.5).e_extracellular = STIN_stim[x]
-        else:
+        else: # unmyelinated fiber; apply stimulations sequentially
             for x, sec in enumerate(fiber.sec):
                 sec(0.5).e_extracellular = e_stims[x]
