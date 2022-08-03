@@ -75,9 +75,10 @@ class Fiber(Configurable, Saveable):
             channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
 
         elif self.fiber_mode == 'MRG_DISCRETE':
-            diameters, my_delta_zs, paranodal_length_2s = (
+            diameters, my_delta_zs, paranodal_length_2s, gs, axonDs, nodeDs, paraD1s, paraD2s, nls = (
                 self.search(Config.FIBER_Z, MyelinationMode.parameters.value, self.fiber_mode, key)
-                for key in ('diameters', 'delta_zs', 'paranodal_length_2s')
+                for key in ('diameters', 'delta_zs', 'paranodal_length_2s', "gs", "axonDs",
+                            "nodeDs", "paraD1s", "paraD2s", "nls")
             )
             diameter_index = diameters.index(self.diameter)
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
@@ -85,31 +86,14 @@ class Fiber(Configurable, Saveable):
             self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')[diameter_index]
             paranodal_length_2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
                                              'paranodal_length_2s')[diameter_index]
+            g = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'gs')[diameter_index]
+            axonD = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'axonDs')[diameter_index]
+            nodeD = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'axonDs')[diameter_index]
+            paraD1 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD1s')[diameter_index]
+            paraD2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD2s')[diameter_index]
+            nl = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'nls')[diameter_index]
             self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes')
             fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
-
-            if self.diameter == 1:
-                g, axonD, nodeD, paraD1, paraD2, nl = None, 0.8, 0.7, 0.7, 0.8, 15
-            elif self.diameter == 2:
-                g, axonD, nodeD, paraD1, paraD2, nl = None, 1.6, 1.4, 1.4, 1.6, 30
-            elif self.diameter == 5.7:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.605, 3.4, 1.9, 1.9, 3.4, 80
-            elif self.diameter == 7.3:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.630, 4.6, 2.4, 2.4, 4.6, 100
-            elif self.diameter == 8.7:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.661, 5.8, 2.8, 2.8, 5.8, 110
-            elif self.diameter == 10:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.690, 6.9, 3.3, 3.3, 6.9, 120
-            elif self.diameter == 11.5:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.700, 8.1, 3.7, 3.7, 8.1, 130
-            elif self.diameter == 12.8:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.719, 9.2, 4.2, 4.2, 9.2, 135
-            elif self.diameter == 14:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.739, 10.4, 4.7, 4.7, 10.4, 140
-            elif self.diameter == 15:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.767, 11.5, 5.0, 5.0, 11.5, 145
-            elif self.diameter == 16:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.791, 12.7, 5.5, 5.5, 12.7, 150
 
         elif self.fiber_mode == 'MRG_INTERPOLATION':
             diameter = self.diameter
@@ -143,7 +127,7 @@ class Fiber(Configurable, Saveable):
             self.axonnodes = int(n_fiber_coords)
             length = self.delta_z*self.axonnodes
 
-        # Determine starting voltage of system
+        # Determine starting voltage of fiber type
         if fiber_type == 1:
             self.v_init = -88.3
         elif fiber_type == 2:
@@ -530,6 +514,19 @@ class Fiber(Configurable, Saveable):
 
         return self
 
+    def finite_amplitudes(self, stimulation, saving, recording, start_time, amps):
+        time_total = 0
+        for amp_ind, amp in enumerate(amps):
+            print(f'Running amp {amp_ind} of {len(amps)}: {amp} nA')
+            self.run(amp, stimulation, recording, saving)
+            time_individual = time.time() - start_time - time_total
+            saving.saveVariables(self, recording, stimulation.dt, amp_ind)
+            saving.saveActivation(self, amp_ind)
+            saving.saveRuntime(self, time_individual, amp_ind)
+
+            time_total += time_individual
+            recording.reset()
+
     def findThresh(self, stimulation, saving, recording, find_block_thresh=False):
         # self.run(-1, stimulation, recording, find_block_thresh, saving=saving)
         # return
@@ -656,22 +653,14 @@ class Fiber(Configurable, Saveable):
 
         if find_thresh:
             self.findThresh(stimulation, saving, recording, find_block_thresh)
-            saving.write2file(recording, self, stimulation.dt)
+            saving.saveVariables(self, recording, stimulation.dt)
             time_individual = time.time()-start_time
             saving.saveRuntime(self, time_individual)
 
         else:
-            time_total = 0
-            for amp_ind, amp in enumerate(amps):
-                print(f'Running amp {amp_ind} of {len(amps)}: {amp} nA')
-                self.run(amp, stimulation, recording, find_block_thresh, saving, finite_amplitudes=True)
-                saving.write2file(recording, self, stimulation.dt, amp_ind)
-                time_individual = time.time() - start_time - time_total
-                saving.saveRuntime(self, time_individual, amp_ind)
-                time_total += time_individual
-                recording.reset()
+            self.finite_amplitudes(stimulation, saving, recording, start_time, amps)
 
-    def run(self, stimamp, stimulation, recording, find_block_thresh=False, saving=None, finite_amplitudes=False):
+    def run(self, stimamp, stimulation, recording, find_block_thresh=False, saving=None):
         """
         Run a simulation for a single stimulation amplitude
         """
@@ -724,8 +713,7 @@ class Fiber(Configurable, Saveable):
         h.celsius = self.temperature                # Set simulation temperature
 
         # Set up APcount
-        if not finite_amplitudes:
-            recording.record_ap(self)
+        recording.record_ap(self)
 
         ############    Begin simulation     ############
         n_tsteps = len(stimulation.waveform)
@@ -744,9 +732,8 @@ class Fiber(Configurable, Saveable):
             if saving.time_gating or saving.space_gating:
                 recording.record_gating(self, fix_passive=True)
 
-        # Check for APs if ACTIVATION_THRESHOLD or BLOCK_THRESHOLD
-        if not finite_amplitudes:
-            self.n_aps = recording.ap_checker(self, find_block_thresh)
+        # Check if APs occurred
+        self.n_aps = recording.ap_checker(self, find_block_thresh)
 
         if saving is None:
             print(f'{int(self.n_aps)} AP(s) detected')

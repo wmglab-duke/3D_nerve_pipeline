@@ -23,6 +23,7 @@ import scipy.interpolate as sci
 
 from src.core import Sample
 from src.utils import Config, Configurable, Env, Exceptionable, ExportMode, FiberXYMode, Saveable, SetupMode, WriteMode
+from src.core.fiber import Fiber
 
 from .fiberset import FiberSet
 from .waveform import Waveform
@@ -321,18 +322,16 @@ class Simulation(Exceptionable, Configurable, Saveable):
         ) as handle:
             handle.write(json.dumps(sim_copy, indent=2))
 
-        n_tsteps = len(self.waveforms[waveform_ind].wave)
+        # save general fiber object as sim/#/n_sims/t/fiber.obj
+        nsim_fiber_path = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'fiber.obj')
+        fiber_obj = Fiber()
+        fiber_obj \
+            .add(SetupMode.OLD, Config.SIM, sim_copy) \
+            .add(SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')) \
+            .add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]) \
+            .inherit() \
+            .save(nsim_fiber_path)
 
-        # add config and write launch.hoc
-        n_sim_dir = os.path.join(sim_dir, str(sim_num), "n_sims", str(t))
-        hocwriter = HocWriter(
-            os.path.join(sim_dir, str(sim_num)),
-            n_sim_dir,
-            self.configs[Config.EXCEPTIONS.value],
-        )
-        hocwriter.add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]).add(
-            SetupMode.OLD, Config.SIM, sim_copy
-        ).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]).build_hoc(n_tsteps)
         return nsim_inputs_directory, fiberset_ind, active_src_vals
 
     def validate_ss_dz(self, supersampled_bases, sim_dir, sim_num, active_src_vals):

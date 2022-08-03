@@ -47,6 +47,7 @@ class Saving(Configurable):
             node_ind_max = int((fiber.axonnodes - 1)*loc_max)
             self.ap_end_inds = [node_ind_min, node_ind_max]
             self.ap_end_thresh = fiber.search(Config.SIM, "saving", "end_ap_times", "threshold")
+        self.ap_loctime = fiber.search(Config.SIM, "saving", "ap_loctimes", optional=True)
         self.runtime = fiber.search(Config.SIM, "saving", "runtimes")
         self.output_path = os.path.join(sim_path, 'data', 'outputs')
         return
@@ -65,8 +66,13 @@ class Saving(Configurable):
             file.write('{:.3f}s'.format(runtime))
             file.close()
 
+    def saveActivation(self, fiber, amp_ind):
+        output_file_path = os.path.join(self.output_path, 'activation_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind,fiber.fiber_ind, amp_ind))
+        file = open(output_file_path, 'w')
+        file.write('{:.3f}'.format(fiber.n_aps))
+        file.close()
 
-    def write2file(self, recording, fiber, dt, amp_ind=0):
+    def saveVariables(self, fiber, recording, dt, amp_ind=0):
         def create_header(save_type: str, var_type: str, units: str = None):
             header = []
             if save_type == 'space':  # F(x) - function of space
@@ -146,4 +152,11 @@ class Saving(Configurable):
                     file.write('{:.6f} \t  nan \n'.format(recording.ap_end_times[0][i]))
                 elif min_size <= i < max_size:
                     file.write('nan \t {:.6f} \n'.format(recording.ap_end_times[1][i]))
+            file.close()
+
+        if self.ap_loctime:
+            ap_loctime_path = os.path.join(self.output_path, 'ap_loctime_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
+            file = open(ap_loctime_path, 'w')
+            for loc_node_ind in range(0, fiber.axonnodes):
+                file.write(f'{recording.apc[loc_node_ind].time}\n')
             file.close()

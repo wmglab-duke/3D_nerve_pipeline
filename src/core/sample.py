@@ -313,7 +313,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         if len(img.shape) > 2 and img.shape[2] > 1:
             img = img[:, :, 0]
 
-        contour, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contour, _ = cv2.findContours(img, cv2.RETR_TREE, self.contour_mode.value)
         if len(contour) > 1:
             self.throw(124)
         if len(contour) < 1:
@@ -388,7 +388,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                 outer_mask = None
 
         # generate fascicle objects from masks
-        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.configs[Config.EXCEPTIONS.value])
+        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.configs[Config.EXCEPTIONS.value], self.contour_mode)
         return fascicles
 
     def get_epineurium_from_mask(self):
@@ -400,7 +400,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         if len(img_nerve.shape) > 2 and img_nerve.shape[2] > 1:
             img_nerve = img_nerve[:, :, 0]
 
-        contour, _ = cv2.findContours(np.flipud(img_nerve), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contour, _ = cv2.findContours(np.flipud(img_nerve), cv2.RETR_TREE, self.contour_mode.value)
         nerve = Nerve(
             Trace(
                 [point + [0] for point in contour[0][:, 0, :]],

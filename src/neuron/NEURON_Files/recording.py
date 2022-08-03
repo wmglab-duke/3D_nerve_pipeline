@@ -47,11 +47,19 @@ class Recording(Configurable):
         if fiber.myelination:
             for i, node in enumerate(fiber.node):
                 self.apc.append(h.APCount(node(0.5)))
-                self.apc[i].thresh = fiber.search(Config.SIM, "protocol", "threshold", "value")
+                thresh = fiber.search(Config.SIM, "protocol", "threshold", "value", optional=True)
+                if thresh is not None:
+                    self.apc[i].thresh = thresh
+                else:
+                    self.apc[i].thresh = -30
         else:
             for i, node in enumerate(fiber.sec):
                 self.apc.append(h.APCount(node(0.5)))
-                self.apc[i].thresh = fiber.search(Config.SIM, "protocol", "threshold", "value")
+                thresh = fiber.search(Config.SIM, "protocol", "threshold", "value", optional=True)
+                if thresh is not None:
+                    self.apc[i].thresh = thresh
+                else:
+                    self.apc[i].thresh = -30
 
     def record_ap_end_times(self, fiber, ap_end_inds, ap_end_thresh):
         self.ap_end_times = [h.Vector(), h.Vector()]
@@ -100,9 +108,10 @@ class Recording(Configurable):
                 gating_vectors.append(passive_node)
 
     def ap_checker(self, fiber, find_block_thresh=False):
-        ap_detect_location = fiber.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location')
+        ap_detect_location = fiber.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location', optional=True)
+        if ap_detect_location is None:
+            ap_detect_location = 0.9
         node_index = int((fiber.axonnodes - 1) * ap_detect_location)
-
         if find_block_thresh:
             IntraStim_PulseTrain_delay = fiber.search(Config.SIM, 'intracellular_stim', 'times',
                                                       'IntraStim_PulseTrain_delay')
