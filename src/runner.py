@@ -397,7 +397,7 @@ class Runner(Exceptionable, Configurable):
                 # Model Configs Provided, but not Sim Configs
                 print('\nTO JAVA\n')
                 run_config = os.path.join(
-                    os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', '{}.json'.format(self.run_number)
+                    os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', '{}.json'.format(self.number)
                 )
                 self.handoff(run_config)
                 print('\nNEURON Simulations NOT created since no Sim indices indicated in Config.SIM\n')
@@ -409,7 +409,10 @@ class Runner(Exceptionable, Configurable):
                 # only transition to java if necessary (there are potentials that do not exist)
                 if not all(self.potentials_exist) or not all(self.ss_bases_exist):
                     print('\nTO JAVA\n')
-                    self.handoff(self.number)
+                    run_config = os.path.join(
+                        os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', '{}.json'.format(self.number)
+                    )
+                    self.handoff(run_config)
                     print('\nTO PYTHON\n')
                 else:
                     print('\nSKIPPING JAVA - all required extracted potentials already exist\n')
@@ -510,7 +513,6 @@ class Runner(Exceptionable, Configurable):
         comsol_path = os.environ[Env.COMSOL_PATH.value]
         jdk_path = os.environ[Env.JDK_PATH.value]
         project_path = os.environ[Env.PROJECT_PATH.value]
-        run_path = os.path.join(project_path, 'config', 'user', 'runs', f'{run_number}.json')
 
         # Encode command line args as jason string, then encode to base64 for passing to java
         if run_type is None:
