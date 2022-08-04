@@ -232,7 +232,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
             ).init_post_config().generate().write(
                 WriteMode.DATA, os.path.join(directory, str(i))
             )
-            path = sim_directory + '/plots/waveforms/{}.png'.format(i)
+            path = sim_directory + f'/plots/waveforms/{i}.png'
             if not os.path.exists(sim_directory + '/plots/waveforms'):
                 os.makedirs(sim_directory + '/plots/waveforms')
 
@@ -260,7 +260,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
             # otherwise, use the default weights (generally you don't want to rely on this as cuffs have different
             # numbers of contacts
             active_srcs_list = self.search(Config.SIM, "active_srcs", "default")
-            print("\t\tWARNING: Attempting to use default value for active_srcs: {}".format(active_srcs_list))
+            print(f"\t\tWARNING: Attempting to use default value for active_srcs: {active_srcs_list}")
 
         #  loop over the contact weights, make sure the the values obey two rules:
         #      (1) current conservation
@@ -326,7 +326,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
             os.makedirs(nsim_inputs_directory)
 
         # copy corresponding waveform to sim/#/n_sims/t/data/inputs
-        source_waveform_path = os.path.join(sim_dir, str(sim_num), "waveforms", "{}.dat".format(waveform_ind))
+        source_waveform_path = os.path.join(sim_dir, str(sim_num), "waveforms", f"{waveform_ind}.dat")
         destination_waveform_path = os.path.join(
             sim_dir,
             str(sim_num),
@@ -359,7 +359,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         # save the paired down simulation config to its corresponding neuron simulation t folder
         with open(
-            os.path.join(sim_dir, str(sim_num), "n_sims", str(t), "{}.json".format(t)),
+            os.path.join(sim_dir, str(sim_num), "n_sims", str(t), f"{t}.json"),
             "w",
         ) as handle:
             handle.write(json.dumps(sim_copy, indent=2))
@@ -398,16 +398,25 @@ class Simulation(Exceptionable, Configurable, Saveable):
             if supersampled_bases.get('dz') != source_dz:
                 self.throw(79)
         elif 'dz' not in supersampled_bases:
-            warnings.warn('dz not provided in Sim, so will accept dz={} specified in source Sim'.format(source_dz))
+            warnings.warn(f'dz not provided in Sim, so will accept dz={source_dz} specified in source Sim')
 
     def build_n_sims(self, sim_dir, sim_num) -> 'Simulation':
-        def make_inner_fiber_diam_key(my_xy_mode, my_p, my_nsim_inputs_directory, my_potentials_directory, my_file):
+        """Set up the neuron simulation for the given simulation.
+
+        :param sim_dir:
+        :param sim_num:
+        :return:
+        """
+
+        def make_inner_fiber_diam_key(
+            my_xy_mode, my_fiberset_ind, my_nsim_inputs_directory, my_potentials_directory, my_file
+        ):
             inner_fiber_diam_key = []
             diams = np.loadtxt(os.path.join(my_potentials_directory, my_file))
             for fiber_ind in range(len(diams)):
                 diam = diams[fiber_ind]
 
-                inner, fiber = self.indices_fib_to_n(my_p, fiber_ind)
+                inner, fiber = self.indices_fib_to_n(my_fiberset_ind, fiber_ind)
 
                 inner_fiber_diam_key.append((inner, fiber, diam))
 
@@ -448,14 +457,15 @@ class Simulation(Exceptionable, Configurable, Saveable):
             for root, _, files in os.walk(fiberset_directory):
                 for file in files:
                     if re.match('[0-9]+\\.dat', file):
-                        q = int(file.split('.')[0])
 
-                        l: int
-                        k: int
+                        master_fiber_index = int(file.split('.')[0])
 
-                        l, k = self.indices_fib_to_n(fiberset_ind, q)
+                        inner_index: int
+                        fiber_index: int
 
-                        filename_dat = 'inner{}_fiber{}.dat'.format(l, k)
+                        inner_index, fiber_index = self.indices_fib_to_n(fiberset_ind, master_fiber_index)
+
+                        filename_dat = f'inner{inner_index}_fiber{fiber_index}.dat'
 
                         if do_supersample:
                             # SUPER SAMPLING - PROBED COMSOL AT SS_COORDS --> /SS_BASES
@@ -479,19 +489,19 @@ class Simulation(Exceptionable, Configurable, Saveable):
                             )
                         else:
                             # NOT SUPER SAMPLING - PROBED COMSOL AT /FIBERSETS --> /POTENTIALS
-                            is_member = np.in1d(l, inner_list)
+                            is_member = np.in1d(inner_index, inner_list)
                             if not is_member:
-                                inner_list.append(l)
+                                inner_list.append(inner_index)
                                 if len(fiber_list) < len(inner_list):
                                     fiber_list.append(0)
-                                fiber_list[inner_list.index(l)] += 1
+                                fiber_list[inner_list.index(inner_index)] += 1
                             shutil.copyfile(
                                 os.path.join(
                                     sim_dir,
                                     str(sim_num),
                                     'potentials',
                                     str(potentials_ind),
-                                    str(q) + '.dat',
+                                    str(fiber_index) + '.dat',
                                 ),
                                 os.path.join(nsim_inputs_directory, filename_dat),
                             )
@@ -704,10 +714,10 @@ class Simulation(Exceptionable, Configurable, Saveable):
         neuron_potentials_input = f(neuron_fiber_coords)
         return neuron_potentials_input
 
-    def indices_fib_to_n(self, p, q) -> Tuple[int, int]:
-        """
-        :param p: fiberset index
-        :param q: fiber index within fiberset
+    def indices_fib_to_n(self, fiberset_ind, fiber_ind) -> Tuple[int, int]:
+        """Get inner and fiber indices from fiber index and fiberset_index.
+        :param fiberset_ind: fiberset index
+        :param fiber_ind: fiber index within fiberset
         :return: (l, k) as in "inner<l>_fiber<k>.dat" for NEURON sim
         """
 
@@ -718,20 +728,27 @@ class Simulation(Exceptionable, Configurable, Saveable):
                         if fib == target:
                             return a, b, c
 
-        out_fib, out_in = self.fiberset_map_pairs[p]
-        i, j, k = search(out_fib, q)
+        out_fib, out_in = self.fiberset_map_pairs[fiberset_ind]
+        i, j, k = search(out_fib, fiber_ind)
         return out_in[i][j], k
 
-    def indices_n_to_fib(self, p, l, k) -> Tuple[int, int]:
+    def indices_n_to_fib(self, fiberset_index, inner_index, local_fiber_index) -> Tuple[int, int]:
+        """Get fiber index from inner and local fiber indices.
+        :param fiberset_index: fiberset index
+        :param inner_index: inner index
+        :param local_fiber_index: local fiber index
+        :return: fiber index within fiberset
+        """
+
         def search(arr, target) -> Tuple[int, int]:
             for a, outer in enumerate(arr):
                 for b, inner in enumerate(outer):
                     if inner == target:
                         return a, b
 
-        out_fib, out_in = self.fiberset_map_pairs[p]
-        i, j = search(out_in, l)
-        return out_fib[i][j][k]
+        out_fib, out_in = self.fiberset_map_pairs[fiberset_index]
+        i, j = search(out_in, inner_index)
+        return out_fib[i][j][local_fiber_index]
 
     @staticmethod
     def _build_file_structure(sim_obj_dir, t):
@@ -781,7 +798,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
     ):
 
         sim_dir = os.path.join(sim_obj_dir, str(sim), 'n_sims')
-        sim_export_base = os.path.join(target, 'n_sims', '{}_{}_{}_'.format(sample, model, sim))
+        sim_export_base = os.path.join(target, 'n_sims', f'{sample}_{model}_{sim}_')
 
         for product_index in [f for f in os.listdir(sim_dir) if os.path.isdir(os.path.join(sim_dir, f))]:
             target = sim_export_base + product_index
@@ -790,9 +807,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 if export_behavior == ExportMode.OVERWRITE.value:
                     shutil.rmtree(target)
                 elif export_behavior == ExportMode.ERROR.value:
-                    sys.exit('{} already exists, exiting...'.format(target))
+                    sys.exit(f'{target} already exists, exiting...')
                 elif export_behavior == ExportMode.SELECTIVE.value or export_behavior is None:
-                    print('\tSkipping n_sim export for {} because folder already exists.'.format(target))
+                    print(f'\tSkipping n_sim export for {target} because folder already exists.')
                     continue
                 else:
                     sys.exit('Invalid export_behavior')
@@ -877,7 +894,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 indir = os.path.join(nsim_dir, 'data', 'inputs')
                 for file in [f for f in os.listdir(indir) if f.startswith('inner') and f.endswith('.dat')]:
                     if not os.path.exists(os.path.join(outdir, 'thresh_' + file)):
-                        print('Missing threshold {}'.format(os.path.join(outdir, 'thresh_' + file)))
+                        print(f"Missing threshold {os.path.join(outdir, 'thresh_' + file)}")
                         allthresh = False
         return allthresh
 
@@ -892,9 +909,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 indir = os.path.join(nsim_dir, 'data', 'inputs')
                 for file in [f for f in os.listdir(indir) if f.startswith('inner') and f.endswith('.dat')]:
                     for amp in range(n_amps):
-                        target = os.path.join(outdir, 'activation_' + file.replace('.dat', '_amp{}.dat'.format(amp)))
+                        target = os.path.join(outdir, 'activation_' + file.replace('.dat', f'_amp{amp}.dat'))
                         if not os.path.exists(target):
-                            print('Missing finite amp {}'.format(target))
+                            print(f'Missing finite amp {target}')
                             allamp = False
         return allamp
 

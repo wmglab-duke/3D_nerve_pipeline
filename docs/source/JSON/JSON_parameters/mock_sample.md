@@ -119,7 +119,7 @@ Required.
 - `"fig_margin"`: The value (Double, \>1 otherwise an error is thrown)
   sets the x- and y-limits of the binary masks generated. The limits
   are set relative to the maximum nerve ellipse axis dimension (+/-
-  `fig_margin`\*max(`a`, `b`) in both x- and y-directions).
+  `fig_margin`*max(`a`, `b`) in both x- and y-directions).
   Required.
 
 - `"fig_dpi"`: The value (Integer) is the "dots per inch" resolution of
@@ -202,7 +202,7 @@ are populated. Required.
 
       - `"num_fascicle_placed"`: The value (Integer) is the
         number of successfully placed fascicles in the nerve
-        cross section. Automatically populated.
+        cross-section. Automatically populated.
 
         - If `"num_fascicle_attempt"` does not equal
           `"num_fascicle_placed"`, a warning is printed to the
@@ -263,7 +263,7 @@ are populated. Required.
 
       - `"num_fascicle_placed"`: The value (Integer) is the
         number of successfully placed fascicles in the nerve
-        cross section. Automatically populated.
+        cross-section. Automatically populated.
 
         - If `"num_fascicle_attempt"` does not equal
           `"num_fascicle_placed"`, a warning is printed to the
