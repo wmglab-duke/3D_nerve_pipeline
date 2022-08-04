@@ -195,6 +195,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 points = self.generate_wheel_points(buffer)
 
             elif xy_mode == FiberXYMode.EXPLICIT:
+                #TODO make this shift according to trace buffer
                 points = self.load_explicit_coords(sim_directory, buffer)
             self.plot_points_on_sample(points, sim_directory)
         else:
@@ -376,7 +377,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     self.throw(71)
                 else:
                     warnings.warn("assuming you want to adjust bad point because optionalness not implemented")
-
                     def distpoint(a, b, distance):
                         def slope(p1, p2):
                             return math.atan2((p2[1] - p1[1]), (p2[0] - p1[0]))
@@ -396,11 +396,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
                     tree = STRtree(innershapes)
                     correct_fascicle = tree.nearest(Point(fiber))
-                    movedist = Point(fiber).distance(correct_fascicle)
+                    movedist = Point(fiber).distance(correct_fascicle)+1 # TODO add some leeway instead of doing +1 micron
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
-                    assert Point(newpoint).within(unary_union([x.polygon() for x in innertraces]))
-                points[i] = fiber
+                    assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                points[i] = newpoint
         return points
 
     def plot_points_on_sample(self, points, sim_directory):
@@ -696,9 +696,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             diameter = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'diameter')
             diam_distribution: bool = type(diameter) is dict
 
-            diams, my_z_seed, myelinated = self.calculate_fiber_diams(
+            diams, myelinated = self.calculate_fiber_diams(
                 diam_distribution, diams, fiber_geometry_mode_name, fibers_xy, super_sample
             )
+
+            my_z_seed = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'seed')
 
             if myelinated and not super_sample:  # MYELINATED
                 fibers = generate_z_myelinated(diams)
@@ -721,8 +723,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 fiber_geometry_mode_name,
                 'myelinated',
             )
-
-            my_z_seed = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'seed')
 
             if diam_distribution:
                 sampling_mode = self.search(
@@ -824,7 +824,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     )
 
                 diams = fiber_diam_dist.rvs(len(fibers_xy))
-        return diams, my_z_seed, myelinated
+        return diams, myelinated
 
     def calculate_fiber_length_params(self, override_length):
         model_length = self.search(Config.MODEL, 'nerve_length') if (override_length is None) else override_length
