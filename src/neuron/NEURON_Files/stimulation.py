@@ -1,9 +1,9 @@
 from neuron import h
-
-from src.utils.enums import Config
 from src.utils.configurable import Configurable
+from src.utils.enums import Config
 
 h.load_file('stdrun.hoc')
+
 
 class Stimulation(Configurable):
     def __init__(self):
@@ -22,11 +22,10 @@ class Stimulation(Configurable):
         :param potentials_path: file name containing Extracellular Stim potentials data
         :return: Stimulation object
         """
-        potentials_file = open(potentials_path, 'r')
-        axontotal = int(potentials_file.readline())
-        file_lines = potentials_file.read().splitlines()
-        self.potentials = [float(i)*1000 for i in file_lines]  # Need to convert to V -> mV
-        potentials_file.close()
+        with open(potentials_path, 'r') as potentials_file:
+            axontotal = int(potentials_file.readline())
+            file_lines = potentials_file.read().splitlines()
+            self.potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
 
         if len(self.potentials) != axontotal:
             raise Exception("Need axontotal from potentials file to match axontotal used in Python")
@@ -39,12 +38,11 @@ class Stimulation(Configurable):
         :param waveform_path: file name containing Extracellular Stim waveform data
         :return: Stimulation object
         """
-        waveform_file = open(waveform_path, 'r')
-        self.dt = float(waveform_file.readline().strip())           # time step
-        self.tstop = int(waveform_file.readline().strip())          # stop time
-        file_lines = waveform_file.read().splitlines()
-        self.waveform = [float(i) for i in file_lines]
-        waveform_file.close()
+        with open(waveform_path, 'r') as waveform_file:
+            self.dt = float(waveform_file.readline().strip())  # time step
+            self.tstop = int(waveform_file.readline().strip())  # stop time
+            file_lines = waveform_file.read().splitlines()
+            self.waveform = [float(i) for i in file_lines]
         return self
 
     def apply_intracellular(self, fiber: object):
@@ -53,9 +51,9 @@ class Stimulation(Configurable):
         :param fiber: instance of Fiber class
         :return: instance of Stimulation class
         """
-        if fiber.myelination: # attach at node of Ranvier
+        if fiber.myelination:  # attach at node of Ranvier
             fiber_sections = fiber.node
-        else: # unmyelinated fiber, attach at axon segment
+        else:  # unmyelinated fiber, attach at axon segment
             fiber_sections = fiber.sec
         IntraStim_PulseTrain_ind = fiber.search(Config.SIM, 'intracellular_stim', 'ind')
         intracellular_stim = h.trainIClamp(fiber_sections[IntraStim_PulseTrain_ind](0.5))
@@ -84,7 +82,7 @@ class Stimulation(Configurable):
         else:
             for sec in fiber.sec:
                 sec(0.5).e_extracellular = 0
-        return 
+        return
 
     def update_extracellular(self, fiber: object, e_stims: str):
         """
@@ -114,6 +112,6 @@ class Stimulation(Configurable):
                 sec(0.5).e_extracellular = FLUT_stim[x]
             for x, sec in enumerate(fiber.STIN):
                 sec(0.5).e_extracellular = STIN_stim[x]
-        else: # unmyelinated fiber; apply stimulations sequentially
+        else:  # unmyelinated fiber; apply stimulations sequentially
             for x, sec in enumerate(fiber.sec):
                 sec(0.5).e_extracellular = e_stims[x]

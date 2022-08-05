@@ -1,17 +1,17 @@
 from neuron import h
-
-from src.utils.enums import Config
 from src.utils.configurable import Configurable
+from src.utils.enums import Config
 
 h.load_file('stdrun.hoc')
+
 
 class Recording(Configurable):
     def __init__(self, fiber):
         self.time = h.Vector().record(h._ref_t)
-        self.space = [i for i in range(0, fiber.axonnodes)]
+        self.space = list(range(0, fiber.axonnodes))
         self.vm = []
 
-        self.gating_inds = [i for i in range(0, fiber.axonnodes)]
+        self.gating_inds = list(range(0, fiber.axonnodes))
         if fiber.passive_end_nodes:
             del self.gating_inds[0]
             del self.gating_inds[-1]
@@ -86,13 +86,13 @@ class Recording(Configurable):
                 # if myelinated, create APCount at node of Ranvier
                 ap_count = h.APCount(fiber.node[ap_end_ind](0.5))
                 ap_count.thresh = ap_end_thresh
-                ap_count.record(ap_end_vector) # save AP times detected by APCount to vector
+                ap_count.record(ap_end_vector)  # save AP times detected by APCount to vector
                 self.ap_end_count.append(ap_count)
             else:
                 # if unmyelinated, create APCount at axon segment
                 ap_end_min = h.APCount(fiber.sec[ap_end_ind](0.5))
                 ap_end_min.thresh = ap_end_thresh
-                ap_end_min.record(ap_end_vector) # save AP times detected by APCount to vector
+                ap_end_min.record(ap_end_vector)  # save AP times detected by APCount to vector
                 self.ap_end_count.append(ap_count)
 
     def record_vm(self, fiber):
@@ -116,7 +116,7 @@ class Recording(Configurable):
         """
         self.istim = h.Vector().record(istim._ref_i)
 
-    def record_gating(self, fiber: object, fix_passive: bool=False):
+    def record_gating(self, fiber: object, fix_passive: bool = False):
         """
         Record gating parameters (h, m, mp, s) for myelinated fiber types
         :param fiber: instance of Fiber class
@@ -124,7 +124,7 @@ class Recording(Configurable):
         """
         if fix_passive is False:
             # Set up recording vectors for h, m, mp, and s gating parameters all along the axon
-            for j, node_ind in enumerate(self.gating_inds):
+            for node_ind in self.gating_inds:
                 h_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_h_inf_axnode_myel)
                 m_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_m_inf_axnode_myel)
                 mp_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_mp_inf_axnode_myel)
@@ -142,7 +142,7 @@ class Recording(Configurable):
                 gating_vectors.insert(0, passive_node)
                 gating_vectors.append(passive_node)
 
-    def ap_checker(self, fiber: object, find_block_thresh: bool=False) -> int:
+    def ap_checker(self, fiber: object, find_block_thresh: bool = False) -> int:
         """
         Check to see if an action potential occurred at the end of a run
         :param fiber: instance of Fiber class
@@ -156,12 +156,13 @@ class Recording(Configurable):
         node_index = int((fiber.axonnodes - 1) * ap_detect_location)
 
         if find_block_thresh:
-            IntraStim_PulseTrain_delay = fiber.search(Config.SIM, 'intracellular_stim', 'times',
-                                                      'IntraStim_PulseTrain_delay')
+            IntraStim_PulseTrain_delay = fiber.search(
+                Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay'
+            )
             if self.apc[node_index].time > IntraStim_PulseTrain_delay:
-                n_aps = 0   # False - block did not occur
+                n_aps = 0  # False - block did not occur
             else:
-                n_aps = 1   # True - block did occur
+                n_aps = 1  # True - block did occur
         else:
             n_aps = self.apc[node_index].n
         return n_aps

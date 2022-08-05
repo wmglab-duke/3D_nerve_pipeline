@@ -1,8 +1,10 @@
 import os
+
 import pandas as pd
 
-from src.utils.enums import Config
 from src.utils.configurable import Configurable
+from src.utils.enums import Config
+
 
 class Saving(Configurable):
     def __init__(self):
@@ -34,24 +36,24 @@ class Saving(Configurable):
         self.space_vm = fiber.search(Config.SIM, "saving", "space", "vm")
         self.space_gating = fiber.search(Config.SIM, "saving", "space", "gating")
         sim_times = fiber.search(Config.SIM, "saving", "space", "times")
-        self.time_inds = [int(t/dt) for t in sim_times] # divide by dt to avoid indexing error
+        self.time_inds = [int(t / dt) for t in sim_times]  # divide by dt to avoid indexing error
         self.time_inds.sort()
         self.time_vm = fiber.search(Config.SIM, "saving", "time", "vm")
         self.time_gating = fiber.search(Config.SIM, "saving", "time", "gating")
         self.istim = fiber.search(Config.SIM, "saving", "time", "istim")
         self.locs = fiber.search(Config.SIM, "saving", "time", "locs")
         if self.locs != 'all':
-            self.node_inds = [int((fiber.axonnodes-1)*loc) for loc in self.locs]
+            self.node_inds = [int((fiber.axonnodes - 1) * loc) for loc in self.locs]
         elif self.locs == 'all':
-            self.node_inds = [i for i in range(0, fiber.axonnodes)]
+            self.node_inds = list(range(0, fiber.axonnodes))
         self.node_inds.sort()
         end_ap_times = fiber.search(Config.SIM, "saving", "end_ap_times", optional=True)
         if end_ap_times is not None:
             self.ap_end_times = True
             loc_min = fiber.search(Config.SIM, "saving", "end_ap_times", "loc_min")
             loc_max = fiber.search(Config.SIM, "saving", "end_ap_times", "loc_max")
-            node_ind_min = int((fiber.axonnodes-1)*loc_min)
-            node_ind_max = int((fiber.axonnodes - 1)*loc_max)
+            node_ind_min = int((fiber.axonnodes - 1) * loc_min)
+            node_ind_max = int((fiber.axonnodes - 1) * loc_max)
             self.ap_end_inds = [node_ind_min, node_ind_max]
             self.ap_end_thresh = fiber.search(Config.SIM, "saving", "end_ap_times", "threshold")
         self.ap_loctime = fiber.search(Config.SIM, "saving", "ap_loctimes", optional=True)
@@ -61,27 +63,28 @@ class Saving(Configurable):
 
     def saveThresh(self, fiber, thresh):
         # save threshold to submit/n_sims/#/data/outputs/thresh_inner#_fiber#.dat
-        thresh_path = os.path.join(self.output_path, 'thresh_inner{}_fiber{}.dat'.format(fiber.inner_ind, fiber.fiber_ind))
-        thresh_file = open(thresh_path, 'w')
-        thresh_file.write("{:.6f} mA".format(thresh))
-        thresh_file.close()
+        thresh_path = os.path.join(self.output_path, f'thresh_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}.dat')
+        with open(thresh_path, 'w') as thresh_file:
+            thresh_file.write(f"{thresh:.6f} mA")
 
     def saveRuntime(self, fiber, runtime, amp_ind=0):
         if self.runtime:
             # save runtime to submit/n_sims/#/data/outputs/runtime_inner#_fiber#_amp#.dat
-            runtimes_path = os.path.join(self.output_path, 'runtime_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
-            file = open(runtimes_path, 'w')
-            file.write('{:.3f}s'.format(runtime))
-            file.close()
+            runtimes_path = os.path.join(
+                self.output_path, f'runtime_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
+            )
+            with open(runtimes_path, 'w') as runtime_file:
+                runtime_file.write(f'{runtime:.3f}s')
 
     def saveActivation(self, fiber, amp_ind):
         # save number of action potentials to submit/n_sims/#/data/outputs/activation_inner#_fiber#_amp#.dat
-        output_file_path = os.path.join(self.output_path, 'activation_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind,fiber.fiber_ind, amp_ind))
-        file = open(output_file_path, 'w')
-        file.write('{:.3f}'.format(fiber.n_aps))
-        file.close()
+        output_file_path = os.path.join(
+            self.output_path, f'activation_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
+        )
+        with open(output_file_path, 'w') as activation_file:
+            activation_file.write(f'{fiber.n_aps:.3f}')
 
-    def saveVariables(self, fiber: object, recording: object, dt: float, amp_ind: int=0):
+    def saveVariables(self, fiber: object, recording: object, dt: float, amp_ind: int = 0):
         """
         Write user-specified variables to file
         :param fiber: instance of Fiber class
@@ -89,6 +92,7 @@ class Saving(Configurable):
         :param dt: user-specified time step for simulation
         :param amp_ind: index of amplitude if protocol is FINITE_AMPLITUDES
         """
+
         def create_header(save_type: str, var_type: str, units: str = None):
             """
             Create a header for text file
@@ -123,8 +127,10 @@ class Saving(Configurable):
         istim_data = pd.DataFrame(recording.istim)
 
         if self.space_vm:
-            vm_space_path = os.path.join(self.output_path, 'Vm_space_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
-            vm_space_data = vm_data[self.time_inds] # save data only at user-specified times
+            vm_space_path = os.path.join(
+                self.output_path, f'Vm_space_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
+            )
+            vm_space_data = vm_data[self.time_inds]  # save data only at user-specified times
             vm_space_data.insert(0, 'Node#', recording.space)
             vm_space_header = create_header('space', 'vm', 'mV')
             vm_space_data.to_csv(vm_space_path, header=vm_space_header, sep='\t', float_format='%.6f', index=False)
@@ -132,15 +138,22 @@ class Saving(Configurable):
         if self.space_gating:
             gating_params = ['h', 'm', 'mp', 's']
             for gating_param, gating_data in zip(gating_params, all_gating_data):
-                gating_space_path = os.path.join(self.output_path, 'gating_{}_space_inner{}_fiber{}_amp{}.dat'.format(gating_param, fiber.inner_ind, fiber.fiber_ind, amp_ind))
-                gating_space_data = gating_data[self.time_inds] # save data only at user-specified times
+                gating_space_path = os.path.join(
+                    self.output_path,
+                    f'gating_{gating_param}_space_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat',
+                )
+                gating_space_data = gating_data[self.time_inds]  # save data only at user-specified times
                 gating_space_data.insert(0, 'Node#', recording.space)
                 gating_space_header = create_header('space', gating_param)
-                gating_space_data.to_csv(gating_space_path, header=gating_space_header, sep='\t', float_format='%.6f', index=False)
+                gating_space_data.to_csv(
+                    gating_space_path, header=gating_space_header, sep='\t', float_format='%.6f', index=False
+                )
 
         if self.time_vm:
-            vm_time_path = os.path.join(self.output_path, 'Vm_time_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
-            vm_time_data = vm_data.T[self.node_inds] # save data only at user-specified locations
+            vm_time_path = os.path.join(
+                self.output_path, f'Vm_time_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
+            )
+            vm_time_data = vm_data.T[self.node_inds]  # save data only at user-specified locations
             vm_time_data.insert(0, 'Time', recording.time)
             vm_time_header = create_header('time', 'vm', 'mV')
             vm_time_data.to_csv(vm_time_path, header=vm_time_header, sep='\t', float_format='%.6f', index=False)
@@ -148,39 +161,48 @@ class Saving(Configurable):
         if self.time_gating:
             gating_params = ['h', 'm', 'mp', 's']
             for gating_param, gating_data in zip(gating_params, all_gating_data):
-                gating_time_path = os.path.join(self.output_path,
-                                                 'gating_{}_time_inner{}_fiber{}_amp{}.dat'.format(gating_param, fiber.inner_ind,
-                                                                                              fiber.fiber_ind, amp_ind))
-                gating_time_data = gating_data.T[self.node_inds] # save data only at user-specified locations
+                gating_time_path = os.path.join(
+                    self.output_path,
+                    f'gating_{gating_param}_time_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat',
+                )
+                gating_time_data = gating_data.T[self.node_inds]  # save data only at user-specified locations
                 gating_time_data.insert(0, 'Time', recording.time)
                 gating_time_header = create_header('time', gating_param)
-                gating_time_data.to_csv(gating_time_path, header=gating_time_header, sep='\t', float_format='%.6f', index=False)
+                gating_time_data.to_csv(
+                    gating_time_path, header=gating_time_header, sep='\t', float_format='%.6f', index=False
+                )
 
         if self.istim:
-            istim_path = os.path.join(self.output_path, 'Istim_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
+            istim_path = os.path.join(
+                self.output_path, f'Istim_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
+            )
             istim_data.insert(0, 'Time', recording.time)
             istim_header = create_header('time', 'istim', 'nA')
             istim_data.to_csv(istim_path, header=istim_header, sep='\t', float_format='%.6f', index=False)
 
         if self.ap_end_times:
-            ap_end_times_path = os.path.join(self.output_path, 'Aptimes_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
-            file = open(ap_end_times_path, 'w')
-            file.write(f'Node{self.ap_end_inds[0] + 1} \t Node{self.ap_end_inds[1] + 1} \n')
+            ap_end_times_path = os.path.join(
+                self.output_path, f'Aptimes_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
+            )
+            with open(ap_end_times_path, 'w') as ap_end_file:
+                ap_end_file.write(f'Node{self.ap_end_inds[0] + 1} \t Node{self.ap_end_inds[1] + 1} \n')
 
-            min_size, max_size = recording.ap_end_times[0].size(), recording.ap_end_times[1].size()
-            n_rows = max(min_size, max_size)
-            for i in range(0, n_rows):
-                if i < min_size and i < max_size:
-                    file.write('{:.6f} \t {:.6f} \n'.format(recording.ap_end_times[0][i], recording.ap_end_times[1][i]))
-                elif min_size > i >= max_size:
-                    file.write('{:.6f} \t  nan \n'.format(recording.ap_end_times[0][i]))
-                elif min_size <= i < max_size:
-                    file.write('nan \t {:.6f} \n'.format(recording.ap_end_times[1][i]))
-            file.close()
+                min_size, max_size = recording.ap_end_times[0].size(), recording.ap_end_times[1].size()
+                n_rows = max(min_size, max_size)
+                for i in range(0, n_rows):
+                    if i < min_size and i < max_size:
+                        ap_end_file.write(
+                            f'{recording.ap_end_times[0][i]:.6f} \t {recording.ap_end_times[1][i]:.6f} \n'
+                        )
+                    elif min_size > i >= max_size:
+                        ap_end_file.write(f'{recording.ap_end_times[0][i]:.6f} \t  nan \n')
+                    elif min_size <= i < max_size:
+                        ap_end_file.write(f'nan \t {recording.ap_end_times[1][i]:.6f} \n')
 
         if self.ap_loctime:
-            ap_loctime_path = os.path.join(self.output_path, 'ap_loctime_inner{}_fiber{}_amp{}.dat'.format(fiber.inner_ind, fiber.fiber_ind, amp_ind))
-            file = open(ap_loctime_path, 'w')
-            for loc_node_ind in range(0, fiber.axonnodes):
-                file.write(f'{recording.apc[loc_node_ind].time}\n')
-            file.close()
+            ap_loctime_path = os.path.join(
+                self.output_path, f'ap_loctime_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
+            )
+            with open(ap_loctime_path, 'w') as ap_loctime_file:
+                for loc_node_ind in range(0, fiber.axonnodes):
+                    ap_loctime_file.write(f'{recording.apc[loc_node_ind].time}\n')

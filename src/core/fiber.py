@@ -1,17 +1,25 @@
-from neuron import h
-from src.utils.enums import (Config, MyelinationMode, NeuronRunMode, TerminationCriteriaMode, SearchAmplitudeIncrementMode)
-from src.utils.configurable import Configurable
-from src.utils.saveable import Saveable
-
 import math
-import numpy as np
 import time
+
+import numpy as np
+
+from neuron import h
+from src.utils.configurable import Configurable
+from src.utils.enums import (
+    Config,
+    MyelinationMode,
+    NeuronRunMode,
+    SearchAmplitudeIncrementMode,
+    TerminationCriteriaMode,
+)
+from src.utils.saveable import Saveable
 
 Section = h.Section
 SectionList = h.SectionList
 ion_style = h.ion_style
 
 h.load_file('stdrun.hoc')
+
 
 class Fiber(Configurable, Saveable):
     def __init__(self):
@@ -66,7 +74,9 @@ class Fiber(Configurable, Saveable):
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
             node_channels = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_channels')
             self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')
-            self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes')
+            self.passive_end_nodes = self.search(
+                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes'
+            )
             channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
 
         elif self.fiber_mode == 'MRG_DISCRETE':
@@ -77,10 +87,15 @@ class Fiber(Configurable, Saveable):
             diameter_index = diameters.index(self.diameter)
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
             node_channels = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_channels')
-            self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')[diameter_index]
-            paranodal_length_2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                             'paranodal_length_2s')[diameter_index]
-            self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes')
+            self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')[
+                diameter_index
+            ]
+            paranodal_length_2 = self.search(
+                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paranodal_length_2s'
+            )[diameter_index]
+            self.passive_end_nodes = self.search(
+                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes'
+            )
             fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
 
             if self.diameter == 1:
@@ -111,24 +126,38 @@ class Fiber(Configurable, Saveable):
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
             node_channels = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_channels')
             node_length = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_length')
-            paranodal_length_1 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                             'paranodal_length_1')
+            paranodal_length_1 = self.search(
+                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paranodal_length_1'
+            )
             fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
-            self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,'passive_end_nodes')
+            self.passive_end_nodes = self.search(
+                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes'
+            )
 
             if self.diameter >= 5.643:
-                self.delta_z = eval(self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                           'delta_z', 'diameter_greater_or_equal_5.643um'))
+                self.delta_z = eval(
+                    self.search(
+                        Config.FIBER_Z,
+                        'fiber_type_parameters',
+                        self.fiber_mode,
+                        'delta_z',
+                        'diameter_greater_or_equal_5.643um',
+                    )
+                )
             else:
-                self.delta_z = eval(self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                           'delta_z', 'diameter_less_5.643um'))
+                self.delta_z = eval(
+                    self.search(
+                        Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_z', 'diameter_less_5.643um'
+                    )
+                )
             delta_z = self.delta_z
-            paranodal_length_2 = eval(self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                             'paranodal_length_2'))
-            nl = -0.4749 * self.diameter ** 2 + 16.85 * self.diameter - 0.7648
-            nodeD = 0.01093 * self.diameter ** 2 + 0.1008 * self.diameter + 1.099
+            paranodal_length_2 = eval(
+                self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paranodal_length_2')
+            )
+            nl = -0.4749 * self.diameter**2 + 16.85 * self.diameter - 0.7648
+            nodeD = 0.01093 * self.diameter**2 + 0.1008 * self.diameter + 1.099
             paraD1 = nodeD
-            paraD2 = 0.02361 * self.diameter ** 2 + 0.3673 * self.diameter + 0.7122
+            paraD2 = 0.02361 * self.diameter**2 + 0.3673 * self.diameter + 0.7122
             axonD = paraD2
 
         # Determine number of axonnodes
@@ -136,7 +165,7 @@ class Fiber(Configurable, Saveable):
             self.axonnodes = int(1 + (n_fiber_coords - 1) / 11)
         elif neuron_flag == 3:
             self.axonnodes = int(n_fiber_coords)
-            length = self.delta_z*self.axonnodes
+            length = self.delta_z * self.axonnodes
 
         # Determine starting voltage of system
         if fiber_type == 1:
@@ -145,22 +174,57 @@ class Fiber(Configurable, Saveable):
             self.v_init = -80
         elif fiber_type == 3:
             channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
-            v_init_c_fibers = [-60, -55, -82, -48] # v_rests for Sundt, Tigerholm, Rattay/Aberham, and Schild C-Fiber models, respectively
+            v_init_c_fibers = [
+                -60,
+                -55,
+                -82,
+                -48,
+            ]  # v_rests for Sundt, Tigerholm, Rattay/Aberham, and Schild C-Fiber models, respectively
             self.v_init = v_init_c_fibers[channels_type - 1]
 
         # Create fiber sections
         if self.myelination:
-            self.createMyelinatedFiber(node_channels, self.axonnodes, self.diameter, self.temperature, axonD,
-                                       nodeD, paraD1, paraD2, self.delta_z, paranodal_length_2,
-                                       nl, self.passive_end_nodes)
+            self.createMyelinatedFiber(
+                node_channels,
+                self.axonnodes,
+                self.diameter,
+                self.temperature,
+                axonD,
+                nodeD,
+                paraD1,
+                paraD2,
+                self.delta_z,
+                paranodal_length_2,
+                nl,
+                self.passive_end_nodes,
+            )
         elif not self.myelination:
-            self.createUnmyelinatedFiber(self.diameter, length, c_fiber_model_type=channels_type, celsius=self.temperature,
-                                         delta_z=self.delta_z, passive_end_nodes=self.passive_end_nodes)
+            self.createUnmyelinatedFiber(
+                self.diameter,
+                length,
+                c_fiber_model_type=channels_type,
+                celsius=self.temperature,
+                delta_z=self.delta_z,
+                passive_end_nodes=self.passive_end_nodes,
+            )
 
         return self
 
-    def createMyelinatedFiber(self, node_channels, axonnodes, fiberD, celsius, axonD, nodeD, paraD1, paraD2, deltaz,
-                              paralength2, nl, passive_end_nodes):
+    def createMyelinatedFiber(
+        self,
+        node_channels,
+        axonnodes,
+        fiberD,
+        celsius,
+        axonD,
+        nodeD,
+        paraD1,
+        paraD2,
+        deltaz,
+        paralength2,
+        nl,
+        passive_end_nodes,
+    ):
         """
         Create and connect NEURON sections for a myelinated fiber type
         :return: Fiber object
@@ -232,8 +296,9 @@ class Fiber(Configurable, Saveable):
 
             return STIN
 
-        def create_node(index, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive, axonnodes, node_channels, nl,
-                        Rpn0, celsius):
+        def create_node(
+            index, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive, axonnodes, node_channels, nl, Rpn0, celsius
+        ):
             """
             Create a node of Ranvier for MRG_DISCRETE fiber type
             :return: nrn.Section
@@ -291,17 +356,20 @@ class Fiber(Configurable, Saveable):
                     node.ki = 145.0  # [mM] Internal K Concentration
                     kstyle = ion_style("k_ion", 1, 2, 0, 0, 0)  # Allows ek to be calculated manually
                     node.ek = ((R * (celsius + 273.15)) / F) * np.log10(
-                        node.ko / node.ki)  # Manual Calculation of ek in order to use Schild F and R values
+                        node.ko / node.ki
+                    )  # Manual Calculation of ek in order to use Schild F and R values
 
                     node.nao = 154  # [mM] External Na Concentration
                     node.nai = 8.9  # [mM] Internal Na Concentration
                     nastyle = ion_style("na_ion", 1, 2, 0, 0, 0)  # Allows ena to be calculated manually
                     node.ena = ((R * (celsius + 273.15)) / F) * np.log10(
-                        node.nao / node.nai)  # Manual Calculation of ena in order to use Schild F and R values
+                        node.nao / node.nai
+                    )  # Manual Calculation of ena in order to use Schild F and R values
 
-                    node.gbar_naf = 3  # 0.072503919  # NOTE: Does not conduct with original Schild 1994 value of 0.072503919; does not conduct at 0.5, but does at 1; increased to MRG value of 3
+                    node.gbar_naf = 3  # NOTE: Does not conduct with original Schild 1994 value of 0.072503919;
+                    # does not conduct at 0.5, but does at 1; increased to MRG value of 3
                     node.shiftnaf_naf = 0  # [mV]
-                    node.gbar_nas = 3.53678E-07
+                    node.gbar_nas = 3.53678e-07
                     node.shiftnas_nas = 0
                     node.gbar_kd = 0.000194523
                     node.shiftkd_kd = 0
@@ -310,11 +378,11 @@ class Fiber(Configurable, Saveable):
                     node.gbar_kds = 0.000353678
                     node.shiftkds_kds = 0
                     node.gbar_kca = 0.00022989
-                    node.gbar_can = 3.53678E-05
+                    node.gbar_can = 3.53678e-05
                     node.shiftcan_can = 0
-                    node.gbar_cat = 1.23787E-05
+                    node.gbar_cat = 1.23787e-05
                     node.shiftcan_cat = 0
-                    node.gbna_leak = 1.14945E-05
+                    node.gbna_leak = 1.14945e-05
 
                 node.insert('extracellular')
                 node.xraxial[0] = Rpn0
@@ -324,10 +392,10 @@ class Fiber(Configurable, Saveable):
             return node
 
         # Electrical parameters
-        rhoa = 0.7e6        # [ohm-um]
-        mycm = 0.1          # lamella membrane; [uF/cm2]
-        mygm = 0.001        # lamella membrane; [S/cm2]
-        rhoe = 1000         # resistivity of extracellular medium; [ohm-cm]
+        rhoa = 0.7e6  # [ohm-um]
+        mycm = 0.1  # lamella membrane; [uF/cm2]
+        mygm = 0.001  # lamella membrane; [S/cm2]
+        rhoe = 1000  # resistivity of extracellular medium; [ohm-cm]
 
         if node_channels == 0:
             e_pas_Vrest = -80
@@ -335,26 +403,39 @@ class Fiber(Configurable, Saveable):
             e_pas_Vrest = -57
 
         # Geometrical parameters [um]
-        paranodes1 = 2*(axonnodes-1)    # Number of MYSA paranodes
-        paranodes2 = 2*(axonnodes-1)    # Number of FLUT paranodes
-        axoninter = 6*(axonnodes-1)     # Number of STIN internodes
+        paranodes1 = 2 * (axonnodes - 1)  # Number of MYSA paranodes
+        paranodes2 = 2 * (axonnodes - 1)  # Number of FLUT paranodes
+        axoninter = 6 * (axonnodes - 1)  # Number of STIN internodes
 
-        nodelength = 1.0                # Length of nodes of Ranvier [um]
-        paralength1 = 3                 # Length of MYSA [um]
-        space_p1 = 0.002                # Thickness of periaxonal space in MYSA sections [um]
-        space_p2 = 0.004                # Thickness of periaxonal space in FLUT sections [um]
-        space_i = 0.004                 # Thickness of periaxonal space in STIN sections [um]
+        nodelength = 1.0  # Length of nodes of Ranvier [um]
+        paralength1 = 3  # Length of MYSA [um]
+        space_p1 = 0.002  # Thickness of periaxonal space in MYSA sections [um]
+        space_p2 = 0.004  # Thickness of periaxonal space in FLUT sections [um]
+        space_i = 0.004  # Thickness of periaxonal space in STIN sections [um]
 
-        Rpn0 = (rhoa * .01) / (math.pi * ((((nodeD / 2) + space_p1)**2) - ((nodeD / 2)**2)))
-        Rpn1 = (rhoa * .01) / (math.pi * ((((paraD1 / 2) + space_p1)**2) - ((paraD1 / 2)**2)))
-        Rpn2 = (rhoa * .01) / (math.pi * ((((paraD2 / 2) + space_p2)**2) - ((paraD2 / 2)**2)))
-        Rpx = (rhoa * .01) / (math.pi * ((((axonD / 2) + space_i)**2) - ((axonD / 2)**2)))
+        Rpn0 = (rhoa * 0.01) / (math.pi * ((((nodeD / 2) + space_p1) ** 2) - ((nodeD / 2) ** 2)))
+        Rpn1 = (rhoa * 0.01) / (math.pi * ((((paraD1 / 2) + space_p1) ** 2) - ((paraD1 / 2) ** 2)))
+        Rpn2 = (rhoa * 0.01) / (math.pi * ((((paraD2 / 2) + space_p2) ** 2) - ((paraD2 / 2) ** 2)))
+        Rpx = (rhoa * 0.01) / (math.pi * ((((axonD / 2) + space_i) ** 2) - ((axonD / 2) ** 2)))
         interlength = (deltaz - nodelength - (2 * paralength1) - (2 * paralength2)) / 6
 
         # Create the axon sections
         for i in range(0, axonnodes):
-            new_node = create_node(i, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive_end_nodes, axonnodes,
-                                    node_channels, nl, Rpn0, celsius)
+            new_node = create_node(
+                i,
+                nodeD,
+                nodelength,
+                rhoa,
+                mycm,
+                mygm,
+                rhoe,
+                passive_end_nodes,
+                axonnodes,
+                node_channels,
+                nl,
+                Rpn0,
+                celsius,
+            )
             self.node.append(new_node)
         for i in range(0, paranodes1):
             new_MYSA = create_MYSA(i, fiberD, paralength1, rhoa, paraD1, e_pas_Vrest, Rpn1, mycm, mygm, nl)
@@ -367,26 +448,35 @@ class Fiber(Configurable, Saveable):
             self.STIN.append(new_STIN)
 
         # Connect the axon sections
-        for i in range(0, axonnodes-1):
-            self.MYSA[2*i].connect(self.node[i])
-            self.FLUT[2*i].connect(self.MYSA[2*i])
-            self.STIN[6*i].connect(self.FLUT[2*i])
-            self.STIN[6*i+1].connect(self.STIN[6*i])
-            self.STIN[6*i+2].connect(self.STIN[6*i+1])
-            self.STIN[6*i+3].connect(self.STIN[6*i+2])
-            self.STIN[6*i+4].connect(self.STIN[6*i+3])
-            self.STIN[6*i+5].connect(self.STIN[6*i+4])
-            self.FLUT[2*i+1].connect(self.STIN[6*i+5])
-            self.MYSA[2*i+1].connect(self.FLUT[2*i+1])
-            self.node[i+1].connect(self.MYSA[2*i+1])
+        for i in range(0, axonnodes - 1):
+            self.MYSA[2 * i].connect(self.node[i])
+            self.FLUT[2 * i].connect(self.MYSA[2 * i])
+            self.STIN[6 * i].connect(self.FLUT[2 * i])
+            self.STIN[6 * i + 1].connect(self.STIN[6 * i])
+            self.STIN[6 * i + 2].connect(self.STIN[6 * i + 1])
+            self.STIN[6 * i + 3].connect(self.STIN[6 * i + 2])
+            self.STIN[6 * i + 4].connect(self.STIN[6 * i + 3])
+            self.STIN[6 * i + 5].connect(self.STIN[6 * i + 4])
+            self.FLUT[2 * i + 1].connect(self.STIN[6 * i + 5])
+            self.MYSA[2 * i + 1].connect(self.FLUT[2 * i + 1])
+            self.node[i + 1].connect(self.MYSA[2 * i + 1])
         return self
 
-    def createUnmyelinatedFiber(self, fiberD=6, length=21, c_fiber_model_type=1, celsius=37, delta_z=50/6, insert97na=0,
-                     conductances97=0, passive_end_nodes=0):
+    def createUnmyelinatedFiber(
+        self,
+        fiberD=6,
+        length=21,
+        c_fiber_model_type=1,
+        celsius=37,
+        delta_z=50 / 6,
+        insert97na=0,
+        conductances97=0,
+        passive_end_nodes=0,
+    ):
         """
         Create and connect NEURON sections for an unmyelinated fiber
         """
-        nsegments = int(length/delta_z)
+        nsegments = int(length / delta_z)
 
         self.sec = []
         for i in range(0, nsegments):
@@ -397,17 +487,17 @@ class Fiber(Configurable, Saveable):
             node.nseg = 1
             node.L = delta_z
             if passive_end_nodes:
-                if i == 0 or i == nsegments-1:
+                if i == 0 or i == nsegments - 1:
                     node.insert('pas')
                     node.g_pas = 0.0001
                     if c_fiber_model_type == 1:
-                        node.e_pas = -60       # Sundt model equilibrium potential
+                        node.e_pas = -60  # Sundt model equilibrium potential
                     elif c_fiber_model_type == 2:
-                        node.e_pas = -55       # Tigerholm model equilibrium potential
+                        node.e_pas = -55  # Tigerholm model equilibrium potential
                     elif c_fiber_model_type == 3:
-                        node.e_pas = -70       # Rattay model equilibrium potential
+                        node.e_pas = -70  # Rattay model equilibrium potential
                     elif c_fiber_model_type == 4:
-                        node.e_pas = -48       # Schild model equilibrium potential
+                        node.e_pas = -48  # Schild model equilibrium potential
                     else:
                         node.e_pas = -70
 
@@ -418,22 +508,22 @@ class Fiber(Configurable, Saveable):
                 node.Ra = 1e10
 
             else:
-                if c_fiber_model_type == 1:     # Sundt model
+                if c_fiber_model_type == 1:  # Sundt model
                     node.insert('nahh')
                     node.gnabar_nahh = 0.04
-                    node.mshift_nahh = -6          # NaV1.7/1.8 channelshift
-                    node.hshift_nahh = 6           # NaV1.7/1.8 channelshift
+                    node.mshift_nahh = -6  # NaV1.7/1.8 channelshift
+                    node.hshift_nahh = 6  # NaV1.7/1.8 channelshift
 
-                    node.insert('borgkdr')         # insert delayed rectified K channels
-                    node.gkdrbar_borgkdr = 0.04    # density of K channels
-                    node.ek = -90                  # K equilibrium potential
+                    node.insert('borgkdr')  # insert delayed rectified K channels
+                    node.gkdrbar_borgkdr = 0.04  # density of K channels
+                    node.ek = -90  # K equilibrium potential
 
-                    node.insert('pas')             # insert leak channels
-                    node.g_pas = 1/10000           # set Rm = 10000 ohms-cm2
-                    node.Ra = 100                  # intracellular resistance
+                    node.insert('pas')  # insert leak channels
+                    node.g_pas = 1 / 10000  # set Rm = 10000 ohms-cm2
+                    node.Ra = 100  # intracellular resistance
                     node.v = -60
-                    node.e_pas = node.v + (node.ina + node.ik)/node.g_pas      # calculate leak equilibrium potential
-                elif c_fiber_model_type == 2:   # Tigerholm model
+                    node.e_pas = node.v + (node.ina + node.ik) / node.g_pas  # calculate leak equilibrium potential
+                elif c_fiber_model_type == 2:  # Tigerholm model
                     node.insert('ks')
                     node.gbar_ks = 0.0069733
                     node.insert('kf')
@@ -472,15 +562,15 @@ class Fiber(Configurable, Saveable):
                     node.v = -55
                 elif c_fiber_model_type == 3:  # Rattay and Aberham model -- adjusted for a resting potential of -70mV
                     node.insert('RattayAberham')
-                    node.Ra = 100      # required for propagation; less than 100 does not propagate
+                    node.Ra = 100  # required for propagation; less than 100 does not propagate
                     node.cm = 1
                     node.v = -70
                     node.ena = 45
                     node.ek = -82
-                elif c_fiber_model_type == 4:   # Schild model
+                elif c_fiber_model_type == 4:  # Schild model
                     node.R = 8314
                     node.F = 96500
-                    node.insert('leakSchild')						# All mechanisms from Schild 1994 inserted into model
+                    node.insert('leakSchild')  # All mechanisms from Schild 1994 inserted into model
                     node.insert('kd')
                     node.insert('ka')
                     node.insert('can')
@@ -500,19 +590,25 @@ class Fiber(Configurable, Saveable):
                         node.insert('nas')
 
                     # Ionic concentrations
-                    node.cao0_ca_ion = 2.0                                               # [mM] Initial Cao Concentration
-                    node.cai0_ca_ion = 0.000117                                          # [mM] Initial Cai Concentrations
-                    node.ko = 5.4                                                        # [mM] External K Concentration
-                    node.ki = 145.0                                                      # [mM] Internal K Concentration
-                    node.kstyle = ion_style("k_ion", 1, 2, 0, 0, 0)                      # Allows ek to be calculated manually
-                    node.ek = ((node.R*(celsius+273.15))/node.F)*np.log10(node.ko/node.ki)           # Manual Calculation of ek in order to use Schild F and R values
+                    node.cao0_ca_ion = 2.0  # [mM] Initial Cao Concentration
+                    node.cai0_ca_ion = 0.000117  # [mM] Initial Cai Concentrations
+                    node.ko = 5.4  # [mM] External K Concentration
+                    node.ki = 145.0  # [mM] Internal K Concentration
+                    node.kstyle = ion_style("k_ion", 1, 2, 0, 0, 0)  # Allows ek to be calculated manually
+                    node.ek = ((node.R * (celsius + 273.15)) / node.F) * np.log10(
+                        node.ko / node.ki
+                    )  # Manual Calculation of ek in order to use Schild F and R values
 
-                    node.nao = 154                                                       # [mM] External Na Concentration
-                    node.nai = 8.9                                                       # [mM] Internal Na Concentration
-                    node.nastyle = ion_style("na_ion", 1, 2, 0, 0, 0)                    # Allows ena to be calculated manually
-                    node.ena = ((node.R*(celsius+273.15))/node.F)*np.log10(node.nao/node.nai)        # Manual Calculation of ena in order to use Schild F and R values
+                    node.nao = 154  # [mM] External Na Concentration
+                    node.nai = 8.9  # [mM] Internal Na Concentration
+                    node.nastyle = ion_style("na_ion", 1, 2, 0, 0, 0)  # Allows ena to be calculated manually
+                    node.ena = ((node.R * (celsius + 273.15)) / node.F) * np.log10(
+                        node.nao / node.nai
+                    )  # Manual Calculation of ena in order to use Schild F and R values
                     if conductances97:
-                        node.gbar_naf97mean = 0.022434928                                # [S/cm^2] This block sets the conductance to the conductances in Schild 1997
+                        node.gbar_naf97mean = (
+                            0.022434928  # [S/cm^2] This block sets the conductance to the conductances in Schild 1997
+                        )
                         node.gbar_nas97mean = 0.022434928
                         node.gbar_kd = 0.001956534
                         node.gbar_ka = 0.001304356
@@ -520,7 +616,7 @@ class Fiber(Configurable, Saveable):
                         node.gbar_kca = 0.000913049
                         node.gbar_can = 0.000521743
                         node.gbar_cat = 0.00018261
-                        node.gbna_leak = 1.8261E-05
+                        node.gbna_leak = 1.8261e-05
                     node.Ra = 100
                     node.cm = 1.326291192
                     node.v = -48
@@ -529,8 +625,8 @@ class Fiber(Configurable, Saveable):
                 node.xc[0] = 0  # short circuit
                 node.xg[0] = 1e10  # short circuit
 
-        for i in range(0, nsegments-1):
-            self.sec[i+1].connect(self.sec[i])
+        for i in range(0, nsegments - 1):
+            self.sec[i + 1].connect(self.sec[i])
 
         return self
 
@@ -549,12 +645,12 @@ class Fiber(Configurable, Saveable):
 
             self.run(amp, stimulation, recording, saving)
             time_individual = time.time() - start_time - time_total
-            saving.saveVariables(self, recording, stimulation.dt, amp_ind) # Save user-specified variables
-            saving.saveActivation(self, amp_ind)                           # Save number of APs triggered
-            saving.saveRuntime(self, time_individual, amp_ind)             # Save runtime of inidividual run
+            saving.saveVariables(self, recording, stimulation.dt, amp_ind)  # Save user-specified variables
+            saving.saveActivation(self, amp_ind)  # Save number of APs triggered
+            saving.saveRuntime(self, time_individual, amp_ind)  # Save runtime of inidividual run
 
             time_total += time_individual
-            recording.reset() # Reset recording vectors to be used again
+            recording.reset()  # Reset recording vectors to be used again
 
     def findThresh(self, stimulation: object, saving: object, recording: object, find_block_thresh: bool = False):
         """
@@ -566,11 +662,15 @@ class Fiber(Configurable, Saveable):
         """
         # Determine searching parameters for binary search bounds
         bounds_search_mode = self.search(Config.SIM, "protocol", "bounds_search", "mode")
-        if bounds_search_mode == 'PERCENT_INCREMENT':  # relative increment (increase bound by a certain percentage of the previous value)
+        if (
+            bounds_search_mode == 'PERCENT_INCREMENT'
+        ):  # relative increment (increase bound by a certain percentage of the previous value)
             increment_flag = SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value
             step = self.search(Config.SIM, "protocol", "bounds_search", "step")
             rel_increment = round(step / 100, 4)
-        elif bounds_search_mode == 'ABSOLUTE_INCREMENT':  # absolute increment (increase bound by a a certain amount + previous value)
+        elif (
+            bounds_search_mode == 'ABSOLUTE_INCREMENT'
+        ):  # absolute increment (increase bound by a a certain amount + previous value)
             increment_flag = SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value
             step = self.search(Config.SIM, "protocol", "bounds_search", "step")
             abs_increment = round(step, 4)
@@ -595,18 +695,22 @@ class Fiber(Configurable, Saveable):
         # Determine upper- and lower-bounds for simulation
         iter = 1
         while True:
-            # Check to see if upper-bound triggers action potential
             if check_top_flag == 0:
-                print("Running stimamp_top = {:.6f}".format(stimamp_top))
+                # Check to see if upper-bound triggers action potential
+                print(f'Running stimamp_top = {stimamp_top:.6f}')
                 self.run(stimamp_top, stimulation, recording, find_block_thresh)
 
                 if self.n_aps == 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
                         print(
-                            "ERROR: Initial stimamp_top value does not elicit an AP - need to increase its magnitude and/or increase tstop to detect evoked AP")
+                            'ERROR: Initial stimamp_top value does not elicit an AP - '
+                            'need to increase its magnitude and/or increase tstop to detect evoked AP'
+                        )
                     else:
                         print(
-                            "WARNING: Initial stimamp_top value does not block - need to increase its magnitude and/or increase tstop to block test pulse evoked AP")
+                            'WARNING: Initial stimamp_top value does not block - '
+                            'need to increase its magnitude and/or increase tstop to block test pulse evoked AP'
+                        )
                     if increment_flag == SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value:
                         stimamp_top = stimamp_top + abs_increment
                     elif increment_flag == SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value:
@@ -614,18 +718,22 @@ class Fiber(Configurable, Saveable):
                 else:
                     check_top_flag = 1
 
-            # Check to see if lower-bound does not trigger action potential
             if check_bottom_flag == 0:
-                print("Running stimamp_bottom = {:.6f}".format(stimamp_bottom))
+                # Check to see if lower-bound does not trigger action potential
+                print(f'Running stimamp_bottom = {stimamp_bottom:.6f}')
                 self.run(stimamp_bottom, stimulation, recording, find_block_thresh)
 
                 if self.n_aps != 0:
                     if find_block_thresh == NeuronRunMode.ACTIVATION_THRESHOLD.value:
                         print(
-                            "ERROR: Initial stimamp_bottom value elicits an AP - need to decrease its magnitude and/or increase tstop to detect block test pulses")
+                            'ERROR: Initial stimamp_bottom value elicits an AP - '
+                            'need to decrease its magnitude and/or increase tstop to detect block test pulses'
+                        )
                     else:
                         print(
-                            "WARNING: Initial stimamp_bottom value blocks - need to decrease its magnitude and/or increase tstop to detect test pulse evoked AP")
+                            'WARNING: Initial stimamp_bottom value blocks - '
+                            'need to decrease its magnitude and/or increase tstop to detect test pulse evoked AP'
+                        )
                     if increment_flag == SearchAmplitudeIncrementMode.ABSOLUTE_INCREMENT.value:
                         stimamp_bottom = stimamp_bottom - abs_increment
                     elif increment_flag == SearchAmplitudeIncrementMode.PERCENT_INCREMENT.value:
@@ -640,7 +748,7 @@ class Fiber(Configurable, Saveable):
             iter += 1
 
             if iter >= 100:
-                print("maximum number of bounds searching steps reached. breaking.")
+                print('maximum number of bounds searching steps reached. breaking.')
                 quit()
 
         # Enter binary search
@@ -648,8 +756,8 @@ class Fiber(Configurable, Saveable):
             stimamp_prev = stimamp_top
 
             stimamp = (stimamp_bottom + stimamp_top) / 2
-            print("stimamp_bottom = {:.6f}      stimamp_top = {:.6f}".format(stimamp_bottom, stimamp_top))
-            print("Running stimamp: {:.6f}".format(stimamp))
+            print(f'stimamp_bottom = {stimamp_bottom:.6f}      stimamp_top = {stimamp_top:.6f}')
+            print(f'Running stimamp: {stimamp:.6f}')
             self.run(stimamp, stimulation, recording, find_block_thresh)
 
             if termination_flag == TerminationCriteriaMode.PERCENT_DIFFERENCE.value:
@@ -663,13 +771,11 @@ class Fiber(Configurable, Saveable):
             if tolerance < thresh_resoln:
                 if self.n_aps < 1:
                     stimamp = stimamp_prev
-                print(
-                    "Done searching! stimamp: {:.6f} mA for extracellular and nA for intracellular (check flag_whichstim)\n".format(
-                        stimamp))
+                print(f'Done searching! stimamp: {stimamp:.6f} mA for extracellular\n')
 
                 # Run one more time at threshold to save user-specified variables
                 self.run(stimamp, stimulation, recording, find_block_thresh, saving=saving)
-                saving.saveThresh(self, stimamp) # Save threshold value to file
+                saving.saveThresh(self, stimamp)  # Save threshold value to file
                 break
             elif self.n_aps >= 1:
                 stimamp_top = stimamp
@@ -698,16 +804,23 @@ class Fiber(Configurable, Saveable):
             find_block_thresh = False
             amps = self.search(Config.SIM, 'protocol', 'amplitudes')
 
-        if find_thresh: # Protocol is BLOCK_THRESHOLD or ACTIVATION_THRESHOLD
+        if find_thresh:  # Protocol is BLOCK_THRESHOLD or ACTIVATION_THRESHOLD
             self.findThresh(stimulation, saving, recording, find_block_thresh)
-            time_individual = time.time()-start_time
-            saving.saveVariables(self, recording, stimulation.dt) # Save user-specified variables
-            saving.saveRuntime(self, time_individual) # Save runtime of simulation
+            time_individual = time.time() - start_time
+            saving.saveVariables(self, recording, stimulation.dt)  # Save user-specified variables
+            saving.saveRuntime(self, time_individual)  # Save runtime of simulation
 
-        else: # Protocol is FINITE_AMPLITUDES
+        else:  # Protocol is FINITE_AMPLITUDES
             self.finite_amplitudes(stimulation, saving, recording, start_time, amps)
 
-    def run(self, stimamp: float, stimulation: object, recording: object, find_block_thresh: bool=False, saving: object=None):
+    def run(
+        self,
+        stimamp: float,
+        stimulation: object,
+        recording: object,
+        find_block_thresh: bool = False,
+        saving: object = None,
+    ):
         """
         Run a simulation for a single stimulation amplitude
         :param stimamp: amplitude to be applied to extracellular stimulation
@@ -717,6 +830,7 @@ class Fiber(Configurable, Saveable):
         :param saving: instance of Saving class
         :return: Fiber object
         """
+
         def balance(fiber: object):
             """
             Balance membrane currents for Tigerholm model
@@ -728,13 +842,15 @@ class Fiber(Configurable, Saveable):
                     s.pumpina_extrapump = -(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump)
                 else:
                     s.gnaleak_leak = -(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump) / (
-                                Vrest - s.ena)
+                        Vrest - s.ena
+                    )
 
                 if (-(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (Vrest - s.ek)) < 0:
                     s.pumpik_extrapump = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna)
                 else:
                     s.gkleak_leak = -(s.ik_ks + s.ik_kf + s.ik_h + s.ik_kdrTiger + s.ik_nakpump + s.ik_kna) / (
-                                Vrest - s.ek)
+                        Vrest - s.ek
+                    )
 
         def steady_state(fiber: object, sim_dt: float):
             """
@@ -744,12 +860,12 @@ class Fiber(Configurable, Saveable):
             """
             t_initSS = fiber.search(Config.SIM, 'protocol', 'initSS')
             dt_initSS = fiber.search(Config.SIM, 'protocol', 'dt_initSS')
-            h.t = t_initSS      # Start before t=0
-            h.dt = dt_initSS    # Large dt
-            while (h.t <= -dt_initSS):
+            h.t = t_initSS  # Start before t=0
+            h.dt = dt_initSS  # Large dt
+            while h.t <= -dt_initSS:
                 h.fadvance()
-            h.dt = sim_dt       # Set simulation time step to user-specified time step
-            h.t = 0             # Probably redundant, reset simulation time to zero
+            h.dt = sim_dt  # Set simulation time step to user-specified time step
+            h.t = 0  # Probably redundant, reset simulation time to zero
             h.fcurrent()
             h.frecord_init()
 
@@ -764,33 +880,32 @@ class Fiber(Configurable, Saveable):
             if saving.ap_end_times:
                 recording.record_ap_end_times(self, saving.ap_end_inds, saving.ap_end_thresh)
 
-        h.finitialize(self.v_init)          # Initialize the simulation
+        h.finitialize(self.v_init)  # Initialize the simulation
         if self.fiber_mode == 'TIGERHOLM':  # Balance membrane currents if Tigerholm
             balance(self)
 
         stimulation.initialize_extracellular(self)  # Set extracellular stimulation at each segment to zero
-        steady_state(self, stimulation.dt)          # Allow system to reach steady-state before simulation
-        h.celsius = self.temperature                # Set simulation temperature
+        steady_state(self, stimulation.dt)  # Allow system to reach steady-state before simulation
+        h.celsius = self.temperature  # Set simulation temperature
 
         # Set up APcount
         recording.record_ap(self)
 
-        ############    Begin simulation     ############
+        # Begin simulation
         n_tsteps = len(stimulation.waveform)
         for i in range(0, n_tsteps):
             if h.t > stimulation.tstop:
                 break
             amp = stimulation.waveform[i]
-            scaled_stim = [stimamp*amp*x for x in stimulation.potentials]
+            scaled_stim = [stimamp * amp * x for x in stimulation.potentials]
             stimulation.update_extracellular(self, scaled_stim)
 
             h.fadvance()
-        ############    Done with simulation     ############
+        # Done with simulation
 
         # Insert vectors of 0's for gating parameters at passive end nodes
-        if saving is not None:
-            if saving.time_gating or saving.space_gating:
-                recording.record_gating(self, fix_passive=True)
+        if saving is not None and (saving.time_gating or saving.space_gating):
+            recording.record_gating(self, fix_passive=True)
 
         # Check if APs occurred
         self.n_aps = recording.ap_checker(self, find_block_thresh)
@@ -799,12 +914,19 @@ class Fiber(Configurable, Saveable):
             print(f'{int(self.n_aps)} AP(s) detected')
         return self
 
-class GeometryObject():
+
+class GeometryObject:
     """
     Geometry Object to be used for custom user fiber models (not yet supported)
     """
+
     def __init__(self, fiberD, fiberDtoAxonD=0, axonDtoNL=0, nodelength=1, MYSAlength=3):
-        self.fiberDtoAxonD, self.axonDtoNL, self.nodelength, self.MYSAlength = fiberDtoAxonD, axonDtoNL, nodelength, MYSAlength
+        self.fiberDtoAxonD, self.axonDtoNL, self.nodelength, self.MYSAlength = (
+            fiberDtoAxonD,
+            axonDtoNL,
+            nodelength,
+            MYSAlength,
+        )
         self.FLUTlength = -0.171 * (fiberD**2) + 6.48 * fiberD - 0.935
         if fiberDtoAxonD == 0:
             self.axonD = 0.553 * fiberD - 0.024
@@ -827,4 +949,6 @@ class GeometryObject():
         self.MYSAD = self.nodeD
         self.FLUTD = self.axonD
 
-        self.interlength = ((-3.22 * fiberD**2 + 148 * fiberD + -128) - self.nl - 2*self.MYSAlength - 2*self.FLUTlength)/6
+        self.interlength = (
+            (-3.22 * fiberD**2 + 148 * fiberD + -128) - self.nl - 2 * self.MYSAlength - 2 * self.FLUTlength
+        ) / 6

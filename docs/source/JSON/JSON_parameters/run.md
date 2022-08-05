@@ -106,8 +106,8 @@ to saving the plots in the relevant folders (i.e., the sample and sim folders).
 If submitting locally, the program will not continue to the next run until all fiber simulations are complete. If submitting via a computer cluster,
 the next run will start after all batch NEURON jobs are submitted.
 
-`"delete_fibersets"`: (Boolean) Optional. The value, if true, will delete the directory containing (x, y, z) coordinates 
-for all fibersets of the **_Sims_** being run (`samples/<sample_index>/models/<model_index>/sims/<sim_index>/fibersets/`).  
+`"delete_fibersets"`: (Boolean) Optional. The value, if true, will delete the directory containing (x, y, z) coordinates
+for all fibersets of the **_Sims_** being run (`samples/<sample_index>/models/<model_index>/sims/<sim_index>/fibersets/`).
 
 ## Example
 

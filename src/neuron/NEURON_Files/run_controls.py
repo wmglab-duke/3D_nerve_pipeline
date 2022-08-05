@@ -1,12 +1,13 @@
+import os
 import pickle
 import sys
 import time
-import os
 
 sys.path.append(os.getcwd())
-from stimulation import Stimulation
-from saving import Saving
 from recording import Recording
+from saving import Saving
+from stimulation import Stimulation
+
 
 def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, waveform_path: str, sim_path: str):
     """
@@ -18,17 +19,16 @@ def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, 
     :param waveform_path: path to waveform file
     :param sim_path: path to n_sim directory
     """
-    start_time = time.time() # Starting time of simulation
+    start_time = time.time()  # Starting time of simulation
 
     # load in fiber object
-    fiber = pickle.load(open(fiber_path, 'rb'))
+    with open(fiber_path, 'rb') as fiber_file:
+        fiber = pickle.load(fiber_file)
     fiber.inner_ind, fiber.fiber_ind = inner_ind, fiber_ind
 
     # create stimulation object instance
     stimulation = Stimulation()
-    stimulation \
-        .load_potentials(potentials_path) \
-        .load_waveform(waveform_path)
+    stimulation.load_potentials(potentials_path).load_waveform(waveform_path)
 
     # create NEURON fiber sections
     n_fiber_coords = len(stimulation.potentials)
@@ -46,6 +46,7 @@ def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, 
 
     # submit fiber for simulation
     fiber.submit(stimulation, saving, recording, start_time)
+
 
 # load in arguments from command line
 if __name__ == "__main__":  # Allows for the safe importing of the main module
