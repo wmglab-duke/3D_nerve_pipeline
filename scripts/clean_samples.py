@@ -24,7 +24,7 @@ def remove_empty_directories(directory: str, verbose):
     for path in os.listdir(directory):
         subdirectory = os.path.join(directory, path)
         if os.path.isdir(subdirectory):
-            remove_empty_directories(subdirectory)
+            remove_empty_directories(subdirectory, verbose)
 
     if os.path.isdir(directory) and len(os.listdir(directory)) == 0:
         try:
@@ -45,12 +45,12 @@ def run(args):
         EXCLUDED_FILENAMES = ['sample.json', 'model.json']
     proceed = input(
         'All files EXCEPT those whose names end with the following strings:\n'
-        '\t{}\n'
+        f'\t{EXCLUDED_FILENAMES}\n'
         'will be removed from the following sample directories:\n'
-        '\t{}\n'
+        f'\t{args.sample_indices}\n'
         '\n\t Would you like to proceed?\n'
         '\t\t 0 = NO\n'
-        '\t\t 1 = YES\n'.format(EXCLUDED_FILENAMES, args.sample_indices)
+        '\t\t 1 = YES\n'
     )
     if int(proceed) != 1:
         sys.exit()

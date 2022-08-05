@@ -258,7 +258,7 @@ class Runner(Exceptionable, Configurable):
                 ).validate_sim_configs().save(
                     sim_obj_file
                 )
-            return simulation, sim_obj_dir
+        return simulation, sim_obj_dir
 
     def validate_supersample(self, simulation, sample_num, model_num):
         """Validate supersampling parameters
@@ -810,40 +810,3 @@ class Runner(Exceptionable, Configurable):
             distal_exists = model_config['medium']['distal']['exist']
             if distal_exists and model_config['medium']['proximal']['distant_ground'] is True:
                 self.throw(107)
-
-    def submit(self):
-        def load_obj(path: str):
-            """
-            :param path: path to Python obj file
-            :return: obj file
-            """
-            return pickle.load(open(path, 'rb')).add(
-                SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
-            )
-
-        all_configs = self.load_configs()
-
-        run_pseudonym = self.configs[Config.RUN.value].get('pseudonym')
-        if run_pseudonym is not None:
-            print('Run pseudonym:', run_pseudonym)
-
-        sample_num = self.configs[Config.RUN.value]['sample']
-        sample_pseudonym = all_configs[Config.SAMPLE.value][sample_num].get('pseudonym')
-
-        print(
-            f"SAMPLE {self.configs[Config.RUN.value]['sample']}",
-            f'- {sample_pseudonym}' if sample_pseudonym is not None else '',
-        )
-
-        for model in self.configs[Config.RUN.value]['models']:
-            model_pseudonym = all_configs[Config.MODEL.value][model].get('pseudonym')
-            print(f'\tMODEL {model}', f'- {model_pseudonym}' if model_pseudonym is not None else '')
-
-            for sim in self.configs[Config.RUN.value]['sims']:
-                sim_pseudonym = all_configs[Config.SIM.value][0].get('pseudonym')
-                print(f'\t\tSIM {sim}', f'- {sim_pseudonym}' if sim_pseudonym is not None else '')
-
-                sim_dir = os.path.join(os.getcwd(), 'samples', str(sample_num), 'models', str(model), 'sims', str(sim))
-                sim_obj_file = os.path.join(sim_dir, 'sim.obj')
-                simulation: Simulation = load_obj(sim_obj_file)
-                simulation.submit()

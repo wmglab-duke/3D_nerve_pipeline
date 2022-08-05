@@ -17,7 +17,6 @@ import sys
 import time
 import warnings
 
-import numpy as np
 import pandas as pd
 
 
@@ -220,45 +219,36 @@ def make_task(
     potentials_path: str,
     waveform_path: str,
 ):
+    """Create shell script used to run a fiber simulation.
+    :param my_os: the string name of the operating system
+    :param sub_con: the string name of the submission context
+    :param start_p: the string path to the start_dir
+    :param sim_p: the string path to the sim_dir
+    :param fiber_path: the string path to the fiber.obj object
+    :param inner_ind: the index of the inner this fiber is in
+    :param fiber_ind: the index of the fiber this simulation is for
+    :param potentials_path: the string path to the potentials text file
+    :param waveform_path: the string path to the waveform text file
+    """
     with open(start_p, 'w+') as handle:
         if my_os == 'UNIX-LIKE':
             lines = [
                 '#!/bin/bash\n',
                 'cd ../../\n',
-                'python NEURON_Files/run_controls.py \"{}\" \"{}\" \"{}\" \"{}\" \"{}\" \"{}\"\n'.format(
-                    fiber_path, inner_ind, fiber_ind, potentials_path, waveform_path, sim_p
-                ),
+                f'python NEURON_Files/run_controls.py '
+                f'\"{fiber_path}\" '
+                f'\"{inner_ind}\" '
+                f'\"{fiber_ind}\" '
+                f'\"{potentials_path}\" '
+                f'\"{waveform_path}\" '
+                f'\"{sim_p}\"\n',
             ]
 
             if sub_con == 'cluster':
                 lines.remove('cd ../../\n')
 
-        # else:  # OS is 'WINDOWS'
-        #     sim_path_win = os.path.join(*sim_p.split(os.pathsep)).replace('\\', '\\\\')
-        #     lines = [
-        #         'nrniv -nobanner '
-        #         '-dll \"{}/MOD_Files/nrnmech.dll\" '
-        #         '-c \"strdef sim_path\" '
-        #         '-c \"sim_path=\\\"{}\"\" '
-        #         '-c \"inner_ind={}\" '
-        #         '-c \"fiber_ind={}\" '
-        #         '-c \"stimamp_top={}\" '
-        #         '-c \"stimamp_bottom={}\" '
-        #         '-c \"fiberD={}\" '
-        #         '-c \"deltaz={:.4f}\" '
-        #         '-c \"axonnodes={}\" '
-        #         '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-        #         '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-        #         '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n'.format(os.getcwd(),
-        #                                                                   sim_path_win,
-        #                                                                   inner,
-        #                                                                   fiber,
-        #                                                                   top,
-        #                                                                   bottom,
-        #                                                                   diam,
-        #                                                                   deltaz,
-        #                                                                   axonnodes)
-        #     ]
+        else:  # OS is 'WINDOWS'
+            pass
 
         handle.writelines(lines)
         handle.close()
@@ -328,11 +318,17 @@ def submit_fibers(submission_context, submission_data):
                 # open pool instance, set up progress bar, and iterate over each job
                 for i, _ in enumerate(p.imap_unordered(local_submit, runfibers, 1)):
                     if not args.verbose:
+                        sample, model, sim, nsim = (
+                            sim_name.split('_')[0],
+                            sim_name.split('_')[1],
+                            sim_name.split('_')[2],
+                            sim_name.split('_')[3],
+                        )
                         print_progress_bar(
                             i + 1,
                             len(runfibers),
                             length=40,
-                            prefix='Sample {}, Model {}, Sim {}, n_sim {}:'.format(*sim_name.split('_')),
+                            prefix=f'Sample {sample}, Model {model}, Sim {sim}, n_sim {nsim}:',
                         )
             os.chdir("../..")
 
