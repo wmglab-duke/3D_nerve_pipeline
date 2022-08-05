@@ -310,7 +310,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 os.sep,
                 *sim_directory.split(os.sep)[1:-4],
                 'explicit_fibersets',
-                '{}.txt'.format(explicit_index)
+                f'{explicit_index}.txt',
             )
             explicit_dest = os.path.join(sim_directory, 'explicit.txt')
             shutil.copyfile(explicit_source, explicit_dest)
@@ -336,7 +336,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     for inner in fascicle.inners
                 ]
             ):
-                print("Explicit fiber coordinate: {} does not fall in an inner".format(fiber))
+                print(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
                 self.throw(71)
         return points
 
@@ -625,9 +625,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             diameter = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'diameter')
             diam_distribution: bool = type(diameter) is dict
 
-            diams, my_z_seed, myelinated = self.calculate_fiber_diams(
+            diams, myelinated = self.calculate_fiber_diams(
                 diam_distribution, diams, fiber_geometry_mode_name, fibers_xy, super_sample
             )
+
+            my_z_seed = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'seed')
 
             if myelinated and not super_sample:  # MYELINATED
                 fibers = generate_z_myelinated(diams)
@@ -650,8 +652,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 fiber_geometry_mode_name,
                 'myelinated',
             )
-
-            my_z_seed = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'seed')
 
             if diam_distribution:
                 sampling_mode = self.search(
@@ -753,7 +753,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     )
 
                 diams = fiber_diam_dist.rvs(len(fibers_xy))
-        return diams, my_z_seed, myelinated
+        return diams, myelinated
 
     def calculate_fiber_length_params(self, override_length):
         model_length = (
@@ -804,9 +804,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 'WARNING: the sim>fibers>z_parameters>longitudinally_centered parameter is deprecated.\
                   \nFibers will be centered to the model.'
             )
-        assert model_length >= fiber_length, 'proximal length: ({}) < fiber length: ({})'.format(
-            model_length, fiber_length
-        )
+        assert model_length >= fiber_length, f'proximal length: ({model_length}) < fiber length: ({fiber_length})'
         return fiber_length, model_length
 
     def validate(self):

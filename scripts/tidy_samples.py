@@ -15,7 +15,27 @@ from pathlib import Path
 INCLUDED_FILENAMES = ['runtime', 'blank', 'special', 'logs', 'start_']
 
 
+def remove_empty_directories(directory: str, verbose):
+    for path in os.listdir(directory):
+        subdirectory = os.path.join(directory, path)
+        if os.path.isdir(subdirectory):
+            remove_empty_directories(subdirectory)
+
+    if os.path.isdir(directory) and len(os.listdir(directory)) == 0:
+        try:
+            os.rmdir(directory)
+        except Exception:
+            print(f'Could not remove {directory}')
+        if verbose:
+            print(f'\tREMOVE DIR: {directory}')
+
+    else:
+        if verbose:
+            print(f'\tKEEP DIR: {directory}')
+
+
 def run(args):
+    global INCLUDED_FILENAMES
     if args.filename:
         INCLUDED_FILENAMES = [args.filename]
     proceed = input(
@@ -44,35 +64,14 @@ def run(args):
         else:
             print('Proceeding...')
 
-    def remove_empty_directories(directory: str):
-
-        for path in os.listdir(directory):
-            subdirectory = os.path.join(directory, path)
-            if os.path.isdir(subdirectory):
-                remove_empty_directories(subdirectory)
-
-        if os.path.isdir(directory) and len(os.listdir(directory)) == 0:
-            try:
-                os.rmdir(directory)
-            except Exception:
-                print('Could not remove {}'.format(directory))
-            if args.verbose:
-                print(f'\tREMOVE DIR: {directory}')
-
-        else:
-            if args.verbose:
-                print(f'\tKEEP DIR: {directory}')
-
     for sample in args.sample_indices:
 
         if args.verbose:
             print(f'Sample: {sample}')
-
+            print('\n\t- - - - - - FILES - - - - - -\n')
         sample_path = Path(os.path.join('samples', f'{sample}'))
 
         # remove files
-        if args.verbose:
-            print('\n\t- - - - - - FILES - - - - - -\n')
         for filepath in [str(path.absolute()) for path in sample_path.glob('**/*')]:
 
             # skip over directories for now
@@ -83,7 +82,7 @@ def run(args):
                 try:
                     os.remove(filepath)
                 except Exception:
-                    print('Could not remove {}'.format(filepath))
+                    print(f'Could not remove {filepath}')
                 if args.verbose:
                     print(f'\tREMOVE FILE: {filepath}')
 
@@ -95,7 +94,7 @@ def run(args):
         if args.verbose:
             print('\n\t- - - - - DIRECTORIES - - - -\n')
 
-        remove_empty_directories(str(sample_path.absolute()))
+        remove_empty_directories(str(sample_path.absolute()), args.verbose)
 
         if args.verbose:
             print('\n\n')

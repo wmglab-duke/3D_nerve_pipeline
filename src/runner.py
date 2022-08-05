@@ -11,9 +11,9 @@ import base64
 import json
 import os
 import pickle
+import shutil
 import subprocess
 import sys
-import shutil
 import time
 import traceback
 import warnings
@@ -75,11 +75,11 @@ class Runner(Exceptionable, Configurable):
                 try:
                     config_source[key] += [self.load(path)]
                 except Exception:
-                    warnings.warn('Issue loading {} config: {}'.format(key, path))
+                    warnings.warn(f'Issue loading {key} config: {path}')
                     self.throw(144)
 
             else:
-                print('Missing {} config: {}'.format(key, path))
+                print(f'Missing {key} config: {path}')
                 self.throw(37)
 
         configs = {}
@@ -102,7 +102,7 @@ class Runner(Exceptionable, Configurable):
         for model_path in model_paths:
             validate_and_add(configs, 'models', model_path)
 
-        sim_paths = [os.path.join(os.getcwd(), 'config', 'user', 'sims', '{}.json'.format(sim)) for sim in sims]
+        sim_paths = [os.path.join(os.getcwd(), 'config', 'user', 'sims', f'{sim}.json') for sim in sims]
         for sim_path in sim_paths:
             validate_and_add(configs, 'sims', sim_path)
 
@@ -134,11 +134,9 @@ class Runner(Exceptionable, Configurable):
         Simulation.export_system_config_files(os.path.join(os.environ[Env.NSIM_EXPORT_PATH.value], 'config', 'system'))
         Simulation.export_src_files(os.path.join(os.environ[Env.NSIM_EXPORT_PATH.value], 'src'))
 
-        if 'break_points' in self.configs[Config.RUN.value]:
-            warnings.warn("Specifying break points in run.json is deprecated, and has no effect.")
-
-        if 'partial_fem' in self.configs[Config.RUN.value] and sum(self.search(Config.RUN, 'partial_fem').values()) > 1:
-            self.throw(80)
+        for deprecated_key in ['break_points', 'local_avail_cpus', 'submission_context', 'partial_fem']:
+            if deprecated_key in self.configs[Config.RUN.value]:
+                warnings.warn(f"Specifying {deprecated_key} in run.json is deprecated, and has no effect.")
 
         return all_configs
 
@@ -156,13 +154,13 @@ class Runner(Exceptionable, Configurable):
         sample_pseudonym = all_configs[Config.SAMPLE.value][0].get('pseudonym')
 
         print(
-            'SAMPLE {}'.format(self.configs[Config.RUN.value]['sample']),
-            '- {}'.format(sample_pseudonym) if sample_pseudonym is not None else '',
+            f"SAMPLE {self.configs[Config.RUN.value]['sample']}",
+            f'- {sample_pseudonym}' if sample_pseudonym is not None else '',
         )
 
         # instantiate sample
         if smart and os.path.exists(sample_file):
-            print('Found existing sample {} ({})'.format(self.configs[Config.RUN.value]['sample'], sample_file))
+            print(f"Found existing sample {self.configs[Config.RUN.value]['sample']} ({sample_file})")
             sample = self.load_obj(sample_file)
         else:
             # init slide manager
@@ -192,7 +190,7 @@ class Runner(Exceptionable, Configurable):
         """
         model_num = self.configs[Config.RUN.value]['models'][model_index]
         model_pseudonym = model_config.get('pseudonym')
-        print('\tMODEL {}'.format(model_num), '- {}'.format(model_pseudonym) if model_pseudonym is not None else '')
+        print(f'\tMODEL {model_num}', f'- {model_pseudonym}' if model_pseudonym is not None else '')
 
         # use current model index to computer maximum cuff shift (radius) .. SAVES to file in method
         model_config = self.compute_cuff_shift(model_config, sample, all_configs[Config.SAMPLE.value][0])
@@ -223,8 +221,8 @@ class Runner(Exceptionable, Configurable):
         sim_num = self.configs[Config.RUN.value]['sims'][sim_index]
         sim_pseudonym = sim_config.get('pseudonym')
         print(
-            '\t\tSIM {}'.format(self.configs[Config.RUN.value]['sims'][sim_index]),
-            '- {}'.format(sim_pseudonym) if sim_pseudonym is not None else '',
+            f"\t\tSIM {self.configs[Config.RUN.value]['sims'][sim_index]}",
+            f'- {sim_pseudonym}' if sim_pseudonym is not None else '',
         )
 
         sim_obj_dir = os.path.join(
@@ -235,11 +233,7 @@ class Runner(Exceptionable, Configurable):
 
         # init fiber manager
         if smart and os.path.exists(sim_obj_file):
-            print(
-                '\t    Found existing sim object for sim {} ({})'.format(
-                    self.configs[Config.RUN.value]['sims'][sim_index], sim_obj_file
-                )
-            )
+            print(f'\t    Found existing sim object for sim {sim_index} ({sim_obj_file})')
 
             simulation: Simulation = self.load_obj(sim_obj_file)
 
@@ -251,10 +245,9 @@ class Runner(Exceptionable, Configurable):
                 os.makedirs(sim_obj_dir + '/plots')
 
                 simulation: Simulation = Simulation(sample, self.configs[Config.EXCEPTIONS.value])
-                simulation.add(SetupMode.OLD, Config.MODEL, model_config).add(SetupMode.OLD, Config.SIM,
-                                                                              sim_config).add(
-                    SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]
-                ).add(
+                simulation.add(SetupMode.OLD, Config.MODEL, model_config).add(
+                    SetupMode.OLD, Config.SIM, sim_config
+                ).add(SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]).add(
                     SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
                 ).resolve_factors().write_waveforms(
                     sim_obj_dir
@@ -283,11 +276,7 @@ class Runner(Exceptionable, Configurable):
         # do Sim.fibers.xy_parameters match between Sim and source_sim?
         try:
             source_sim: simulation = self.load_obj(os.path.join(source_sim_obj_dir, 'sim.obj'))
-            print(
-                '\t    Found existing source sim {} for supersampled bases ({})'.format(
-                    source_sim_index, source_sim_obj_dir
-                )
-            )
+            print(f'\t    Found existing source sim {source_sim_index} for supersampled bases ({source_sim_obj_dir})')
         except FileNotFoundError:
             traceback.print_exc()
             self.throw(129)
@@ -333,7 +322,7 @@ class Runner(Exceptionable, Configurable):
             if delete:
                 shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
 
-        #get export behavior
+        # get export behavior
         export_behavior = None
         if self.configs[Config.CLI_ARGS.value].get('export_behavior') is not None:
             export_behavior = self.configs[Config.CLI_ARGS.value]['export_behavior']
@@ -341,7 +330,7 @@ class Runner(Exceptionable, Configurable):
             export_behavior = self.configs[Config.RUN.value]['export_behavior']
         else:
             export_behavior = 'selective'
-        #check to make sure we have a valid behavior
+        # check to make sure we have a valid behavior
         if not np.any([export_behavior == x.value for x in ExportMode]):
             self.throw(139)
 
@@ -415,7 +404,7 @@ class Runner(Exceptionable, Configurable):
                     print('\nSKIPPING JAVA - all required extracted potentials already exist\n')
 
                 self.remove(Config.RUN)
-                run_path = os.path.join('config', 'user', 'runs', '{}.json'.format(self.number))
+                run_path = os.path.join('config', 'user', 'runs', f'{self.number}.json')
                 self.add(SetupMode.NEW, Config.RUN, run_path)
 
                 #  continue by using simulation objects
@@ -444,16 +433,15 @@ class Runner(Exceptionable, Configurable):
                             # generate output neuron sims
                             self.generate_nsims(sim_index, model_num, sample_num)
                         print(
-                            'Model {} data exported to appropriate folders in {}'.format(
-                                model_num, os.environ[Env.NSIM_EXPORT_PATH.value]
-                            )
+                            f'Model {model_num} data exported to appropriate '
+                            f'folders in {os.environ[Env.NSIM_EXPORT_PATH.value]}'
                         )
 
                     elif not models_exit_status[model_index]:
                         print(
-                            '\nDid not create NEURON simulations for Sims associated with: \n'
-                            '\t Model Index: {} \n'
-                            'since COMSOL failed to create required potentials. \n'.format(model_num)
+                            f'\nDid not create NEURON simulations for Sims associated with: \n'
+                            f'\t Model Index: {model_num} \n'
+                            f'since COMSOL failed to create required potentials. \n'
                         )
 
             elif 'models' in all_configs and 'sims' not in all_configs:
@@ -471,7 +459,7 @@ class Runner(Exceptionable, Configurable):
         comsol_path = os.environ[Env.COMSOL_PATH.value]
         jdk_path = os.environ[Env.JDK_PATH.value]
         project_path = os.environ[Env.PROJECT_PATH.value]
-        run_path = os.path.join(project_path, 'config', 'user', 'runs', '{}.json'.format(run_number))
+        run_path = os.path.join(project_path, 'config', 'user', 'runs', f'{run_number}.json')
 
         # Encode command line args as jason string, then encode to base64 for passing to java
         argstring = json.dumps(self.configs[Config.CLI_ARGS.value])
@@ -480,29 +468,23 @@ class Runner(Exceptionable, Configurable):
         argfinal = argbase.decode('ascii')
 
         if sys.platform.startswith('win'):  # windows
-            server_command = ['{}\\bin\\win64\\comsolmphserver.exe'.format(comsol_path), '-login', 'auto']
+            server_command = [f'{comsol_path}\\bin\\win64\\comsolmphserver.exe', '-login', 'auto']
             compile_command = (
-                '""{}\\javac" '
-                '-cp "..\\bin\\json-20190722.jar";"{}\\plugins\\*" '
-                'model\\*.java -d ..\\bin"'.format(jdk_path, comsol_path)
+                f'""{jdk_path}\\javac" '
+                f'-cp "..\\bin\\json-20190722.jar";"{comsol_path}\\plugins\\*" '
+                f'model\\*.java -d ..\\bin"'
             )
             java_command = (
-                '""{}\\java\\win64\\jre\\bin\\java" '
-                '-cp "{}\\plugins\\*";"..\\bin\\json-20190722.jar";"..\\bin" '
-                'model.{} "{}" "{}" "{}""'.format(
-                    comsol_path,
-                    comsol_path,
-                    class_name,
-                    project_path,
-                    run_path,
-                    argfinal,
-                )
+                f'""{comsol_path}\\java\\win64\\jre\\bin\\java" '
+                f'-cp "{comsol_path}\\plugins\\*";"..\\bin\\json-20190722.jar";"..\\bin" '
+                f'model.{class_name} "{project_path}" "{run_path}" "{argfinal}""'
             )
         else:
-            server_command = ['{}/bin/comsol'.format(comsol_path), 'mphserver', '-login', 'auto']
+            server_command = [f'{comsol_path}/bin/comsol', 'mphserver', '-login', 'auto']
 
-            compile_command = '{}/javac -classpath ../bin/json-20190722.jar:{}/plugins/* model/*.java -d ../bin'.format(
-                jdk_path, comsol_path
+            compile_command = (
+                f'{jdk_path}/javac -classpath ../bin/json-20190722.jar:'
+                f'{comsol_path}/plugins/* model/*.java -d ../bin'
             )
             # https://stackoverflow.com/questions/219585/including-all-the-jars-in-a-directory-within-the-java-classpath
             if sys.platform.startswith('linux'):  # linux
@@ -511,16 +493,10 @@ class Runner(Exceptionable, Configurable):
                 java_comsol_path = comsol_path + '/java/maci64/jre/Contents/Home/bin/java'
 
             java_command = (
-                '{} '
-                '-cp .:$(echo {}/plugins/*.jar | '
-                'tr \' \' \':\'):../bin/json-20190722.jar:../bin model.{} "{}" "{}" "{}"'.format(
-                    java_comsol_path,
-                    comsol_path,
-                    class_name,
-                    project_path,
-                    run_path,
-                    argfinal,
-                )
+                f'{java_comsol_path} '
+                f'-cp .:$(echo {comsol_path}/plugins/*.jar | '
+                f'tr \' \' \':\'):../bin/json-20190722.jar:'
+                f'../bin model.{class_name} "{project_path}" "{run_path}" "{argfinal}"'
             )
 
         # start comsol server
@@ -794,7 +770,7 @@ class Runner(Exceptionable, Configurable):
             sigma_double = 1 / rho_double
             tmp = {
                 'value': str(sigma_double),
-                'label': 'RHO_WEERASURIYA @ %d Hz' % freq_double,
+                'label': f'RHO_WEERASURIYA @ {freq_double} Hz',
                 'unit': '[S/m]',
             }
             model_config['conductivities']['perineurium'] = tmp
@@ -841,36 +817,33 @@ class Runner(Exceptionable, Configurable):
             :param path: path to Python obj file
             :return: obj file
             """
-            return pickle.load(open(path, 'rb')).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value])
+            return pickle.load(open(path, 'rb')).add(
+                SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
+            )
 
         all_configs = self.load_configs()
 
         run_pseudonym = self.configs[Config.RUN.value].get('pseudonym')
-        if run_pseudonym is not None: print('Run pseudonym:', run_pseudonym)
+        if run_pseudonym is not None:
+            print('Run pseudonym:', run_pseudonym)
 
         sample_num = self.configs[Config.RUN.value]['sample']
         sample_pseudonym = all_configs[Config.SAMPLE.value][sample_num].get('pseudonym')
 
-        print('SAMPLE {}'.format(self.configs[Config.RUN.value]['sample']),
-              '- {}'.format(sample_pseudonym) if sample_pseudonym is not None else '')
+        print(
+            f"SAMPLE {self.configs[Config.RUN.value]['sample']}",
+            f'- {sample_pseudonym}' if sample_pseudonym is not None else '',
+        )
 
         for model in self.configs[Config.RUN.value]['models']:
             model_pseudonym = all_configs[Config.MODEL.value][model].get('pseudonym')
-            print('\tMODEL {}'.format(model),
-                  '- {}'.format(model_pseudonym) if model_pseudonym is not None else '')
+            print(f'\tMODEL {model}', f'- {model_pseudonym}' if model_pseudonym is not None else '')
 
             for sim in self.configs[Config.RUN.value]['sims']:
                 sim_pseudonym = all_configs[Config.SIM.value][0].get('pseudonym')
-                print('\t\tSIM {}'.format(sim),
-                      '- {}'.format(sim_pseudonym) if sim_pseudonym is not None else '')
+                print(f'\t\tSIM {sim}', f'- {sim_pseudonym}' if sim_pseudonym is not None else '')
 
-                sim_dir = os.path.join(os.getcwd(),
-                                       'samples',
-                                       str(sample_num),
-                                       'models',
-                                       str(model),
-                                       'sims',
-                                       str(sim))
+                sim_dir = os.path.join(os.getcwd(), 'samples', str(sample_num), 'models', str(model), 'sims', str(sim))
                 sim_obj_file = os.path.join(sim_dir, 'sim.obj')
                 simulation: Simulation = load_obj(sim_obj_file)
                 simulation.submit()

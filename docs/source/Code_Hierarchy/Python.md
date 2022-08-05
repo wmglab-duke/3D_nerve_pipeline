@@ -2,7 +2,7 @@
 
 ## Python classes for representing nerve morphology (Sample)
 
-The nerve cross section includes the outer nerve trace (if present; not
+The nerve cross-section includes the outer nerve trace (if present; not
 required for monofascicular nerves) and, for each fascicle, either a
 single "inner" perineurium trace or both "inner" and "outer" perineurium
 traces. We provide automated control to correct for tissue shrinkage
@@ -14,7 +14,7 @@ reported in **_Sample_** ([Sample Parameters](../JSON/JSON_parameters/sample)).
 ### Trace
 
 Trace is the core Python class for handling a list of points that define
-a closed loop for a tissue boundary in a nerve cross section (see
+a closed loop for a tissue boundary in a nerve cross-section (see
 "Tissue Boundaries" in [Fig 2](https://doi.org/10.1371/journal.pcbi.1009285.g002)). Trace has built-in functionality for
 transforming, reporting, displaying, saving, and performing calculations
 on its data contents and properties. Python classes Nerve, Fascicle, and
@@ -37,11 +37,11 @@ support modifier methods (e.g., for performing transformations):
   clockwise).
 
 - `shift()`: performs a 2D translational shift to Trace (in the
-  (x,y)-plane, i.e., the sample cross section).
+  (x,y)-plane, i.e., the sample cross-section).
 
 - `offset()`: Offsets Trace’s boundary by a discrete distance from the
   existing Trace boundary (non-affine transformation in the
-  (x,y)-plane, i.e., the sample cross section).
+  (x,y)-plane, i.e., the sample cross-section).
 
 - `pymunk_poly()`: Uses _Pymunk_ to create a body with mass and inertia
   for a given Trace boundary (used in `deform()`, the fascicle
@@ -129,7 +129,7 @@ one level for outers.
 In all cases, the Fascicle class uses its `to_list()` method to generate the appropriate
 Traces. Additionally, Fascicle has a `write()` method which saves a Fascicle’s
 inner (one or many) and outer Traces to files that later serve as inputs
-for COMSOL to define material boundaries in a nerve cross section
+for COMSOL to define material boundaries in a nerve cross-section
 ([sectionwise file format](https://www.comsol.com/fileformats)
 , i.e., ASCII with `.txt` extension
 containing column vectors for x- and y-coordinates). Lastly, Fascicle
@@ -139,8 +139,7 @@ rotation of each outer and inner as a JSON Object to **_Sample_** ([Sample Param
 
 ### Slide
 
-The Slide class represents the morphology of a single transverse cross
-section of a nerve sample (i.e., nerve and fascicle boundaries). An
+The Slide class represents the morphology of a single transverse cross-section of a nerve sample (i.e., nerve and fascicle boundaries). An
 important convention of the pipeline is that the nerve is always
 translated such that its centroid (i.e., from best-fit ellipse) is at
 the origin (x,y,z) = (0,0,0) and then extruded in the positive
@@ -206,7 +205,7 @@ longitudinal position of all Slide instances for a Sample class. At
 present, the pipeline only supports models of nerves with constant
 cross-sectional area, meaning only one Slide is used per FEM, but this
 class is implemented for future expansion of the pipeline to construct
-three-dimensional nerve models with varying cross section (e.g., using
+three-dimensional nerve models with varying cross-section (e.g., using
 serial histological sections). If only one slide is provided, Map is
 generated automatically, and the user should have little need to
 interact with this class.
@@ -276,12 +275,12 @@ method which saves the Python object to file.
 If `"DeformationMode"` in **_Sample_** ("deform") is set to `NONE`, then the
 Deformable class takes no action ([Sample Parameters](../JSON/JSON_parameters/sample)). However, if `"DeformationMode"` in
 **_Sample_** is set to `PHYSICS`, then Deformable’s `deform()` method
-simulates the change in nerve cross section that occurs when a nerve is
+simulates the change in nerve cross-section that occurs when a nerve is
 placed in a cuff electrode. Specifically, the outer boundary of a
 Slide’s Nerve mask is transformed into a user-defined final geometry
 based on the `"ReshapeNerveMode"` in **_Sample_** (i.e., `CIRCLE`) while
 maintaining the cross-sectional area. Meanwhile, the fascicles (i.e.,
-outers) are repositioned within the new nerve cross section in a
+outers) are repositioned within the new nerve cross-section in a
 physics-based way using Pymunk {cite:p}`pymunk`, a 2D physics library, in which
 each fascicle is treated as rigid body with no elasticity as it is
 slowly "pushed" into place by both surrounding fascicles and the nerve
@@ -355,7 +354,7 @@ intermediately-deformed nerve traces created by `deform_steps()`. This
 number of Trace steps defaults to 36 but can be optionally set in
 **_Sample_** with the `"morph_count"` parameter by the user ([Sample Parameters](../JSON/JSON_parameters/sample)). It is
 important to note that too few Trace steps can result in fascicles lying
-outside of the nerve during deformation, while too many Trace steps can
+outside the nerve during deformation, while too many Trace steps can
 be unnecessarily time intensive. We’ve set the default to 36 because it
 tends to minimize both aforementioned issues for all sample sizes
 and types that we have tested.
@@ -375,11 +374,11 @@ The user is unlikely to interface directly with Simulation’s
 `resolve_factors()` method as it operates behind the scenes. The method
 searches through **_Sim_** for lists of parameters within the "fibers"
 and "waveform" JSON Objects until the indicated number of dimensions
-("n\*dimensions" parameter in \*\*\_Sim**\*, which is a handshake to
+("n_dimensions" parameter in **_Sim_**, which is a handshake to
 prevent erroneous generation of NEURON simulations) has been reached.
 The parameters over which the user has indicated to sweep in **_Sim_**
 are saved to the Simulation class as a dictionary named "factors" with
-the path to each parameter in **_Sim_\*\*.
+the path to each parameter in **_Sim_**.
 
 The required parameters to define each type of waveform are in [Sim Parameters](../JSON/JSON_parameters/sim). The Python Waveform class is configured with **_Sim_**, which contains
 all parameters that define the Waveform. Since FEMs may have
@@ -394,10 +393,10 @@ defined in **_Sim_** as `"pulse_repetition_freq"`. The
 
 The unique combinations of **_Sim_** parameters are found with a
 Cartesian product from the listed values for individual parameters in
-**_Sim_**: Waveforms ⨉ Src*weights ⨉ Fibersets. The pipeline manages
+**_Sim_**: Waveforms ⨉ Src\*weights ⨉ Fibersets. The pipeline manages
 the indexing of simulations. For ease of debugging and inspection, into
 each `n_sim/` directory we copy in a modified "reduced" version of
-\*\*\_Sim*\*\* with any lists of parameters replaced by the single list
+**_Sim_** with any lists of parameters replaced by the single list
 element value investigated in the particular `n_sim/` directory.
 
 The Simulation class loops over **_Model_** and **_Sim_** as listed in
@@ -405,17 +404,20 @@ The Simulation class loops over **_Model_** and **_Sim_** as listed in
 directory `(sims/\<sim index\>/)` prior to Python’s `handoff()` to Java.
 Using the Python object for the simulation loaded into memory, the
 Simulation class’s method `build_n_sims()` loops over the
-`master_product_index` (i.e., waveforms ⨉ (src*weights ⨉ fibersets)).
+`master_product_index` (i.e., waveforms ⨉ (src\*weights ⨉ fibersets)).
 For each `master_product_index`, the program creates the `n_sim` file
 structure (`sims/<sim index>/n_sims/<n_sim index>/data/inputs/` and
 `sims/<sim index>/n_sims/<n_sim index>/data/outputs/`).
 Corresponding to the `n_sim’s` `master_product_index`, files are copied
-into the `n_sim` directory for a "reduced" \*\*\_Sim*\*\*, stimulation
-waveform, and fiber potentials. Additionally, the program writes a HOC
-file (i.e., `"launch.hoc"`) containing parameters for and a call to our
-`Wrapper.hoc` file using the Python `HocWriter` class.
+into the `n_sim` directory for a "reduced" **_Sim_**, stimulation
+waveform, and fiber potentials. Additionally, the program creates an instance
+of the Fiber object (`fiber.py`) for each `n_sim` (`sims/<sim index>/n_sims/<n_sim index>/fiber.obj`)
+to be used during NEURON job submissions. Each instance of the Fiber object is
+configured with `fiber_z.json`, **_Model_**, and "reduced" **_Sim_**. `Fiber.inherit()` initializes the object
+with universal attributes for all fibers in a given n_sim (i.e., fiber diameter, min, max, offset, seed from
+`fibers/z_parameters` in **_Sim_**, fiber model type from **_Sim_**, and model temperature from **_Model_**).
 
-To conveniently submit the `n\_sim` directories to a computer cluster, we
+To conveniently submit the `n_sim` directories to a computer cluster, we
 created methods within Simulation named `export_n_sims()`,
 `export_run()`, and `export_neuron_files()`. The method `export_n_sims()`
 copies `n_sims` from our native hierarchical file structure to a target
@@ -425,10 +427,13 @@ directory named `n_sims/` contains all `n_sims`. Each `n_sim` is renamed
 corresponding to its sample, model, sim, and `master_product_index`
 (`<sample_index>_<model_index>_<sim_index>_<master_product_index>`)
 and is therefore unique. Analogously, `export_run()` creates a copy of
-**_Run_** within the target directory in a directory named `runs/`. Lastly,
-`export_neuron_files()` is used to create a copy of the NEURON `*.hoc`
+**_Run_** within the target directory in a directory named `runs/`.
+`export_neuron_files()` is used to create a copy of the NEURON `*.py`
 and `*.mod` files in the target directory in directories named
-`"HOC_Files"` and `"MOD_Files"`, respectively.
+`"NEURON_Files"` and `"MOD_Files"`, respectively. `export_src_files()` is used to
+create a copy of the necessary files `src/core/` and `src/utils/`
+for submitting NEURON jobs. Finally, `export_system_config_files()` is used to
+create a copy of necessary system configuration files in `config/system/`.
 
 ## Fiberset
 
@@ -456,14 +461,14 @@ Within the `write_fibers()` method of the Python Simulation class, the
 Python Fiberset class is instantiated with an instance of the Python
 Sample class, **_Model_**, and **_Sim_**. Fiberset’s `generate()` method
 creates a set of (x,y,z)-coordinates for each Fiberset defined in
-**_Sim_**. The (x,y)-coordinates in the nerve cross section and
+**_Sim_**. The (x,y)-coordinates in the nerve cross-section and
 z-coordinates along the length of the nerve are saved in `fibersets/`.
 
 Fiberset’s method `_generate_xy()` (first character being an underscore
 indicates intended for use only by the Fiberset class) defines the
-coordinates of simulated fibers in the cross section of the nerve
+coordinates of simulated fibers in the cross-section of the nerve
 according to the `"xy_parameters"` JSON Object in **_Sim_** ([Sim Parameters](../JSON/JSON_parameters/sim)). The pipeline
-defines (x,y)-coordinates of the fibers in the nerve cross section
+defines (x,y)-coordinates of the fibers in the nerve cross-section
 according to the user’s selection of sampling rules (`CENTROID`,
 `UNIFORM_DENSITY`, `UNIFORM_COUNT`, and `WHEEL`); the pre-defined modes for
 defining fiber locations are easily expandable. To add a new mode for
@@ -530,7 +535,7 @@ The ConfigKey indicates the choice of configuration data type and is
 also the name of the configuration JSON file (e.g., `sample.json`,
 `model.json`, `sim.json`, `run.json`, `env.json`).
 
-#### Config:
+#### Config
 
 The Config input to Configurable can take one of three data types. If
 `"SetupMode"` is "OLD", the value can be a dictionary or list of already
@@ -538,7 +543,7 @@ loaded configuration data. If `"SetupMode"` is "NEW", the value must be a
 string of the file path to the configuration file to be loaded into
 memory.
 
-#### Example use of Configurable:
+#### Example use of Configurable
 
 When the Sample class is instantiated in Runner, it inherits
 functionality from Configurable (see Sample constructor

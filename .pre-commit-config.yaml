@@ -20,6 +20,11 @@ repos:
     rev: 5.10.1
     hooks:
       - id: isort
+  # format f strings
+  - repo: https://github.com/ikamensh/flynt/
+    rev: "0.76"
+    hooks:
+      - id: flynt
   # format python code
   - repo: https://github.com/psf/black
     rev: 22.6.0
@@ -30,7 +35,7 @@ repos:
     rev: v2.7.1
     hooks:
       - id: prettier
-        exclude_types: [python]
+        exclude_types: [python, markdown]
         args: ["--print-width", "100"]
   # format java. Seperate from the above for different tab width
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -55,11 +60,11 @@ repos:
           - flake8-simplify
           - flake8-builtins
           - flake8-comprehensions
-          - flake8-fixme
-  #           - flake8-docstrings
-  #           - flake8-rst-docstrings
-  #           - darglint
-  
+          - flake8-use-fstring
+  #          - flake8-docstrings
+  #          - flake8-rst-docstrings
+  #          - darglint
+
   # lint markdown
   - repo: https://github.com/jackdewinter/pymarkdown
     rev: v0.9.7
