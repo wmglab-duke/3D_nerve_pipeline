@@ -545,7 +545,7 @@ def get_submission_list(run_inds):
             warnings.warn(f'Duplicate nsims found in run {run_number}. Continuing')
         submission_list.update(submission_addition)
         rundata.append(
-            {'RUN': run_number, 'SAMPLE': run['sample'], 'MODELS': run['models'], 'SIMS': run['sims'],}
+            {'RUN': run_number, 'SAMPLE': run['sample'], 'MODELS': run['models'], 'SIMS': run['sims'], }
         )
     return rundata, submission_list
 
