@@ -8,7 +8,6 @@ The source code can be found on the following GitHub repository: https://github.
 
 # builtins
 import os
-import subprocess
 import sys
 import time
 
