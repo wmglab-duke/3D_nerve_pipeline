@@ -1,9 +1,6 @@
 import os
-
 import pandas as pd
-
-from src.utils.configurable import Configurable
-from src.utils.enums import Config
+from src.utils import (Configurable, Config)
 
 
 class Saving(Configurable):

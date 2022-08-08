@@ -1,13 +1,8 @@
-import os
 import pickle
 import sys
 import time
 
-sys.path.append(os.getcwd())
-from recording import Recording
-from saving import Saving
-from stimulation import Stimulation
-
+from NEURON_Files import Recording, Saving, Stimulation
 
 def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, waveform_path: str, sim_path: str):
     """

@@ -634,28 +634,38 @@ class Simulation(Exceptionable, Configurable, Saveable):
         submit_source = os.path.join('src', 'neuron', 'submit.py')
         shutil.copy2(submit_source, submit_target)
 
+        # move run_controls.py from submit/NEURON_files/ to submit/ directory
+        run_controls_target = os.path.join(target, 'run_controls.py')
+        if os.path.isfile(run_controls_target):
+            os.remove(run_controls_target)
+        run_controls_source = os.path.join(target, 'NEURON_Files', 'run_controls.py')
+        shutil.move(run_controls_source, run_controls_target)
+
     @staticmethod
     def export_src_files(target: str):
         # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
+        utils_target = os.path.join(target, 'utils')    # submit/src/utils
+        core_target = os.path.join(target, 'core')      # submit/src/core
         if not os.path.exists(target):
             os.makedirs(target)
 
-            utils_target = os.path.join(target, 'utils')
-            if not os.path.exists(utils_target):
-                os.makedirs(utils_target)
-
-            core_target = os.path.join(target, 'core')
             if not os.path.exists(core_target):
                 os.makedirs(core_target)
 
-        for util_file in ['configurable.py', 'enums.py', 'saveable.py']:
-            file_target = os.path.join(target, 'utils', util_file)
-            file_source = os.path.join('src', 'utils', util_file)
-            if os.path.isfile(file_target):
-                os.remove(file_target)
+        # delete any existing submit/src/utils folders
+        if os.path.exists(utils_target):
+            shutil.rmtree(utils_target)
 
-            shutil.copy2(file_source, file_target)
+        # copy entire src/utils folder over to submit/
+        try:
+            shutil.copytree(
+                os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'utils'),
+                utils_target,
+            )
+        except Exception:
+            pass
 
+        # copy fiber.py into fiber.py
         fiber_target = os.path.join(target, 'core', 'fiber.py')
         fiber_source = os.path.join('src', 'core', 'fiber.py')
         if os.path.isfile(fiber_target):

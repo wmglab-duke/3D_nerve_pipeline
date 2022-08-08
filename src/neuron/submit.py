@@ -235,7 +235,7 @@ def make_task(
             lines = [
                 '#!/bin/bash\n',
                 'cd ../../\n',
-                f'python NEURON_Files/run_controls.py '
+                f'python run_controls.py '
                 f'\"{fiber_path}\" '
                 f'\"{inner_ind}\" '
                 f'\"{fiber_ind}\" '
