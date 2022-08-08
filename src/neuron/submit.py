@@ -283,7 +283,9 @@ def submit_fibers(submission_context, submission_data):
     for sim_name, runfibers in submission_data.items():
         if args.verbose:
             print(f'\n\n################ {sim_name} ################\n\n')
-
+        #skip if no fibers to run for this nsim
+        if len(runfibers) == 0:
+            continue
         sim_path = os.path.join(sim_dir, sim_name)
         start_dir = os.path.join(sim_path, 'start_scripts')
         start_path_base = os.path.join(start_dir, 'start_')
@@ -314,7 +316,7 @@ def submit_fibers(submission_context, submission_data):
                 for x in runfibers:
                     x['verbose'] = args.verbose
                 if not args.verbose:
-                    print_progress_bar(0, len(runfibers), length=40, prefix=f'n_sim {sim_name}:')
+                    print_progress_bar(0, len(runfibers), length=40, prefix='Sample {}, Model {}, Sim {}, n_sim {}:'.format(*sim_name.split('_')))
                 # open pool instance, set up progress bar, and iterate over each job
                 for i, _ in enumerate(p.imap_unordered(local_submit, runfibers, 1)):
                     if not args.verbose:
