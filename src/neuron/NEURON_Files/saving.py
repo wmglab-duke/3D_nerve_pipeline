@@ -1,6 +1,8 @@
 import os
+
 import pandas as pd
-from src.utils import (Configurable, Config)
+
+from src.utils import Config, Configurable
 
 
 class Saving(Configurable):

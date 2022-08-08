@@ -1,5 +1,5 @@
 from neuron import h
-from src.utils import (Configurable, Config)
+from src.utils import Config, Configurable
 
 h.load_file('stdrun.hoc')
 

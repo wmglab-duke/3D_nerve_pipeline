@@ -82,24 +82,35 @@ class Fiber(Configurable, Saveable):
         elif self.fiber_mode == 'MRG_DISCRETE':
             diameters, my_delta_zs, paranodal_length_2s, axonDs, nodeDs, paraD1s, paraD2s, nls = (
                 self.search(Config.FIBER_Z, MyelinationMode.parameters.value, self.fiber_mode, key)
-                for key in ('diameters', 'delta_zs', 'paranodal_length_2s',
-                            'axonDs', 'nodeDs', 'paraD1s', 'paraD2s', 'nls')
+                for key in (
+                    'diameters',
+                    'delta_zs',
+                    'paranodal_length_2s',
+                    'axonDs',
+                    'nodeDs',
+                    'paraD1s',
+                    'paraD2s',
+                    'nls',
+                )
             )
             diameter_index = diameters.index(self.diameter)
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
             node_channels = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_channels')
             fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
-            paranodal_length_2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                             'paranodal_length_2s')[diameter_index]
+            paranodal_length_2 = self.search(
+                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paranodal_length_2s'
+            )[diameter_index]
             axonD = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'axonDs')[diameter_index]
             nodeD = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'nodeDs')[diameter_index]
             paraD1 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD1s')[diameter_index]
             paraD2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD2s')[diameter_index]
             nl = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'nls')[diameter_index]
-            self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                       'delta_zs')[diameter_index]
-            self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
-                                                 'passive_end_nodes')
+            self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')[
+                diameter_index
+            ]
+            self.passive_end_nodes = self.search(
+                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes'
+            )
 
         elif self.fiber_mode == 'MRG_INTERPOLATION':
             diameter = self.diameter
@@ -111,10 +122,10 @@ class Fiber(Configurable, Saveable):
             )
 
             if self.diameter >= 5.643:
-                self.delta_z = -8.215*diameter**2 + 272.4*diameter - 780.2
+                self.delta_z = -8.215 * diameter**2 + 272.4 * diameter - 780.2
             else:
-                self.delta_z = 81.08*diameter + 37.84
-            paranodal_length_2 = -0.1652*diameter**2 + 6.354*diameter - 0.2862
+                self.delta_z = 81.08 * diameter + 37.84
+            paranodal_length_2 = -0.1652 * diameter**2 + 6.354 * diameter - 0.2862
             nl = -0.4749 * self.diameter**2 + 16.85 * self.diameter - 0.7648
             nodeD = 0.01093 * self.diameter**2 + 0.1008 * self.diameter + 1.099
             paraD1 = nodeD
@@ -257,9 +268,7 @@ class Fiber(Configurable, Saveable):
 
             return STIN
 
-        def create_node(
-            index, nodeD, nodelength, rhoa, mycm, mygm, passive, axonnodes, node_channels, nl, Rpn0
-        ):
+        def create_node(index, nodeD, nodelength, rhoa, mycm, mygm, passive, axonnodes, node_channels, nl, Rpn0):
             """
             Create a node of Ranvier for MRG_DISCRETE fiber type
             :return: nrn.Section

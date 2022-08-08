@@ -196,9 +196,12 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 if loc < 0 or loc > 1:
                     self.throw(156)
         fiber_mode = self.search(Config.SIM, 'fibers', 'mode')
-        if fiber_mode != 'MRG_DISCRETE' and fiber_mode != 'MRG_INTERPOLATION':
-            if saving_dict['space']['gating'] or saving_dict['time']['gating']:
-                self.throw(157)
+        if (
+            fiber_mode != 'MRG_DISCRETE'
+            and fiber_mode != 'MRG_INTERPOLATION'
+            and (saving_dict['space']['gating'] or saving_dict['time']['gating'])
+        ):
+            self.throw(157)
 
         return self
 
@@ -644,8 +647,8 @@ class Simulation(Exceptionable, Configurable, Saveable):
     @staticmethod
     def export_src_files(target: str):
         # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
-        utils_target = os.path.join(target, 'utils')    # submit/src/utils
-        core_target = os.path.join(target, 'core')      # submit/src/core
+        utils_target = os.path.join(target, 'utils')  # submit/src/utils
+        core_target = os.path.join(target, 'core')  # submit/src/core
         if not os.path.exists(target):
             os.makedirs(target)
 
