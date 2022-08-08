@@ -80,80 +80,41 @@ class Fiber(Configurable, Saveable):
             channels_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'channels_type')
 
         elif self.fiber_mode == 'MRG_DISCRETE':
-            diameters, my_delta_zs, paranodal_length_2s = (
+            diameters, my_delta_zs, paranodal_length_2s, axonDs, nodeDs, paraD1s, paraD2s, nls = (
                 self.search(Config.FIBER_Z, MyelinationMode.parameters.value, self.fiber_mode, key)
-                for key in ('diameters', 'delta_zs', 'paranodal_length_2s')
+                for key in ('diameters', 'delta_zs', 'paranodal_length_2s',
+                            'axonDs', 'nodeDs', 'paraD1s', 'paraD2s', 'nls')
             )
             diameter_index = diameters.index(self.diameter)
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
             node_channels = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_channels')
-            self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')[
-                diameter_index
-            ]
-            paranodal_length_2 = self.search(
-                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paranodal_length_2s'
-            )[diameter_index]
-            self.passive_end_nodes = self.search(
-                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes'
-            )
             fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
-
-            if self.diameter == 1:
-                g, axonD, nodeD, paraD1, paraD2, nl = None, 0.8, 0.7, 0.7, 0.8, 15
-            elif self.diameter == 2:
-                g, axonD, nodeD, paraD1, paraD2, nl = None, 1.6, 1.4, 1.4, 1.6, 30
-            elif self.diameter == 5.7:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.605, 3.4, 1.9, 1.9, 3.4, 80
-            elif self.diameter == 7.3:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.630, 4.6, 2.4, 2.4, 4.6, 100
-            elif self.diameter == 8.7:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.661, 5.8, 2.8, 2.8, 5.8, 110
-            elif self.diameter == 10:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.690, 6.9, 3.3, 3.3, 6.9, 120
-            elif self.diameter == 11.5:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.700, 8.1, 3.7, 3.7, 8.1, 130
-            elif self.diameter == 12.8:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.719, 9.2, 4.2, 4.2, 9.2, 135
-            elif self.diameter == 14:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.739, 10.4, 4.7, 4.7, 10.4, 140
-            elif self.diameter == 15:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.767, 11.5, 5.0, 5.0, 11.5, 145
-            elif self.diameter == 16:
-                g, axonD, nodeD, paraD1, paraD2, nl = 0.791, 12.7, 5.5, 5.5, 12.7, 150
+            paranodal_length_2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
+                                             'paranodal_length_2s')[diameter_index]
+            axonD = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'axonDs')[diameter_index]
+            nodeD = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'nodeDs')[diameter_index]
+            paraD1 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD1s')[diameter_index]
+            paraD2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD2s')[diameter_index]
+            nl = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'nls')[diameter_index]
+            self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
+                                       'delta_zs')[diameter_index]
+            self.passive_end_nodes = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode,
+                                                 'passive_end_nodes')
 
         elif self.fiber_mode == 'MRG_INTERPOLATION':
             diameter = self.diameter
             neuron_flag = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'neuron_flag')
             node_channels = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_channels')
-            node_length = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'node_length')
-            paranodal_length_1 = self.search(
-                Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paranodal_length_1'
-            )
             fiber_type = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'fiber_type')
             self.passive_end_nodes = self.search(
                 Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'passive_end_nodes'
             )
 
             if self.diameter >= 5.643:
-                self.delta_z = eval(
-                    self.search(
-                        Config.FIBER_Z,
-                        'fiber_type_parameters',
-                        self.fiber_mode,
-                        'delta_z',
-                        'diameter_greater_or_equal_5.643um',
-                    )
-                )
+                self.delta_z = -8.215*diameter**2 + 272.4*diameter - 780.2
             else:
-                self.delta_z = eval(
-                    self.search(
-                        Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_z', 'diameter_less_5.643um'
-                    )
-                )
-            delta_z = self.delta_z
-            paranodal_length_2 = eval(
-                self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paranodal_length_2')
-            )
+                self.delta_z = 81.08*diameter + 37.84
+            paranodal_length_2 = -0.1652*diameter**2 + 6.354*diameter - 0.2862
             nl = -0.4749 * self.diameter**2 + 16.85 * self.diameter - 0.7648
             nodeD = 0.01093 * self.diameter**2 + 0.1008 * self.diameter + 1.099
             paraD1 = nodeD
@@ -297,7 +258,7 @@ class Fiber(Configurable, Saveable):
             return STIN
 
         def create_node(
-            index, nodeD, nodelength, rhoa, mycm, mygm, rhoe, passive, axonnodes, node_channels, nl, Rpn0, celsius
+            index, nodeD, nodelength, rhoa, mycm, mygm, passive, axonnodes, node_channels, nl, Rpn0
         ):
             """
             Create a node of Ranvier for MRG_DISCRETE fiber type
@@ -323,66 +284,8 @@ class Fiber(Configurable, Saveable):
                     node.cm = 2
                     node.insert('axnode_myel')
                 elif node_channels == 1:
-                    node.cm = 1.149452367  # [uF/cm^2] specific membrane capacitance (Schild 1994, A-type)
-                    F = 96500  # [C/mole] Faraday'node Constant from Schild 1994
-                    R = 8314  # [J/(kg*mole*K)] Gas Constant from Schild 1994
-
-                    # Based on Schild 1994 ion channels
-                    node.insert('leakSchild')
-                    node.insert('naf')
-                    node.insert('nas')
-                    node.insert('kd')
-                    node.insert('ka')
-                    node.insert('can')
-                    node.insert('cat')
-                    node.insert('kds')
-                    node.insert('kca')
-
-                    node.insert('caextscale')
-                    node.insert('caintscale')
-                    node.insert('CaPump')
-                    node.insert('NaCaPump')
-                    node.insert('NakpumpSchild')
-
-                    node.L_caintscale = node.L
-                    node.nseg_caintscale = node.nseg
-                    node.L_caextscale = node.L
-                    node.nseg_caextscale = node.nseg
-
-                    # Ionic concentrations
-                    node.cao0_ca_ion = 2.0  # [mM] Initial Cao Concentration
-                    node.cai0_ca_ion = 0.000117  # [mM] Initial Cai Concentrations
-                    node.ko = 5.4  # [mM] External K Concentration
-                    node.ki = 145.0  # [mM] Internal K Concentration
-                    kstyle = ion_style("k_ion", 1, 2, 0, 0, 0)  # Allows ek to be calculated manually
-                    node.ek = ((R * (celsius + 273.15)) / F) * np.log10(
-                        node.ko / node.ki
-                    )  # Manual Calculation of ek in order to use Schild F and R values
-
-                    node.nao = 154  # [mM] External Na Concentration
-                    node.nai = 8.9  # [mM] Internal Na Concentration
-                    nastyle = ion_style("na_ion", 1, 2, 0, 0, 0)  # Allows ena to be calculated manually
-                    node.ena = ((R * (celsius + 273.15)) / F) * np.log10(
-                        node.nao / node.nai
-                    )  # Manual Calculation of ena in order to use Schild F and R values
-
-                    node.gbar_naf = 3  # NOTE: Does not conduct with original Schild 1994 value of 0.072503919;
-                    # does not conduct at 0.5, but does at 1; increased to MRG value of 3
-                    node.shiftnaf_naf = 0  # [mV]
-                    node.gbar_nas = 3.53678e-07
-                    node.shiftnas_nas = 0
-                    node.gbar_kd = 0.000194523
-                    node.shiftkd_kd = 0
-                    node.gbar_ka = 0.001237872
-                    node.shiftka_ka = 0
-                    node.gbar_kds = 0.000353678
-                    node.shiftkds_kds = 0
-                    node.gbar_kca = 0.00022989
-                    node.gbar_can = 3.53678e-05
-                    node.shiftcan_can = 0
-                    node.gbar_cat = 1.23787e-05
-                    node.shiftcan_cat = 0
-                    node.gbna_leak = 1.14945e-05
+                    print('WARNING: Custom fiber models not yet implemented')
+                    pass
 
                 node.insert('extracellular')
                 node.xraxial[0] = Rpn0
@@ -395,7 +298,6 @@ class Fiber(Configurable, Saveable):
         rhoa = 0.7e6  # [ohm-um]
         mycm = 0.1  # lamella membrane; [uF/cm2]
         mygm = 0.001  # lamella membrane; [S/cm2]
-        rhoe = 1000  # resistivity of extracellular medium; [ohm-cm]
 
         if node_channels == 0:
             e_pas_Vrest = -80
@@ -428,13 +330,11 @@ class Fiber(Configurable, Saveable):
                 rhoa,
                 mycm,
                 mygm,
-                rhoe,
                 passive_end_nodes,
                 axonnodes,
                 node_channels,
                 nl,
                 Rpn0,
-                celsius,
             )
             self.node.append(new_node)
         for i in range(0, paranodes1):
