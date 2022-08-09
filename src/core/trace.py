@@ -101,7 +101,7 @@ class Trace(Exceptionable):
         newpoints = pco.Execute(distance)
         # ensure closed loop
         newpoints.append(newpoints[0])
-        self.append([point + [0] for point in newpoints[np.argmax([len(l) for l in newpoints])]])
+        self.append([point + [0] for point in newpoints[np.argmax([len(point) for point in newpoints])]])
 
         # cleanup
         self.__update()
@@ -439,6 +439,7 @@ class Trace(Exceptionable):
         color: Tuple[float, float, float, float] = None,
         ax: plt.Axes = None,
         linewidth=1,
+        line_kws: dict = None,
     ):
         """
         :param ax:
@@ -455,7 +456,7 @@ class Trace(Exceptionable):
         if color is not None:
             ax.fill(points[:, 0], points[:, 1], color=color)
 
-        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth)
+        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth, **{} if line_kws is None else line_kws)
 
     def plot_centroid(self, plot_format: str = 'k*'):
         """
@@ -483,22 +484,22 @@ class Trace(Exceptionable):
                     # write coordinates
                     f.write('%% Coordinates\n')
                     for i in range(count):
-                        f.write('{}\t{}\t{}\n'.format(self.points[i, 0], self.points[i, 1], self.points[i, 2]))
+                        f.write(f'{self.points[i, 0]}\t{self.points[i, 1]}\t{self.points[i, 2]}\n')
 
                     # write elements (corresponding to their coordinates)
                     f.write('%% Elements\n')
                     for i in range(count):
                         # if not last point, attach to next point
                         if i < count - 1:
-                            f.write('{}\t{}\n'.format(i + 1, i + 2))
+                            f.write(f'{i + 1}\t{i + 2}\n')
                         else:  # attach to first point (closed loop)
-                            f.write('{}\t{}\n'.format(i + 1, 1))
+                            f.write(f'{i + 1}\t{1}\n')
 
                 elif mode == WriteMode.SECTIONWISE2D:
                     # write coordinates
                     f.write('%% Coordinates\n')
                     for i in range(count):
-                        f.write('{}\t{}\n'.format(self.points[i, 0], self.points[i, 1]))
+                        f.write(f'{self.points[i, 0]}\t{self.points[i, 1]}\n')
 
                 else:
                     self.throw(4)
@@ -526,7 +527,6 @@ class Trace(Exceptionable):
         mass = 1
         radius = 1
         vertices = [tuple(point[:2]) for point in copy.points]
-        inertia = pymunk.moment_for_poly(mass, vertices)
         body = pymunk.Body(mass, 1)
         body.position = self.centroid()  # position is tracked from trace centroid
         shape = pymunk.Poly(body, vertices, radius=radius)

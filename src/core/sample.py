@@ -17,7 +17,6 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage.morphology import binary_fill_holes
-from shapely.geometry import LineString
 from skimage import morphology
 
 # ascent
@@ -149,7 +148,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         if removal_size:
             if removal_size < 0:
                 self.throw(120)
-            img = morphology.remove_small_objects(img, removal_size)
+            img = morphology.remove_small_objects(img.astype(bool), removal_size)
         imgout = (255 * (img / np.amax(img))).astype(np.uint8)
         cv2.imwrite(path, imgout)
 
@@ -182,7 +181,6 @@ class Sample(Exceptionable, Configurable, Saveable):
             elif row_of_column_maxes.ndim == 1:  # masks from mock morphology, 1 bit
                 indices = np.where(row_of_column_maxes[:] == max(row_of_column_maxes[:]))[0]
             else:
-                # may need to expand here in future?
                 self.throw(97)
 
             # find the length of the scale bar by finding total range of "max white" indices
@@ -222,7 +220,7 @@ class Sample(Exceptionable, Configurable, Saveable):
             for mask_fname in [f.value for f in MaskFileNames if f.value in source_files]:
                 shutil.move(
                     os.path.join(source_dir, mask_fname),
-                    os.path.join(source_dir, '{}_0_0_{}'.format(sample, mask_fname)),
+                    os.path.join(source_dir, f'{sample}_0_0_{mask_fname}'),
                 )
         else:
             self.throw(96)
@@ -256,12 +254,12 @@ class Sample(Exceptionable, Configurable, Saveable):
                                 number,
                                 MaskFileNames.SCALE_BAR.value,
                             ]
-                        )
+                        ),
                     )
                     if os.path.exists(scale_source_file):
                         shutil.copy2(scale_source_file, MaskFileNames.SCALE_BAR.value)
                     else:
-                        print('ERROR: scale_source_file: {} not found'.format(scale_source_file))
+                        print(f'ERROR: scale_source_file: {scale_source_file} not found')
                         self.throw(98)
 
                     scale_was_copied = True
@@ -271,7 +269,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                     start_directory, *source_directory, '_'.join([sample, cassette, number, target_file])
                 )
                 if printing:
-                    print('source: {}\ntarget: {}'.format(source_file, target_file))
+                    print(f'source: {source_file}\ntarget: {target_file}')
                 if os.path.exists(source_file):
                     if printing:
                         print('\tFOUND\n')
@@ -294,7 +292,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         self.deform_ratio = None
         self.scale_input_mode = self.search_mode(ScaleInputMode, Config.SAMPLE, optional=True)
         self.sample_rotation = self.search(Config.SAMPLE, "rotation", optional=True)
-        self.contour_mode = self.search_mode(ContourMode, Config.SAMPLE)
+        self.contour_mode = self.search_mode(ContourMode, Config.SAMPLE, optional=True)
 
         # For backwards compatibility, if scale mode is not specified assume a mask image is provided
         if self.scale_input_mode is None:
@@ -314,7 +312,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         if len(img.shape) > 2 and img.shape[2] > 1:
             img = img[:, :, 0]
 
-        contour, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contour, _ = cv2.findContours(img, cv2.RETR_TREE, self.contour_mode.value)
         if len(contour) > 1:
             self.throw(124)
         if len(contour) < 1:
@@ -366,7 +364,7 @@ class Sample(Exceptionable, Configurable, Saveable):
 
         # assign fascicle mask files
         if mask_input_mode not in MaskInputMode:
-            self.throw(152)  # need to remove outers mode and error code 20, check all error codes
+            self.throw(152)
 
         if mask_input_mode == MaskInputMode.INNER_AND_OUTER_COMPILED:
             if self.mask_exists(MaskFileNames.COMPILED):
@@ -389,7 +387,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                 outer_mask = None
 
         # generate fascicle objects from masks
-        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.configs[Config.EXCEPTIONS.value])
+        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.configs[Config.EXCEPTIONS.value], self.contour_mode)
         return fascicles
 
     def get_epineurium_from_mask(self):
@@ -401,7 +399,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         if len(img_nerve.shape) > 2 and img_nerve.shape[2] > 1:
             img_nerve = img_nerve[:, :, 0]
 
-        contour, _ = cv2.findContours(np.flipud(img_nerve), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contour, _ = cv2.findContours(np.flipud(img_nerve), cv2.RETR_TREE, self.contour_mode.value)
         nerve = Nerve(
             Trace(
                 [point + [0] for point in contour[0][:, 0, :]],
@@ -552,16 +550,20 @@ class Sample(Exceptionable, Configurable, Saveable):
             else:
                 morph_count = 100
 
+            if 'deform_ratio' in self.search(Config.SAMPLE):
+                deform_ratio = self.search(Config.SAMPLE, 'deform_ratio')
+                print(f'\tdeform ratio set to {deform_ratio}')
+            else:
+                self.throw(118)
             partially_deformed_nerve = None
             slide.move_center(np.array([0, 0]))
-
             sep_fascicles = self.search(Config.SAMPLE, "boundary_separation", "fascicles")
 
-            print('\tensuring minimum fascicle separation of {} um'.format(sep_fascicles))
+            print(f'\tensuring minimum fascicle separation of {sep_fascicles} um')
 
             if 'nerve' in self.search(Config.SAMPLE, 'boundary_separation'):
                 sep_nerve = self.search(Config.SAMPLE, 'boundary_separation', 'nerve')
-                print('\tensuring minimum nerve:fascicle separation of {} um'.format(sep_nerve))
+                print(f'\tensuring minimum nerve:fascicle separation of {sep_nerve} um')
                 sep_nerve = sep_nerve - sep_fascicles / 2
             else:
                 sep_nerve = None
@@ -608,41 +610,13 @@ class Sample(Exceptionable, Configurable, Saveable):
             if slide.nerve.area() < pre_area:
                 slide.nerve.scale((pre_area / slide.nerve.area()) ** 0.5)
             else:
-                print(
-                    'Note: nerve area before deformation was {}, post deformation is {}'.format(
-                        pre_area, self.nerve.area()
-                    )
-                )
+                print(f'Note: nerve area before deformation was {pre_area}, post deformation is {self.nerve.area()}')
         else:
             self.throw(153)
 
         # shift slide about (0,0)
         slide.move_center(np.array([0, 0]))
         return slide
-
-    def add_orientation_point(self, slide):
-        """Add orientation point from orientation angle.
-        :param slide: Slide object
-        """
-        # choose outer (based on if nerve is present)
-        outer = slide.nerve if (slide.nerve is not None) else slide.fascicles[0].outer
-
-        length = outer.mean_radius() * 10
-
-        o_pt = (
-            np.array(
-                [
-                    np.cos(slide.orientation_angle),
-                    np.sin(slide.orientation_angle),
-                ]
-            )
-            * length
-        )
-
-        ray = LineString([outer.centroid(), o_pt])
-
-        # find intersection point with outer (interpolated)
-        slide.orientation_point = np.array(ray.intersection(outer.polygon().boundary))
 
     def populate(self) -> 'Sample':
         """Main function for populating a sample."""
@@ -696,7 +670,7 @@ class Sample(Exceptionable, Configurable, Saveable):
         if self.deform_mode == DeformationMode.NONE:
             sep_nerve = self.search(Config.SAMPLE, 'boundary_separation').get('nerve')
             if sep_nerve != 0:
-                warnings.warn('NO DEFORMATION is happening! AND sep_nerve is not 0, sep_nerve = {}'.format(sep_nerve))
+                warnings.warn(f'NO DEFORMATION is happening! AND sep_nerve is not 0, sep_nerve = {sep_nerve}')
         else:
             if self.nerve_mode == NerveMode.NOT_PRESENT:
                 self.throw(40)
@@ -704,15 +678,15 @@ class Sample(Exceptionable, Configurable, Saveable):
             for slide in self.slides:
                 self.deform_slide(slide)
         for slide in self.slides:
+
+            # shift slide about (0,0)
+            slide.move_center(np.array([0, 0]))
+
             # Rotate sample
             if self.sample_rotation is not None:
                 if slide.orientation_angle is not None:
                     self.throw(143)
                 slide.rotate(np.radians(self.sample_rotation))
-
-            if slide.orientation_angle is not None:
-                # Generate orientation point so src/core/query.py is happy
-                self.add_orientation_point(slide)
 
         # ensure that nothing went wrong in slide processing
         slide.validation(plotpath=plotpath)

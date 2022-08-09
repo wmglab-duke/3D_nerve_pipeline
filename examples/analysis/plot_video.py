@@ -7,6 +7,7 @@ The source code can be found on the following GitHub repository: https://github.
 
 Plot a video over time of Ve over the length of a fiber.
 This requires that you have saved Vm at all locs (under time).
+RUN THIS FROM REPOSITORY ROOT
 """
 
 import os
@@ -70,7 +71,7 @@ for sample in samples:
                 data = np.loadtxt(
                     os.path.join(
                         data_path,
-                        'Vm_time_inner{}_fiber{}_amp{}.dat'.format(inner, fiber, amp),
+                        f'Vm_time_inner{inner}_fiber{fiber}_amp{amp}.dat',
                     ),
                     skiprows=1,
                 )[:, 0:]
@@ -96,9 +97,7 @@ for sample in samples:
                 ani.save(
                     os.path.join(
                         outpath,
-                        'video_Vm_time_{}_{}_{}_{}_inner{}_fiber{}_amp{}.mp4'.format(
-                            sample, model, sim, n_sim, inner, fiber, amp
-                        ),  # or .mp4
+                        f'video_Vm_time_{sample}_{model}_{sim}_{n_sim}_inner{inner}_fiber{fiber}_amp{amp}.mp4',
                     )
                 )
 

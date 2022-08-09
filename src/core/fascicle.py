@@ -164,6 +164,7 @@ class Fascicle(Exceptionable):
         ax: plt.Axes = None,
         outer_flag=True,
         inner_index_start: int = None,
+        line_kws=None,
     ):
         """
         :param outer_flag:
@@ -176,7 +177,7 @@ class Fascicle(Exceptionable):
             ax = plt.gca()
 
         if outer_flag:
-            self.outer.plot(ax=ax)
+            self.outer.plot(ax=ax, line_kws=line_kws)
 
         if color is not None:
             if len(self.inners) != len(color):
@@ -185,7 +186,7 @@ class Fascicle(Exceptionable):
             color = [None] * len(self.inners)
 
         for i, (inner, c) in enumerate(zip(self.inners, color)):
-            inner.plot(plot_format, color=c, ax=ax)
+            inner.plot(plot_format, color=c, ax=ax, line_kws=line_kws)
             if inner_index_start is not None:
                 ax.text(*inner.centroid(), s=str(i + inner_index_start), ha='center', va='center')
 
@@ -274,7 +275,7 @@ class Fascicle(Exceptionable):
 
         def build_traces(path: str) -> List[Trace]:
             # default findContours params
-            params = [cv2.RETR_TREE, contour_mode]
+            params = [cv2.RETR_TREE, contour_mode.value]
             # default findContours params
 
             img = np.flipud(cv2.imread(path, -1))
