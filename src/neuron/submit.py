@@ -55,11 +55,17 @@ parser = argparse.ArgumentParser(
     description='ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds'
 )
 parser.add_argument(
-    'run_indices', type=int, nargs='*', help='Space separated indices to submit NEURON sims for',
+    'run_indices',
+    type=int,
+    nargs='*',
+    help='Space separated indices to submit NEURON sims for',
 )
 parser.add_argument('-p', '--partition', help='If submitting on a cluster, overrides slurm_params.json')
 parser.add_argument(
-    '-n', '--num-cpu', type=int, help='For local submission: set number of CPUs to use, overrides run.json',
+    '-n',
+    '--num-cpu',
+    type=int,
+    help='For local submission: set number of CPUs to use, overrides run.json',
 )
 parser.add_argument(
     '-m',
@@ -87,7 +93,10 @@ parser.add_argument(
     help='Submit all runs in the present export folder. If supplying this argument, do not pass any run indices',
 )
 parser.add_argument(
-    '-s', '--skip-summary', action='store_true', help='Begin submitting fibers without asking for confirmation',
+    '-s',
+    '--skip-summary',
+    action='store_true',
+    help='Begin submitting fibers without asking for confirmation',
 )
 parser.add_argument(
     '-S',
@@ -96,14 +105,23 @@ parser.add_argument(
     help='For cluster submission: string for additional slurm parameters (enclose in quotes)',
 )
 parser.add_argument(
-    '-c', '--force-recompile', action='store_true', help='Force submit.py to recompile NEURON files',
+    '-c',
+    '--force-recompile',
+    action='store_true',
+    help='Force submit.py to recompile NEURON files',
 )
 submit_context_group = parser.add_mutually_exclusive_group()
 submit_context_group.add_argument(
-    '-L', '--local-submit', action='store_true', help='Set submission context to local, overrides run.json',
+    '-L',
+    '--local-submit',
+    action='store_true',
+    help='Set submission context to local, overrides run.json',
 )
 submit_context_group.add_argument(
-    '-C', '--cluster-submit', action='store_true', help='Set submission context to cluster, overrides run.json',
+    '-C',
+    '--cluster-submit',
+    action='store_true',
+    help='Set submission context to cluster, overrides run.json',
 )
 
 parser.add_argument('-v', '--verbose', action='store_true', help='Print detailed submission info')
@@ -263,6 +281,7 @@ def submit_fibers(submission_context, submission_data):
     n_fibers = sum(len(v) for v in submission_data.values())
 
     for sim_name, runfibers in submission_data.items():
+        sample, model, sim, n_sim = sim_name.split('_')
         if args.verbose:
             print(f'\n\n################ {sim_name} ################\n\n')
         # skip if no fibers to run for this nsim
@@ -302,22 +321,16 @@ def submit_fibers(submission_context, submission_data):
                         0,
                         len(runfibers),
                         length=40,
-                        prefix='Sample {}, Model {}, Sim {}, n_sim {}:'.format(*sim_name.split('_')),
+                        prefix=f'Sample {sample}, Model {model}, Sim {sim}, n_sim {n_sim}:',
                     )
                 # open pool instance, set up progress bar, and iterate over each job
                 for i, _ in enumerate(p.imap_unordered(local_submit, runfibers, 1)):
                     if not args.verbose:
-                        sample, model, sim, nsim = (
-                            sim_name.split('_')[0],
-                            sim_name.split('_')[1],
-                            sim_name.split('_')[2],
-                            sim_name.split('_')[3],
-                        )
                         print_progress_bar(
                             i + 1,
                             len(runfibers),
                             length=40,
-                            prefix=f'Sample {sample}, Model {model}, Sim {sim}, n_sim {nsim}:',
+                            prefix=f'Sample {sample}, Model {model}, Sim {sim}, n_sim {n_sim}:',
                         )
             os.chdir("../..")
 
@@ -470,10 +483,14 @@ def make_run_sub_list(run_number: int):
                         if sim_config['protocol']['mode'] == 'FINITE_AMPLITUDES':
                             n_amp = len(sim_config['protocol']['amplitudes'])
                             search_path = os.path.join(
-                                output_path, f'activation_inner{inner_ind}_fiber{fiber_ind}_amp{n_amp - 1}.dat',
+                                output_path,
+                                f'activation_inner{inner_ind}_fiber{fiber_ind}_amp{n_amp - 1}.dat',
                             )
                         else:
-                            search_path = os.path.join(output_path, f"thresh_inner{inner_ind}_fiber{fiber_ind}.dat",)
+                            search_path = os.path.join(
+                                output_path,
+                                f"thresh_inner{inner_ind}_fiber{fiber_ind}.dat",
+                            )
 
                         if os.path.exists(search_path):
                             if args.verbose:
@@ -545,7 +562,12 @@ def get_submission_list(run_inds):
             warnings.warn(f'Duplicate nsims found in run {run_number}. Continuing')
         submission_list.update(submission_addition)
         rundata.append(
-            {'RUN': run_number, 'SAMPLE': run['sample'], 'MODELS': run['models'], 'SIMS': run['sims'], }
+            {
+                'RUN': run_number,
+                'SAMPLE': run['sample'],
+                'MODELS': run['models'],
+                'SIMS': run['sims'],
+            }
         )
     return rundata, submission_list
 
