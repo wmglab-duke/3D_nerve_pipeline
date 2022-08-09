@@ -376,7 +376,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     print("Explicit fiber coordinate: {} does not fall in an inner".format(fiber))
                     self.throw(71)
                 else:
-                    warnings.warn("assuming you want to adjust bad point because optionalness not implemented")
+                    # TODO: make this correction optional
                     def distpoint(a, b, distance):
                         def slope(p1, p2):
                             return math.atan2((p2[1] - p1[1]), (p2[0] - p1[0]))
@@ -396,7 +396,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
                     tree = STRtree(innershapes)
                     correct_fascicle = tree.nearest(Point(fiber))
-                    movedist = Point(fiber).distance(correct_fascicle)+1 # TODO add some leeway instead of doing +1 micron
+                    movedist = Point(fiber).distance(correct_fascicle)+5 # TODO add some leeway instead of doing +1 micron
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
                     assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
