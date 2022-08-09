@@ -20,7 +20,7 @@ import warnings
 import pandas as pd
 
 
-# %%Set up parser and top level args
+# %%Set up parser and top level arguments
 class listAction(argparse.Action):
     def __call__(self, parser, values, option_string=None):
         run_path = 'runs'
