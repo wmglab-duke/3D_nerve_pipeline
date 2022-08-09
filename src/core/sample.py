@@ -555,8 +555,7 @@ class Sample(Exceptionable, Configurable, Saveable):
                 print(f'\tdeform ratio set to {deform_ratio}')
             else:
                 self.throw(118)
-            partially_deformed_nerve = None
-            slide.move_center(np.array([0, 0]))
+
             sep_fascicles = self.search(Config.SAMPLE, "boundary_separation", "fascicles")
 
             print(f'\tensuring minimum fascicle separation of {sep_fascicles} um')
@@ -677,11 +676,10 @@ class Sample(Exceptionable, Configurable, Saveable):
             # repositioning!
             for slide in self.slides:
                 self.deform_slide(slide)
-        for slide in self.slides:
 
+        for slide in self.slides:
             # shift slide about (0,0)
             slide.move_center(np.array([0, 0]))
-
             # Rotate sample
             if self.sample_rotation is not None:
                 if slide.orientation_angle is not None:

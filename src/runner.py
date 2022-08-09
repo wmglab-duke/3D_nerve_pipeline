@@ -394,7 +394,7 @@ class Runner(Exceptionable, Configurable):
                 # Model Configs Provided, but not Sim Configs
                 print('\nTO JAVA\n')
                 run_config = os.path.join(
-                    os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', f'{self.run_number}.json'
+                    os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', f'{self.number}.json'
                 )
                 self.handoff(run_config)
                 print('\nNEURON Simulations NOT created since no Sim indices indicated in Config.SIM\n')
@@ -406,7 +406,10 @@ class Runner(Exceptionable, Configurable):
                 # only transition to java if necessary (there are potentials that do not exist)
                 if not all(self.potentials_exist) or not all(self.ss_bases_exist):
                     print('\nTO JAVA\n')
-                    self.handoff(self.number)
+                    run_config = os.path.join(
+                        os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', f'{self.number}.json'
+                    )
+                    self.handoff(run_config)
                     print('\nTO PYTHON\n')
                 else:
                     print('\nSKIPPING JAVA - all required extracted potentials already exist\n')
@@ -512,7 +515,6 @@ class Runner(Exceptionable, Configurable):
             argbytes = argstring.encode('ascii')
             argbase = base64.b64encode(argbytes)
             argfinal = argbase.decode('ascii')
-            config_path = os.path.join(project_path, 'config', 'user', 'runs', f'{config_path}.json')
         else:
             argfinal = run_type
 

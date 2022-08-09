@@ -1555,13 +1555,24 @@ public class ModelWrapper {
                             mw.addNerve(sample, nerveParams, modelData);
                         } else {
                             nerveParams.set("a_nerve", "NaN");
-                            nerveParams.set(
-                                "r_nerve",
-                                modelData.getDouble("min_radius_enclosing_circle") +
-                                " [" +
-                                morphology_unit +
-                                "]"
-                            );
+                            if (modelData.has("r_nerve_override")) {
+                                nerveParams.set(
+                                        "r_nerve",
+                                        modelData.getDouble("r_nerve_override") +
+                                                " [" +
+                                                morphology_unit +
+                                                "]"
+                                );
+                            }
+                            else{
+                                nerveParams.set(
+                                        "r_nerve",
+                                        modelData.getDouble("min_radius_enclosing_circle") +
+                                                " [" +
+                                                morphology_unit +
+                                                "]"
+                                );
+                            }
                         }
 
                         if (!nerve_only) {
@@ -2272,10 +2283,24 @@ public class ModelWrapper {
         );
         if (morphology.isNull("Nerve")) { //Monofascicle, no-epineurium case
             nerveParams.set("a_nerve", "NaN");
-            nerveParams.set(
-                "r_nerve",
-                modelData.getDouble("min_radius_enclosing_circle") + " [" + morphology_unit + "]"
-            );
+            if (modelData.has("r_nerve_override")) {
+                nerveParams.set(
+                        "r_nerve",
+                        modelData.getDouble("r_nerve_override") +
+                                " [" +
+                                morphology_unit +
+                                "]"
+                );
+            }
+            else{
+                nerveParams.set(
+                        "r_nerve",
+                        modelData.getDouble("min_radius_enclosing_circle") +
+                                " [" +
+                                morphology_unit +
+                                "]"
+                );
+            }
         } else {
             JSONObject nerve = (JSONObject) morphology.get("Nerve");
             nerveParams.set("a_nerve", nerve.get("area") + " [" + morphology_unit + "^2]");
@@ -2297,13 +2322,24 @@ public class ModelWrapper {
             //
 
             if (deform_ratio < 1) { //Use trace
-                nerveParams.set(
-                    "r_nerve",
-                    modelData.getDouble("min_radius_enclosing_circle") +
-                    " [" +
-                    morphology_unit +
-                    "]"
-                );
+                if (modelData.has("r_nerve_override")) {
+                    nerveParams.set(
+                            "r_nerve",
+                            modelData.getDouble("r_nerve_override") +
+                                    " [" +
+                                    morphology_unit +
+                                    "]"
+                    );
+                }
+                else{
+                    nerveParams.set(
+                            "r_nerve",
+                            modelData.getDouble("min_radius_enclosing_circle") +
+                                    " [" +
+                                    morphology_unit +
+                                    "]"
+                    );
+                }
             } else { //Use area of nerve
                 nerveParams.set("r_nerve", "sqrt(a_nerve/pi)");
             }

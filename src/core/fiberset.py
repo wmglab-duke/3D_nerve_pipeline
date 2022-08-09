@@ -196,6 +196,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 points = self.generate_wheel_points(buffer)
 
             elif xy_mode == FiberXYMode.EXPLICIT:
+                # TODO make this shift according to trace buffer
                 points = self.load_explicit_coords(sim_directory)
         else:
             self.throw(30)
@@ -392,15 +393,16 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     print(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
                     self.throw(71)
                 else:
-                    warnings.warn("assuming you want to adjust bad point because not implemented")
-
+                    # TODO: make this correction optional
                     tree = STRtree(innershapes)
                     correct_fascicle = tree.nearest(Point(fiber))
-                    movedist = Point(fiber).distance(correct_fascicle)
+                    movedist = (
+                        Point(fiber).distance(correct_fascicle) + 5
+                    )  # TODO add some leeway instead of doing +1 micron
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
-                    assert Point(newpoint).within(unary_union([x.polygon() for x in innertraces]))
-                points[i] = fiber
+                    assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                points[i] = newpoint
         return points
 
     def plot_fibers_on_sample(self, sim_directory):
