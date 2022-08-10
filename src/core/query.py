@@ -1,9 +1,10 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE.txt and README.txt files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE.txt and README.txt files for licensing
+instructions. The source code can be found on the following GitHub
+repository: https://github.com/wmglab-duke/ascent
 """
 
 import os
@@ -27,6 +28,7 @@ class Query(Exceptionable, Configurable, Saveable):
 
     def __init__(self, criteria: Union[str, dict]):
         """Set up Query object.
+
         :param criteria: dictionary of search criteria
         """
         # set up superclasses
@@ -179,11 +181,11 @@ class Query(Exceptionable, Configurable, Saveable):
         return self._result
 
     def get_config(self, mode: Config, indices: List[int]) -> dict:
-        """ """
+        """"""
         return self.load(self.build_path(mode, indices))
 
     def get_object(self, mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
-        """ """
+        """"""
         with open(self.build_path(mode, indices), 'rb') as obj:
             return pickle.load(obj)
 
@@ -193,7 +195,7 @@ class Query(Exceptionable, Configurable, Saveable):
         indices: List[int] = None,
         just_directory: bool = False,
     ) -> str:
-        """ """
+        """"""
 
         result = str()
 
@@ -233,7 +235,7 @@ class Query(Exceptionable, Configurable, Saveable):
         return result
 
     def _match(self, criteria: dict, data: dict) -> bool:
-        """ """
+        """"""
 
         for key in criteria.keys():
 
@@ -431,6 +433,7 @@ class Query(Exceptionable, Configurable, Saveable):
 
     def threshold_data3d(
         self,
+        source_sim_sample,
         sim_indices: List[int] = None,
         model_indices: List[int] = None,
         ignore_missing=False,
@@ -472,7 +475,7 @@ class Query(Exceptionable, Configurable, Saveable):
                 model_index = model_results['index']
 
                 for sim_index in sim_indices:
-                    sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
+                    sim_object = self.get_object(Object.SIMULATION, [source_sim_sample, model_index, sim_index])
 
                     # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
                     # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
