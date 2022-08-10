@@ -439,6 +439,7 @@ class Trace(Exceptionable):
         color: Tuple[float, float, float, float] = None,
         ax: plt.Axes = None,
         linewidth=1,
+        line_kws: dict = None,
     ):
         """
         :param ax:
@@ -455,7 +456,7 @@ class Trace(Exceptionable):
         if color is not None:
             ax.fill(points[:, 0], points[:, 1], color=color)
 
-        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth)
+        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth, **{} if line_kws is None else line_kws)
 
     def plot_centroid(self, plot_format: str = 'k*'):
         """
@@ -526,7 +527,6 @@ class Trace(Exceptionable):
         mass = 1
         radius = 1
         vertices = [tuple(point[:2]) for point in copy.points]
-        inertia = pymunk.moment_for_poly(mass, vertices)
         body = pymunk.Body(mass, 1)
         body.position = self.centroid()  # position is tracked from trace centroid
         shape = pymunk.Poly(body, vertices, radius=radius)

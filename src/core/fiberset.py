@@ -68,7 +68,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         )
 
     def init_post_config(self):
-        if any([config.value not in self.configs.keys() for config in (Config.MODEL, Config.SIM)]):
+        if any([config.value not in self.configs for config in (Config.MODEL, Config.SIM)]):
             self.throw(78)
         return self
 
@@ -81,6 +81,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
         self.validate()
+        self.plot_fibers_on_sample(sim_directory)
 
         return self
 
@@ -98,11 +99,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             half_nerve_length = self.search(Config.MODEL, 'nerve_length') / 2
             absolute_offset = self.search(Config.SIM, 'fibers', 'z_parameters', 'absolute_offset', optional=True)
             absoff = 0 if absolute_offset is None else absolute_offset
-            fiber_3d = np.loadtxt('{}/3D_fiberset/{}.dat'.format(sim_directory, fiber), skiprows=1)
-            longit = np.loadtxt('{}/ss_coords/{}.dat'.format(sim_directory, fiber), skiprows=1)
+            fiber_3d = np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1)
+            longit = np.loadtxt(f'{sim_directory}/ss_coords/{fiber}.dat', skiprows=1)
             shiftpoint = np.where(fiber_3d[:, 2] < absoff + half_nerve_length)[0][-1]
             shiftloc = longit[shiftpoint, 2]
-            length = float(np.loadtxt('{}/ss_lengths/{}.dat'.format(sim_directory, fiber)))
+            length = float(np.loadtxt(f'{sim_directory}/ss_lengths/{fiber}.dat'))
             override_shift = shiftloc - length / 2
             fib = self._generate_z([(0, 0)], override_length=length - 2, override_shift=override_shift)
             fib[0] = [(x[0], x[1], x[2] + 1) for x in fib[0]]
@@ -195,9 +196,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 points = self.generate_wheel_points(buffer)
 
             elif xy_mode == FiberXYMode.EXPLICIT:
-                #TODO make this shift according to trace buffer
-                points = self.load_explicit_coords(sim_directory, buffer)
-            self.plot_points_on_sample(points, sim_directory)
+                # TODO make this shift according to trace buffer
+                points = self.load_explicit_coords(sim_directory)
         else:
             self.throw(30)
 
@@ -327,6 +327,23 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         return points
 
     def load_explicit_coords(self, sim_directory, buffer):
+        def distpoint(a, b, distance):
+            def slope(p1, p2):
+                return math.atan2((p2[1] - p1[1]), (p2[0] - p1[0]))
+
+            def spherical_to_cartesian(r, theta):
+                x = r * math.cos(theta)
+                y = r * math.sin(theta)
+                return x, y
+
+            def add_points(p1, p2):
+                return p1[0] + p2[0], p1[1] + p2[1]
+
+            slp = slope(a, b)
+            new_p = spherical_to_cartesian(distance, slp)
+            res = add_points(a, new_p)
+            return res
+
         points: List[Tuple[float]] = []
         explicit_index = self.search(
             Config.SIM,
@@ -350,7 +367,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             print(
                 '\t\tWARNING: Explicit fiberset index not specified.'
                 '\n\t\tProceeding with backwards compatible check for explicit.txt in:'
-                '\n\t\t{}'.format(sim_directory)
+                f'\n\t\t{sim_directory}'
             )
 
         if not os.path.exists(os.path.join(sim_directory, 'explicit.txt')):
@@ -361,7 +378,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             next(f)
             reader = csv.reader(f, delimiter=" ")
             for row in reader:
-                points.append(tuple([float(row[0]), float(row[1])]))
+                points.append((float(row[0]), float(row[1])))
 
         # check that all fibers are within exactly one inner
         for i, fiber in enumerate(points):
@@ -373,37 +390,31 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             innershapes = [x.polygon() for x in innerbuffer]
             if not Point(fiber).within(unary_union(innershapes)):
                 if not True:  # TODO add point adjust param and buffer amt, also wrap this in funciton
-                    print("Explicit fiber coordinate: {} does not fall in an inner".format(fiber))
+                    print(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
                     self.throw(71)
                 else:
                     # TODO: make this correction optional
-                    def distpoint(a, b, distance):
-                        def slope(p1, p2):
-                            return math.atan2((p2[1] - p1[1]), (p2[0] - p1[0]))
-
-                        def spherical_to_cartesian(r, theta):
-                            x = r * math.cos(theta)
-                            y = r * math.sin(theta)
-                            return x, y
-
-                        def add_points(p1, p2):
-                            return p1[0] + p2[0], p1[1] + p2[1]
-
-                        slp = slope(a, b)
-                        new_p = spherical_to_cartesian(distance, slp)
-                        res = add_points(a, new_p)
-                        return res
-
                     tree = STRtree(innershapes)
                     correct_fascicle = tree.nearest(Point(fiber))
-                    movedist = Point(fiber).distance(correct_fascicle)+5 # TODO add some leeway instead of doing +1 micron
+                    movedist = (
+                        Point(fiber).distance(correct_fascicle) + 5
+                    )  # TODO add some leeway instead of doing +5 micron
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
-                    assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                    try:
+                        assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                    except:
+                        # get the nearest point on the boundary of the correct fascicle and shift away from that
+                        # TODO: change it to always work this way
+                        from shapely.ops import nearest_points
+                        nearest = nearest_points(Point(fiber), correct_fascicle)[1]
+                        dest = (nearest.x, nearest.y)
+                        newpoint = distpoint(fiber, dest, movedist)
+                        assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
                 points[i] = newpoint
         return points
 
-    def plot_points_on_sample(self, points, sim_directory):
+    def plot_fibers_on_sample(self, sim_directory):
         fig = plt.figure()
         self.sample.slides[0].plot(
             final=False,
@@ -411,8 +422,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             axlabel=u"\u03bcm",
             title='Fiber locations for nerve model',
         )
-        for point in points:
-            plt.plot(point[0], point[1], 'r.', markersize=1)
+        self.plot()
         plt.savefig(sim_directory + '/plots/fibers_xy.png', dpi=300)
         if self.search(Config.RUN, 'popup_plots', optional=True) is False:
             fig.clear
@@ -423,18 +433,21 @@ class FiberSet(Exceptionable, Configurable, Saveable):
     def plot(
         self,
         ax: plt.Axes = None,
-        fiber_colors: List[Tuple[float, float, float, float]] = None,
-        size=10,
+        scatter_kws: dict = None,
     ):
-
-        for fiber_ind, fiber in enumerate(self.fibers):
-            ax.plot(
-                fiber[0][0],
-                fiber[0][1],
-                color=fiber_colors[fiber_ind],
-                marker='o',
-                markersize=size,
-            )
+        if ax is None:
+            ax = plt.gca()
+        if scatter_kws is None:
+            scatter_kws = {}
+        scatter_kws.setdefault('c', 'red')
+        scatter_kws.setdefault('s', 20)
+        scatter_kws.setdefault('marker', 'o')
+        x, y = self.xy_points(split_xy=True)
+        ax.scatter(
+            x,
+            y,
+            **scatter_kws,
+        )
 
     def _generate_z(
         self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False, override_shift=None
@@ -830,8 +843,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         model_length = self.search(Config.MODEL, 'nerve_length') if (override_length is None) else override_length
 
         if (
-            not 'min' in self.configs['sims']['fibers']['z_parameters'].keys()
-            or not 'max' in self.configs['sims']['fibers']['z_parameters'].keys()
+            'min' not in self.configs['sims']['fibers']['z_parameters']
+            or 'max' not in self.configs['sims']['fibers']['z_parameters']
             or override_length is not None
         ):
             fiber_length = model_length if override_length is None else override_length
@@ -888,3 +901,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         if not np.all([Point(fiber).within(allpoly) for fiber in self.fibers]):
             self.throw(147)
         # add other checks below
+
+    def xy_points(self, split_xy=False):
+        points = [(f[0][0], f[0][1]) for f in self.fibers]
+        if split_xy:
+            return list(zip(*points))[0], list(zip(*points))[1]
+        else:
+            return points

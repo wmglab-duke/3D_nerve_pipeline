@@ -12,10 +12,8 @@ from typing import List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-from shapely.affinity import scale
 
 # packages
-from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 
 from src.utils import Exceptionable, NerveMode, ReshapeNerveMode, SetupMode, WriteMode
@@ -210,7 +208,7 @@ class Slide(Exceptionable):
         if self.monofasc():
             # get shift from nerve centroid and point argument
             shift = list(point - np.array(self.fascicles[0].centroid())) + [0]
-        elif target == None or target == "nerve":
+        elif target is None or target == "nerve":
             # get shift from nerve centroid and point argument
             shift = list(point - np.array(self.nerve.centroid())) + [0]
         elif target == "fascicle" or target == "fascicles":
@@ -254,6 +252,7 @@ class Slide(Exceptionable):
         inner_index_labels: bool = False,
         show_axis: bool = True,
         axlabel: str = None,
+        line_kws=None,
     ):
         """
         Quick util for plotting the nerve and fascicles
@@ -280,7 +279,7 @@ class Slide(Exceptionable):
 
         # loop through constituents and plot each
         if not self.monofasc():
-            self.nerve.plot(plot_format='k-', ax=ax, linewidth=1.5)
+            self.nerve.plot(plot_format='k-', ax=ax, linewidth=1.5, line_kws=line_kws)
 
         out_to_in = []
         inner_ind = 0
@@ -308,6 +307,7 @@ class Slide(Exceptionable):
                 ax=ax,
                 outer_flag=outers_flag,
                 inner_index_start=inner_index if inner_index_labels else None,
+                line_kws=line_kws,
             )
             inner_index += len(fascicle.inners)
 
@@ -452,17 +452,22 @@ class Slide(Exceptionable):
         path: str,
         dims,
         separate: bool = False,
-        colors={'n': 'red', 'i': 'green', 'p': 'blue'},
+        colors=None,
         buffer=0,
         nerve=True,
         outers=True,
         inners=True,
         outer_minus_inner=False,
-        ids=[],
+        ids=None,
         resize_factor=1,
         id_font=40,
     ):
+        if ids is None:
+            ids = []
+        if colors is None:
+            colors = {'n': 'red', 'i': 'green', 'p': 'blue'}
         # comments coming soon to a method near you
+
         def factor_resize(im, factor):
             (width, height) = (int(im.width * factor), int(im.height * factor))
             im_resized = im.resize((width, height))
@@ -493,7 +498,7 @@ class Slide(Exceptionable):
             img = img.transpose(Image.FLIP_TOP_BOTTOM)
             iddraw = ImageDraw.Draw(img)
             if len(ids) > 0:  # prints the fascicle ids
-                for i, row in ids.iterrows():
+                for _i, row in ids.iterrows():
                     location = (row['x'] - dim_min[0] + buffer, img.height - row['y'] + dim_min[1] - buffer)
                     iddraw.text(location, str(int(row['id'])), font=fnt, fill='white')
             img = factor_resize(img, resize_factor)
@@ -527,7 +532,7 @@ class Slide(Exceptionable):
                 imgi = imgi.transpose(Image.FLIP_TOP_BOTTOM)
                 iddraw = ImageDraw.Draw(imgi)
                 if len(ids) > 0:  # prints the fascicle ids
-                    for i, row in ids.iterrows():
+                    for _i, row in ids.iterrows():
                         location = (row['x'] - dim_min[0] + buffer, img.height - row['y'] + dim_min[1] - buffer)
                         iddraw.text(location, str(int(row['id'])), font=fnt, fill=0)
                 imgi = factor_resize(imgi, resize_factor)
