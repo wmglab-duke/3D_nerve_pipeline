@@ -396,10 +396,19 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
                     tree = STRtree(innershapes)
                     correct_fascicle = tree.nearest(Point(fiber))
-                    movedist = Point(fiber).distance(correct_fascicle)+5 # TODO add some leeway instead of doing +1 micron
+                    movedist = Point(fiber).distance(correct_fascicle)+5 # TODO add some leeway instead of doing +5 micron
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
-                    assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                    try:
+                        assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                    except:
+                        # get the nearest point on the boundary of the correct fascicle and shift away from that
+                        # TODO: change it to always work this way
+                        from shapely.ops import nearest_points
+                        nearest = nearest_points(Point(fiber), correct_fascicle)[1]
+                        dest = (nearest.x, nearest.y)
+                        newpoint = distpoint(fiber, dest, movedist)
+                        assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
                 points[i] = newpoint
         return points
 
