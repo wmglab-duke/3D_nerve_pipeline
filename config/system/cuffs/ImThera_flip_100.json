@@ -435,6 +435,5 @@
   "expandable": true,
   "fixed_point": "clockwise_end",
   "angle_to_contacts_deg": 180,
-  "offset": {
-  }
+  "offset": {}
 }

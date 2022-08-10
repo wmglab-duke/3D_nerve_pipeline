@@ -14,14 +14,17 @@ Created on Thu Nov 11 11:22:44 2021
 @author: dpm42
 """
 import os
+
 os.environ['R_HOME'] = r'C:\Users\dpm42\Anaconda3\envs\ascent\lib\R'
-import rpy2.robjects as robjects
-import rpy2
 import pandas as pd
+import rpy2
+import rpy2.robjects as robjects
+from rpy2.robjects import pandas2ri, r
 from rpy2.robjects.packages import importr
-from rpy2.robjects import r, pandas2ri
+
 pandas2ri.activate()
 import rpy2.robjects.lib.ggplot2 as ggplot2
+
 rprint = robjects.globalenv.find("print")
 ggpubr = importr("ggpubr")
 
@@ -32,9 +35,11 @@ import sys
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import numpy as np
+
 os.chdir('D:/ASCENT/ascent')
 
 import matplotlib.pyplot as plt
+
 from src.core.query import Query
 
 # set default fig size
@@ -71,15 +76,13 @@ plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 #     }
 # }).run()
 
-q = Query({
-    'partial_matches': False,
-    'include_downstream': True,
-    'indices': {
-        'sample': [670,671,672],
-        'model': [0],
-        'sim': [3]
+q = Query(
+    {
+        'partial_matches': False,
+        'include_downstream': True,
+        'indices': {'sample': [670, 671, 672], 'model': [0], 'sim': [3]},
     }
-}).run()
+).run()
 
 # builds heatmaps
 # q.barcharts_compare_models(logscale=False,
@@ -92,13 +95,13 @@ data = q.ggpaired_3D()
 
 print('NOTE: Assumes that for your given sample/sim, nsim 0 is 2D data, and nsim 1 is the translated 3D data')
 
-sample_labels = ['rostral contact','center','caudal contact']
+sample_labels = ['rostral contact', 'center', 'caudal contact']
 
-d=[]
-for i,sampdat in enumerate(data):
+d = []
+for i, sampdat in enumerate(data):
     d2 = sampdat[0]
     d3 = sampdat[1]
-        
+
     di = {}
     di["2D"] = d2
     di["3D"] = d3
@@ -108,18 +111,22 @@ for i,sampdat in enumerate(data):
 
 dfinal = pd.concat(d)
 
-plot = ggpubr.ggpaired(dfinal, cond1 = "2D", cond2 = "3D",
-                       color = "condition", 
-                       line_color = "gray", 
-                       line_size = 0.5, 
-                       point_size = 1.2,
-                       palette = "npg",
-                       facet_by = "slice",
-                       xlab = False,
-                       ylab = "Threshold (mA)",
-                        legend = "none",
-                       title = "Activation thresholds for 2D extrusion models vs. full-3D model")
+plot = ggpubr.ggpaired(
+    dfinal,
+    cond1="2D",
+    cond2="3D",
+    color="condition",
+    line_color="gray",
+    line_size=0.5,
+    point_size=1.2,
+    palette="npg",
+    facet_by="slice",
+    xlab=False,
+    ylab="Threshold (mA)",
+    legend="none",
+    title="Activation thresholds for 2D extrusion models vs. full-3D model",
+)
 
 plot.plot()
 
-plot.save('D:/3D_VNS/Images/boxplot-multipanel.png',dpi=600)
+plot.save('D:/3D_VNS/Images/boxplot-multipanel.png', dpi=600)

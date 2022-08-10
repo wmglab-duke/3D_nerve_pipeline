@@ -1557,20 +1557,19 @@ public class ModelWrapper {
                             nerveParams.set("a_nerve", "NaN");
                             if (modelData.has("r_nerve_override")) {
                                 nerveParams.set(
-                                        "r_nerve",
-                                        modelData.getDouble("r_nerve_override") +
-                                                " [" +
-                                                morphology_unit +
-                                                "]"
+                                    "r_nerve",
+                                    modelData.getDouble("r_nerve_override") +
+                                    " [" +
+                                    morphology_unit +
+                                    "]"
                                 );
-                            }
-                            else{
+                            } else {
                                 nerveParams.set(
-                                        "r_nerve",
-                                        modelData.getDouble("min_radius_enclosing_circle") +
-                                                " [" +
-                                                morphology_unit +
-                                                "]"
+                                    "r_nerve",
+                                    modelData.getDouble("min_radius_enclosing_circle") +
+                                    " [" +
+                                    morphology_unit +
+                                    "]"
                                 );
                             }
                         }
@@ -2285,20 +2284,16 @@ public class ModelWrapper {
             nerveParams.set("a_nerve", "NaN");
             if (modelData.has("r_nerve_override")) {
                 nerveParams.set(
-                        "r_nerve",
-                        modelData.getDouble("r_nerve_override") +
-                                " [" +
-                                morphology_unit +
-                                "]"
+                    "r_nerve",
+                    modelData.getDouble("r_nerve_override") + " [" + morphology_unit + "]"
                 );
-            }
-            else{
+            } else {
                 nerveParams.set(
-                        "r_nerve",
-                        modelData.getDouble("min_radius_enclosing_circle") +
-                                " [" +
-                                morphology_unit +
-                                "]"
+                    "r_nerve",
+                    modelData.getDouble("min_radius_enclosing_circle") +
+                    " [" +
+                    morphology_unit +
+                    "]"
                 );
             }
         } else {
@@ -2324,20 +2319,16 @@ public class ModelWrapper {
             if (deform_ratio < 1) { //Use trace
                 if (modelData.has("r_nerve_override")) {
                     nerveParams.set(
-                            "r_nerve",
-                            modelData.getDouble("r_nerve_override") +
-                                    " [" +
-                                    morphology_unit +
-                                    "]"
+                        "r_nerve",
+                        modelData.getDouble("r_nerve_override") + " [" + morphology_unit + "]"
                     );
-                }
-                else{
+                } else {
                     nerveParams.set(
-                            "r_nerve",
-                            modelData.getDouble("min_radius_enclosing_circle") +
-                                    " [" +
-                                    morphology_unit +
-                                    "]"
+                        "r_nerve",
+                        modelData.getDouble("min_radius_enclosing_circle") +
+                        " [" +
+                        morphology_unit +
+                        "]"
                     );
                 }
             } else { //Use area of nerve
