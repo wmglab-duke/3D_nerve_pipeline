@@ -318,13 +318,9 @@ class Query(Exceptionable, Configurable, Saveable):
             slide: Slide = sample_object.slides[0]
             n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
 
-            print(f'sample: {sample_index}')
-
             # loop models
             for model_results in sample_results.get('models', []):
                 model_index = model_results['index']
-
-                print(f'\tmodel: {model_index}')
 
                 for sim_index in sim_indices:
                     sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
@@ -398,6 +394,147 @@ class Query(Exceptionable, Configurable, Saveable):
                                             'threshold': abs(threshold),
                                         }
                                     )
+
+                        if meanify is True:
+                            if len(thresholds) == 0:
+                                alldat.append(
+                                    {
+                                        'sample': sample_results['index'],
+                                        'model': model_results['index'],
+                                        'sim': sim_index,
+                                        'nsim': nsim_index,
+                                        'fiberset_index': fiberset_index,
+                                        'waveform_index': waveform_index,
+                                        'active_src_index': active_src_index,
+                                        'mean': np.nan,
+                                    }
+                                )
+                            else:
+                                thresholds: np.ndarray = np.array(thresholds)
+
+                                alldat.append(
+                                    {
+                                        'sample': sample_results['index'],
+                                        'model': model_results['index'],
+                                        'sim': sim_index,
+                                        'nsim': nsim_index,
+                                        'fiberset_index': fiberset_index,
+                                        'waveform_index': waveform_index,
+                                        'active_src_index': active_src_index,
+                                        'mean': np.mean(thresholds),
+                                        'std': np.std(thresholds, ddof=1),
+                                        'sem': stats.sem(thresholds),
+                                    }
+                                )
+
+        return pd.DataFrame(alldat)
+
+    def threshold_data3d(
+        self,
+        sim_indices: List[int] = None,
+        model_indices: List[int] = None,
+        ignore_missing=False,
+        meanify=False,
+    ):
+        """Obtain threshold data as a pandas DataFrame.
+
+        :param sim_indices: list of simulation indices to include in the threshold data.
+        :param model_indices: list of model indices to include in the threshold data.
+        :param ignore_missing: if True, missing threshold data will not cause an error.
+        :param meanify: if True, the threshold data will be returned as a mean of each nsim.
+        :return pandas DataFrame of thresholds.
+        """
+        # quick helper class for storing data values
+        class DataPoint:
+            def __init__(self, value: float, error: float = None):
+                self.value = value
+                self.error = error
+
+        # validation
+        if self._result is None:
+            self.throw(66)
+
+        if model_indices is None:
+            model_indices = self.search(Config.CRITERIA, 'indices', 'model')
+
+        if sim_indices is None:
+            sim_indices = self.search(Config.CRITERIA, 'indices', 'sim')
+
+        alldat = []
+
+        # loop samples
+        sample_results: dict
+        for sample_results in self._result.get('samples', []):
+            sample_index = sample_results['index']
+
+            # loop models
+            for model_results in sample_results.get('models', []):
+                model_index = model_results['index']
+
+                for sim_index in sim_indices:
+                    sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
+
+                    # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
+                    # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
+                    # indices as if they were the nsim indices
+                    for nsim_index, (
+                        potentials_product_index,
+                        waveform_index,
+                    ) in enumerate(sim_object.master_product_indices):
+                        (
+                            active_src_index,
+                            fiberset_index,
+                        ) = sim_object.potentials_product[potentials_product_index]
+                        # fetch outer->inner->fiber and out->inner maps
+
+                        # build base dirs for fetching thresholds
+                        sim_dir = self.build_path(
+                            Object.SIMULATION,
+                            [sample_index, model_index, sim_index],
+                            just_directory=True,
+                        )
+                        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
+
+                        # init thresholds container for this model, sim, nsim
+                        thresholds: List[float] = []
+
+                        # fetch all thresholds
+
+                        for master_fiber_index, _ in enumerate(sim_object.fibersets[0].fibers):
+
+                            thresh_path = os.path.join(
+                                n_sim_dir,
+                                'data',
+                                'outputs',
+                                f'thresh_inner0_fiber{master_fiber_index}.dat',
+                            )
+                            if ignore_missing:
+                                try:
+                                    threshold = np.loadtxt(thresh_path)
+                                except IOError:
+                                    threshold = np.nan
+                                    warnings.warn('Missing threshold, but continuing.')
+                            else:
+                                threshold = np.loadtxt(thresh_path)
+
+                            if threshold.size > 1:
+                                threshold = threshold[-1]
+                            if meanify is True:
+                                thresholds.append(abs(threshold))
+                            else:
+                                alldat.append(
+                                    {
+                                        'sample': sample_results['index'],
+                                        'model': model_results['index'],
+                                        'sim': sim_index,
+                                        'nsim': nsim_index,
+                                        'index': master_fiber_index,
+                                        'fiberset_index': fiberset_index,
+                                        'waveform_index': waveform_index,
+                                        'active_src_index': active_src_index,
+                                        'threshold': abs(threshold),
+                                    }
+                                )
 
                         if meanify is True:
                             if len(thresholds) == 0:
