@@ -10,20 +10,21 @@ The source code can be found on the following GitHub repository: https://github.
 
 import os
 import sys
+
 sys.path.append(r'D:\ASCENT\ascent')
 os.chdir(r'D:\ASCENT/ascent')
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
-import numpy as np
-
 import matplotlib.pyplot as plt
-from src.core.query import Query
+import numpy as np
 import pandas as pd
+
+from src.core.query import Query
 
 threed = 673
 
-samples = [670,672]
+samples = [670, 672]
 
 models = [0]
 
@@ -31,15 +32,9 @@ sims = [33]
 
 dats = []
 
-q = Query({
-    'partial_matches': False,
-    'include_downstream': True,
-    'indices': {
-        'sample': samples,
-        'model': models,
-        'sim': sims
-    }
-}).run()
+q = Query(
+    {'partial_matches': False, 'include_downstream': True, 'indices': {'sample': samples, 'model': models, 'sim': sims}}
+).run()
 
 # builds heatmaps
 # q.barcharts_compare_models(logscale=False,
@@ -48,19 +43,17 @@ q = Query({
 #                                          'Model 2: Goodall Epineurium, \n              Veltink Perineurium',
 #                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
 #                            )
-dat2d = q.threshdat(sl=False,meanify=False)
+dat2d = q.threshdat(sl=False, meanify=False)
 
-q = Query({
-    'partial_matches': False,
-    'include_downstream': True,
-    'indices': {
-        'sample': [threed],
-        'model': models,
-        'sim': sims
+q = Query(
+    {
+        'partial_matches': False,
+        'include_downstream': True,
+        'indices': {'sample': [threed], 'model': models, 'sim': sims},
     }
-}).run()
+).run()
 
-dat3d = q.threshdat3d(meanify = False)
+dat3d = q.threshdat3d(meanify=False)
 
 
 # pd.concat(dats).to_csv('out/analysis/threshes.csv',index=False)

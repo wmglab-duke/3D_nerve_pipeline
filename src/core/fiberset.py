@@ -197,7 +197,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             elif xy_mode == FiberXYMode.EXPLICIT:
                 # TODO make this shift according to trace buffer
-                points = self.load_explicit_coords(sim_directory)
+                points = self.load_explicit_coords(sim_directory, buffer)
         else:
             self.throw(30)
 
@@ -403,10 +403,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     newpoint = distpoint(fiber, dest, movedist)
                     try:
                         assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
-                    except:
+                    except AssertionError:
                         # get the nearest point on the boundary of the correct fascicle and shift away from that
                         # TODO: change it to always work this way
                         from shapely.ops import nearest_points
+
                         nearest = nearest_points(Point(fiber), correct_fascicle)[1]
                         dest = (nearest.x, nearest.y)
                         newpoint = distpoint(fiber, dest, movedist)

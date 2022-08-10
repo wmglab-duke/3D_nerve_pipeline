@@ -10,28 +10,29 @@ The source code can be found on the following GitHub repository: https://github.
 
 import os
 import sys
+
 sys.path.append(r'D:\ASCENT\ascent')
 os.chdir(r'D:\ASCENT/ascent')
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
-import numpy as np
-
-import matplotlib.pyplot as plt
-from src.core.query import Query
-import pandas as pd
-import os
-
-
 import os
 import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+from src.core.query import Query
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import numpy as np
+
 os.chdir('D:/ASCENT/ascent')
 
 import matplotlib.pyplot as plt
+
 from src.core.query import Query
 
 # set default fig size
@@ -39,7 +40,7 @@ plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
 threed = 253
 
-samples = [250,252]
+samples = [250, 252]
 
 models = [0]
 
@@ -48,15 +49,9 @@ sims = [33]
 sampname = '2L'
 
 
-q = Query({
-    'partial_matches': False,
-    'include_downstream': True,
-    'indices': {
-        'sample': samples,
-        'model': models,
-        'sim': sims
-    }
-}).run()
+q = Query(
+    {'partial_matches': False, 'include_downstream': True, 'indices': {'sample': samples, 'model': models, 'sim': sims}}
+).run()
 
 # builds heatmaps
 # q.barcharts_compare_models(logscale=False,
@@ -65,69 +60,70 @@ q = Query({
 #                                          'Model 2: Goodall Epineurium, \n              Veltink Perineurium',
 #                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
 #                            )
-dat2d = q.threshdat(sl=False,meanify=False)
+dat2d = q.threshdat(sl=False, meanify=False)
 
-q = Query({
-    'partial_matches': False,
-    'include_downstream': True,
-    'indices': {
-        'sample': [threed],
-        'model': models,
-        'sim': sims
+q = Query(
+    {
+        'partial_matches': False,
+        'include_downstream': True,
+        'indices': {'sample': [threed], 'model': models, 'sim': sims},
     }
-}).run()
+).run()
 
-dat3d = q.threshdat3d(meanify = False)
+dat3d = q.threshdat3d(meanify=False)
 
 
-def datamatch(dest,dat3d,importval):
-    dest[importval+'3d'] = np.nan
+def datamatch(dest, dat3d, importval):
+    dest[importval + '3d'] = np.nan
     for i in range(len(dest)):
-        row = dest.iloc[i,:]
-        val = dat3d[(dat3d["model"]==row['model']) &
-                           (dat3d["sim"]==row['sim']) &
-                           (dat3d["nsim"]==row['nsim']) &
-                           (dat3d["index"]==row['index'])][importval]
-        val=list(val)
-        if len(val)!=1:sys.exit('issue here')
-        dest.iloc[i,-1]=val[0]
-    if np.any(dest[importval]==np.nan):
+        row = dest.iloc[i, :]
+        val = dat3d[
+            (dat3d["model"] == row['model'])
+            & (dat3d["sim"] == row['sim'])
+            & (dat3d["nsim"] == row['nsim'])
+            & (dat3d["index"] == row['index'])
+        ][importval]
+        val = list(val)
+        if len(val) != 1:
+            sys.exit('issue here')
+        dest.iloc[i, -1] = val[0]
+    if np.any(dest[importval] == np.nan):
         sys.exit('issue here too')
     return dest
 
-dat2d = datamatch(dat2d,dat3d,'threshold')
+
+dat2d = datamatch(dat2d, dat3d, 'threshold')
 #%%
 
-sample_labels = ['rostral contact','caudal contact']
+sample_labels = ['rostral contact', 'caudal contact']
 
 import seaborn as sns
 from scipy.stats import pearsonr
+
 sns.set_theme()
 sns.set(font_scale=1.5)
 
-dat2d = dat2d.rename(columns={'sample':'Slice'})
+dat2d = dat2d.rename(columns={'sample': 'Slice'})
 #%%
 # Plot sepal width as a function of sepal_length across days
 g = sns.lmplot(
-    data=dat2d,
-    x="threshold", y="threshold3d", hue="Slice",
-    height=5,col = 'nsim',sharey=False,sharex=False
+    data=dat2d, x="threshold", y="threshold3d", hue="Slice", height=5, col='nsim', sharey=False, sharex=False
 )
 
 axs = g.axes.ravel()
 axs[0].set_ylabel('3D threshold (mA)')
-plt.suptitle('Activation threshold correlation for sample {}'.format(sampname),fontsize=25)
-plt.subplots_adjust(top=.85,right=.93)
+plt.suptitle(f'Activation threshold correlation for sample {sampname}', fontsize=25)
+plt.subplots_adjust(top=0.85, right=0.93)
 new_labels = ['Anodic\nLeading', 'Cathodic\nLeading']
 for t, l in zip(g._legend.texts, new_labels):
     t.set_text(l)
-for i,s in enumerate([2,5,8,11,13]):
+for i, s in enumerate([2, 5, 8, 11, 13]):
     ax = axs[i]
-    ax.set_title('fiber diam: {}\u03BCm'.format(s))
+    ax.set_title(f'fiber diam: {s}μm')
     corr = {}
     for sample in samples:
-        thisdat = dat2d[(dat2d["nsim"]==i) & (dat2d["Slice"]==sample)]
-        corr[sample]=round(pearsonr(thisdat['threshold'],thisdat['threshold3d'])[0],3)
-    ax.legend(labels = ["r="+str(corr[sample]) for sample in samples])
+        thisdat = dat2d[(dat2d["nsim"] == i) & (dat2d["Slice"] == sample)]
+        corr[sample] = round(pearsonr(thisdat['threshold'], thisdat['threshold3d'])[0], 3)
+    ax.legend(labels=["r=" + str(corr[sample]) for sample in samples])
     ax.set_xlabel('2D threshold (mA)')
-g.savefig('out/analysis/threscorr_{}'.format(threed),dpi=400)
+g.savefig(f'out/analysis/threscorr_{threed}', dpi=400)

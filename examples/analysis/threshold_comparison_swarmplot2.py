@@ -10,18 +10,18 @@ The source code can be found on the following GitHub repository: https://github.
 
 import os
 import sys
+
 sys.path.append(r'D:\ASCENT\ascent')
 os.chdir(r'D:\ASCENT/ascent')
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
-import numpy as np
-
 import matplotlib.pyplot as plt
-from src.core.query import Query
+import numpy as np
 import pandas as pd
 import seaborn as sb
 
+from src.core.query import Query
 
 linewidth = 1
 
@@ -34,15 +34,9 @@ plt.rcParams['figure.figsize'] = list(np.array([16.8, 10.14]) / 2)
 
 dats = []
 
-q = Query({
-    'partial_matches': False,
-    'include_downstream': True,
-    'indices': {
-        'sample': [279],
-        'model': [0],
-        'sim': [33]
-    }
-}).run()
+q = Query(
+    {'partial_matches': False, 'include_downstream': True, 'indices': {'sample': [279], 'model': [0], 'sim': [33]}}
+).run()
 
 # builds heatmaps
 # q.barcharts_compare_models(logscale=False,
@@ -52,31 +46,38 @@ q = Query({
 #                                          'Model 3: Goodall Epineurium, \n              Goodall Perineurium']
 #                            )
 dats.append(q.threshdat3d(meanify=False))
-dats[0] = dats[0].rename(columns = {'mean':'threshold'})
+dats[0] = dats[0].rename(columns={'mean': 'threshold'})
 data = pd.concat(dats)
-data = data.rename(columns = {'threshold':'Activation Threshold (mA)'})
+data = data.rename(columns={'threshold': 'Activation Threshold (mA)'})
 data.model = data.model.astype(str)
 sb.set_theme(style="whitegrid")
-g = sb.catplot(x="model", y='Activation Threshold (mA)',col='nsim',
-                data=data, kind=plot_type, height = 5, aspect=.4,linewidth=linewidth,palette = "colorblind",
-                sharey=False)
+g = sb.catplot(
+    x="model",
+    y='Activation Threshold (mA)',
+    col='nsim',
+    data=data,
+    kind=plot_type,
+    height=5,
+    aspect=0.4,
+    linewidth=linewidth,
+    palette="colorblind",
+    sharey=False,
+)
 # plt.yscale('log')
 axs = g.axes
 
 # plt.gcf().suptitle('Activation thresholds for sample {}'.format(pd.unique(data['sample'])[0]))
 
-retitle = [u'fiber diam: {}\u03bcm'.format(d) for d in [2,5,8,11,13]]
+retitle = [f'fiber diam: {d}μm' for d in [2, 5, 8, 11, 13]]
 
-for ax,title in zip(axs[0],retitle):
+for ax, title in zip(axs[0], retitle):
     ax.set_title(title)
     ax.set_xlabel('')
     ax.set_xticks([])
 
-plt.subplots_adjust(top = .88,right=.85)
-    
+plt.subplots_adjust(top=0.88, right=0.85)
+
 plt.suptitle('Activation thresholds for mri279')
 
 # plt.ylim((0.00534827989266171, 11907.037705670795))
-plt.savefig('out/analysis/thresholdmri2.png',dpi=300)
-
-
+plt.savefig('out/analysis/thresholdmri2.png', dpi=300)

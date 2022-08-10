@@ -6,11 +6,12 @@ Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
-from matplotlib import pyplot as plt
-import matplotlib
-import numpy as np
 import os
+
+import matplotlib
 import matplotlib.backend_tools as bt
+import numpy as np
+from matplotlib import pyplot as plt
 
 print(os.getcwd())
 
