@@ -358,7 +358,7 @@ class Runner(Exceptionable, Configurable):
         if 'models' not in all_configs:
             print('NO MODELS TO MAKE IN Config.RUN - killing process')
             return
-        if self.configs[Config.RUN.value].get("post_java_only") != True:
+        if self.configs[Config.RUN.value].get("post_java_only") is not True:
 
             self.potentials_exist: List[bool] = []  # if all of these are true, skip Java
             self.ss_bases_exist: List[bool] = []  # if all of these are true, skip Java
@@ -390,11 +390,11 @@ class Runner(Exceptionable, Configurable):
                 print('KILLING PRE JAVA')
                 return
 
-            if 'models' in all_configs.keys() and 'sims' not in all_configs.keys():
+            if 'models' in all_configs and 'sims' not in all_configs:
                 # Model Configs Provided, but not Sim Configs
                 print('\nTO JAVA\n')
                 run_config = os.path.join(
-                    os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', '{}.json'.format(self.number)
+                    os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', f'{self.number}.json'
                 )
                 self.handoff(run_config)
                 print('\nNEURON Simulations NOT created since no Sim indices indicated in Config.SIM\n')
@@ -407,7 +407,7 @@ class Runner(Exceptionable, Configurable):
                 if not all(self.potentials_exist) or not all(self.ss_bases_exist):
                     print('\nTO JAVA\n')
                     run_config = os.path.join(
-                        os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', '{}.json'.format(self.number)
+                        os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', f'{self.number}.json'
                     )
                     self.handoff(run_config)
                     print('\nTO PYTHON\n')
@@ -495,9 +495,8 @@ class Runner(Exceptionable, Configurable):
                         self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value]
                     )
                 print(
-                    'Model {} data exported to appropriate folders in {}'.format(
-                        model_num, os.environ[Env.NSIM_EXPORT_PATH.value]
-                    )
+                    f'Model {model_num} data exported to appropriate folders'
+                    f' in {os.environ[Env.NSIM_EXPORT_PATH.value]}'
                 )
 
     def handoff(self, config_path, run_type=None, class_name='ModelWrapper'):

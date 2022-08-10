@@ -537,7 +537,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
             nsim_inputs_directory = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'data', 'inputs')
 
             # copy corresponding waveform to sim/#/n_sims/t/data/inputs
-            source_waveform_path = os.path.join(sim_dir, str(sim_num), "waveforms", "{}.dat".format(waveform_ind))
+            source_waveform_path = os.path.join(sim_dir, str(sim_num), "waveforms", f"{waveform_ind}.dat")
             destination_waveform_path = os.path.join(
                 sim_dir, str(sim_num), "n_sims", str(t), "data", "inputs", "waveform.dat"
             )
@@ -560,7 +560,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
             sim_copy = self._copy_and_edit_config(sim_copy, self.fiberset_key, fiberset_vals, copy_again=False)
 
             # save the paired down simulation config to its corresponding neuron simulation t folder
-            with open(os.path.join(sim_dir, str(sim_num), "n_sims", str(t), "{}.json".format(t)), "w") as handle:
+            with open(os.path.join(sim_dir, str(sim_num), "n_sims", str(t), f"{t}.json"), "w") as handle:
                 handle.write(json.dumps(sim_copy, indent=2))
 
             n_tsteps = len(self.waveforms[waveform_ind].wave)
@@ -604,15 +604,13 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
                 source_dz = supersampled_bases['dz']
 
-                if 'dz' in supersampled_bases.keys():
+                if 'dz' in supersampled_bases:
                     if supersampled_bases.get('dz') != source_dz:
                         self.throw(79)
                 elif 'dz' not in supersampled_bases.keys():
-                    warnings.warn(
-                        'dz not provided in Sim, so will accept dz={} specified in source Sim'.format(source_dz)
-                    )
+                    warnings.warn(f'dz not provided in Sim, so will accept dz={source_dz} specified in source Sim')
 
-                for root, dirs, files in os.walk(fiberset_directory):
+                for root, _dirs, files in os.walk(fiberset_directory):
                     for file in files:
                         if re.match('[0-9]+\\.dat', file):
 
@@ -657,7 +655,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
                             f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
                             neuron_potentials_input = f(neuron_fiber_coords)
 
-                            ss_filename = 'inner{}_fiber{}.dat'.format(0, q)
+                            ss_filename = f'inner{0}_fiber{q}.dat'
 
                             np.savetxt(
                                 os.path.join(nsim_inputs_directory, ss_filename),
