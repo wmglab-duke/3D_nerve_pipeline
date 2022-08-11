@@ -2,6 +2,7 @@
 import json
 import os
 import pickle
+import sys
 import warnings
 from typing import List, Union
 
@@ -64,6 +65,8 @@ class _HeatmapPlotter:
         cbar_kws=None,
         scatter_kws=None,
         line_kws=None,
+        min_thresh=None,
+        max_thresh=None,
         color=None,
     ):
         """Initialize heatmap plotter.
@@ -96,7 +99,6 @@ class _HeatmapPlotter:
         :param color: Color passed in by seaborn when using FacetGrid. Not used.
         """
         # add variables to self from input args
-        self.min_thresh = self.max_thresh = None
         self.mappable = None
         self.fiber_colors = self.inner_colors = None
         self.sample_index = self.sim_index = self.model_index = self.n_sim_index = None
@@ -116,7 +118,8 @@ class _HeatmapPlotter:
         self.scatter_kws = scatter_kws if scatter_kws is not None else {}
         self.scatter_kws.setdefault('s', 100)
         self.line_kws = line_kws if line_kws is not None else {}
-        self.max_thresh, self.min_thresh = max(data.threshold), min(data.threshold)
+        self.max_thresh = max(data.threshold) if max_thresh is None else max_thresh
+        self.min_thresh = min(data.threshold) if min_thresh is None else min_thresh
         self.cuff_orientation = cuff_orientation
 
         # run setup in preparation for plotting
@@ -144,7 +147,8 @@ class _HeatmapPlotter:
         return ax
 
     def plot_inners_fibers(self, ax):
-        """Plot inners and fibers using the colors determined in determine_colors().
+        """Plot inners and fibers using the colors determined in
+        determine_colors().
 
         :param ax: axis to plot on
         """
@@ -215,9 +219,9 @@ class _HeatmapPlotter:
                 )
             else:
                 inner_color_list.append(None)
-        for fiber_index in pd.unique(threshdf['index']):
+        for fiber_index in pd.unique(threshdf['master_fiber_index']):
             # get fiber threshold and add the appropriate color to the list
-            fiberthresh = np.mean(threshdf.query(f'index=={fiber_index}').threshold)
+            fiberthresh = np.mean(threshdf.query(f'master_fiber_index=={fiber_index}').threshold)
             if fiberthresh is np.nan:
                 warnings.warn('Missing fiber threshold, color will appear as missing color (defaults to red).')
                 fiber_color_list.append(self.missing_color)
@@ -480,3 +484,29 @@ def _build_path(
         )
 
     return result
+
+
+def datamatch(dest, dat3d, importval):
+    dest[importval + '3d'] = np.nan
+    for i in range(len(dest)):
+        row = dest.iloc[i, :]
+        val = dat3d[
+            (dat3d["model"] == row['model'])
+            & (dat3d["sim"] == row['sim'])
+            & (dat3d["nsim"] == row['nsim'])
+            & (dat3d["master_fiber_index"] == row['master_fiber_index'])
+        ][importval]
+        val = list(val)
+        if len(val) != 1:
+            sys.exit('issue here')
+        dest.iloc[i, -1] = val[0]
+    if np.any(dest[importval] == np.nan):
+        sys.exit('issue here too')
+    return dest
+
+
+def rename_var(df, di):
+    for variable, values in di.items():
+        for old, new in values.items():
+            df = df.replace(to_replace={variable: old}, value=new)
+    return df

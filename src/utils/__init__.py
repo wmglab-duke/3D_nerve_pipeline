@@ -1,15 +1,17 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing
+instructions. The source code can be found on the following GitHub
+repository: https://github.com/wmglab-duke/ascent
 """
 
 from .configurable import Configurable
 from .enums import *
 from .exceptionable import Exceptionable
+from .nd_line import nd_line
 from .saveable import Saveable
 from .template_output import TemplateOutput
 
-__all__ = ['Configurable', 'Exceptionable', 'TemplateOutput', 'Saveable']
+__all__ = ['Configurable', 'Exceptionable', 'TemplateOutput', 'Saveable', 'nd_line']

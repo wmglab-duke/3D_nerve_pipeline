@@ -1,12 +1,12 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""The copyrights of this software are owned by Duke University. Please refer
+to the LICENSE and README.md files for licensing instructions. The source code
+can be found on the following GitHub repository: https://github.com/wmglab-
+duke/ascent.
 
-Plots the voltage along a fiber, as well as its first and second spatial differential.
-RUN THIS FROM REPOSITORY ROOT
+Plots the voltage along a fiber, as well as its first and second spatial
+differential. RUN THIS FROM REPOSITORY ROOT
 """
 
 import os
@@ -14,14 +14,14 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
-sample = 1000
+sample = 253
 model = 0
-sim = 0
+sim = 3
 inner = 0
 fiber = 0
 n_sim = 0
 
-myelinated = True
+myelinated = False
 
 # %% Plot Ve graphs
 base_n_sim = os.path.join('samples', str(sample), 'models', str(model), 'sims', str(sim), 'n_sims')
