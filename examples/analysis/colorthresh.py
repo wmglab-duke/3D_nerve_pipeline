@@ -10,11 +10,6 @@ repository: https://github.com/wmglab-duke/ascent
 # RUN THIS FROM REPOSITORY ROOT
 
 import json
-import os
-
-os.chdir('../..')
-
-import os
 
 import matplotlib.pyplot as plt
 import pandas as pd

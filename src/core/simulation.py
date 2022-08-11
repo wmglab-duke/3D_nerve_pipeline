@@ -1,9 +1,10 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing
+instructions. The source code can be found on the following GitHub
+repository: https://github.com/wmglab-duke/ascent
 """
 
 import copy
@@ -652,7 +653,10 @@ class Simulation(Exceptionable, Configurable, Saveable):
                                     )
 
                             # create interpolation from super_coords and super_bases
-                            f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
+                            try:
+                                f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
+                            except:
+                                pass
                             neuron_potentials_input = f(neuron_fiber_coords)
 
                             ss_filename = f'inner{0}_fiber{q}.dat'
@@ -714,6 +718,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
     def indices_fib_to_n(self, fiberset_ind, fiber_ind) -> Tuple[int, int]:
         """Get inner and fiber indices from fiber index and fiberset_index.
+
         :param fiberset_ind: fiberset index
         :param fiber_ind: fiber index within fiberset
         :return: (l, k) as in "inner<l>_fiber<k>.dat" for NEURON sim
@@ -732,6 +737,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
     def indices_n_to_fib(self, fiberset_index, inner_index, local_fiber_index) -> Tuple[int, int]:
         """Get fiber index from inner and local fiber indices.
+
         :param fiberset_index: fiberset index
         :param inner_index: inner index
         :param local_fiber_index: local fiber index
@@ -914,16 +920,16 @@ class Simulation(Exceptionable, Configurable, Saveable):
         return allamp
 
     def potentials_exist(self, sim_dir: str) -> bool:
-        """
-        Return bool deciding if potentials have already been written
+        """Return bool deciding if potentials have already been written.
+
         :param sim_dir: directory of this simulation
         :return: boolean!
         """
         return all(os.path.exists(os.path.join(sim_dir, 'potentials', str(p))) for p, _ in self.master_product_indices)
 
     def ss_bases_exist(self, sim_dir: str) -> bool:
-        """
-        Return bool deciding if potentials have already been written
+        """Return bool deciding if potentials have already been written.
+
         :param sim_dir: directory of this simulation
         :return: boolean!
         """
