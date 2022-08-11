@@ -10,15 +10,14 @@ repository: https://github.com/wmglab-duke/ascent
 # RUN THIS FROM REPOSITORY ROOT
 
 import json
+import sys
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sb
 
-from src.core.query import Query
-
-import sys
 sys.path.append('.')
+from src.core.query import Query
 
 #%%
 sim = 3

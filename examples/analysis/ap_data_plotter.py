@@ -16,12 +16,13 @@ import numpy as np
 import pandas as pd
 import seaborn as sb
 
+sys.path.append('.')
+
 from src.core.plotter import rename_var
 from src.core.query import Query
 from src.utils import Object
 from src.utils.nd_line import nd_line
 
-sys.path.append('.')
 
 #%%
 def get_actual_zpos(dat3d, samp3d, model, sim):

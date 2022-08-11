@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
+sys.path.append('.')
+
 from src.core.plotter import heatmaps
 from src.core.query import Query
 from src.utils import Object
-
-sys.path.append('.')
 
 sim = 3
 model = 0

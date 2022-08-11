@@ -10,14 +10,14 @@ repository: https://github.com/wmglab-duke/ascent
 # RUN THIS FROM REPOSITORY ROOT
 
 import json
+import sys
 
 import matplotlib.pyplot as plt
 
+sys.path.append('.')
+
 from src.core.plotter import datamatch
 from src.core.query import Query
-
-import sys
-sys.path.append('.')
 
 #%%
 sim = 3
