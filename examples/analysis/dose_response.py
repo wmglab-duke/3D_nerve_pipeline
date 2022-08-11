@@ -17,6 +17,9 @@ import seaborn as sb
 
 from src.core.query import Query
 
+import sys
+sys.path.append('.')
+
 #%%
 sim = 3
 model = 0

@@ -16,6 +16,9 @@ import matplotlib.pyplot as plt
 from src.core.plotter import datamatch
 from src.core.query import Query
 
+import sys
+sys.path.append('.')
+
 #%%
 sim = 3
 model = 0
