@@ -82,7 +82,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
         return self
 
-    def generate_from_ss(self, sim_directory: str, super_sample: bool = False):
+    def generate_3d(self, sim_directory: str):
         """
         :return:
         """

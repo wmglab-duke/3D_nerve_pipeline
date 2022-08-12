@@ -24,7 +24,6 @@ import scipy.interpolate as sci
 
 from src.core import Sample
 from src.utils import Config, Configurable, Env, Exceptionable, ExportMode, Saveable, SetupMode, WriteMode
-from utils import FiberXYMode
 
 from .fiberset import FiberSet
 from .hocwriter import HocWriter
@@ -88,7 +87,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         return self
 
-    def write_fibers(self, sim_directory: str) -> 'Simulation':
+    def write_fibers(self, sim_directory: str, threed=False) -> 'Simulation':
         """Write the fibers to .dat files.
 
         :param sim_directory: Path to simulation directory
@@ -122,11 +121,13 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]
             ).add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]).add(
                 SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
-            ).generate(
-                sim_directory
-            ).write(
-                WriteMode.DATA, fiberset_directory
             )
+            if not threed:
+                fiberset.generate(sim_directory).write(WriteMode.DATA, fiberset_directory)
+            else:
+                source_sim = self.search(Config.SIM, 'supersampled_bases', 'source_sim')
+                source_sim_dir = os.path.join(os.path.split(sim_directory)[0], str(source_sim))
+                fiberset.generate_3d(source_sim_dir).write(WriteMode.DATA, fiberset_directory)
 
             self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
             self.fibersets.append(fiberset)
@@ -136,11 +137,7 @@ class Simulation(Exceptionable, Configurable, Saveable):
         else:
             generate_ss_bases: bool = self.search(Config.SIM, 'supersampled_bases', 'generate')
 
-        if not generate_ss_bases:
-            pass
-
-        else:
-
+        if generate_ss_bases:
             ss_fibercoords_directory = os.path.join(sim_directory, 'ss_coords')
 
             if not os.path.exists(ss_fibercoords_directory):
@@ -151,75 +148,11 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]
             ).add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]).add(
                 SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
-            ).generate(
-                sim_directory, super_sample=generate_ss_bases
-            ).write(
-                WriteMode.DATA, ss_fibercoords_directory
             )
-
-            self.ss_fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
-            self.ss_fibersets.append(fiberset)
-
-        return self
-
-    def write_fibers_ssgen(self, sim_directory: str) -> 'Simulation':
-        # loop PARAMS in here, but loop HISTOLOGY in FiberSet object
-
-        fibersets_directory = os.path.join(sim_directory, 'fibersets')
-        if not os.path.exists(fibersets_directory):
-            os.makedirs(fibersets_directory)
-
-        source_sim = self.search(Config.SIM, 'supersampled_bases', 'source_sim')
-        source_sim_dir = os.path.join(os.path.split(sim_directory)[0], str(source_sim))
-
-        self.fibersets = []
-        fiberset_factors = {key: value for key, value in self.factors.items() if key.split('->')[0] == 'fibers'}
-
-        self.ss_fibersets = []
-
-        self.fiberset_key = list(fiberset_factors.keys())
-
-        self.fiberset_product = list(itertools.product(*fiberset_factors.values()))
-
-        for i, fiberset_set in enumerate(self.fiberset_product):
-
-            fiberset_directory = os.path.join(fibersets_directory, str(i))
-            if not os.path.exists(fiberset_directory):
-                os.makedirs(fiberset_directory)
-
-            sim_copy = self._copy_and_edit_config(self.configs[Config.SIM.value], self.fiberset_key, list(fiberset_set))
-
-            fiberset = FiberSet(self.sample, self.configs[Config.EXCEPTIONS.value])
-            fiberset.add(SetupMode.OLD, Config.SIM, sim_copy).add(
-                SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]
-            ).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]).generate_from_ss(
-                source_sim_dir
-            ).write(
-                WriteMode.DATA, fiberset_directory
-            )
-
-            self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
-            self.fibersets.append(fiberset)
-
-        if 'supersampled_bases' not in self.configs[Config.SIM.value].keys():
-            generate_ss_bases = False
-        else:
-            generate_ss_bases: bool = self.search(Config.SIM, 'supersampled_bases', 'generate')
-
-        if not generate_ss_bases:
-            pass
-
-        else:
-
-            ss_fibercoords_directory = os.path.join(sim_directory, 'ss_coords')
-
-            if not os.path.exists(ss_fibercoords_directory):
-                os.makedirs(ss_fibercoords_directory)
-
-            fiberset = FiberSet(self.sample, self.configs[Config.EXCEPTIONS.value])
-            fiberset.add(SetupMode.OLD, Config.SIM, self.configs[Config.SIM.value]).add(
-                SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]
-            ).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value])
+            if not threed:
+                fiberset.generate(sim_directory, super_sample=generate_ss_bases).write(
+                    WriteMode.DATA, ss_fibercoords_directory
+                )
             self.ss_fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
             self.ss_fibersets.append(fiberset)
 
