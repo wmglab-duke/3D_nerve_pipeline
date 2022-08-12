@@ -212,7 +212,7 @@ class Runner(Exceptionable, Configurable):
 
         return model_num
 
-    def sim_setup(self, sim_index, sim_config, sample_num, model_num, smart, sample, model_config):
+    def sim_setup(self, sim_index, sim_config, sample_num, model_num, smart, sample, model_config, threed=False):
         """Create simulation object and prepare for generation of NEURON sims.
 
         :param sim_index: index of sim
@@ -258,7 +258,7 @@ class Runner(Exceptionable, Configurable):
             ).resolve_factors().write_waveforms(
                 sim_obj_dir
             ).write_fibers(
-                sim_obj_dir
+                sim_obj_dir, threed=threed
             ).validate_srcs(
                 sim_obj_dir
             ).save(
@@ -298,7 +298,7 @@ class Runner(Exceptionable, Configurable):
                 self.throw(82)
         return source_sim_obj_dir
 
-    def generate_nsims(self, sim_index, model_num, sample_num):
+    def generate_nsims(self, sim_index, model_num, sample_num, threed=False):
         """Generate NEURON simulations.
 
         :param sim_index: index of sim
@@ -324,7 +324,7 @@ class Runner(Exceptionable, Configurable):
 
         # load up correct simulation and build required sims
         simulation: Simulation = self.load_obj(sim_obj_path)
-        simulation.build_n_sims(sim_dir, sim_num)
+        simulation.build_n_sims(sim_dir, sim_num, threed=threed)
 
         # get export behavior
         export_behavior = None
@@ -391,10 +391,7 @@ class Runner(Exceptionable, Configurable):
                         else:
                             self.potentials_exist.append(simulation.potentials_exist(sim_obj_dir))
 
-            if self.configs[Config.CLI_ARGS.value].get('break_point') == 'pre_java' or (
-                ('break_points' in self.configs[Config.RUN.value])
-                and self.search(Config.RUN, 'break_points').get('pre_java') is True
-            ):
+            if self.configs[Config.CLI_ARGS.value].get('break_point') == 'pre_java':
                 print('KILLING PRE JAVA')
                 return
 
@@ -468,40 +465,8 @@ class Runner(Exceptionable, Configurable):
             for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
                 model_num = self.configs[Config.RUN.value]['models'][model_index]
                 for sim_index, sim_config in enumerate(all_configs['sims']):
-                    sim_num = self.configs[Config.RUN.value]['sims'][sim_index]
-                    sim_obj_dir = os.path.join(
-                        os.getcwd(), 'samples', str(sample_num), 'models', str(model_num), 'sims', str(sim_num)
-                    )
-                    sim_dir = os.path.join(
-                        os.getcwd(),
-                        'samples',
-                        str(self.configs[Config.RUN.value]['sample']),
-                        'models',
-                        str(model_num),
-                        'sims',
-                    )
-                    # load up correct simulation and build required sims
-                    simulation: Simulation = Simulation(None, self.configs[Config.EXCEPTIONS.value])
-                    simulation.add(SetupMode.OLD, Config.MODEL, model_config).add(
-                        SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]
-                    ).add(SetupMode.OLD, Config.SIM, sim_config).add(
-                        SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]
-                    ).resolve_factors().write_waveforms(
-                        sim_obj_dir
-                    ).write_fibers_ssgen(
-                        sim_obj_dir
-                    ).validate_srcs(
-                        sim_obj_dir
-                    )
-                    simulation.build_n_sims(sim_dir, sim_num, threed=True)
-                    # export simulations
-                    Simulation.export_n_sims(
-                        sample_num, model_num, sim_num, sim_dir, os.environ[Env.NSIM_EXPORT_PATH.value]
-                    )
-                    # ensure run configuration is present
-                    Simulation.export_run(
-                        self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value]
-                    )
+                    self.sim_setup(sim_index, sim_config, sample_num, model_num, smart, None, model_config, threed=True)
+                    self.generate_nsims(self, sim_index, model_num, sample_num, threed=True)
                 print(
                     f'Model {model_num} data exported to appropriate folders'
                     f' in {os.environ[Env.NSIM_EXPORT_PATH.value]}'
