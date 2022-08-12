@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.7
+"""Defines FiberSet class.
 
-"""The copyrights of this software are owned by Duke University.
-
+The copyrights of this software are owned by Duke University.
 Please refer to the LICENSE and README.md files for licensing
 instructions. The source code can be found on the following GitHub
 repository: https://github.com/wmglab-duke/ascent
@@ -376,9 +376,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             # advance header
             next(f)
             reader = csv.reader(f, delimiter=" ")
-            for row in reader:
-                points.append((float(row[0]), float(row[1])))
-
+            points = [(float(row[0]), float(row[1])) for row in reader]
         # check that all fibers are within exactly one inner
         for i, fiber in enumerate(points):
             innertraces = [
@@ -425,7 +423,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         self.plot()
         plt.savefig(sim_directory + '/plots/fibers_xy.png', dpi=300)
         if self.search(Config.RUN, 'popup_plots', optional=True) is False:
-            fig.clear
             plt.close(fig)
         else:
             plt.show()
@@ -440,7 +437,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         if scatter_kws is None:
             scatter_kws = {}
         scatter_kws.setdefault('c', 'red')
-        scatter_kws.setdefault('s', 20)
+        scatter_kws.setdefault('s', 10)
         scatter_kws.setdefault('marker', 'o')
         x, y = self.xy_points(split_xy=True)
         ax.scatter(

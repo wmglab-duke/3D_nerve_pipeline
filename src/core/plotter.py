@@ -1,4 +1,10 @@
-"""Defines plotting functions used for analyzing data."""
+"""Defines plotting functions used for analyzing data.
+
+The copyrights of this software are owned by Duke University. Please
+refer to the LICENSE and README.md files for licensing instructions. The
+source code can be found on the following GitHub repository:
+https://github.com/wmglab-duke/ascent
+"""
 import json
 import os
 import pickle
@@ -13,7 +19,8 @@ import matplotlib.ticker as tick
 import numpy as np
 import pandas as pd
 
-from src.core import Query, Sample, Simulation
+from core import Sample, Simulation
+from src.core import Query
 from src.utils import Config, Object
 
 
@@ -25,9 +32,11 @@ def heatmaps(
 ):
     """Create heatmap for a single axis using the _HeatmapPlotter class.
 
-    Use seaborn FacetGrid to create multiple heatmaps, using the FaceGrid.map method.
+    To create a single heatmap, call the class directly
+    Use a seaborn FacetGrid to create multiple heatmaps in one figure, using the FaceGrid.map method.
     Note that data cannot be aggregated across n_sims
     (e.g., each call of heatmaps must recieve only one threshold per fiber).
+
     :param facetdata: Recieves data from FacetGrid if using to plot an array.
     :param data: DataFrame to plot, used if manually passing data.
     :param ax: Axis to plot on.
@@ -47,6 +56,13 @@ def heatmaps(
 
 
 class _HeatmapPlotter:
+    """Class used to contruct heatmap plots.
+
+    This class should not be called directly by the user. Rather, the
+    user should call the heatmaps() function, which will pass any
+    keyword arguments to this class's constructor.
+    """
+
     def __init__(
         self,
         data,
@@ -74,16 +90,17 @@ class _HeatmapPlotter:
         :param data: DataFrame containing data to plot.
         :param mode: Plotting mode. There are multiple options:
 
-            * 'fibers': Plot a point for each fiber, using a heatmap of thresholds for color.
-            * 'fibers_on_off': Plot a point for each fiber. If the fiber threshold is above cutoff_thresh,
-                suprethresh_color is used. Otherwise, subthresh_color is used.
-            * 'inners': Plot each inner as filled in, using a heatmap of thresholds for color.
-                The mean threshold for that inner is used,
-                thus if only one fiber is present per inner, that threshold is used.
-            * 'inners_on_off': Plot each inner as filled in. If the mean inner threshold is above cutoff_thresh,
-                suprethresh_color is used. Otherwise, subthresh_color is used.
-        :param sample_object: Sample object to use for plotting.
-        :param sim_object: Simulation object to use for plotting.
+            * ``'fibers'``: Plot a point for each fiber, using a heatmap of thresholds for color.
+            * ``'fibers_on_off'``: Plot a point for each fiber. If the fiber threshold is above cutoff_thresh,
+              suprathresh_color is used. Otherwise, subthresh_color is used.
+            * ``'inners'``: Plot each inner as filled in, using a heatmap of thresholds for color.
+              The mean threshold for that inner is used,
+              thus if only one fiber is present per inner, that threshold is used.
+            * ``'inners_on_off'``: Plot each inner as filled in. If the mean inner threshold is above cutoff_thresh,
+              suprathresh_color is used. Otherwise, subthresh_color is used.
+
+        :param sample_object: Sample object to use for plotting. Automatically loaded if not provided.
+        :param sim_object: Simulation object to use for plotting. Automatically loaded if not provided.
         :param missing_color: Color to use for missing data.
         :param suprathresh_color: Color to use for suprathresh data.
         :param subthresh_color: Color to use for subthresh data.
@@ -254,9 +271,9 @@ class _HeatmapPlotter:
     def get_objects(self):
         """Get sample and sim objects for plotting."""
         if self.sample is None:
-            self.sample = _get_object(Object.SAMPLE, [self.sample_index])
+            self.sample = Query.get_object(Object.SAMPLE, [self.sample_index])
         if self.sim is None:
-            self.sim = _get_object(Object.SIMULATION, [self.sample_index, self.model_index, self.sim_index])
+            self.sim = Query.get_object(Object.SIMULATION, [self.sample_index, self.model_index, self.sim_index])
 
     def validate(self, data):
         """Check that data is valid for plotting.
@@ -285,11 +302,11 @@ class _HeatmapPlotter:
         # get orientation angle from slide
         theta = self.sample.slides[0].orientation_angle if self.sample.slides[0].orientation_angle is not None else 0
         # load add_ang from model.json cofiguration file
-        with open(_build_path(Config.MODEL, [self.sample_index, self.model_index])) as f:
+        with open(Query.build_path(Config.MODEL, [self.sample_index, self.model_index])) as f:
             model_config = json.load(f)
         # add any cuff rotation
         theta += np.deg2rad(model_config.get('cuff').get('rotate').get('add_ang'))
-        plt.scatter(r * 1.2 * np.cos(theta), r * 1.2 * np.sin(theta), 300, 'red', 'o')
+        ax.scatter(r * 1.2 * np.cos(theta), r * 1.2 * np.sin(theta), 300, 'red', 'o')
 
 
 def ap_loctime(

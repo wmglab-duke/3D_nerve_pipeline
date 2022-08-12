@@ -1,8 +1,8 @@
 #!/usr/bin/env python3.7
+"""Defines Query class.
 
-"""The copyrights of this software are owned by Duke University.
-
-Please refer to the LICENSE.txt and README.txt files for licensing
+The copyrights of this software are owned by Duke University.
+Please refer to the LICENSE and README.md files for licensing
 instructions. The source code can be found on the following GitHub
 repository: https://github.com/wmglab-duke/ascent
 """
@@ -183,13 +183,14 @@ class Query(Exceptionable, Configurable, Saveable):
         """"""
         return self.load(self.build_path(mode, indices))
 
-    def get_object(self, mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
+    @staticmethod
+    def get_object(mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
         """"""
-        with open(self.build_path(mode, indices), 'rb') as obj:
+        with open(Query.build_path(mode, indices), 'rb') as obj:
             return pickle.load(obj)
 
+    @staticmethod
     def build_path(
-        self,
         mode: Union[Config, Object],
         indices: List[int] = None,
         just_directory: bool = False,
@@ -226,7 +227,7 @@ class Query(Exceptionable, Configurable, Saveable):
             )
         else:
             print(f'INVALID MODE: {type(mode)}')
-            self.throw(55)
+            Exceptionable(SetupMode.NEW).throw(55)
 
         if just_directory:
             result = os.path.join(*result.split(os.sep)[:-1])
