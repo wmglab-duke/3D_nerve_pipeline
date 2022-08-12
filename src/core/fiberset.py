@@ -1,9 +1,10 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing
+instructions. The source code can be found on the following GitHub
+repository: https://github.com/wmglab-duke/ascent
 """
 
 import csv
@@ -41,11 +42,7 @@ from .sample import Sample
 
 
 class FiberSet(Exceptionable, Configurable, Saveable):
-    """
-    Required (Config.) JSON's:
-        MODEL
-        SIM
-    """
+    """Required (Config.) JSON's: MODEL SIM."""
 
     def __init__(self, sample: Sample, exceptions_config: list):
         """
@@ -100,6 +97,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             absolute_offset = self.search(Config.SIM, 'fibers', 'z_parameters', 'absolute_offset', optional=True)
             absoff = 0 if absolute_offset is None else absolute_offset
             fiber_3d = np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1)
+            if fiber_3d[-1][-1] < fiber_3d[0][-1]:
+                fiber_3d = np.flip(fiber_3d, axis=0)
             longit = np.loadtxt(f'{sim_directory}/ss_coords/{fiber}.dat', skiprows=1)
             shiftpoint = np.where(fiber_3d[:, 2] < absoff + half_nerve_length)[0][-1]
             shiftloc = longit[shiftpoint, 2]
@@ -893,7 +892,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         return fiber_length, model_length
 
     def validate(self):
-        """Check to ensure fiberset is valid"""
+        """Check to ensure fiberset is valid."""
         # check that all fibers are inside inners, accounting for trace buffer
         buffer: float = self.search(Config.SIM, 'fibers', 'xy_trace_buffer')
         all_inners = [inner.deepcopy() for fascicle in self.sample.slides[0].fascicles for inner in fascicle.inners]
