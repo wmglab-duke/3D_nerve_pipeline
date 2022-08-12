@@ -195,7 +195,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 points = self.generate_wheel_points(buffer)
 
             elif xy_mode == FiberXYMode.EXPLICIT:
-                # TODO make this shift according to trace buffer
                 points = self.load_explicit_coords(sim_directory, buffer)
         else:
             self.throw(30)

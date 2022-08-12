@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
+"""The copyrights of this software are owned by Duke University.
+
 Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
@@ -61,7 +61,8 @@ class Runner(Exceptionable, Configurable):
         """
 
         def validate_and_add(config_source: dict, key: str, path: str):
-            """Validate and add config to class
+            """Validate and add config to class.
+
             :param config_source: all configs, to which we add new ones
             :param key: the key of the dict in Configs
             :param path: path to the JSON file of the config
@@ -108,7 +109,8 @@ class Runner(Exceptionable, Configurable):
         return configs
 
     def load_obj(self, path: str):
-        """Load object from file
+        """Load object from file.
+
         :param path: path to python obj file
         :return: obj file
         """
@@ -140,6 +142,7 @@ class Runner(Exceptionable, Configurable):
 
     def generate_sample(self, all_configs, smart=True):
         """Generate the sample object for this run.
+
         :param all_configs: all configs for this run
         :param smart: if True, reuse objects from previous runs
         :return: (sample object, sample number)
@@ -178,7 +181,8 @@ class Runner(Exceptionable, Configurable):
         return sample, sample_num
 
     def prep_model(self, all_configs, model_index, model_config, sample, sample_num):
-        """Prepare model prior to handoff to Java
+        """Prepare model prior to handoff to Java.
+
         :param all_configs: all configs for this run
         :param model_index: index of model
         :param model_config: config for this model
@@ -209,7 +213,8 @@ class Runner(Exceptionable, Configurable):
         return model_num
 
     def sim_setup(self, sim_index, sim_config, sample_num, model_num, smart, sample, model_config):
-        """Create simulation object and prepare for generation of NEURON sims
+        """Create simulation object and prepare for generation of NEURON sims.
+
         :param sim_index: index of sim
         :param sim_config: config for this sim
         :param sample_num: sample number
@@ -262,7 +267,8 @@ class Runner(Exceptionable, Configurable):
         return simulation, sim_obj_dir
 
     def validate_supersample(self, simulation, sample_num, model_num):
-        """Validate supersampling parameters
+        """Validate supersampling parameters.
+
         :param simulation: simulation object
         :param sample_num: sample number
         :param model_num: model number
@@ -293,7 +299,8 @@ class Runner(Exceptionable, Configurable):
         return source_sim_obj_dir
 
     def generate_nsims(self, sim_index, model_num, sample_num):
-        """Generate NEURON simulations
+        """Generate NEURON simulations.
+
         :param sim_index: index of sim
         :param model_num: model number
         :param sample_num: sample number
@@ -346,6 +353,7 @@ class Runner(Exceptionable, Configurable):
 
     def run(self, smart: bool = True):
         """Main function to run the pipeline.
+
         :param smart: bool telling the program whether to reprocess the sample or not if it already exists as sample.obj
         :return: nothing to memory, spits out all pipeline related data to file
         """
@@ -485,7 +493,7 @@ class Runner(Exceptionable, Configurable):
                     ).validate_srcs(
                         sim_obj_dir
                     )
-                    simulation.build_ss_n_sims(sim_dir, sim_num)
+                    simulation.build_n_sims(sim_dir, sim_num, threed=True)
                     # export simulations
                     Simulation.export_n_sims(
                         sample_num, model_num, sim_num, sim_dir, os.environ[Env.NSIM_EXPORT_PATH.value]
@@ -501,6 +509,7 @@ class Runner(Exceptionable, Configurable):
 
     def handoff(self, config_path, run_type=None, class_name='ModelWrapper'):
         """Handoff to Java.
+
         :param run_number: int, run number
         :param class_name: str, class name of Java class to run
         :return: None
@@ -802,6 +811,7 @@ class Runner(Exceptionable, Configurable):
 
     def compute_electrical_parameters(self, all_configs, model_index):
         """Compute electrical parameters for a given model.
+
         :param all_configs: all configs for this run
         :param model_index: index of the model to compute parameters for
         :return: None, writes output to file
@@ -848,6 +858,7 @@ class Runner(Exceptionable, Configurable):
 
     def populate_env_vars(self):
         """Get environment variables from config file.
+
         :return: None
         """
         if Config.ENV.value not in self.configs:
@@ -860,6 +871,7 @@ class Runner(Exceptionable, Configurable):
 
     def model_parameter_checking(self, all_configs):
         """Check model parameters for validity.
+
         :param all_configs: all configs for this run
         :return: None
         """
