@@ -63,7 +63,7 @@ def plot_correlation():
     new_labels = ['Anodic\nLeading', 'Cathodic\nLeading']
     for t, l in zip(g._legend.texts, new_labels):
         t.set_text(l)
-    for i, ax in g.axes.ravel():
+    for i, ax in enumerate(g.axes.ravel()):
         # ax.set_title(f'fiber diam: {s}μm')
         corr = {}
         for sample in samples2d:

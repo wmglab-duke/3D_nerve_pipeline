@@ -19,8 +19,7 @@ import matplotlib.ticker as tick
 import numpy as np
 import pandas as pd
 
-from core import Sample, Simulation
-from src.core import Query
+from src.core import Query, Sample, Simulation
 from src.utils import Config, Object
 
 
@@ -218,9 +217,14 @@ class _HeatmapPlotter:
         def _mapthresh(thresh):
             return tuple(self.cmap((thresh - self.min_thresh) / (self.max_thresh - self.min_thresh)))
 
+        inner_count = 0
+        for i, fascicle in enumerate(self.sample.slides[0].fascicles):
+            for _inner in fascicle.inners:
+                inner_count += 1
+
         inner_color_list = []
         fiber_color_list = []
-        for inner in pd.unique(threshdf.inner):
+        for inner in range(inner_count):
             # get inner threshold and add the appropriate color to the list
             innerthresh = np.mean(threshdf.query(f'inner=={inner}').threshold)
             if innerthresh is np.nan:
