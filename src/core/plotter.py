@@ -18,9 +18,12 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tick
 import numpy as np
 import pandas as pd
+import seaborn as sns
+from scipy.stats import pearsonr
 
 from src.core import Query, Sample, Simulation
 from src.utils import Config, Object
+from src.utils.nd_line import nd_line
 
 
 def heatmaps(
@@ -531,3 +534,322 @@ def rename_var(df, di):
         for old, new in values.items():
             df = df.replace(to_replace={variable: old}, value=new)
     return df
+
+
+def plot_colorthresh(samp2d, samp3d, model, simdex, nerve_label):
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp2d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data()
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q.data(source_sample=samp2d)
+    dat2d = datamatch(dat2d, dat3d, 'threshold')
+    # %% Renaming
+    redict = {
+        # "nsim": {
+        #     0: 'fiber diameter: 2\u03BCm',
+        #     1: 'fiber diameter: 5\u03BCm',
+        #     2: 'fiber diameter: 8\u03BCm',
+        #     3: 'fiber diameter: 11\u03BCm',
+        #     4: 'fiber diameter: 13\u03BCm',
+        # }
+    }
+    dat2d = dat2d.rename(columns={'threshold': '2D', 'threshold3d': '3D'})
+    datre = rename_var(dat2d, redict)
+    dat2dnew = datre.drop(columns='3D').rename(columns={'2D': 'threshold'})
+    dat2dnew['dataset'] = '2D'
+    dat3dnew = datre.drop(columns='2D').rename(columns={'3D': 'threshold'})
+    dat3dnew['dataset'] = '3D'
+    datfinal = pd.concat([dat2dnew, dat3dnew])
+    # datre = dat2d
+    # %%
+    sns.set(font_scale=1.5)
+    plotdata = datfinal[datfinal['sample'] == samp2d]
+    g = sns.catplot(
+        data=plotdata,
+        kind='swarm',
+        col='nsim',
+        hue='inner',
+        y='threshold',
+        x='dataset',
+        sharey=False,
+        palette='colorblind',
+    )
+    plt.subplots_adjust(top=0.85)
+    plt.suptitle(f'Activation thresholds by fascicle (Sample {nerve_label}, 2D slice: {samp2d})')
+    axs = g.axes.ravel()
+    axs[0].set_ylabel('Activation threshold (mA)')
+    plt.subplots_adjust(top=0.85)
+    for i, ax in enumerate(g.axes.ravel()):
+        corr = {}
+        thisdat = dat2d[(dat2d["nsim"] == i) & (dat2d["sample"] == samp2d)]
+        corr[samp2d] = round(pearsonr(thisdat['2D'], thisdat['3D'])[0], 3)
+        leg = ax.legend(
+            labels=["r=" + str(corr[samp2d])], handlelength=0, handletextpad=0, fancybox=True, loc='lower center'
+        )
+        for item in leg.legendHandles:
+            item.set_visible(False)
+    plt.savefig(f'out/analysis/{simdex}/colorthresh{nerve_label}-{samp2d}.png', dpi=500)
+
+
+def plot_correlation(samples2d, samp3d, model, simdex, nerve_label):
+    global ax
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': samples2d, 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data()
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q.data(source_sample=samples2d[0])
+    dat2d = datamatch(dat2d, dat3d, 'threshold')
+    # %%
+    sample_labels = ['rostral contact', 'caudal contact']
+    import seaborn as sns
+    from scipy.stats import pearsonr
+
+    sns.set_theme()
+    sns.set(font_scale=1.5)
+    dat2d = dat2d.rename(columns={'sample': 'Slice'})
+    # %%
+    g = sns.lmplot(
+        data=dat2d,
+        x="threshold",
+        y="threshold3d",
+        hue="Slice",
+        height=5,
+        col='nsim',
+        facet_kws={'sharey': False, 'sharex': False},
+    )
+    axs = g.axes.ravel()
+    axs[0].set_ylabel('3D threshold (mA)')
+    plt.suptitle(f'Activation threshold correlation for sample {nerve_label}', fontsize=25)
+    plt.subplots_adjust(top=0.85, right=0.93)
+    new_labels = ['Anodic\nLeading', 'Cathodic\nLeading']
+    for t, l in zip(g._legend.texts, new_labels):
+        t.set_text(l)
+    for i, ax in enumerate(g.axes.ravel()):
+        # ax.set_title(f'fiber diam: {s}μm')
+        corr = {}
+        for sample in samples2d:
+            thisdat = dat2d[(dat2d["nsim"] == i) & (dat2d["Slice"] == sample)]
+            corr[sample] = round(pearsonr(thisdat['threshold'], thisdat['threshold3d'])[0], 3)
+        ax.legend(labels=["r=" + str(corr[sample]) for sample in samples2d])
+        ax.set_xlabel('2D threshold (mA)')
+    g.savefig(f'out/analysis/{simdex}/threshcorr_{nerve_label}', dpi=400)
+
+
+def plot_colorjoint(samp2d, samp3d, model, simdex, nerve_label):
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp2d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data()
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q.data(source_sample=samp2d)
+    dat2d = datamatch(dat2d, dat3d, 'threshold')
+    # %%
+    sns.set(font_scale=1.5)
+    dat2d = dat2d[dat2d['sample'] == samp2d]
+    for nsim in pd.unique(dat2d.nsim):
+        plotdata = dat2d.query(f'nsim=={nsim}')
+        g = sns.jointplot(data=plotdata, x="threshold3d", y="threshold", hue="inner", palette='colorblind')
+        ax = g.ax_joint
+        idat = plotdata
+        min_thresh = min([min(idat.threshold), min(idat.threshold3d)])
+        max_thresh = max([max(idat.threshold), max(idat.threshold3d)])
+        limits = (min_thresh, max_thresh)
+        ax.set_xlim(limits)
+        ax.set_ylim(limits)
+        ax.plot(limits, limits, color='red')
+        plt.savefig(f'out/analysis/{simdex}/colorjoint{nerve_label}-{samp2d}-{nsim}.png', dpi=500)
+
+
+def plot_oneone(samples2d, samp3d, model, simdex, nerve_label):
+    global ax
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': samples2d, 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data()
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q.data(source_sample=samples2d[0])
+    dat2d = datamatch(dat2d, dat3d, 'threshold')
+    # %%
+    sns.set_theme()
+    sns.set(font_scale=1.5)
+    dat2d = dat2d.rename(columns={'sample': 'Slice'})
+    # %%
+    g = sns.lmplot(
+        data=dat2d,
+        x="threshold3d",
+        y="threshold",
+        hue="Slice",
+        height=5,
+        col='nsim',
+        facet_kws={'sharey': False, 'sharex': False},
+    )
+    axs = g.axes.ravel()
+    axs[0].set_ylabel('2D threshold (mA)')
+    plt.suptitle(f'Activation threshold correlation for sample {nerve_label}', fontsize=25)
+    plt.subplots_adjust(top=0.85, right=0.93)
+    new_labels = ['Anodic\nLeading', 'Cathodic\nLeading']
+    for t, l in zip(g._legend.texts, new_labels):
+        t.set_text(l)
+    for i, ax in enumerate(g.axes.ravel()):
+        # ax.set_title(f'fiber diam: {s}μm')
+        idat = dat2d.query(f'nsim=={i}')
+        min_thresh = min([min(idat.threshold), min(idat.threshold3d)])
+        max_thresh = max([max(idat.threshold), max(idat.threshold3d)])
+        limits = (min_thresh, max_thresh)
+        corr = {}
+        for sample in samples2d:
+            thisdat = dat2d[(dat2d["nsim"] == i) & (dat2d["Slice"] == sample)]
+            corr[sample] = round(pearsonr(thisdat['threshold'], thisdat['threshold3d'])[0], 3)
+        ax.legend(labels=["r=" + str(corr[sample]) for sample in samples2d])
+        ax.set_xlabel('3D threshold (mA)')
+        ax.set_xlim(limits)
+        ax.set_ylim(limits)
+        ax.plot(limits, limits, color='red')
+    g.savefig(f'out/analysis/{simdex}/threscorr_{nerve_label}', dpi=400)
+
+
+def plot_dose_response(samples2d, samp3d, model, simdex, nerve_label):
+    global data
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': samples2d, 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data()
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q.data(source_sample=samples2d[0])
+    data = pd.concat([dat2d, dat3d])
+    data.reset_index(inplace=True)
+    for i in range(len(pd.unique(data['nsim']))):
+        # ax = axs[i]
+        plt.figure()
+        sns.color_palette("tab10")
+        # plt.figure()
+        plotdata = data[data.nsim == i]
+        plotdata = plotdata[plotdata['sample'] != 670]
+        sns.ecdfplot(data=plotdata, x='threshold', hue='sample', palette='colorblind')
+        plt.xscale('log')
+        plt.ylabel('Proportion of Fibers Activated')
+        plt.xlabel('Activation Threshold (mA, log scale)')
+        plt.title(f'Threshold eCDF for {nerve_label}')
+        # plt.text(0.05, -0.25, 'Note: fiber diameters (\u03bcm) from left to right: [13, 11, 8, 5, 2]', fontstyle='italic')
+        plt.savefig(f'out/analysis/{simdex}/{nerve_label}_{i}_ecdf.png', dpi=400, bbox_inches='tight')
+
+
+def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts):
+    q = Query(
+        {
+            'partial_matches': True,
+            'include_downstream': True,
+            'indices': {'sample': [samp2d], 'model': [0], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data()
+    dat2d['threed'] = False
+    q3 = Query(
+        {
+            'partial_matches': True,
+            'include_downstream': True,
+            'indices': {'sample': [253], 'model': [0], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q3.data(source_sample=250)
+    dat3d['threed'] = True
+    sample_obj = q.get_object(Object.SAMPLE, [250])
+    sim_obj = q.get_object(Object.SIMULATION, [250, 0, 3])
+    # %%
+    dat3z = get_actual_zpos(dat3d, samp3d, model, simdex)
+    dat2d = dat2d.rename(columns={'long_ap_pos': 'activation_zpos'})
+    apdat = pd.concat([dat3z, dat2d])
+    # %%
+    redict = {"sample": {samp2d: '2D', samp3d: '3D'}}
+    datre = rename_var(apdat, redict)
+    datre.loc[:, 'activation_zpos'] = datre.loc[:, 'activation_zpos'] / 1000
+    # %%
+    g = sns.catplot(
+        x="sample",
+        y='activation_zpos',
+        hue='sample',
+        col="nsim",
+        data=datre,
+        kind='strip',
+        height=5,
+        aspect=0.4,
+        linewidth=0,
+        order=['2D', '3D'],
+        sharey=True,
+    )
+    axs = g.axes
+    axs[0][0].set_ylabel(u'Activation z-position (mm)')
+    # for i, s in enumerate([2, 5, 8, 11, 13]):
+    #     axs[0][i].set_title(f'fiber diam: {s}μm')
+    plt.subplots_adjust(top=0.88)
+    plt.suptitle(f"Activation z-position for sample {samp2d}", fontsize=15)
+    for ax in axs[0]:
+        ln = ax.hlines([cuff_contacts], 0.4, 0.6, color='red')
+    axs[0][-1].legend([ln], ['Cuff Contacts'], loc='center right')
+    g.savefig(f'out/analysis/{simdex}/{samp2d}_zpos.png', dpi=400)
+
+
+def get_actual_zpos(dat3d, samp3d, model, sim):
+    fiberdir = os.path.join('samples', str(samp3d), 'models', str(model), 'sims', str(sim), '3D_fiberset')
+    fibers3d = [x for x in os.listdir(fiberdir) if x.endswith('.dat')]
+    for file in fibers3d:
+        f_ind = int(os.path.splitext(file)[0])
+        coord = np.loadtxt(os.path.join(fiberdir, file), skiprows=1)
+        fiberline = nd_line(coord)
+        datnew = dat3d[(dat3d["model"] == model) & (dat3d["sim"] == sim) & (dat3d["master_fiber_index"] == f_ind)]
+        for index, row in datnew.iterrows():
+            actual_zpos = fiberline.interp(row['long_ap_pos'])[2]
+            dat3d.loc[index, 'activation_zpos'] = actual_zpos
+    return dat3d
