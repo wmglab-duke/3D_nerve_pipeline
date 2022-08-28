@@ -466,7 +466,7 @@ class Runner(Exceptionable, Configurable):
                 model_num = self.configs[Config.RUN.value]['models'][model_index]
                 for sim_index, sim_config in enumerate(all_configs['sims']):
                     self.sim_setup(sim_index, sim_config, sample_num, model_num, smart, None, model_config, threed=True)
-                    self.generate_nsims(self, sim_index, model_num, sample_num, threed=True)
+                    self.generate_nsims(sim_index, model_num, sample_num, threed=True)
                 print(
                     f'Model {model_num} data exported to appropriate folders'
                     f' in {os.environ[Env.NSIM_EXPORT_PATH.value]}'
