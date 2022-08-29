@@ -43,4 +43,4 @@ for simdex in config['sim_data'].keys():
         for samp2d in samples2d:
             plot_colorthresh(samp2d, samp3d, model, simint, nerve_label)
             plot_colorjoint(samp2d, samp3d, model, simint, nerve_label)
-            ap_plot(samp2d, samp3d, model, simdex, cuff_contacts)
+            ap_plot(samp2d, samp3d, model, simint, cuff_contacts)

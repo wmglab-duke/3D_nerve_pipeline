@@ -14,9 +14,11 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
+from scipy.spatial.distance import euclidean
 
 from src.core import Sample, Simulation
 from src.utils import Config, Configurable, Exceptionable, Object, Saveable, SetupMode
+from src.utils.nd_line import nd_line
 
 
 class Query(Exceptionable, Configurable, Saveable):
@@ -280,7 +282,7 @@ class Query(Exceptionable, Configurable, Saveable):
         return True
 
     # TODO: map the threshold and ap functions onto a base looping function
-    def data(self, ignore_missing=False, source_sample=None, ignore_no_activation=False):
+    def data(self, ignore_missing=False, source_sample=None, ignore_no_activation=False, tortuosity=False):
 
         # validation
         if self._result is None:
@@ -292,6 +294,7 @@ class Query(Exceptionable, Configurable, Saveable):
         sample_results: dict
         for sample_results in self._result.get('samples', []):
             sample_index = sample_results['index']
+            sample_object = self.get_object(Object.SAMPLE, [sample_index if source_sample is None else source_sample])
 
             # loop models
             for model_results in sample_results.get('models', []):
@@ -326,8 +329,12 @@ class Query(Exceptionable, Configurable, Saveable):
 
                         for master_index in range(len(sim_object.fibersets[0].fibers)):
                             inner_index, fiber_index = sim_object.indices_fib_to_n(0, master_index)
-
                             outer = [index for index, inners in enumerate(out_in) if inner_index in inners][0]
+                            specific_inner = [
+                                inners.index(inner_index)
+                                for index, inners in enumerate(out_in)
+                                if inner_index in inners
+                            ][0]
                             base_dict = {
                                 'sample': sample_results['index'],
                                 'model': model_results['index'],
@@ -347,6 +354,13 @@ class Query(Exceptionable, Configurable, Saveable):
                             base_dict['apnode'], base_dict['aptime'], base_dict['long_ap_pos'] = self.get_ap_info(
                                 ignore_no_activation, base_dict, sim_dir, source_sample is not None
                             )
+                            base_dict['peri_thk'] = self.get_peri_thickness(
+                                sample_object.slides[0].fascicles[outer].inners[specific_inner]
+                            )
+                            if tortuosity:
+                                base_dict['tortuosity'] = self.get_tortuosity(
+                                    base_dict, sim_dir, source_sample is not None
+                                )
                             alldat.append(base_dict)
 
         return pd.DataFrame(alldat)
@@ -379,8 +393,17 @@ class Query(Exceptionable, Configurable, Saveable):
         return abs(threshold)
 
     @staticmethod
-    def get_ap_info(ignore_no_activation, base_dict, sim_dir, threed):
+    def get_tortuosity(base_dict, sim_dir, threed):
+        # directory for specific n_sim
+        if not threed:
+            return 1
+        else:
+            fiberfile3D = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
+            ln = nd_line(np.loadtxt(fiberfile3D, skiprows=1))
+            return ln.length / euclidean(ln.points[0], ln.points[-1])
 
+    @staticmethod
+    def get_ap_info(ignore_no_activation, base_dict, sim_dir, threed):
         # directory for specific n_sim
         n_sim_dir = os.path.join(sim_dir, 'n_sims', str(base_dict['nsim']))
         if not threed:
@@ -585,3 +608,7 @@ class Query(Exceptionable, Configurable, Saveable):
                 writer.sheets[sheet_name].set_column(0, 256)
 
         writer.save()
+
+    def get_peri_thickness(self, inner):
+        fit = {'a': 0.03702, 'b': 10.5}
+        return fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")

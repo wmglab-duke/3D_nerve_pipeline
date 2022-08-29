@@ -570,7 +570,7 @@ def plot_colorthresh(samp2d, samp3d, model, simdex, nerve_label):
     dat2dnew['dataset'] = '2D'
     dat3dnew = datre.drop(columns='2D').rename(columns={'3D': 'threshold'})
     dat3dnew['dataset'] = '3D'
-    datfinal = pd.concat([dat2dnew, dat3dnew])
+    datfinal = pd.concat([dat2dnew, dat3dnew], sort=True)
     # datre = dat2d
     # %%
     sns.set(font_scale=1.5)
@@ -602,8 +602,46 @@ def plot_colorthresh(samp2d, samp3d, model, simdex, nerve_label):
     plt.savefig(f'out/analysis/{simdex}/colorthresh{nerve_label}-{samp2d}.png', dpi=500)
 
 
+def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=False):
+    global ax
+    corrs = []
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': samples2d, 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data(tortuosity=tortuosity)
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q.data(source_sample=samples2d[0], tortuosity=tortuosity)
+    dat2d = datamatch(dat2d, dat3d, 'threshold')
+    if tortuosity:
+        dat2d = datamatch(dat2d, dat3d, 'tortuosity')
+    return dat2d
+
+
+def corrcalc(data, comparison):
+    corrs = []
+    for nsim in pd.unique(data['nsim']):
+        # ax.set_title(f'fiber diam: {s}μm')
+        corr = {}
+        for sample in pd.unique(data['sample']):
+            thisdat = data[(data["nsim"] == nsim) & (data["sample"] == sample)]
+            corr[sample] = round(pearsonr(thisdat[comparison[0]], thisdat[comparison[1]])[0], 3)
+        corrs.append(corr)
+    return corrs
+
+
 def plot_correlation(samples2d, samp3d, model, simdex, nerve_label):
     global ax
+    corrs = []
     q = Query(
         {
             'partial_matches': False,
@@ -654,7 +692,9 @@ def plot_correlation(samples2d, samp3d, model, simdex, nerve_label):
             corr[sample] = round(pearsonr(thisdat['threshold'], thisdat['threshold3d'])[0], 3)
         ax.legend(labels=["r=" + str(corr[sample]) for sample in samples2d])
         ax.set_xlabel('2D threshold (mA)')
+        corrs.append(corr)
     g.savefig(f'out/analysis/{simdex}/threshcorr_{nerve_label}', dpi=400)
+    return corrs
 
 
 def plot_colorjoint(samp2d, samp3d, model, simdex, nerve_label):
@@ -747,11 +787,10 @@ def plot_oneone(samples2d, samp3d, model, simdex, nerve_label):
         ax.set_xlim(limits)
         ax.set_ylim(limits)
         ax.plot(limits, limits, color='red')
-    g.savefig(f'out/analysis/{simdex}/threscorr_{nerve_label}', dpi=400)
+    g.savefig(f'out/analysis/{simdex}/oneone_{nerve_label}', dpi=400)
 
 
 def plot_dose_response(samples2d, samp3d, model, simdex, nerve_label):
-    global data
     q = Query(
         {
             'partial_matches': False,
@@ -789,7 +828,7 @@ def plot_dose_response(samples2d, samp3d, model, simdex, nerve_label):
 def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts):
     q = Query(
         {
-            'partial_matches': True,
+            'partial_matches': False,
             'include_downstream': True,
             'indices': {'sample': [samp2d], 'model': [0], 'sim': [simdex]},
         }
@@ -798,19 +837,19 @@ def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts):
     dat2d['threed'] = False
     q3 = Query(
         {
-            'partial_matches': True,
+            'partial_matches': False,
             'include_downstream': True,
-            'indices': {'sample': [253], 'model': [0], 'sim': [simdex]},
+            'indices': {'sample': [samp3d], 'model': [0], 'sim': [simdex]},
         }
     ).run()
-    dat3d = q3.data(source_sample=250)
+    dat3d = q3.data(source_sample=samp2d)
     dat3d['threed'] = True
     sample_obj = q.get_object(Object.SAMPLE, [250])
     sim_obj = q.get_object(Object.SIMULATION, [250, 0, 3])
     # %%
     dat3z = get_actual_zpos(dat3d, samp3d, model, simdex)
     dat2d = dat2d.rename(columns={'long_ap_pos': 'activation_zpos'})
-    apdat = pd.concat([dat3z, dat2d])
+    apdat = pd.concat([dat3z, dat2d], sort=True)
     # %%
     redict = {"sample": {samp2d: '2D', samp3d: '3D'}}
     datre = rename_var(apdat, redict)

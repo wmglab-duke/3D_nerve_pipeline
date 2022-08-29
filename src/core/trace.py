@@ -40,6 +40,7 @@ class Trace(Exceptionable):
         """
 
         # These are private instance variables that are returned by getter
+        self.thickness = None
         self.__contour = None
         self.__polygon = None
         self.__centroid = None
