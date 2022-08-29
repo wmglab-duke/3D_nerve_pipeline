@@ -59,6 +59,7 @@ def run_comparison(comparison):
         data=finalcorr, x='nsim', y='correlation', style='contact', hue='sample', legend=False, palette='colorblind'
     )
     plt.title(f'{comparison[0]}-{comparison[1]}')
+    plt.gcf().savefig(f'{comparison[0]}-{comparison[1]}-sim{simint}')
 
 
 for simdex in config['sim_data'].keys():
