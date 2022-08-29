@@ -13,6 +13,8 @@ import json
 import os
 import sys
 
+sys.path.append('.')
+
 from src.core.plotter import (
     ap_plot,
     plot_colorjoint,
@@ -21,8 +23,6 @@ from src.core.plotter import (
     plot_dose_response,
     plot_oneone,
 )
-
-sys.path.append('.')
 
 model = 0
 cuff_contacts = [21, 29]

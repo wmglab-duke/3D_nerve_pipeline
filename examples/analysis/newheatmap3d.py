@@ -17,7 +17,7 @@ from src.utils import Object
 model = 0
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-os.makedirs('out/analysis/heatmaps')
+os.makedirs('out/analysis/heatmaps', exist_ok=True)
 for simdex in config['sim_data'].keys():
     simint = int(simdex)
     for sample_data in config['sample_data']:
