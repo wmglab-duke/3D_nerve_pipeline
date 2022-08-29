@@ -392,14 +392,6 @@ class Simulation(Exceptionable, Configurable, Saveable):
                 pickle.dump(inner_fiber_diam_key, f)
                 f.close()
 
-        n_inners = 0
-        for fascicle in self.sample.morphology['Fascicles']:
-            n_inners += len(fascicle["inners"])
-
-        n_fiber_coords = []
-        for fiberset in self.fibersets:
-            n_fiber_coords.append(len(fiberset.fibers[0]))
-
         for t, (potentials_ind, waveform_ind) in enumerate(self.master_product_indices):
             nsim_inputs_directory, fiberset_ind, active_src_vals = self.n_sim_setup(
                 sim_dir, sim_num, potentials_ind, waveform_ind, t
