@@ -539,8 +539,13 @@ class Simulation(Exceptionable, Configurable, Saveable):
         f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
         neuron_potentials_input = f(neuron_fiber_coords)
         # throw error if there are any nans in the neuron_potentials_input
-        if np.isnan(neuron_potentials_input).any():  # TODO: interp the missing vals
-            self.throw(9001)
+        if np.isnan(neuron_potentials_input).any():
+            print('WARNING: NANs in neuron_potentials_input. Using temp fix to avoid error.')
+            # temporary fix for nans in neuron_potentials_input
+            # TODO: make this better
+            while np.isnan(neuron_potentials_input).any():
+                this_index = np.where(np.isnan(neuron_potentials_input))[0]
+                neuron_potentials_input[this_index] = neuron_potentials_input[this_index - 1]
         return neuron_potentials_input
 
     def indices_fib_to_n(self, fiberset_ind, fiber_ind) -> Tuple[int, int]:
