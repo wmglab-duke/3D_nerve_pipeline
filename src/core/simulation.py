@@ -538,6 +538,9 @@ class Simulation(Exceptionable, Configurable, Saveable):
         # create interpolation from super_coords and super_bases
         f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
         neuron_potentials_input = f(neuron_fiber_coords)
+        # throw error if there are any nans in the neuron_potentials_input
+        if np.isnan(neuron_potentials_input).any():  # TODO: interp the missing vals
+            self.throw(9001)
         return neuron_potentials_input
 
     def indices_fib_to_n(self, fiberset_ind, fiber_ind) -> Tuple[int, int]:
