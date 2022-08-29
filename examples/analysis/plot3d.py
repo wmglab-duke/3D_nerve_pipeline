@@ -13,6 +13,8 @@ import json
 import os
 import sys
 
+sys.path.append('.')
+
 from src.core.plotter import (
     ap_plot,
     plot_colorjoint,
@@ -21,8 +23,6 @@ from src.core.plotter import (
     plot_dose_response,
     plot_oneone,
 )
-
-sys.path.append('.')
 
 model = 0
 cuff_contacts = [21, 29]
@@ -43,4 +43,4 @@ for simdex in config['sim_data'].keys():
         for samp2d in samples2d:
             plot_colorthresh(samp2d, samp3d, model, simint, nerve_label)
             plot_colorjoint(samp2d, samp3d, model, simint, nerve_label)
-            ap_plot(samp2d, samp3d, model, simdex, cuff_contacts)
+            ap_plot(samp2d, samp3d, model, simint, cuff_contacts)
