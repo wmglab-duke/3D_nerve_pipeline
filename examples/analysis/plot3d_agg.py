@@ -1,13 +1,10 @@
 #!/usr/bin/env python3.7
-
 """The copyrights of this software are owned by Duke University.
 
 Please refer to the LICENSE.txt and README.txt files for licensing
 instructions. The source code can be found on the following GitHub
 repository: https://github.com/wmglab-duke/ascent
 """
-
-# RUN THIS FROM REPOSITORY ROOT
 
 import json
 import os
@@ -19,7 +16,7 @@ import seaborn as sns
 
 sys.path.append('.')
 
-from src.core.plotter import corrcalc, get_datamatch
+from src.core.plotter import corrcalc, get_datamatch  # noqa: E402
 
 model = 0
 
@@ -27,11 +24,13 @@ with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
 
 
-def run_comparison(comparison):
+def run_comparison(simdex, comparison):
     allcorr = []
     plt.figure()
     simint = int(simdex)
     os.makedirs(f'out/analysis/{simdex}', exist_ok=True)
+    plot_title = f'{comparison[0]}-{comparison[1]}-sim{simint}'
+    print('Working:', plot_title)
     for sample_data in config['sample_data']:
         samp3d = sample_data['index3d']
         nerve_label = sample_data['name']
@@ -71,7 +70,7 @@ def run_comparison(comparison):
 
 
 for simdex in config['sim_data'].keys():
-    run_comparison(['threshold', 'threshold3d'])
-    run_comparison(['threshold', 'peri_thk'])
-    run_comparison(['threshold3d', 'peri_thk'])
-    run_comparison(['threshold3d', 'tortuosity3d'])
+    run_comparison(simdex, ['threshold', 'threshold3d'])
+    run_comparison(simdex, ['threshold', 'peri_thk'])
+    run_comparison(simdex, ['threshold3d', 'peri_thk'])
+    run_comparison(simdex, ['threshold3d', 'tortuosity3d'])
