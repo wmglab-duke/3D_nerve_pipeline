@@ -602,7 +602,7 @@ def plot_colorthresh(samp2d, samp3d, model, simdex, nerve_label):
     plt.savefig(f'out/analysis/{simdex}/colorthresh{nerve_label}-{samp2d}.png', dpi=500)
 
 
-def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=False):
+def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=False, source_sim=None):
     global ax
     corrs = []
     q = Query(
@@ -620,7 +620,7 @@ def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=Fals
             'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
         }
     ).run()
-    dat3d = q.data(source_sample=samples2d[0], tortuosity=tortuosity)
+    dat3d = q.data(source_sample=samples2d[0], tortuosity=tortuosity, source_sim=source_sim)
     dat2d = datamatch(dat2d, dat3d, 'threshold')
     if tortuosity:
         dat2d = datamatch(dat2d, dat3d, 'tortuosity')

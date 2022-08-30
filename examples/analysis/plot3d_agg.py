@@ -38,8 +38,16 @@ def run_comparison(comparison):
         samples2d = [x['index'] for x in sample_data['exsamples']]
         # PLOT CORRELATION
         inputdata = get_datamatch(
-            samples2d, samp3d, model, simint, nerve_label, tortuosity='tortuosity3d' in comparison
+            samples2d,
+            samp3d,
+            model,
+            simint,
+            nerve_label,
+            tortuosity='tortuosity3d' in comparison,
+            source_sim=config['source_sim'],
         )
+        if 'tortuosity3d' in comparison:
+            inputdata = inputdata.query(f'sample=={pd.unique(inputdata["sample"])[0]}')
         corrdata = corrcalc(inputdata, comparison)
         for i, d in enumerate(corrdata):
             for k, v in d.items():
@@ -54,8 +62,8 @@ def run_comparison(comparison):
     # plot correlation aggreggate
     plt.figure()
     finalcorr = pd.DataFrame(allcorr)
-    g = sns.swarmplot(data=finalcorr, x='nsim', y='correlation', hue='sample', s=10, palette='colorblind')
-    g = sns.lineplot(
+    sns.swarmplot(data=finalcorr, x='nsim', y='correlation', hue='sample', s=10, palette='colorblind')
+    sns.lineplot(
         data=finalcorr, x='nsim', y='correlation', style='contact', hue='sample', legend=False, palette='colorblind'
     )
     plt.title(f'{comparison[0]}-{comparison[1]}')

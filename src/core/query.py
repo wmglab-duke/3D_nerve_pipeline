@@ -282,7 +282,9 @@ class Query(Exceptionable, Configurable, Saveable):
         return True
 
     # TODO: map the threshold and ap functions onto a base looping function
-    def data(self, ignore_missing=False, source_sample=None, ignore_no_activation=False, tortuosity=False):
+    def data(
+        self, ignore_missing=False, source_sample=None, ignore_no_activation=False, tortuosity=False, source_sim=None
+    ):
 
         # validation
         if self._result is None:
@@ -359,7 +361,7 @@ class Query(Exceptionable, Configurable, Saveable):
                             )
                             if tortuosity:
                                 base_dict['tortuosity'] = self.get_tortuosity(
-                                    base_dict, sim_dir, source_sample is not None
+                                    base_dict, sim_dir, source_sample is not None, source_sim
                                 )
                             alldat.append(base_dict)
 
@@ -393,11 +395,13 @@ class Query(Exceptionable, Configurable, Saveable):
         return abs(threshold)
 
     @staticmethod
-    def get_tortuosity(base_dict, sim_dir, threed):
+    def get_tortuosity(base_dict, sim_dir, threed, source_sim=None):
         # directory for specific n_sim
         if not threed:
             return 1
         else:
+            if source_sim is not None:
+                sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
             fiberfile3D = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
             ln = nd_line(np.loadtxt(fiberfile3D, skiprows=1))
             return ln.length / euclidean(ln.points[0], ln.points[-1])
