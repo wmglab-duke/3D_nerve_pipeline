@@ -7,7 +7,8 @@ import matplotlib.colors as mplcolors
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
-
+import matplotlib
+matplotlib.use('agg')
 sys.path.append('.')
 
 from src.core.plotter import heatmaps

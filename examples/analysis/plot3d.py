@@ -13,7 +13,8 @@ import json
 import os
 import sys
 import matplotlib.pyplot as plt
-
+import matplotlib
+matplotlib.use('agg')
 sys.path.append('.')
 
 from src.core.plotter import (
