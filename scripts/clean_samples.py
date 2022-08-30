@@ -19,6 +19,8 @@ EXCLUDED_FILENAMES = [
     'sample.json',
     'model.json',
     'explicit.txt',
+    'explicit_fibersets',
+    '3D_fiberset.txt'
 ]
 
 

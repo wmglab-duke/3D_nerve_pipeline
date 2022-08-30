@@ -12,6 +12,7 @@ repository: https://github.com/wmglab-duke/ascent
 import json
 import os
 import sys
+import matplotlib.pyplot as plt
 
 sys.path.append('.')
 
@@ -34,6 +35,7 @@ for simdex in config['sim_data'].keys():
     simint = int(simdex)
     os.makedirs(f'out/analysis/{simdex}', exist_ok=True)
     for sample_data in config['sample_data']:
+        plt.close('all')
         samp3d = sample_data['index3d']
         nerve_label = sample_data['name']
         samples2d = [x['index'] for x in sample_data['exsamples']]

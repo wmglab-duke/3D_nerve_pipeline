@@ -24,6 +24,7 @@ for simdex in config['sim_data'].keys():
         samp3d = sample_data['index3d']
         nerve_label = sample_data['name']
         for extrusion_sample in sample_data['exsamples']:
+            plt.close('all')
             samp2d = extrusion_sample['index']
             #%%
             q = Query(

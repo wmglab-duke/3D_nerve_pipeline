@@ -1,4 +1,4 @@
-{
+{ "source_sim": 3,
   "sample_data": [
     {
       "name": "2L",
@@ -15,11 +15,87 @@
           "pulse": "anodic"
         }
       ]
+    },
+    {
+      "name": "2R",
+      "index3d": 273,
+      "exsamples": [
+        {
+          "index": 270,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 272,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "3R",
+      "index3d": 373,
+      "exsamples": [
+        {
+          "index": 370,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 372,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "5R",
+      "index3d": 573,
+      "exsamples": [
+        {
+          "index": 570,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 572,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "6L",
+      "index3d": 653,
+      "exsamples": [
+        {
+          "index": 650,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 652,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
     }
   ],
   "sim_data": {
     "3": {
       "nsim_count": 6
+    },
+    "4": {
+      "nsim_count": "idk"
+    },
+    "5": {
+      "nsim_count": "idk"
+    },
+    "6": {
+      "nsim_count": "idk"
+    },
+    "7": {
+      "nsim_count": "idk"
     }
   }
 }
