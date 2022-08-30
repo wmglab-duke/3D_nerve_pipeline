@@ -825,7 +825,7 @@ def plot_dose_response(samples2d, samp3d, model, simdex, nerve_label):
         plt.savefig(f'out/analysis/{simdex}/{nerve_label}_{i}_ecdf.png', dpi=400, bbox_inches='tight')
 
 
-def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts):
+def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts, source_sim=None):
     q = Query(
         {
             'partial_matches': False,
@@ -847,7 +847,7 @@ def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts):
     sample_obj = q.get_object(Object.SAMPLE, [250])
     sim_obj = q.get_object(Object.SIMULATION, [250, 0, 3])
     # %%
-    dat3z = get_actual_zpos(dat3d, samp3d, model, simdex)
+    dat3z = get_actual_zpos(dat3d, samp3d, model, simdex, source_sim=source_sim)
     dat2d = dat2d.rename(columns={'long_ap_pos': 'activation_zpos'})
     apdat = pd.concat([dat3z, dat2d], sort=True)
     # %%
@@ -880,8 +880,16 @@ def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts):
     g.savefig(f'out/analysis/{simdex}/{samp2d}_zpos.png', dpi=400)
 
 
-def get_actual_zpos(dat3d, samp3d, model, sim):
-    fiberdir = os.path.join('samples', str(samp3d), 'models', str(model), 'sims', str(sim), '3D_fiberset')
+def get_actual_zpos(dat3d, samp3d, model, sim, source_sim=None):
+    fiberdir = os.path.join(
+        'samples',
+        str(samp3d),
+        'models',
+        str(model),
+        'sims',
+        str(sim if source_sim is not None else source_sim),
+        '3D_fiberset',
+    )
     fibers3d = [x for x in os.listdir(fiberdir) if x.endswith('.dat')]
     for file in fibers3d:
         f_ind = int(os.path.splitext(file)[0])
