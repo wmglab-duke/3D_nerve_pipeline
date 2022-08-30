@@ -887,7 +887,7 @@ def get_actual_zpos(dat3d, samp3d, model, sim, source_sim=None):
         'models',
         str(model),
         'sims',
-        str(sim if source_sim is not None else source_sim),
+        str(sim if source_sim is None else source_sim),
         '3D_fiberset',
     )
     fibers3d = [x for x in os.listdir(fiberdir) if x.endswith('.dat')]
