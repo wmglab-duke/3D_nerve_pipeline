@@ -602,6 +602,73 @@ def plot_colorthresh(samp2d, samp3d, model, simdex, nerve_label):
     plt.savefig(f'out/analysis/{simdex}/colorthresh{nerve_label}-{samp2d}.png', dpi=500)
 
 
+def plot_colorthreshstrip(samp2d, samp3d, model, simdex, nerve_label):
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp2d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat2d = q.data()
+    q = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q.data(source_sample=samp2d)
+    dat2d = datamatch(dat2d, dat3d, 'threshold')
+    # %% Renaming
+    redict = {
+        # "nsim": {
+        #     0: 'fiber diameter: 2\u03BCm',
+        #     1: 'fiber diameter: 5\u03BCm',
+        #     2: 'fiber diameter: 8\u03BCm',
+        #     3: 'fiber diameter: 11\u03BCm',
+        #     4: 'fiber diameter: 13\u03BCm',
+        # }
+    }
+    dat2d = dat2d.rename(columns={'threshold': '2D', 'threshold3d': '3D'})
+    datre = rename_var(dat2d, redict)
+    dat2dnew = datre.drop(columns='3D').rename(columns={'2D': 'threshold'})
+    dat2dnew['dataset'] = '2D'
+    dat3dnew = datre.drop(columns='2D').rename(columns={'3D': 'threshold'})
+    dat3dnew['dataset'] = '3D'
+    datfinal = pd.concat([dat2dnew, dat3dnew], sort=True)
+    # datre = dat2d
+    # %%
+    sns.set(font_scale=1.5)
+    plotdata = datfinal[datfinal['sample'] == samp2d]
+    g = sns.catplot(
+        data=plotdata,
+        kind='strip',
+        col='nsim',
+        hue='inner',
+        y='threshold',
+        x='dataset',
+        sharey=False,
+        dodge=True,
+        palette='colorblind',
+    )
+    plt.subplots_adjust(top=0.85)
+    plt.suptitle(f'Activation thresholds by fascicle (Sample {nerve_label}, 2D slice: {samp2d})')
+    axs = g.axes.ravel()
+    axs[0].set_ylabel('Activation threshold (mA)')
+    plt.subplots_adjust(top=0.85)
+    for i, ax in enumerate(g.axes.ravel()):
+        corr = {}
+        thisdat = dat2d[(dat2d["nsim"] == i) & (dat2d["sample"] == samp2d)]
+        corr[samp2d] = round(pearsonr(thisdat['2D'], thisdat['3D'])[0], 3)
+        leg = ax.legend(
+            labels=["r=" + str(corr[samp2d])], handlelength=0, handletextpad=0, fancybox=True, loc='lower center'
+        )
+        for item in leg.legendHandles:
+            item.set_visible(False)
+    plt.savefig(f'out/analysis/{simdex}/colorthresh{nerve_label}-{samp2d}.png', dpi=500)
+
+
 def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=False, source_sim=None):
     global ax
     corrs = []
