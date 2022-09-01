@@ -104,8 +104,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             shiftloc = longit[shiftpoint, 2]
             length = float(np.loadtxt(f'{sim_directory}/ss_lengths/{fiber}.dat'))
             override_shift = shiftloc - length / 2
-            fib = self._generate_z([(0, 0)], override_length=length - 2, override_shift=override_shift)
-            fib[0] = [(x[0], x[1], x[2] + 1) for x in fib[0]]
+            fib = self._generate_z([(0, 0)], override_length=length - 5, override_shift=override_shift)
+            fib[0] = [(x[0], x[1], x[2] + 2.5) for x in fib[0]]
             fibers.extend(fib)
             # TODO: modulus by INL
         self.fibers = fibers
