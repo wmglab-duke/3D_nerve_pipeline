@@ -79,6 +79,22 @@
           "pulse": "anodic"
         }
       ]
+    },
+    {
+      "name": "6L",
+      "index3d": 673,
+      "exsamples": [
+        {
+          "index": 670,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 672,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
     }
   ],
   "sim_data": {
