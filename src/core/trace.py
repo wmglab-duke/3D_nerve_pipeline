@@ -274,6 +274,9 @@ class Trace(Exceptionable):
         """
         return self.polygon().within(outer.polygon())
 
+    def contains(self, other) -> bool:
+        return self.polygon().contains(other)
+
     def intersects(self, other: 'Trace') -> bool:
         """
         :param other: other Trace to check

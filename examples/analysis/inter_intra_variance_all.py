@@ -2,11 +2,13 @@
 import json
 import sys
 
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
+matplotlib.use('agg')
 sys.path.append('.')
 
 from src.core.plotter import get_datamatch
@@ -15,7 +17,7 @@ datas = []
 model = 0
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-for simdex in config['sim_data'].keys():
+for simdex in ['3']:
     simint = int(simdex)
     for sample_data in config['sample_data']:
         samp3d = sample_data['index3d']
@@ -40,11 +42,12 @@ for simdex in config['sim_data'].keys():
         data['nerve_label'] = nerve_label
         datas.append(data)
     alldat = pd.concat(datas)
+    alldat = alldat.query('nsim in [0,5]')
     sns.catplot(
         data=alldat,
-        kind='box',
+        kind='bar',
         col='nsim',
-        row='nerve_label',
+        # col_wrap=3,
         hue='model',
         y='threshold_var',
         x='sample',
@@ -58,7 +61,7 @@ for simdex in config['sim_data'].keys():
         data=alldat,
         kind='box',
         col='nsim',
-        row='nerve_label',
+        # col_wrap=3,
         hue='model',
         y='threshold_mean',
         x='sample',
@@ -67,3 +70,20 @@ for simdex in config['sim_data'].keys():
     )
     plt.suptitle('within-fascicle threshold mean')
     plt.gcf().savefig('fascmean.png', dpi=400, bbox_inches='tight')
+    grouped = alldat.groupby(['sample', 'nsim', 'model'], as_index=False)
+    all2 = grouped.agg({'threshold_mean': [np.var]})
+    all2.columns = ["_".join(col_name).rstrip('_') for col_name in all2.columns]
+    plt.figure()
+    sns.catplot(
+        data=all2,
+        kind='swarm',
+        col='nsim',
+        hue='sample',
+        y='threshold_mean_var',
+        x='model',
+        dodge=True,
+        sharey=False,
+        margin_titles=True,
+    )
+    plt.suptitle('between-fascicle threshold mean')
+    plt.gcf().savefig('compilevar.png', dpi=400, bbox_inches='tight')
