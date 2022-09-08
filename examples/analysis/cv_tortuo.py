@@ -33,7 +33,7 @@ df = pd.DataFrame({'tortuosity':tortuosities, 'distance':actual_distance})
 effdat = pd.DataFrame(eff).melt(ignore_index=False).reset_index().rename(columns={'index':'diam','variable':'tortuosity','value':'cv'})
 
 sns.lineplot(data=effdat,x='diam',y='cv',hue='tortuosity')
-plt.gcf().savefig('tort.png',dpi=400,bbox_inches='tight')
+plt.gcf().savefig('out/analysis/tort.png',dpi=400,bbox_inches='tight')
 
 dats = []
 for sample in [253, 273, 373, 573, 653, 673]:
@@ -49,10 +49,10 @@ for sample in [253, 273, 373, 573, 653, 673]:
 dat3d=pd.concat(dats).reset_index(drop=True)
 plt.figure()
 sns.histplot(data=dat3d,x='tortuosity')
-plt.gcf().savefig('histtort.png',dpi=400,bbox_inches='tight')
+plt.gcf().savefig('out/analysis/histtort.png',dpi=400,bbox_inches='tight')
 plt.figure()
 sns.lmplot(data=dat3d.query('nsim in [0,5]'),
            facet_kws= {'sharex':False,
                        'sharey':False},
                        col='nsim',hue='sample',y='threshold',x='tortuosity')
-plt.gcf().savefig('linetort.png',dpi=400,bbox_inches='tight')
+plt.gcf().savefig('out/analysis/linetort.png',dpi=400,bbox_inches='tight')
