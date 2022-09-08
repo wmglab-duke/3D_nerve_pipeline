@@ -18,7 +18,7 @@ matplotlib.use('agg')
 
 sys.path.append('.')
 
-from src.core.plotter import corrcalc, get_datamatch  # noqa: E402
+from src.core.plotter import corrcalc, get_datamatch, get_peri_site  # noqa: E402
 
 model = 0
 
@@ -38,17 +38,20 @@ def run_comparison(simdex, comparison):
         nerve_label = sample_data['name']
         samples2d = [x['index'] for x in sample_data['exsamples']]
         # PLOT CORRELATION
-        inputdata = get_datamatch(
-            samples2d,
-            samp3d,
-            model,
-            simint,
-            nerve_label,
-            tortuosity='tortuosity3d' in comparison,
-            source_sim=config['source_sim'],
-        )
-        if 'tortuosity3d' in comparison:
-            inputdata = inputdata.query(f'sample=={pd.unique(inputdata["sample"])[0]}')
+        if 'peri_thk_act_site' in comparison:
+            inputdata = get_peri_site(samp3d, samples2d[0], model, simint, nerve_label)
+        else:
+            inputdata = get_datamatch(
+                samples2d,
+                samp3d,
+                model,
+                simint,
+                nerve_label,
+                tortuosity='tortuosity3d' in comparison,
+                source_sim=config['source_sim'],
+            )
+            if 'tortuosity3d' in comparison:
+                inputdata = inputdata.query(f'sample=={pd.unique(inputdata["sample"])[0]}')
         corrdata = corrcalc(inputdata, comparison)
         for i, d in enumerate(corrdata):
             for k, v in d.items():
@@ -73,7 +76,8 @@ def run_comparison(simdex, comparison):
 
 for simdex in config['sim_data'].keys():
     plt.close('all')
-    run_comparison(simdex, ['threshold', 'threshold3d'])
-    run_comparison(simdex, ['threshold', 'peri_thk'])
-    run_comparison(simdex, ['threshold3d', 'peri_thk'])
-    run_comparison(simdex, ['threshold3d', 'tortuosity3d'])
+    # run_comparison(simdex, ['threshold', 'threshold3d'])
+    # run_comparison(simdex, ['threshold', 'peri_thk'])
+    # run_comparison(simdex, ['threshold3d', 'peri_thk'])
+    run_comparison(simdex, ['threshold3d', 'peri_thk_act_site'])
+    # run_comparison(simdex, ['threshold3d', 'tortuosity3d'])

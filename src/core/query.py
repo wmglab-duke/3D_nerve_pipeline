@@ -283,7 +283,13 @@ class Query(Exceptionable, Configurable, Saveable):
 
     # TODO: map the threshold and ap functions onto a base looping function
     def data(
-        self, ignore_missing=False, source_sample=None, ignore_no_activation=False, tortuosity=False, source_sim=None
+        self,
+        ignore_missing=False,
+        source_sample=None,
+        ignore_no_activation=False,
+        tortuosity=False,
+        source_sim=None,
+        tonly=False,
     ):
 
         # validation
@@ -350,15 +356,16 @@ class Query(Exceptionable, Configurable, Saveable):
                                 'waveform_index': waveform_index,
                                 'active_src_index': active_src_index,
                             }
-                            base_dict['threshold'] = self.get_threshold(
-                                ignore_missing, base_dict, sim_dir, source_sample is not None
-                            )
-                            base_dict['apnode'], base_dict['aptime'], base_dict['long_ap_pos'] = self.get_ap_info(
-                                ignore_no_activation, base_dict, sim_dir, source_sample is not None
-                            )
-                            base_dict['peri_thk'] = self.get_peri_thickness(
-                                sample_object.slides[0].fascicles[outer].inners[specific_inner]
-                            )
+                            if not tonly:
+                                base_dict['threshold'] = self.get_threshold(
+                                    ignore_missing, base_dict, sim_dir, source_sample is not None
+                                )
+                                base_dict['apnode'], base_dict['aptime'], base_dict['long_ap_pos'] = self.get_ap_info(
+                                    ignore_no_activation, base_dict, sim_dir, source_sample is not None
+                                )
+                                base_dict['peri_thk'] = self.get_peri_thickness(
+                                    sample_object.slides[0].fascicles[outer].inners[specific_inner]
+                                )
                             if tortuosity:
                                 base_dict['tortuosity'] = self.get_tortuosity(
                                     base_dict, sim_dir, source_sample is not None, source_sim

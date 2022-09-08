@@ -18,8 +18,10 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tick
 import numpy as np
 import pandas as pd
+import pickle5
 import seaborn as sns
 from scipy.stats import pearsonr
+from shapely.geometry import Point
 
 from src.core import Query, Sample, Simulation
 from src.utils import Config, Object
@@ -669,6 +671,71 @@ def plot_colorthreshstrip(samp2d, samp3d, model, simdex, nerve_label):
     plt.savefig(f'out/analysis/{simdex}/colorthresh{nerve_label}-{samp2d}.png', dpi=500)
 
 
+def get_peri_site(samp3d, samp2d, model, simdex, nerve_label, source_sim=3):
+    """Go through each fiber threshold and find the perineurium thickness at the activation site."""
+    q3 = Query(
+        {
+            'partial_matches': False,
+            'include_downstream': True,
+            'indices': {'sample': [samp3d], 'model': [0], 'sim': [simdex]},
+        }
+    ).run()
+    dat3d = q3.data(source_sample=samp2d)
+    dat3d['threed'] = True
+    dat3z = get_actual_zpos(dat3d, samp3d, model, simdex, source_sim=source_sim, xy=True)
+    dat3z['peri_thk_act_site'] = np.nan
+    dat3z.rename(columns={'threshold': 'threshold3d'}, inplace=True)
+    # Loop through each fiber and find the perineurium thickness at the activation site
+    for i in range(0, len(dat3z)):
+        # get the z position of the activation site
+        zpos = dat3z.loc[i, 'activation_zpos']
+        # Load in pickled slidelist
+        with open(f'input/slides/{nerve_label}slides.obj', 'rb') as f:
+            slidelist = pickle5.load(f)
+        # find the slice nearest the activation site.
+        slice_spacing = 20  # microns
+        slice_index = int(round(zpos / slice_spacing))
+        # Get the slide
+        slide = slidelist[slice_index]
+        slide.scale(1.2)  # shrinkage correction
+        slide.scale(0.5)  # wrong scaling correction #TODO remove this
+        # Use the x and y activation pos to create a shapely point, then find which inner from
+        # the slide contains that point
+        point = Point(dat3z.loc[i, 'activation_xpos'], dat3z.loc[i, 'activation_ypos'])
+        inner = None
+        try:
+            inner = [inner for fasc in slide.fascicles for inner in fasc.inners if inner.contains(point)][0]
+        except:
+            print('ope')
+            iteration = 0
+            innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
+            innerlist = [x.deepcopy() for x in innersave]
+            while inner is None:
+                if iteration > 5:
+                    plt.figure()
+                    plt.scatter(dat3z.loc[i, 'activation_xpos'], dat3z.loc[i, 'activation_ypos'])
+                    [inner.plot() for inner in innerlist]
+                    # slide.plot()
+                    plt.show()
+                    plt.title(
+                        f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{dat3z.loc[i,"master_fiber_index"]}'
+                    )
+                    break
+                else:
+                    iteration += 1
+                [x.offset(distance=10) for x in innerlist]
+                try:
+                    inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
+                    print('ope fixed')
+                except Exception:
+                    pass
+        if inner is not None:
+            fit = {'a': 0.03702, 'b': 10.5}
+            thk = fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
+            dat3z.loc[i, 'peri_thk_act_site'] = thk
+    return dat3z
+
+
 def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=False, source_sim=None):
     global ax
     corrs = []
@@ -680,13 +747,7 @@ def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=Fals
         }
     ).run()
     dat2d = q.data(tortuosity=tortuosity)
-    q = Query(
-        {
-            'partial_matches': False,
-            'include_downstream': True,
-            'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
-        }
-    ).run()
+
     dat3d = q.data(source_sample=samples2d[0], tortuosity=tortuosity, source_sim=source_sim)
     dat2d = datamatch(dat2d, dat3d, 'threshold')
     if tortuosity:
@@ -911,8 +972,6 @@ def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts, source_sim=None):
     ).run()
     dat3d = q3.data(source_sample=samp2d)
     dat3d['threed'] = True
-    sample_obj = q.get_object(Object.SAMPLE, [250])
-    sim_obj = q.get_object(Object.SIMULATION, [250, 0, 3])
     # %%
     dat3z = get_actual_zpos(dat3d, samp3d, model, simdex, source_sim=source_sim)
     dat2d = dat2d.rename(columns={'long_ap_pos': 'activation_zpos'})
@@ -947,7 +1006,7 @@ def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts, source_sim=None):
     g.savefig(f'out/analysis/{simdex}/{samp2d}_zpos.png', dpi=400)
 
 
-def get_actual_zpos(dat3d, samp3d, model, sim, source_sim=None):
+def get_actual_zpos(dat3d, samp3d, model, sim, source_sim=None, xy=False):
     fiberdir = os.path.join(
         'samples',
         str(samp3d),
@@ -966,4 +1025,7 @@ def get_actual_zpos(dat3d, samp3d, model, sim, source_sim=None):
         for index, row in datnew.iterrows():
             actual_zpos = fiberline.interp(row['long_ap_pos'])[2]
             dat3d.loc[index, 'activation_zpos'] = actual_zpos
+            if xy:
+                dat3d.loc[index, 'activation_xpos'] = fiberline.interp(row['long_ap_pos'])[0]
+                dat3d.loc[index, 'activation_ypos'] = fiberline.interp(row['long_ap_pos'])[1]
     return dat3d

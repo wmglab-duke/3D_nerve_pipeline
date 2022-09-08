@@ -21,7 +21,7 @@ inner = 0
 fiber = 0
 n_sim = 0
 
-myelinated = False
+myelinated = True
 
 # %% Plot Ve graphs
 base_n_sim = os.path.join('samples', str(sample), 'models', str(model), 'sims', str(sim), 'n_sims')
