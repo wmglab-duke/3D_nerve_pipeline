@@ -73,8 +73,8 @@ def run_comparison(simdex, comparison):
 
 
 for simdex in config['sim_data'].keys():
-    # run_comparison(simdex, ['threshold', 'threshold3d'])
-    # run_comparison(simdex, ['threshold', 'peri_thk'])
-    # run_comparison(simdex, ['threshold3d', 'peri_thk'])
+    run_comparison(simdex, ['threshold', 'threshold3d'])
+    run_comparison(simdex, ['threshold', 'peri_thk'])
+    run_comparison(simdex, ['threshold3d', 'peri_thk'])
     run_comparison(simdex, ['threshold3d', 'peri_thk_act_site'])
-    # run_comparison(simdex, ['threshold3d', 'tortuosity3d'])
+    run_comparison(simdex, ['threshold3d', 'tortuosity3d'])
