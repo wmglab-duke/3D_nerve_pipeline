@@ -1,9 +1,11 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""Main script for running the pipeline.
+
+The copyrights of this software are owned by Duke University. Please
+refer to the LICENSE and README.md files for licensing instructions. The
+source code can be found on the following GitHub repository:
+https://github.com/wmglab-duke/ascent
 """
 
 
@@ -19,6 +21,7 @@ from .env_setup import run as env_setup
 
 
 def run(args):
+    """Run the pipeline for a given run configuration."""
     # test
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 7):
         print(f'You are running Python {sys.version_info.major}.{sys.version_info.minor}, but 3.7 or later required')

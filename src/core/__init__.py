@@ -1,6 +1,7 @@
 #!/usr/bin/env python3.7
 # isort: skip_file
-"""
+"""Defines imports for the src.core module.
+
 The copyrights of this software are owned by Duke University.
 Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
@@ -18,6 +19,7 @@ from src.core.simulation import Simulation
 from src.core.waveform import Waveform
 from src.core.fiberset import FiberSet
 from src.core.query import Query
+from src.core import plotter
 
 __all__ = [
     'Map',
@@ -33,4 +35,5 @@ __all__ = [
     'Waveform',
     'FiberSet',
     'Query',
+    'plotter',
 ]

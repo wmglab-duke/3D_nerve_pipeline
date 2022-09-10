@@ -221,7 +221,7 @@ of:
 The div element has its own alignment attribute, align.
 
 <div align="center">
-(1) * <i>sep_wire_P</i> + (2) * <i>r_wire_P</i>
+(1) *<i>sep_wire_P</i> + (2)* <i>r_wire_P</i>
 </div>
 
 ## Simulation Protocols
@@ -394,7 +394,7 @@ epineurium). Material properties for each function are assigned in
 materials in the default materials library
 (`config/system/materials.json`) by name, or with explicit definitions
 of a materials name and conductivity as a JSON Object ([Material Parameters](../JSON/JSON_parameters/materials)).
-See [link](link to ModelWrapper.addMaterialDefinitions()) for code one how this happens.
+See [Add Material Definitions](../Code_Hierarchy/Java.md#modelwrapperaddmaterialdefinitions) for code one how this happens.
 
 ### Adding and assigning default material properties
 
@@ -414,7 +414,7 @@ epineurium, perineurium, endoneurium).
 Table A. Default material conductivities.
 
 | **Material**  | **Conductivity**             | **References**                                         |
-| ------------- | ---------------------------- | ------------------------------------------------------ |
+|---------------|------------------------------|--------------------------------------------------------|
 | silicone      | 10^-12 \[S/m\]               | {cite:p}`Callister2011-iv`                             |
 | platinum      | 9.43 ⨉ 10^6 \[S/m\]          | {cite:p}`De_Podesta1997-jq`                            |
 | endoneurium   | {1/6, 1/6, 1/1.75} \[S/m\]   | {cite:p}`RanckJr1965,Pelot2018`                        |
@@ -452,8 +452,8 @@ Our previously published work quantified the relationship between fascicle diame
 Table A. Previously published relationships between fascicle diameter and
 perineurium thickness.
 
-| **Species** | **peri_thk:** **_f_(species, d<sub>fasc</sub>)**    | **References**      |
-| ----------- | --------------------------------------------------- | ------------------- |
+| **Species** | **peri_thk:** **_f_(species, d<sub>fasc</sub>)**   | **References**      |
+|-------------|----------------------------------------------------|---------------------|
 | Rat         | peri_thk = 0.01292*d<sub>fasc</sub> + 1.367 \[um\] | {cite:p}`Pelot2020` |
 | Pig         | peri_thk = 0.02547*d<sub>fasc</sub> + 3.440 \[um\] | {cite:p}`Pelot2020` |
 | Human       | peri_thk = 0.03702*d<sub>fasc</sub> + 10.50 \[um\] | {cite:p}`Pelot2020` |

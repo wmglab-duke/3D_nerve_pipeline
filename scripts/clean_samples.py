@@ -1,9 +1,11 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""Remove files except those specified from samples directories.
+
+The copyrights of this software are owned by Duke University. Please
+refer to the LICENSE and README.md files for licensing instructions. The
+source code can be found on the following GitHub repository:
+https://github.com/wmglab-duke/ascent
 """
 
 import os
@@ -21,6 +23,7 @@ EXCLUDED_FILENAMES = [
 
 
 def remove_empty_directories(directory: str, verbose):
+    """Remove empty directories from a given directory."""
     for path in os.listdir(directory):
         subdirectory = os.path.join(directory, path)
         if os.path.isdir(subdirectory):
@@ -40,6 +43,7 @@ def remove_empty_directories(directory: str, verbose):
 
 
 def run(args):
+    """Remove files except those specified from samples directories."""
     global EXCLUDED_FILENAMES
     if args.full_reset:
         EXCLUDED_FILENAMES = ['sample.json', 'model.json']

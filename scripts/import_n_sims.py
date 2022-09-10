@@ -1,9 +1,11 @@
 #!/usr/bin/env python3.7
 
-"""
+"""Imports n_sims from the ASCENT n_sims export directory to the ASCENT simulation data directory.
+
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+Please refer to the LICENSE and README.md files for licensing
+instructions. The source code can be found on the following GitHub
+repository: https://github.com/wmglab-duke/ascent
 """
 
 import os
@@ -13,6 +15,7 @@ from src.utils import Configurable
 
 
 def run(args):
+    """Run the import."""
     env_path = os.path.join('config', 'system', 'env.json')
     assert os.path.isfile(env_path), f'Invalid env path: {env_path}'
 
@@ -42,23 +45,18 @@ def run(args):
                             sample,
                             model,
                             sim,
-                            sim_dir,
                             os.path.join(nsim_source, 'n_sims'),
                             len(sim_config['protocol']['amplitudes']),
                         )
                     else:
-                        check = Simulation.thresholds_exist(
-                            sample, model, sim, sim_dir, os.path.join(nsim_source, 'n_sims')
-                        )
+                        check = Simulation.thresholds_exist(sample, model, sim, os.path.join(nsim_source, 'n_sims'))
                     if check is False:
                         if args.force is True:
                             print('Force argument passed, continuing with import')
                         else:
                             print(
                                 'At least one threshold (or activation log if running FINITE AMPLITUDES) was missing,'
-                                ' skipping import for run {} sample {} model {} sim {}'.format(
-                                    argument, sample, model, sim
-                                )
+                                f' skipping import for run {argument} sample {sample} model {model} sim {sim}'
                             )
                             continue
                     Simulation.import_n_sims(

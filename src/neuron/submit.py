@@ -1,9 +1,11 @@
 #!/usr/bin/env python3.7
 
-"""
+"""Submits NEURON fiber simulations.
+
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+Please refer to the LICENSE and README.md files for licensing
+instructions. The source code can be found on the following GitHub
+repository: https://github.com/wmglab-duke/ascent
 """
 
 import argparse
@@ -22,7 +24,10 @@ import pandas as pd
 
 # %%Set up parser and top level arguments
 class listAction(argparse.Action):
-    def __call__(self, parser, values, option_string=None):
+    """Custom action for argparse to list run info."""
+
+    def __call__(self, parser, values, option_string=None, **kwargs):
+        """Print run info and exit."""
         run_path = 'runs'
         jsons = [file for file in os.listdir(run_path) if file.endswith('.json')]
         data = []
@@ -133,10 +138,13 @@ OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else '
 
 
 class WarnOnlyOnce:
+    """Warn only once per instance."""
+
     warnings = set()
 
     @classmethod
     def warn(cls, message):
+        """Print warning message if first call."""
         # storing int == less memory then storing raw message
         h = hash(message)
         if h not in cls.warnings:
@@ -147,7 +155,9 @@ class WarnOnlyOnce:
 
 def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
     """Print or update a progress bar in the terminal.
+
     Call in a loop to create a terminal progress bar.
+    Information such as the prefix and suffix can be changed with each call.
 
     :param iteration: The current iteration (current/total)
     :param total: The total number of iterations
@@ -167,7 +177,8 @@ def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, lengt
 
 
 def load(config_path: str):
-    """Loads in json data and returns to user, assuming it has already been validated.
+    """Load in json data and returns to user, assuming it has already been validated.
+
     :param config_path: the string path to load up
     :return: json data (usually dict or list)
     """
@@ -177,6 +188,7 @@ def load(config_path: str):
 
 def ensure_dir(directory):
     """Ensure that a directory exists. If it does not, create it.
+
     :param directory: the string path to the directory
     """
     if not os.path.exists(directory):
@@ -185,6 +197,7 @@ def ensure_dir(directory):
 
 def auto_compile(override: bool = False):
     """Compile NEURON files if they have not been compiled yet.
+
     :param override: if True, compile regardless of whether the files have already been compiled
     :return: True if ran compilation, False if not
     """
@@ -220,6 +233,7 @@ def make_task(
     waveform_path: str,
 ):
     """Create shell script used to run a fiber simulation.
+
     :param my_os: the string name of the operating system
     :param sub_con: the string name of the submission context
     :param start_p: the string path to the start_dir
@@ -256,6 +270,7 @@ def make_task(
 
 def local_submit(fiber_data: dict):
     """Submit a fiber simulation to the local machine.
+
     :param fiber_data: the dictionary of fiber data for suvbmission
     """
     a = fiber_data["job_number"]
@@ -272,6 +287,7 @@ def local_submit(fiber_data: dict):
 
 def submit_fibers(submission_context, submission_data):
     """Submit fiber simulations, either locally or to a cluster.
+
     :param submission_context: the string name of the submission_context
     :param submission_data: the dictionary of data for fiber submission
     """
@@ -321,7 +337,7 @@ def submit_fibers(submission_context, submission_data):
                         0,
                         len(runfibers),
                         length=40,
-                        prefix=f'Sample {sample}, Model {model}, Sim {sim}, n_sim {n_sim}:',
+                        prefix='Sample {}, Model {}, Sim {}, n_sim {}:'.format(*sim_name.split('_')),  # noqa FS002
                     )
                 # open pool instance, set up progress bar, and iterate over each job
                 for i, _ in enumerate(p.imap_unordered(local_submit, runfibers, 1)):
@@ -336,8 +352,7 @@ def submit_fibers(submission_context, submission_data):
 
 
 def cluster_submit(runfibers, sim_name, sim_path, start_path_base):
-    """
-    Submit fiber simulations on a slurm-based high performance computer cluster.
+    """Submit fiber simulations on a slurm-based high performance computer cluster.
     :param runfibers: the list of fiber data for submission
     :param sim_name: the string name of the n_sim
     :param sim_path: the string path to the simulation
@@ -392,6 +407,7 @@ def cluster_submit(runfibers, sim_name, sim_path, start_path_base):
 
 def make_fiber_tasks(submission_list, submission_context):
     """Create all shell scripts for fiber submission tasks.
+
     :param submission_list: the list of fibers to be submitted
     """
     # assign appropriate configuration data
@@ -440,6 +456,7 @@ def make_fiber_tasks(submission_list, submission_context):
 
 def make_run_sub_list(run_number: int):
     """Create a list of all fiber simulations to be run. Skips fiber sims with existing output.
+
     :param run_number: the number of the run
     :return: a dict of all fiber simulations to be run
     """
@@ -507,6 +524,7 @@ def make_run_sub_list(run_number: int):
 
 def confirm_submission(n_fibers, rundata, submission_context):
     """Confirm that the user wants to submit the simulations.
+
     :param n_fibers: the number of fibers to be run
     :param rundata: the run data (JSON config)
     :param submission_context: the submission context (e.g. cluster or local)
@@ -526,13 +544,14 @@ def confirm_submission(n_fibers, rundata, submission_context):
         if int(proceed) != 1:
             sys.exit()
         else:
-            print('Proceeding...\n')
+            print('Proceeding...')
     else:
         print(f'Skipping summary, submitting {n_fibers} fibers...')
 
 
 def get_submission_list(run_inds):
     """Get the list of simulations to be submitte for all runs.
+
     :param run_inds: the list of run indices
     :return: summary of runs, a list of all simulations to be submitted
     """
@@ -573,7 +592,8 @@ def get_submission_list(run_inds):
 
 
 def pre_submit_setup():
-    """Setup for submitting simulations.
+    """Perform setup for submitting simulations.
+
     :return: the list of runs to be submitted, submission_context
     """
     # validate inputs
@@ -601,7 +621,7 @@ def pre_submit_setup():
 
 # main
 def main():
-    """Main function."""
+    """Prepare fiber submissions and run NEURON sims."""
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()
     # get list of simulations to be submitted
@@ -610,8 +630,10 @@ def main():
     n_fibers = sum([len(x) for x in submission_list.values()])
     confirm_submission(n_fibers, rundata, submission_context)
     # make shell scripts for fiber submission
+    print('Performing setup for fiber submission...')
     make_fiber_tasks(submission_list, submission_context)
     # submit fibers
+    print('Submitting...')
     submit_fibers(submission_context, submission_list)
 
 

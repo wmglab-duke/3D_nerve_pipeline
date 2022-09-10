@@ -1,9 +1,11 @@
 #!/usr/bin/env python3.7
 
-"""
+"""Defines Query class.
+
 The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+Please refer to the LICENSE and README.md files for licensing
+instructions. The source code can be found on the following GitHub
+repository: https://github.com/wmglab-duke/ascent
 """
 
 import os
@@ -27,6 +29,7 @@ class Query(Exceptionable, Configurable, Saveable):
 
     def __init__(self, criteria: Union[str, dict]):
         """Set up Query object.
+
         :param criteria: dictionary of search criteria
         """
         # set up superclasses
@@ -179,22 +182,22 @@ class Query(Exceptionable, Configurable, Saveable):
         return self._result
 
     def get_config(self, mode: Config, indices: List[int]) -> dict:
-        """ """
+        """Load config file for given mode and indices."""
         return self.load(self.build_path(mode, indices))
 
-    def get_object(self, mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
-        """ """
-        with open(self.build_path(mode, indices), 'rb') as obj:
+    @staticmethod
+    def get_object(mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
+        """Load pickled object for given mode and indices."""
+        with open(Query.build_path(mode, indices), 'rb') as obj:
             return pickle.load(obj)
 
+    @staticmethod
     def build_path(
-        self,
         mode: Union[Config, Object],
         indices: List[int] = None,
         just_directory: bool = False,
     ) -> str:
-        """ """
-
+        """Build path to config or object file for given mode and indices."""
         result = str()
 
         if indices is None:
@@ -225,7 +228,7 @@ class Query(Exceptionable, Configurable, Saveable):
             )
         else:
             print(f'INVALID MODE: {type(mode)}')
-            self.throw(55)
+            Exceptionable(SetupMode.NEW).throw(55)
 
         if just_directory:
             result = os.path.join(*result.split(os.sep)[:-1])
@@ -233,7 +236,6 @@ class Query(Exceptionable, Configurable, Saveable):
         return result
 
     def _match(self, criteria: dict, data: dict) -> bool:
-        """ """
 
         for key in criteria.keys():
 
@@ -290,20 +292,13 @@ class Query(Exceptionable, Configurable, Saveable):
         :param model_indices: list of model indices to include in the threshold data.
         :param ignore_missing: if True, missing threshold data will not cause an error.
         :param meanify: if True, the threshold data will be returned as a mean of each nsim.
-        :return pandas DataFrame of thresholds.
+        :return: pandas DataFrame of thresholds.
         """
         # quick helper class for storing data values
-        class DataPoint:
-            def __init__(self, value: float, error: float = None):
-                self.value = value
-                self.error = error
 
         # validation
         if self._result is None:
             self.throw(66)
-
-        if model_indices is None:
-            model_indices = self.search(Config.CRITERIA, 'indices', 'model')
 
         if sim_indices is None:
             sim_indices = self.search(Config.CRITERIA, 'indices', 'sim')
@@ -318,13 +313,9 @@ class Query(Exceptionable, Configurable, Saveable):
             slide: Slide = sample_object.slides[0]
             n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
 
-            print(f'sample: {sample_index}')
-
             # loop models
             for model_results in sample_results.get('models', []):
                 model_index = model_results['index']
-
-                print(f'\tmodel: {model_index}')
 
                 for sim_index in sim_indices:
                     sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
@@ -332,7 +323,14 @@ class Query(Exceptionable, Configurable, Saveable):
                     # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
                     # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
                     # indices as if they were the nsim indices
-                    for nsim_index in range(len(sim_object.master_product_indices)):
+                    for nsim_index, (
+                        potentials_product_index,
+                        waveform_index,
+                    ) in enumerate(sim_object.master_product_indices):
+                        (
+                            active_src_index,
+                            fiberset_index,
+                        ) = sim_object.potentials_product[potentials_product_index]
                         # fetch outer->inner->fiber and out->inner maps
                         out_in_fib, out_in = sim_object.fiberset_map_pairs[nsim_index]
 
@@ -366,6 +364,7 @@ class Query(Exceptionable, Configurable, Saveable):
                                     try:
                                         threshold = np.loadtxt(thresh_path)
                                     except IOError:
+                                        threshold = np.nan
                                         warnings.warn('Missing threshold, but continuing.')
                                 else:
                                     threshold = np.loadtxt(thresh_path)
@@ -384,6 +383,9 @@ class Query(Exceptionable, Configurable, Saveable):
                                             'inner': inner,
                                             'fiber': local_fiber_index,
                                             'index': master_index,
+                                            'fiberset_index': fiberset_index,
+                                            'waveform_index': waveform_index,
+                                            'active_src_index': active_src_index,
                                             'threshold': abs(threshold),
                                         }
                                     )
@@ -396,6 +398,9 @@ class Query(Exceptionable, Configurable, Saveable):
                                         'model': model_results['index'],
                                         'sim': sim_index,
                                         'nsim': nsim_index,
+                                        'fiberset_index': fiberset_index,
+                                        'waveform_index': waveform_index,
+                                        'active_src_index': active_src_index,
                                         'mean': np.nan,
                                     }
                                 )
@@ -408,6 +413,9 @@ class Query(Exceptionable, Configurable, Saveable):
                                         'model': model_results['index'],
                                         'sim': sim_index,
                                         'nsim': nsim_index,
+                                        'fiberset_index': fiberset_index,
+                                        'waveform_index': waveform_index,
+                                        'active_src_index': active_src_index,
                                         'mean': np.mean(thresholds),
                                         'std': np.std(thresholds, ddof=1),
                                         'sem': stats.sem(thresholds),
@@ -416,7 +424,7 @@ class Query(Exceptionable, Configurable, Saveable):
 
         return pd.DataFrame(alldat)
 
-    def excel_output(
+    def excel_output(  # noqa: C901
         self,
         filepath: str,
         sample_keys=None,

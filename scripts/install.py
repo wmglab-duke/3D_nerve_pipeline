@@ -1,9 +1,11 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""Installs ASCENT.
+
+The copyrights of this software are owned by Duke University. Please
+refer to the LICENSE and README.md files for licensing instructions. The
+source code can be found on the following GitHub repository:
+https://github.com/wmglab-duke/ascent
 """
 
 import os
@@ -12,7 +14,10 @@ import sys
 
 
 def run(args):
+    """Install ASCENT."""
+
     def ensure_dir(directory):
+        """Ensure a directory exists."""
         if not os.path.exists(directory):
             os.makedirs(directory)
 

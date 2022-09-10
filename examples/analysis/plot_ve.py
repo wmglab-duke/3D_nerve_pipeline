@@ -1,11 +1,12 @@
 #!/usr/bin/env python3.7
 
-"""
+"""Plot the Ve across a fiber length.
+
 The copyrights of this software are owned by Duke University.
 Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent.
 
-Plot the Ve across a fiber length.
+RUN THIS FROM REPOSITORY ROOT
 """
 
 import os

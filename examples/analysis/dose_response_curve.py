@@ -1,17 +1,16 @@
 #!/usr/bin/env python3.7
 
-"""
+"""Generate dose-response curves (% fibers activated as a function of stimulation amplitude).
+
 The copyrights of this software are owned by Duke University.
 Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
-
-Generate dose-response curves (% fibers activated as a function of stimulation amplitude).
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent.
 
 For more controls over how the plotting occurs, see the seaborn documentation on ecdfplot:
 https://seaborn.pydata.org/generated/seaborn.ecdfplot.html#seaborn.ecdfplot
+RUN THIS FROM REPOSITORY ROOT
 """
 
-# RUN THIS FROM REPOSITORY ROOT
 import matplotlib.pyplot as plt
 import seaborn as sb
 

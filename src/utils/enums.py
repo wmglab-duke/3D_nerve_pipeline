@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
+"""The copyrights of this software are owned by Duke University.
+
 Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
@@ -18,8 +18,6 @@ class ASCENTEnum(Enum):
 
 
 # %% Core (backend) functionality
-
-
 @unique
 class SetupMode(ASCENTEnum, Enum):
     NEW = 0
@@ -243,7 +241,8 @@ class UnmyelinatedFiberType(ASCENTEnum, Enum):
     SUNDT = 0
     TIGERHOLM = 1
     RATTAY = 2
-    SCHILD = 3
+    SCHILD97 = 3
+    SCHILD9 = 4
 
 
 # %% Waveforms

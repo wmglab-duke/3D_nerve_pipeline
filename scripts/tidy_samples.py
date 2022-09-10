@@ -1,9 +1,11 @@
 #!/usr/bin/env python3.7
 
-"""
-The copyrights of this software are owned by Duke University.
-Please refer to the LICENSE and README.md files for licensing instructions.
-The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""Remove specified files from sample directories.
+
+The copyrights of this software are owned by Duke University. Please
+refer to the LICENSE and README.md files for licensing instructions. The
+source code can be found on the following GitHub repository:
+https://github.com/wmglab-duke/ascent
 """
 
 import os
@@ -16,6 +18,7 @@ INCLUDED_FILENAMES = ['runtime', 'blank', 'special', 'logs', 'start_']
 
 
 def remove_empty_directories(directory: str, verbose):
+    """Remove empty directories from a given directory."""
     for path in os.listdir(directory):
         subdirectory = os.path.join(directory, path)
         if os.path.isdir(subdirectory):
@@ -35,6 +38,7 @@ def remove_empty_directories(directory: str, verbose):
 
 
 def run(args):
+    """Run the script."""
     global INCLUDED_FILENAMES
     if args.filename:
         INCLUDED_FILENAMES = [args.filename]
