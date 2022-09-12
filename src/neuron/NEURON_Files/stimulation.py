@@ -1,3 +1,4 @@
+
 from neuron import h
 from src.utils import Config, Configurable
 
@@ -16,8 +17,8 @@ class Stimulation(Configurable):
         return
 
     def load_potentials(self, potentials_path: str):
-        """
-        Creates Ve(x) -- vector of potentials from FEM
+        """Creates Ve(x) -- vector of potentials from FEM.
+
         :param potentials_path: file name containing Extracellular Stim potentials data
         :return: Stimulation object
         """
@@ -31,9 +32,9 @@ class Stimulation(Configurable):
         return self
 
     def load_waveform(self, waveform_path: str):
-        """
-        Creates I(t) -- vector of amplitudes at each time step of the FEM
-        Also reads in time step and time stop
+        """Creates I(t) -- vector of amplitudes at each time step of the FEM
+        Also reads in time step and time stop.
+
         :param waveform_path: file name containing Extracellular Stim waveform data
         :return: Stimulation object
         """
@@ -45,8 +46,8 @@ class Stimulation(Configurable):
         return self
 
     def apply_intracellular(self, fiber: object):
-        """
-        Create instance of trainIClamp for intracellular stimulation
+        """Create instance of trainIClamp for intracellular stimulation.
+
         :param fiber: instance of Fiber class
         :return: instance of Stimulation class
         """
@@ -65,8 +66,8 @@ class Stimulation(Configurable):
         return self
 
     def initialize_extracellular(self, fiber: object):
-        """
-        Set extracellular stimulation values to zero along entire fiber
+        """Set extracellular stimulation values to zero along entire fiber.
+
         :param fiber:
         """
         if fiber.myelination:
@@ -84,8 +85,8 @@ class Stimulation(Configurable):
         return
 
     def update_extracellular(self, fiber: object, e_stims: str):
-        """
-        Update the applied extracellular stimulation all along the fiber length
+        """Update the applied extracellular stimulation all along the fiber length.
+
         :param fiber: instance of Fiber class
         :param e_stims: list of extracellular stimulations to apply along fiber length
         """

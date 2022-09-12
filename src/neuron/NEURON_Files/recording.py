@@ -28,9 +28,7 @@ class Recording(Configurable):
         self.ap_end_times = []
 
     def reset(self):
-        """
-        Reset recording attributes in order to be used for subsequent runs
-        """
+        """Reset recording attributes in order to be used for subsequent runs."""
         self.vm = []
 
         self.gating_h = []
@@ -46,8 +44,8 @@ class Recording(Configurable):
         self.ap_end_times = []
 
     def record_ap(self, fiber: object):
-        """
-        Create a list of NEURON APCount objects at all nodes along the axon
+        """Create a list of NEURON APCount objects at all nodes along the axon.
+
         :param fiber: instance of Fiber class
         """
         # if fiber is myelinated, create APCount for each node of Ranvier
@@ -72,8 +70,8 @@ class Recording(Configurable):
                     self.apc[i].thresh = -30
 
     def record_ap_end_times(self, fiber: object, ap_end_inds: list, ap_end_thresh: float):
-        """
-        Record when action potential occurs at specified indices. For 'end_ap_times' in sim.json.
+        """Record when action potential occurs at specified indices. For 'end_ap_times' in sim.json.
+
         :param fiber: instance of Fiber class
         :param ap_end_inds: list of user-specified indices to record APs
         :param ap_end_thresh: threshold value for action potentials
@@ -95,8 +93,8 @@ class Recording(Configurable):
                 self.ap_end_count.append(ap_count)
 
     def record_vm(self, fiber):
-        """
-        Record membrane voltage (mV) along the axon
+        """Record membrane voltage (mV) along the axon.
+
         :param fiber: instance of Fiber class
         """
         for node_ind in range(0, fiber.axonnodes):
@@ -109,15 +107,15 @@ class Recording(Configurable):
         return
 
     def record_istim(self, istim: object):
-        """
-        Record applied intracellular stimulation (nA)
+        """Record applied intracellular stimulation (nA)
+
         :param istim: instance of intracellular stimulation object
         """
         self.istim = h.Vector().record(istim._ref_i)
 
     def record_gating(self, fiber: object, fix_passive: bool = False):
-        """
-        Record gating parameters (h, m, mp, s) for myelinated fiber types
+        """Record gating parameters (h, m, mp, s) for myelinated fiber types.
+
         :param fiber: instance of Fiber class
         :param fix_passive: true if fiber has passive end nodes, false otherwise
         """
@@ -142,8 +140,8 @@ class Recording(Configurable):
                 gating_vectors.append(passive_node)
 
     def ap_checker(self, fiber: object, find_block_thresh: bool = False) -> int:
-        """
-        Check to see if an action potential occurred at the end of a run
+        """Check to see if an action potential occurred at the end of a run.
+
         :param fiber: instance of Fiber class
         :param find_block_thresh: true if BLOCK_THRESHOLD protocol, false otherwise
         :return: number of action potentials that occurred

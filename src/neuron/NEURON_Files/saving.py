@@ -25,8 +25,8 @@ class Saving(Configurable):
         return
 
     def inherit(self, sim_path: str, dt: float, fiber: object):
-        """
-        Assign values to all Saving instance attributes
+        """Assign values to all Saving instance attributes.
+
         :param sim_path: path to n_sim directory
         :param dt: user-specified time step for simulation
         :param fiber: instance of Fiber class
@@ -84,8 +84,8 @@ class Saving(Configurable):
             activation_file.write(f'{fiber.n_aps:.3f}')
 
     def saveVariables(self, fiber: object, recording: object, dt: float, amp_ind: int = 0):
-        """
-        Write user-specified variables to file
+        """Write user-specified variables to file.
+
         :param fiber: instance of Fiber class
         :param recording: instance of Recording class
         :param dt: user-specified time step for simulation
@@ -93,8 +93,8 @@ class Saving(Configurable):
         """
 
         def create_header(save_type: str, var_type: str, units: str = None):
-            """
-            Create a header for text file
+            """Create a header for text file.
+
             :param save_type: function of variable to be saved, can be function of time ('time') or space ('space')
             :param var_type: type of variable to be saved (Vm, h, mp, m, s)
             :param units: units of variable (mV, nA)

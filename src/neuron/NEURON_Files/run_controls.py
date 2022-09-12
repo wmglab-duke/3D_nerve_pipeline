@@ -6,8 +6,8 @@ from NEURON_Files import Recording, Saving, Stimulation
 
 
 def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, waveform_path: str, sim_path: str):
-    """
-    Main for running a single n_sim simulation
+    """Main for running a single n_sim simulation.
+
     :param fiber_path: path to fiber.obj
     :param inner_ind: inner index
     :param fiber_ind: fiber index

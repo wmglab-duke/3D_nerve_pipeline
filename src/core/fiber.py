@@ -63,8 +63,8 @@ class Fiber(Configurable, Saveable):
         return self
 
     def generate(self, n_fiber_coords: int):
-        """
-        Build fiber model sections
+        """Build fiber model sections.
+
         :param n_fiber_coords: number of fiber coordinates from COMSOL
         :return: Fiber object
         """
@@ -382,9 +382,7 @@ class Fiber(Configurable, Saveable):
         conductances97=0,
         passive_end_nodes=0,
     ):
-        """
-        Create and connect NEURON sections for an unmyelinated fiber
-        """
+        """Create and connect NEURON sections for an unmyelinated fiber."""
         nsegments = int(length / delta_z)
 
         self.sec = []
@@ -540,8 +538,8 @@ class Fiber(Configurable, Saveable):
         return self
 
     def finite_amplitudes(self, stimulation: object, saving: object, recording: object, start_time: float, amps: list):
-        """
-        Submit runs for FINITE_AMPLITUDES protocol
+        """Submit runs for FINITE_AMPLITUDES protocol.
+
         :param stimulation: instance of Stimulation class
         :param saving: instance of Saving class
         :param recording: instance of Recording class
@@ -562,8 +560,8 @@ class Fiber(Configurable, Saveable):
             recording.reset()  # Reset recording vectors to be used again
 
     def findThresh(self, stimulation: object, saving: object, recording: object, find_block_thresh: bool = False):
-        """
-        Binary search to find threshold amplitudes
+        """Binary search to find threshold amplitudes.
+
         :param stimulation: instance of Stimulation class
         :param saving: instance of Saving class
         :param recording: instance of Recording class
@@ -693,8 +691,8 @@ class Fiber(Configurable, Saveable):
         return
 
     def submit(self, stimulation: object, saving: object, recording: object, start_time: float):
-        """
-        Determines protocol and submits runs for simulation
+        """Determines protocol and submits runs for simulation.
+
         :param stimulation: instance of Stimulation class
         :param saving: instance of Saving class
         :param recording: instance of Recording class
@@ -730,8 +728,8 @@ class Fiber(Configurable, Saveable):
         find_block_thresh: bool = False,
         saving: object = None,
     ):
-        """
-        Run a simulation for a single stimulation amplitude
+        """Run a simulation for a single stimulation amplitude.
+
         :param stimamp: amplitude to be applied to extracellular stimulation
         :param stimulation: instance of Stimulation class
         :param recording: instance of Recording class
@@ -741,8 +739,8 @@ class Fiber(Configurable, Saveable):
         """
 
         def balance(fiber: object):
-            """
-            Balance membrane currents for Tigerholm model
+            """Balance membrane currents for Tigerholm model.
+
             :param fiber: instance of Fiber class
             """
             Vrest = -55
@@ -762,8 +760,8 @@ class Fiber(Configurable, Saveable):
                     )
 
         def steady_state(fiber: object, sim_dt: float):
-            """
-            Allow system to reach steady-state by using a large dt before simulation
+            """Allow system to reach steady-state by using a large dt before simulation.
+
             :param fiber: instance of Fiber class
             :param sim_dt: user-specified time step for simulation
             """
@@ -825,9 +823,7 @@ class Fiber(Configurable, Saveable):
 
 
 class GeometryObject:
-    """
-    Geometry Object to be used for custom user fiber models (not yet supported)
-    """
+    """Geometry Object to be used for custom user fiber models (not yet supported)"""
 
     def __init__(self, fiberD, fiberDtoAxonD=0, axonDtoNL=0, nodelength=1, MYSAlength=3):
         self.fiberDtoAxonD, self.axonDtoNL, self.nodelength, self.MYSAlength = (
