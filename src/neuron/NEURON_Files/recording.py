@@ -118,7 +118,7 @@ class Recording(Configurable):
         return
 
     def record_istim(self, istim: object):
-        """Record applied intracellular stimulation (nA)
+        """Record applied intracellular stimulation (nA).
 
         :param istim: instance of intracellular stimulation object
         """
@@ -164,10 +164,10 @@ class Recording(Configurable):
         node_index = int((fiber.axonnodes - 1) * ap_detect_location)
 
         if find_block_thresh:
-            IntraStim_PulseTrain_delay = fiber.search(
+            intrastim_pulsetrain_delay = fiber.search(
                 Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay'
             )
-            if self.apc[node_index].time > IntraStim_PulseTrain_delay:
+            if self.apc[node_index].time > intrastim_pulsetrain_delay:
                 n_aps = 0  # False - block did not occur
             else:
                 n_aps = 1  # True - block did occur

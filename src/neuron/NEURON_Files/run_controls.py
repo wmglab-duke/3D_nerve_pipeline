@@ -1,3 +1,9 @@
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""
+
 import pickle
 import sys
 import time
@@ -6,7 +12,7 @@ from NEURON_Files import Recording, Saving, Stimulation
 
 
 def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, waveform_path: str, sim_path: str):
-    """Main for running a single n_sim simulation.
+    """Control flow of a single n_sim NEURON simulation.
 
     :param fiber_path: path to fiber.obj
     :param inner_ind: inner index
