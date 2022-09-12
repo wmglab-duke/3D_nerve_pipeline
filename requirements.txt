@@ -1,6 +1,6 @@
 ffmpeg
 matplotlib==3.2.*
-neuron
+neuron==8.2
 numpy==1.16.*
 opencv-python==4.5.*
 openpyxl==3.0.*

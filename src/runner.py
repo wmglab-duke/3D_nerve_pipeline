@@ -327,11 +327,8 @@ class Runner(Exceptionable, Configurable):
         simulation.build_n_sims(sim_dir, sim_num)
 
         # delete folder containing fiberset .txt files
-        delete = None
-        if self.configs[Config.RUN.value].get('delete_fibersets') is not None:
-            delete = self.configs[Config.RUN.value]['delete_fibersets']
-            if delete:
-                shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
+        if self.configs[Config.RUN.value].get('delete_fibersets'):
+            shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
 
         # get export behavior
         if self.configs[Config.CLI_ARGS.value].get('export_behavior') is not None:
