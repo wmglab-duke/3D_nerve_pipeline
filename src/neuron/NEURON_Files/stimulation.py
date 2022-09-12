@@ -1,3 +1,8 @@
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""
 
 from neuron import h
 from src.utils import Config, Configurable
@@ -6,7 +11,11 @@ h.load_file('stdrun.hoc')
 
 
 class Stimulation(Configurable):
+    """Manage stimulation of NEURON simulations."""
+
     def __init__(self):
+        """Initialize Stimulation class."""
+        # initialize Configurable super class
         Configurable.__init__(self)
 
         self.potentials = []
@@ -17,10 +26,11 @@ class Stimulation(Configurable):
         return
 
     def load_potentials(self, potentials_path: str):
-        """Creates Ve(x) -- vector of potentials from FEM.
+        """Create Ve(x) -- vector of potentials from FEM.
 
         :param potentials_path: file name containing Extracellular Stim potentials data
         :return: Stimulation object
+        :raises Exception: size of the potentials file does not match the Fiber class
         """
         with open(potentials_path, 'r') as potentials_file:
             axontotal = int(potentials_file.readline())
@@ -32,8 +42,7 @@ class Stimulation(Configurable):
         return self
 
     def load_waveform(self, waveform_path: str):
-        """Creates I(t) -- vector of amplitudes at each time step of the FEM
-        Also reads in time step and time stop.
+        """Create I(t) -- vector of amplitudes at each time step of the FEM. Read in simulation time step and time stop.
 
         :param waveform_path: file name containing Extracellular Stim waveform data
         :return: Stimulation object
@@ -55,8 +64,8 @@ class Stimulation(Configurable):
             fiber_sections = fiber.node
         else:  # unmyelinated fiber, attach at axon segment
             fiber_sections = fiber.sec
-        IntraStim_PulseTrain_ind = fiber.search(Config.SIM, 'intracellular_stim', 'ind')
-        intracellular_stim = h.trainIClamp(fiber_sections[IntraStim_PulseTrain_ind](0.5))
+        intrastim_pulsetrain_ind = fiber.search(Config.SIM, 'intracellular_stim', 'ind')
+        intracellular_stim = h.trainIClamp(fiber_sections[intrastim_pulsetrain_ind](0.5))
         intracellular_stim.delay = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
         intracellular_stim.PW = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
         intracellular_stim.train = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
@@ -68,9 +77,9 @@ class Stimulation(Configurable):
     def initialize_extracellular(self, fiber: object):
         """Set extracellular stimulation values to zero along entire fiber.
 
-        :param fiber:
+        :param fiber: instance of Fiber class
         """
-        if fiber.myelination:
+        if fiber.myelination:  # for myelinated fibers, need to update each of the different segment types
             for sec in fiber.node:
                 sec(0.5).e_extracellular = 0
             for sec in fiber.MYSA:
@@ -91,27 +100,27 @@ class Stimulation(Configurable):
         :param e_stims: list of extracellular stimulations to apply along fiber length
         """
         if fiber.myelination:
-            node_stim, FLUT_stim, MYSA_stim, STIN_stim = [], [], [], []
+            node_stim, flut_stim, mysa_stim, stin_stim = [], [], [], []
             # Use modulo function to determine order for stimulation based on myelinated fiber segments
             for ind in range(1, len(e_stims) + 1):
                 if ind % 11 == 1:
                     node_stim.append(e_stims[ind - 1])
                 elif ind % 11 == 2 or ind % 11 == 0:
-                    MYSA_stim.append(e_stims[ind - 1])
+                    mysa_stim.append(e_stims[ind - 1])
                 elif ind % 11 == 3 or ind % 11 == 10:
-                    FLUT_stim.append(e_stims[ind - 1])
+                    flut_stim.append(e_stims[ind - 1])
                 else:
-                    STIN_stim.append(e_stims[ind - 1])
+                    stin_stim.append(e_stims[ind - 1])
 
             # Update all node, MYSA, FLUT, STIN segments
             for x, sec in enumerate(fiber.node):
                 sec(0.5).e_extracellular = node_stim[x]
             for x, sec in enumerate(fiber.MYSA):
-                sec(0.5).e_extracellular = MYSA_stim[x]
+                sec(0.5).e_extracellular = mysa_stim[x]
             for x, sec in enumerate(fiber.FLUT):
-                sec(0.5).e_extracellular = FLUT_stim[x]
+                sec(0.5).e_extracellular = flut_stim[x]
             for x, sec in enumerate(fiber.STIN):
-                sec(0.5).e_extracellular = STIN_stim[x]
+                sec(0.5).e_extracellular = stin_stim[x]
         else:  # unmyelinated fiber; apply stimulations sequentially
             for x, sec in enumerate(fiber.sec):
                 sec(0.5).e_extracellular = e_stims[x]

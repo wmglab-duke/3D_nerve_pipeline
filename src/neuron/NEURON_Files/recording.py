@@ -1,3 +1,8 @@
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""
 from neuron import h
 from src.utils import Config, Configurable
 
@@ -5,7 +10,13 @@ h.load_file('stdrun.hoc')
 
 
 class Recording(Configurable):
-    def __init__(self, fiber):
+    """Manage recording parameters for NEURON simulations."""
+
+    def __init__(self, fiber: object):
+        """Initialize Recording class.
+
+        :param fiber: instance of Fiber class
+        """
         self.time = h.Vector().record(h._ref_t)
         self.space = list(range(0, fiber.axonnodes))
         self.vm = []

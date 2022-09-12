@@ -1,3 +1,9 @@
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""
+
 import os
 
 import pandas as pd
@@ -6,7 +12,11 @@ from src.utils import Config, Configurable
 
 
 class Saving(Configurable):
+    """Manage saving parameters to file for NEURON simulations."""
+
     def __init__(self):
+        """Initialize Saving class."""
+        # initialize Configurable super class
         Configurable.__init__(self)
 
         self.space_vm = None
@@ -60,13 +70,24 @@ class Saving(Configurable):
         self.output_path = os.path.join(sim_path, 'data', 'outputs')
         return
 
-    def saveThresh(self, fiber, thresh):
+    def save_thresh(self, fiber: object, thresh: float):
+        """Save threshold from NEURON simulation to file.
+
+        :param fiber: instance of Fiber class
+        :param thresh: activation threshold from NEURON simulation
+        """
         # save threshold to submit/n_sims/#/data/outputs/thresh_inner#_fiber#.dat
         thresh_path = os.path.join(self.output_path, f'thresh_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}.dat')
         with open(thresh_path, 'w') as thresh_file:
             thresh_file.write(f"{thresh:.6f} mA")
 
-    def saveRuntime(self, fiber, runtime, amp_ind=0):
+    def save_runtime(self, fiber: object, runtime: float, amp_ind: int = 0):
+        """Save NEURON simulation runtime to file.
+
+        :param fiber: instance of Fiber class
+        :param runtime: runtime of NEURON simulation
+        :param amp_ind: index of amplitude in list of amplitudes for finite_amplitude protocol
+        """
         if self.runtime:
             # save runtime to submit/n_sims/#/data/outputs/runtime_inner#_fiber#_amp#.dat
             runtimes_path = os.path.join(
@@ -75,7 +96,12 @@ class Saving(Configurable):
             with open(runtimes_path, 'w') as runtime_file:
                 runtime_file.write(f'{runtime:.3f}s')
 
-    def saveActivation(self, fiber, amp_ind):
+    def save_activation(self, fiber, amp_ind):
+        """Save the number of action potentials that occurred at the location specified in sim config to file.
+
+        :param fiber: instance of Fiber class
+        :param amp_ind: index of amplitude in list of amplitudes for finite_amplitude protocol
+        """
         # save number of action potentials to submit/n_sims/#/data/outputs/activation_inner#_fiber#_amp#.dat
         output_file_path = os.path.join(
             self.output_path, f'activation_inner{fiber.inner_ind}_fiber{fiber.fiber_ind}_amp{amp_ind}.dat'
@@ -83,7 +109,7 @@ class Saving(Configurable):
         with open(output_file_path, 'w') as activation_file:
             activation_file.write(f'{fiber.n_aps:.3f}')
 
-    def saveVariables(self, fiber: object, recording: object, dt: float, amp_ind: int = 0):
+    def save_variables(self, fiber: object, recording: object, dt: float, amp_ind: int = 0):
         """Write user-specified variables to file.
 
         :param fiber: instance of Fiber class

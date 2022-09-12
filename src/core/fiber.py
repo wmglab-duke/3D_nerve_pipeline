@@ -552,9 +552,9 @@ class Fiber(Configurable, Saveable):
 
             self.run(amp, stimulation, recording, saving)
             time_individual = time.time() - start_time - time_total
-            saving.saveVariables(self, recording, stimulation.dt, amp_ind)  # Save user-specified variables
-            saving.saveActivation(self, amp_ind)  # Save number of APs triggered
-            saving.saveRuntime(self, time_individual, amp_ind)  # Save runtime of inidividual run
+            saving.save_variables(self, recording, stimulation.dt, amp_ind)  # Save user-specified variables
+            saving.save_activation(self, amp_ind)  # Save number of APs triggered
+            saving.save_runtime(self, time_individual, amp_ind)  # Save runtime of inidividual run
 
             time_total += time_individual
             recording.reset()  # Reset recording vectors to be used again
@@ -682,7 +682,7 @@ class Fiber(Configurable, Saveable):
 
                 # Run one more time at threshold to save user-specified variables
                 self.run(stimamp, stimulation, recording, find_block_thresh, saving=saving)
-                saving.saveThresh(self, stimamp)  # Save threshold value to file
+                saving.save_thresh(self, stimamp)  # Save threshold value to file
                 break
             elif self.n_aps >= 1:
                 stimamp_top = stimamp
@@ -714,8 +714,8 @@ class Fiber(Configurable, Saveable):
         if find_thresh:  # Protocol is BLOCK_THRESHOLD or ACTIVATION_THRESHOLD
             self.findThresh(stimulation, saving, recording, find_block_thresh)
             time_individual = time.time() - start_time
-            saving.saveVariables(self, recording, stimulation.dt)  # Save user-specified variables
-            saving.saveRuntime(self, time_individual)  # Save runtime of simulation
+            saving.save_variables(self, recording, stimulation.dt)  # Save user-specified variables
+            saving.save_runtime(self, time_individual)  # Save runtime of simulation
 
         else:  # Protocol is FINITE_AMPLITUDES
             self.finite_amplitudes(stimulation, saving, recording, start_time, amps)

@@ -137,10 +137,10 @@ For activation and block thresholds, these variables are only saved during a fin
 The `saving.py` file contains the Saving class. The Saving class is responsible for outputting all simulation data to file.
 The method `Saving.inherit()` sets the Saving class attributes according to the parameters in **_Sim_**, indicating what state variables to output to file and at what times and locations to save said state variables, as well as the path to the output directory for the given n_sim.
 Outputs are saved to `<n_sim_index>/data/outputs/` as text files.
-Depending on **_Sim_**, `Saving.saveVariables()` outputs state variables at discrete times and/or locations to file. `Saving.saveVariables()` contains a submethod `create_header()`, which creates a list of strings to be used as the first line of the outputted text files.
-Analogously, `Saving.saveRuntime()` outputs the CPU time for an individual simulation to file, if it is indicated by the user in **_Sim_**.
-For activation and block threshold protocols, the method `Saving.saveThresh()` outputs threshold current amplitudes to file.
-For the finite amplitude protocol, the method `Saving.saveActivation()` outputs the number of action potentials that occurred at the location specified in **_Sim_** to file.
+Depending on **_Sim_**, `Saving.save_variables()` outputs state variables at discrete times and/or locations to file. `Saving.save_variables()` contains a submethod `create_header()`, which creates a list of strings to be used as the first line of the outputted text files.
+Analogously, `Saving.save_runtime()` outputs the CPU time for an individual simulation to file, if it is indicated by the user in **_Sim_**.
+For activation and block threshold protocols, the method `Saving.save_thresh()` outputs threshold current amplitudes to file.
+For the finite amplitude protocol, the method `Saving.save_activation()` outputs the number of action potentials that occurred at the location specified in **_Sim_** to file.
 
 ## stimulation.py
 
