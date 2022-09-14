@@ -1,3 +1,9 @@
+"""The copyrights of this software are owned by Duke University.
+
+Please refer to the LICENSE and README.md files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""
+
 import math
 import time
 
@@ -22,7 +28,10 @@ h.load_file('stdrun.hoc')
 
 
 class Fiber(Configurable, Saveable):
+    """Create a fiber model from NEURON sections."""
+
     def __init__(self):
+        """Initialize Fiber class."""
         Configurable.__init__(self)
 
         self.diameter = None
@@ -48,8 +57,8 @@ class Fiber(Configurable, Saveable):
         return
 
     def inherit(self):
-        """
-        Inherit known properties of the fiber based on sim config
+        """Inherit known properties of the fiber based on sim config.
+
         :return: Fiber object
         """
         self.diameter = self.search(Config.SIM, 'fibers', 'z_parameters', 'diameter')
@@ -160,7 +169,6 @@ class Fiber(Configurable, Saveable):
                 node_channels,
                 self.axonnodes,
                 self.diameter,
-                self.temperature,
                 axonD,
                 nodeD,
                 paraD1,
@@ -184,27 +192,58 @@ class Fiber(Configurable, Saveable):
 
     def createMyelinatedFiber(
         self,
-        node_channels,
-        axonnodes,
-        fiberD,
-        celsius,
-        axonD,
-        nodeD,
-        paraD1,
-        paraD2,
-        deltaz,
-        paralength2,
-        nl,
-        passive_end_nodes,
+        node_channels: bool,
+        axonnodes: int,
+        fiberD: float,
+        axonD: float,
+        nodeD: float,
+        paraD1: float,
+        paraD2: float,
+        deltaz: float,
+        paralength2: float,
+        nl: int,
+        passive_end_nodes: bool,
     ):
-        """
-        Create and connect NEURON sections for a myelinated fiber type
+        """Create and connect NEURON sections for a myelinated fiber type.
+
+        :param node_channels: true for Schild fiber models mechanisms, false otherwise
+        :param axonnodes: number of node of Ranvier segments
+        :param fiberD: fiber diameter [um]
+        :param axonD: diameter of internodal fiber segment (STIN) [um]
+        :param nodeD: diameter of node of Ranvier fiber segment [um]
+        :param paraD1: diameter of myelin attachment section of fiber segment (MYSA) [um]
+        :param paraD2: diameter of main section of paranode fiber segment (FLUT) [um]
+        :param deltaz: node-node separation [um]
+        :param paralength2: length of main section of paranode fiber segment (FLUT) [um]
+        :param nl: number of myelin lemella
+        :param passive_end_nodes: true for passive end node strategy, false otherwise
         :return: Fiber object
         """
 
-        def create_MYSA(i, fiberD, paralength1, rhoa, paraD1, e_pas_Vrest, Rpn1, mycm, mygm, nl):
-            """
-            Create a single MYSA segment for MRG_DISCRETE fiber type
+        def create_MYSA(
+            i: int,
+            fiberD: float,
+            paralength1: float,
+            rhoa: float,
+            paraD1: float,
+            e_pas_Vrest: float,
+            Rpn1: float,
+            mycm: float,
+            mygm: float,
+            nl: int,
+        ):
+            """Create a single MYSA segment for MRG_DISCRETE fiber type.
+
+            :param i: index of fiber segment
+            :param fiberD: fiber diameter [um]
+            :param paralength1: length of myelin attachment section of fiber segment (MYSA) [um]
+            :param rhoa:
+            :param paraD1: diameter of myelin attachment section of fiber segment (MYSA) [um]
+            :param e_pas_Vrest:
+            :param Rpn1:
+            :param mycm:
+            :param mygm:
+            :param nl: number of myelin lemella
             :return: nrn.Section
             """
             MYSA = Section(name='MYSA ' + str(i))
@@ -224,9 +263,30 @@ class Fiber(Configurable, Saveable):
 
             return MYSA
 
-        def create_FLUT(i, fiberD, paralength2, rhoa, paraD2, e_pas_Vrest, Rpn2, mycm, mygm, nl):
-            """
-            Create a single FLUT segment for MRG_DISCRETE fiber type
+        def create_FLUT(
+            i: int,
+            fiberD: float,
+            paralength2: float,
+            rhoa: float,
+            paraD2: float,
+            e_pas_Vrest: float,
+            Rpn2: float,
+            mycm: float,
+            mygm: float,
+            nl: float,
+        ):
+            """Create a single FLUT segment for MRG_DISCRETE fiber type.
+
+            :param i: index of fiber segment
+            :param fiberD: fiber diameter [um]
+            :param paralength2: length of main section of paranode fiber segment (FLUT) [um]
+            :param rhoa:
+            :param paraD2: diameter of main section of paranode fiber segment (FLUT) [um]
+            :param e_pas_Vrest:
+            :param paraD2:
+            :param mycm:
+            :param mygm:
+            :param nl: number of myelin lemella
             :return: nrn.Section
             """
             FLUT = Section(name='FLUT ' + str(i))
@@ -246,9 +306,30 @@ class Fiber(Configurable, Saveable):
 
             return FLUT
 
-        def create_STIN(i, fiberD, interlength, rhoa, axonD, e_pas_Vrest, Rpx, mycm, mygm, nl):
-            """
-            Create a STIN segment for MRG_DISCRETE fiber type
+        def create_STIN(
+            i: int,
+            fiberD: float,
+            interlength: float,
+            rhoa: float,
+            axonD: float,
+            e_pas_Vrest: float,
+            Rpx: float,
+            mycm: float,
+            mygm: float,
+            nl: int,
+        ):
+            """Create a STIN segment for MRG_DISCRETE fiber type.
+
+            :param i: index of fiber segment
+            :param fiberD: fiber diameter [um]
+            :param interlength: length of internodal fiber segment (STIN) [um]
+            :param rhoa:
+            :param axonD: diameter of internodal fiber segment (STIN) [um]
+            :param e_pas_Vrest:
+            :param Rpx:
+            :param mycm:
+            :param mygm:
+            :param nl: number of myelin lemella
             :return: nrn.Section
             """
             STIN = Section(name='STIN ' + str(i))
@@ -268,9 +349,32 @@ class Fiber(Configurable, Saveable):
 
             return STIN
 
-        def create_node(index, nodeD, nodelength, rhoa, mycm, mygm, passive, axonnodes, node_channels, nl, Rpn0):
-            """
-            Create a node of Ranvier for MRG_DISCRETE fiber type
+        def create_node(
+            index: int,
+            nodeD: float,
+            nodelength: float,
+            rhoa: float,
+            mycm: float,
+            mygm: float,
+            passive: float,
+            axonnodes: float,
+            node_channels: float,
+            nl: int,
+            Rpn0: float,
+        ):
+            """Create a node of Ranvier for MRG_DISCRETE fiber type.
+
+            :param index: index of fiber segment
+            :param nodeD: diameter of node of Ranvier fiber segment [um]
+            :param nodelength: Length of nodes of Ranvier [um]
+            :param rhoa:
+            :param mycm:
+            :param mygm:
+            :param passive: true for passive end node strategy, false otherwise
+            :param axonnodes: number of node of Ranvier segments
+            :param node_channels: true for Schild fiber models mechanisms, false otherwise
+            :param nl: number of myelin lemella
+            :param Rpn0:
             :return: nrn.Section
             """
             node = Section(name='node ' + str(index))
@@ -373,16 +477,27 @@ class Fiber(Configurable, Saveable):
 
     def createUnmyelinatedFiber(
         self,
-        fiberD=6,
-        length=21,
-        c_fiber_model_type=1,
-        celsius=37,
-        delta_z=50 / 6,
-        insert97na=0,
-        conductances97=0,
-        passive_end_nodes=0,
+        fiberD: float = 6,
+        length: float = 21,
+        c_fiber_model_type: int = 1,
+        celsius: float = 37,
+        delta_z: float = 50 / 6,
+        insert97na: bool = 0,
+        conductances97: bool = 0,
+        passive_end_nodes: bool = 0,
     ):
-        """Create and connect NEURON sections for an unmyelinated fiber."""
+        """Create and connect NEURON sections for an unmyelinated fiber.
+
+        :param fiberD: fiber diameter [um]
+        :param length: fiber length [um]
+        :param c_fiber_model_type: fiber model type (1=Sundt, 2=Tigerholm, 3=Rattay, 4=Schild94/Schild97)
+        :param celsius: model temperature [celsius]
+        :param delta_z: node-node separation [um]
+        :param insert97na: controls sodium channel mechanisms. True if Schild97 fiber model, false otherwise
+        :param conductances97: controls conductance density. True if Schild97 fiber model, false otherwise
+        :param passive_end_nodes: true for passive end node strategy, false otherwise
+        :return: instance of Fiber class
+        """
         nsegments = int(length / delta_z)
 
         self.sec = []
@@ -823,9 +938,10 @@ class Fiber(Configurable, Saveable):
 
 
 class GeometryObject:
-    """Geometry Object to be used for custom user fiber models (not yet supported)"""
+    """Geometry Object to be used for custom user fiber models (not yet supported)."""
 
     def __init__(self, fiberD, fiberDtoAxonD=0, axonDtoNL=0, nodelength=1, MYSAlength=3):
+        """Initialize Geometry class."""
         self.fiberDtoAxonD, self.axonDtoNL, self.nodelength, self.MYSAlength = (
             fiberDtoAxonD,
             axonDtoNL,
