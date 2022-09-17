@@ -26,6 +26,7 @@ class Stimulation(Configurable):
         return
 
     def load_potentials(self, potentials_path: str):
+        # TODO: have run_controls.py load the potentials and pass them in as a numpy array
         """Create Ve(x) -- vector of potentials from FEM.
 
         :param potentials_path: file name containing Extracellular Stim potentials data
@@ -42,6 +43,7 @@ class Stimulation(Configurable):
         return self
 
     def load_waveform(self, waveform_path: str):
+        # TODO: have run_controls.py load the waveform and pass them in as a numpy array
         """Create I(t) -- vector of amplitudes at each time step of the FEM. Read in simulation time step and time stop.
 
         :param waveform_path: file name containing Extracellular Stim waveform data
@@ -82,11 +84,11 @@ class Stimulation(Configurable):
         if fiber.myelination:  # for myelinated fibers, need to update each of the different segment types
             for sec in fiber.node:
                 sec(0.5).e_extracellular = 0
-            for sec in fiber.MYSA:
+            for sec in fiber.mysa:
                 sec(0.5).e_extracellular = 0
-            for sec in fiber.FLUT:
+            for sec in fiber.flut:
                 sec(0.5).e_extracellular = 0
-            for sec in fiber.STIN:
+            for sec in fiber.stin:
                 sec(0.5).e_extracellular = 0
         else:
             for sec in fiber.sec:
@@ -115,11 +117,11 @@ class Stimulation(Configurable):
             # Update all node, MYSA, FLUT, STIN segments
             for x, sec in enumerate(fiber.node):
                 sec(0.5).e_extracellular = node_stim[x]
-            for x, sec in enumerate(fiber.MYSA):
+            for x, sec in enumerate(fiber.mysa):
                 sec(0.5).e_extracellular = mysa_stim[x]
-            for x, sec in enumerate(fiber.FLUT):
+            for x, sec in enumerate(fiber.flut):
                 sec(0.5).e_extracellular = flut_stim[x]
-            for x, sec in enumerate(fiber.STIN):
+            for x, sec in enumerate(fiber.stin):
                 sec(0.5).e_extracellular = stin_stim[x]
         else:  # unmyelinated fiber; apply stimulations sequentially
             for x, sec in enumerate(fiber.sec):

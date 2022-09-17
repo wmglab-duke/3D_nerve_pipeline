@@ -109,7 +109,8 @@ class Saving(Configurable):
         with open(output_file_path, 'w') as activation_file:
             activation_file.write(f'{fiber.n_aps:.3f}')
 
-    def save_variables(self, fiber: object, recording: object, dt: float, amp_ind: int = 0):
+    def save_variables(self, fiber: object, recording: object, dt: float, amp_ind: int = 0):  # noqa: C901
+        # TODO: reduce complexity
         """Write user-specified variables to file.
 
         :param fiber: instance of Fiber class

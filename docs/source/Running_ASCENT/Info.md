@@ -315,7 +315,7 @@ of amplitudes that the user would like to simulate ([Sim Parameters](../JSON/JSO
 
 ### Myelinated fiber models
 
-The `Fiber.createMyelinatedFiber()` method in `fiber.py` is called by `Fiber.generate()` if the user
+The `Fiber.create_myelinated_fiber()` method in `fiber.py` is called by `Fiber.generate()` if the user
 chooses either `"MRG_DISCRETE"` or `"MRG_INTERPOLATION"`. The length of
 each section in NEURON varies depending on both the diameter and the
 "FiberGeometry" mode chosen in **_Sim_**.

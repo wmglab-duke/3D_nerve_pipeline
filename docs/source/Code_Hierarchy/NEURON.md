@@ -12,11 +12,11 @@ The rest of the classes are used to coordinate all program operations (`run_cont
 
 In `run_controls.py`, the simulation Fiber object is loaded from the `n_sim/<n_sim_index>` directory.
 The `Fiber.generate()` method builds the appropriate NEURON Sections based on the user-specified fiber model type. `Fiber.generate()` loads the `fiber_z.json` configuration for the given fiber type containing all associated flags, parameters, and rules for
-defining a fiber’s geometry and channel mechanisms in NEURON. `Fiber.generate()` determines the number of axon nodes (nodes of Ranvier for myelinated fibers and axon segments for unmyelinated fibers) and resting membrane voltage before calling `Fiber.createMyelinatedFiber()` or `Fiber.createUnmyelinatedFiber()` to create the actual fiber sections.
+defining a fiber’s geometry and channel mechanisms in NEURON. `Fiber.generate()` determines the number of axon nodes (nodes of Ranvier for myelinated fibers and axon segments for unmyelinated fibers) and resting membrane voltage before calling `Fiber.create_myelinated_fiber()` or `Fiber.create_unmyelinated_fiber()` to create the actual fiber sections.
 For all fiber types, the segments created and connected in NEURON have lengths that correspond to the coordinates of the input potentials.
-If the user-specified fiber model type is myelinated, `Fiber.createMyelinatedFiber()` creates a list of NEURON sections for each of the four axon segment types (node of Ranvier, FLUT, MYSA, and STIN) and connects the Sections.
-`Fiber.createMyelinatedFiber()` contains submethods `create_node()`, `create_MYSA()`, `create_FLUT()`, and `create_STIN()`, which returns individual NEURON sections for node of Ranvier, MYSA, FLUT, and STIN axon segments, respectively.
-If the user specifies a fiber model type that is unmyelinated, `Fiber.createUnmyelinatedFiber()` creates a single list of NEURON sections for unmyelinated axon segment types and connects each segment sequentially.
+If the user-specified fiber model type is myelinated, `Fiber.create_myelinated_fiber()` creates a list of NEURON sections for each of the four axon segment types (node of Ranvier, FLUT, MYSA, and STIN) and connects the Sections.
+`Fiber.create_myelinated_fiber()` contains submethods `create_node()`, `create_mysa()`, `create_flut()`, and `create_stin()`, which returns individual NEURON sections for node of Ranvier, MYSA, FLUT, and STIN axon segments, respectively.
+If the user specifies a fiber model type that is unmyelinated, `Fiber.create_unmyelinated_fiber()` creates a single list of NEURON sections for unmyelinated axon segment types and connects each segment sequentially.
 
 ## Intracellular stimulus
 
@@ -62,7 +62,7 @@ generating data to troubleshoot and visualize simulations.
 ## Protocols
 
 The method `Fiber.submit()` in `Fiber.py` determines protocol from **_Sim_** and makes calls to the appropriate functions.
-The method `Fiber.findThresh()` in `Fiber.py` performs a binary search for activation and
+The method `Fiber.find_threshold()` in `Fiber.py` performs a binary search for activation and
 block thresholds. The method `Fiber.finite_amplitudes()` in `Fiber.py` iterates over each of the amplitudes specified by the user in
 **_Sim_**. Both of these methods make calls to `Fiber.run()` in `Fiber.py` which simulates an individual run simulation for a given stimulation amplitude.
 
@@ -101,13 +101,13 @@ At this point in the pipeline, an instance of the Fiber class is created, config
 `Simulation.n_sim_setup()` then saves this instance of the Fiber class to `n_sim/<n_sim_index>/fiber.obj` for the appropriate directory.
 During NEURON job submissions, this Fiber object is loaded from `n_sim/<n_sim_index>/fiber.obj`. The Fiber class reads from **_Sim_** and `fiber_z.json` to determine all associated flags, parameters, and rules for
 defining a fiber’s geometry and channel mechanisms in NEURON. The `Fiber.generate()` method builds the appropriate NEURON Sections based on the user-specified fiber model type. `Fiber.generate()` loads the `fiber_z.json` configuration for the given fiber type containing all associated flags, parameters, and rules for
-defining a fiber’s geometry and channel mechanisms in NEURON. `Fiber.generate()` determines the number of axon nodes (nodes of Ranvier for myelinated fibers and axon segments for unmyelinated fibers) and resting membrane voltage before calling `Fiber.createMyelinatedFiber()` or `Fiber.createUnmyelinatedFiber()` to create the actual fiber sections.
+defining a fiber’s geometry and channel mechanisms in NEURON. `Fiber.generate()` determines the number of axon nodes (nodes of Ranvier for myelinated fibers and axon segments for unmyelinated fibers) and resting membrane voltage before calling `Fiber.create_myelinated_fiber()` or `Fiber.create_unmyelinated_fiber()` to create the actual fiber sections.
 For all fiber types, the segments created and connected in NEURON have lengths that correspond to the coordinates of the input potentials.
-If the user-specified fiber model type is myelinated, `Fiber.createMyelinatedFiber()` creates a list of NEURON sections for each of the four axon segment types (node of Ranvier, FLUT, MYSA, and STIN) and connects the Sections.
-`Fiber.createMyelinatedFiber()` contains submethods `create_node()`, `create_MYSA()`, `create_FLUT()`, and `create_STIN()`, which returns individual NEURON sections for node of Ranvier, MYSA, FLUT, and STIN axon segments, respectively.
-If the user specifies a fiber model type that is unmyelinated, `Fiber.createUnmyelinatedFiber()` creates a single list of NEURON sections for unmyelinated axon segment types and connects each segment sequentially.
+If the user-specified fiber model type is myelinated, `Fiber.create_myelinated_fiber()` creates a list of NEURON sections for each of the four axon segment types (node of Ranvier, FLUT, MYSA, and STIN) and connects the Sections.
+`Fiber.create_myelinated_fiber()` contains submethods `create_node()`, `create_mysa()`, `create_flut()`, and `create_stin()`, which returns individual NEURON sections for node of Ranvier, MYSA, FLUT, and STIN axon segments, respectively.
+If the user specifies a fiber model type that is unmyelinated, `Fiber.create_unmyelinated_fiber()` creates a single list of NEURON sections for unmyelinated axon segment types and connects each segment sequentially.
 The method `Fiber.submit()` in `Fiber.py` determines protocol from **_Sim_** and makes calls to the appropriate functions.
-The method `Fiber.findThresh()` in `Fiber.py` performs a binary search for activation and
+The method `Fiber.find_threshold()` in `Fiber.py` performs a binary search for activation and
 block thresholds. The method `Fiber.finite_amplitudes()` in `Fiber.py` iterates over each of the amplitudes specified by the user in
 **_Sim_**. Both of these methods make calls to `Fiber.run()` in `Fiber.py` which simulates an individual run simulation for a given stimulation amplitude.
 

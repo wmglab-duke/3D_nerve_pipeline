@@ -55,6 +55,7 @@ class Recording(Configurable):
         self.ap_end_times = []
 
     def record_ap(self, fiber: object):
+        # TODO: consider merging with record_ap_end_times
         """Create a list of NEURON APCount objects at all nodes along the axon.
 
         :param fiber: instance of Fiber class

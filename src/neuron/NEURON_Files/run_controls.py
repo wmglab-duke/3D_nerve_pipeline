@@ -12,6 +12,7 @@ from NEURON_Files import Recording, Saving, Stimulation
 
 
 def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, waveform_path: str, sim_path: str):
+    # TODO: move out of NEURON_Files
     """Control flow of a single n_sim NEURON simulation.
 
     :param fiber_path: path to fiber.obj
