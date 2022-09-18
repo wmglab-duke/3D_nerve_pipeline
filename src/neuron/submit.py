@@ -249,6 +249,7 @@ def make_task(
             lines = [
                 '#!/bin/bash\n',
                 'cd ../../\n',
+                'pwd \n',
                 f'python run_controls.py '
                 f'\"{fiber_path}\" '
                 f'\"{inner_ind}\" '

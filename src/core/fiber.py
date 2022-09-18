@@ -111,8 +111,12 @@ class Fiber(Configurable, Saveable):
             )[diameter_index]
             axon_diam = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'axonDs')[diameter_index]
             node_diam = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'nodeDs')[diameter_index]
-            para_diam_1 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD1s')[diameter_index]
-            para_diam_2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD2s')[diameter_index]
+            para_diam_1 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD1s')[
+                diameter_index
+            ]
+            para_diam_2 = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'paraD2s')[
+                diameter_index
+            ]
             nl = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'nls')[diameter_index]
             self.delta_z = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'delta_zs')[
                 diameter_index
@@ -674,9 +678,9 @@ class Fiber(Configurable, Saveable):
             time_total += time_individual
             recording.reset()  # Reset recording vectors to be used again
 
-    def find_threshold(
+    def find_threshold(  # noqa: C901
         self, stimulation: object, saving: object, recording: object, find_block_thresh: bool = False
-    ):  # noqa: C901
+    ):
         """Binary search to find threshold amplitudes.
 
         :param stimulation: instance of Stimulation class
