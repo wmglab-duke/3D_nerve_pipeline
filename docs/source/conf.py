@@ -1,13 +1,14 @@
+"""Configuration file for the Sphinx documentation builder.
+
+This file only contains a selection of the most common options.
+For a full list see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""
+
 import os
 import sys
 
 import mock
-
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------------
 
@@ -15,11 +16,12 @@ import mock
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
 project = 'ASCENT'
-copyright = '2021, Duke University'
+copyright_info = '2021, Duke University'
 author = 'Musselman ED, Cariello JE, Grill WM, Pelot NA.'
 
 # The full version, including alpha/beta/rc tags
@@ -41,6 +43,7 @@ extensions = [
     'sphinx_copybutton',
     'sphinx_rtd_dark_mode',
     'sphinx_github_changelog',
+    'sphinx.ext.autodoc',
 ]
 
 source_suffix = {
@@ -53,6 +56,20 @@ MOCK_MODULES = ['numpy', 'pandas']
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
+
+autodoc_mock_imports = [
+    'numpy',
+    'cv2',
+    'pandas',
+    'matplotlib',
+    'pyclipper',
+    'pymunk',
+    'shapely',
+    'scipy',
+    'skimage',
+    'pygame',
+    'pymunk',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -77,9 +94,8 @@ html_static_path = ['_static']
 html_css_files = [
     'details.css',
 ]
-html_show_copyright = True
 
-# no logo because doesn't look nice
+html_show_copyright = True
 
 html_show_sphinx = False
 

@@ -269,9 +269,14 @@ class Waveform(Exceptionable, Configurable, Saveable):
             negative_wave, self.dt, self.on - self.start + pw1 + inter_phase - self.dt, self.stop - self.off + self.dt
         )
         # q-balanced
-        amp1 = 1
-        amp2 = (pw1 * amp1) / pw2
-        wave = padded_positive + amp2 * padded_negative
+        if pw1 < pw2:
+            amp1 = 1
+            amp2 = (pw1 * amp1) / pw2
+        else:
+            amp2 = 1
+            amp1 = (pw2 * amp2) / pw1
+
+        wave = amp1 * padded_positive + amp2 * padded_negative
         return wave
 
     def generate_monophasic(self, frequency, pad, path_to_specific_parameters, t_signal):
@@ -480,7 +485,6 @@ def precision_and_scale(x):
     :param x:
     :return:
     """
-    # https://stackoverflow.com/questions/3018758/determine-precision-and-scale-of-particular-number-in-python
     max_digits = sys.float_info.dig
     int_part = int(abs(x))
     magnitude = 1 if int_part == 0 else int(math.log10(int_part)) + 1

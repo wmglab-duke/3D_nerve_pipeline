@@ -1,10 +1,8 @@
 """Defines plotting functions used for analyzing data.
 
-The copyrights of this software are owned by Duke University. Please
-refer to the LICENSE and README.md files for licensing instructions. The
-source code can be found on the following GitHub repository:
-https://github.com/wmglab-duke/ascent
+See ``examples/analysis`` for examples of how to use.
 """
+
 import json
 import os
 import pickle
@@ -37,14 +35,14 @@ def heatmaps(
     """Create heatmap for a single axis using the _HeatmapPlotter class.
 
     To create a single heatmap, call the class directly
-    Use a seaborn FacetGrid to create multiple heatmaps in one figure, using the FaceGrid.map method.
+    Use a Seaborn ``FacetGrid`` to create multiple heatmaps in one figure, using the ``FacetGrid.map()`` method.
     Note that data cannot be aggregated across n_sims
-    (e.g., each call of heatmaps must recieve only one threshold per fiber).
+    (e.g., each call of ``heatmaps()`` must recieve only one threshold per fiber).
 
-    :param facetdata: Recieves data from FacetGrid if using to plot an array.
+    :param facetdata: Recieves data from ``FacetGrid`` if using to plot an array.
     :param data: DataFrame to plot, used if manually passing data.
     :param ax: Axis to plot on.
-    :param kwargs: Arguments to be passed to _HeatmapPlotter class constructor.
+    :param kwargs: Arguments to be passed to ``_HeatmapPlotter`` class constructor.
     :return: Plotting axis.
     """
     if data is None:
@@ -63,7 +61,7 @@ class _HeatmapPlotter:
     """Class used to contruct heatmap plots.
 
     This class should not be called directly by the user. Rather, the
-    user should call the heatmaps() function, which will pass any
+    user should call the ``heatmaps()`` function, which will pass any
     keyword arguments to this class's constructor.
     """
 
@@ -168,8 +166,7 @@ class _HeatmapPlotter:
         return ax
 
     def plot_inners_fibers(self, ax):
-        """Plot inners and fibers using the colors determined in
-        determine_colors().
+        """Plot inners and fibers using the colors determined in determine_colors().
 
         :param ax: axis to plot on
         """
