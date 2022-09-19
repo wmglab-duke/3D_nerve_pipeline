@@ -1,3 +1,10 @@
+"""Utility for listing json information.
+
+The copyrights of this software are owned by Duke University.
+Please refer to the LICENSE and README.md files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
+"""
+
 import json
 import os
 
@@ -5,6 +12,10 @@ import pandas as pd
 
 
 def run(mode):
+    """List json information.
+
+    :param mode: str, 'samples', 'runs', or 'models'
+    """
     if mode == 'runs':
         run_path = os.path.join('config', 'user', 'runs')
         jsons = [file for file in os.listdir(run_path) if file.endswith('.json')]

@@ -7,9 +7,10 @@ ignore = E203, W503,
 per-file-ignores =
     # imported but unused and star imports
     __init__.py: F401, F403
-    enums.py: D101
+    enums.py: D
 docstring-style: SPHINX
 max-line-length = 120
 max-complexity = 18
 #note T4 is for mypy, so does nothing now
-select = B,C,E,F,W,T4,SIM,RST,T1,FS
+select = B,C,E,F,W,T4,SIM,RST,D,T1,FS,N
+extend-ignore = DAR
