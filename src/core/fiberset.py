@@ -18,6 +18,7 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
+from nd_line.nd_line import nd_line
 from shapely.affinity import scale
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
@@ -103,8 +104,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             if fiber_3d[-1][-1] < fiber_3d[0][-1]:
                 fiber_3d = np.flip(fiber_3d, axis=0)
             longit = np.loadtxt(f'{sim_directory}/ss_coords/{fiber}.dat', skiprows=1)
-            shiftpoint = np.argmin(np.abs(fiber_3d[:, 2] - (absolute_offset + half_nerve_length)))
-            shiftloc = longit[shiftpoint, 2]
+            ztarget = absolute_offset + half_nerve_length
+            shiftpoint = np.argmin(np.abs(fiber_3d[:, 2] - ztarget))
+            shiftdist = nd_line(fiber_3d[0:shiftpoint]).length
+            shiftloc = longit[np.argmin(np.abs(longit[:, 2] - shiftdist)), 2]
             length = float(np.loadtxt(f'{sim_directory}/ss_lengths/{fiber}.dat'))
             override_shift = shiftloc - length / 2
             fib = self._generate_z([(0, 0)], override_length=length - 5, override_shift=override_shift)
