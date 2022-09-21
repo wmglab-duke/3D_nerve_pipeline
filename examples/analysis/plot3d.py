@@ -12,8 +12,10 @@ repository: https://github.com/wmglab-duke/ascent
 import json
 import os
 import sys
-import matplotlib.pyplot as plt
+
 import matplotlib
+import matplotlib.pyplot as plt
+
 matplotlib.use('agg')
 sys.path.append('.')
 

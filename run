@@ -9,7 +9,9 @@ The source code can be found on the following GitHub repository: https://github.
 import importlib
 import os
 import sys
+
 import matplotlib
+
 matplotlib.use('agg')
 from src.runtools import list_util, parse_args, welcome
 
