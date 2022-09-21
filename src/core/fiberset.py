@@ -98,13 +98,12 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         fiberfiles.sort()
         for fiber in fiberfiles:
             half_nerve_length = self.search(Config.MODEL, 'nerve_length') / 2
-            absolute_offset = self.search(Config.SIM, 'fibers', 'z_parameters', 'absolute_offset', optional=True)
-            absoff = 0 if absolute_offset is None else absolute_offset
+            absolute_offset = self.search(Config.SIM, 'fibers', 'z_parameters', optional=True).get('absolute_offset', 0)
             fiber_3d = np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1)
             if fiber_3d[-1][-1] < fiber_3d[0][-1]:
                 fiber_3d = np.flip(fiber_3d, axis=0)
             longit = np.loadtxt(f'{sim_directory}/ss_coords/{fiber}.dat', skiprows=1)
-            shiftpoint = np.where(fiber_3d[:, 2] < absoff + half_nerve_length)[0][-1]
+            shiftpoint = np.argmin(np.abs(fiber_3d[:, 2] - (absolute_offset + half_nerve_length)))
             shiftloc = longit[shiftpoint, 2]
             length = float(np.loadtxt(f'{sim_directory}/ss_lengths/{fiber}.dat'))
             override_shift = shiftloc - length / 2
