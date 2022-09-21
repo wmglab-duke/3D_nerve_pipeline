@@ -14,3 +14,4 @@ max-complexity = 18
 #note T4 is for mypy, so does nothing now
 select = B,C,E,F,W,T4,SIM,RST,D,T1,FS,N
 extend-ignore = DAR
+exclude = examples
