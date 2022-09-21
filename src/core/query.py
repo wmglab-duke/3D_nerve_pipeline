@@ -324,7 +324,7 @@ class Query(Exceptionable, Configurable, Saveable):
                             fiberset_index,
                         ) = sim_object.potentials_product[potentials_product_index]
                         # fetch outer->inner->fiber and out->inner maps
-                        out_in_fib, out_in = sim_object.fiberset_map_pairs[nsim_index]
+                        out_in_fib, out_in = sim_object.fiberset_map_pairs[0]
 
                         # build base dirs for fetching thresholds
                         sim_dir = self.build_path(
