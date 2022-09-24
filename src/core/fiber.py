@@ -632,9 +632,7 @@ class Fiber(Configurable, Saveable):
                         node.nao / node.nai
                     )  # Manual Calculation of ena in order to use Schild F and R values
                     if conductances97:
-                        node.gbar_naf97mean = (
-                            0.022434928  # [S/cm^2] This block sets the conductance to the conductances in Schild 1997
-                        )
+                        node.gbar_naf97mean = 0.022434928  # [S/cm^2] This block sets the conductance to the conductances in Schild 1997
                         node.gbar_nas97mean = 0.022434928
                         node.gbar_kd = 0.001956534
                         node.gbar_ka = 0.001304356
