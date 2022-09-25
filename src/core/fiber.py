@@ -512,20 +512,19 @@ class Fiber(Configurable, Saveable):
             node.diam = fiber_diam
             node.nseg = 1
             node.L = delta_z
-            if passive_end_nodes:
-                if i == 0 or i == nsegments - 1:
-                    node.insert('pas')
-                    node.g_pas = 0.0001
-                    if c_fiber_model_type == 1:
-                        node.e_pas = -60  # Sundt model equilibrium potential
-                    elif c_fiber_model_type == 2:
-                        node.e_pas = -55  # Tigerholm model equilibrium potential
-                    elif c_fiber_model_type == 3:
-                        node.e_pas = -70  # Rattay model equilibrium potential
-                    elif c_fiber_model_type == 4:
-                        node.e_pas = -48  # Schild model equilibrium potential
-                    else:
-                        node.e_pas = -70
+            if passive_end_nodes or (i == 0 or i == nsegments - 1):
+                node.insert('pas')
+                node.g_pas = 0.0001
+                if c_fiber_model_type == 1:
+                    node.e_pas = -60  # Sundt model equilibrium potential
+                elif c_fiber_model_type == 2:
+                    node.e_pas = -55  # Tigerholm model equilibrium potential
+                elif c_fiber_model_type == 3:
+                    node.e_pas = -70  # Rattay model equilibrium potential
+                elif c_fiber_model_type == 4:
+                    node.e_pas = -48  # Schild model equilibrium potential
+                else:
+                    node.e_pas = -70
 
                 node.insert('extracellular')
                 node.xc[0] = 0  # short circuit
