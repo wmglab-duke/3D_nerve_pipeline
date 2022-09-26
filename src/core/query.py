@@ -17,11 +17,11 @@ import pandas as pd
 from scipy.spatial.distance import euclidean
 
 from src.core import Sample, Simulation
-from src.utils import Config, Configurable, Exceptionable, Object, Saveable, SetupMode
+from src.utils import Config, Configurable, Object, Saveable, SetupMode
 from src.utils.nd_line import nd_line
 
 
-class Query(Exceptionable, Configurable, Saveable):
+class Query(Configurable, Saveable):
     """Query is for analyzing data after running NEURON simulations.
 
     IMPORTANT: MUST BE RUN FROM PROJECT LEVEL
@@ -34,7 +34,6 @@ class Query(Exceptionable, Configurable, Saveable):
         """
         # set up superclasses
         Configurable.__init__(self)
-        Exceptionable.__init__(self, SetupMode.NEW)
 
         self._ran: bool = False  # marker will be set to True one self.run() is called (as is successful)
 
@@ -47,10 +46,12 @@ class Query(Exceptionable, Configurable, Saveable):
 
         self._result = None  # begin with empty result
 
-    def run(self):
+    def run(self):  # noqa C901
         """Build query result using criteria.
 
-        :return: result as a dict
+        :raises TypeError: if any indices are not integers
+        :raises IndexError: If no sample results are found
+        :return: self
         """
         # initialize empty result
         result = {}
@@ -67,6 +68,11 @@ class Query(Exceptionable, Configurable, Saveable):
         sim_indices = self.search(Config.CRITERIA, 'indices', 'sim', optional=True)
         if isinstance(sim_indices, int):
             sim_indices = [sim_indices]
+
+        # check that all sets of indices contain only integers
+        for indices in (sample_indices, model_indices, sim_indices):
+            if indices is not None and not all([isinstance(i, int) for i in indices]):
+                raise TypeError('Encountered a non-integer index. Check your search criteria.')
 
         # criteria for each layer
         sample_criteria = self.search(Config.CRITERIA, 'sample', optional=True)
@@ -168,26 +174,44 @@ class Query(Exceptionable, Configurable, Saveable):
                 result[samples_key].pop(-1)
 
         if len(result['samples']) == 0:
-            self.throw(132)
+            raise IndexError("Query run did not return any sample results. Check your indices and try again.")
 
         self._result = result
 
         return self
 
     def summary(self) -> dict:
-        """Return result of self.run()."""
+        """Return result of self.run().
+
+        :raises LookupError: If no results (i.e. Query.run() has not been called)
+        :return: result as a dict
+        """
         if self._result is None:
-            self.throw(53)
+            raise LookupError(
+                "There are no query results. You must call Query.run() before fetching result via Query.summary()"
+            )
 
         return self._result
 
     def get_config(self, mode: Config, indices: List[int]) -> dict:
-        """Load config file for given mode and indices."""
+        """Load .json config file for given mode and indices.
+
+        :param mode: Config enum (e.g. Config.SAMPLE)
+        :param indices: list of indices (e.g. [0, 1, 2]). These are sample, model, and sim indices, respectively.
+            For a sample, pass only one index. For a model, pass two indices. For a sim, pass three indices.
+        :return: config file as a dict
+        """
         return self.load(self.build_path(mode, indices))
 
     @staticmethod
     def get_object(mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
-        """Load pickled object for given mode and indices."""
+        """Load pickled object for given mode and indices.
+
+        :param mode: mode of object (e.g. Object.SAMPLE)
+        :param indices: indices of object (e.g. [0, 0, 0]). These are the sample, model, and sim indices, respectively.
+            For a sample, pass only [sample_index]. For a model, pass [sample_index, model_index].
+        :return: object
+        """
         with open(Query.build_path(mode, indices), 'rb') as obj:
             return pickle.load(obj)
 
@@ -197,7 +221,15 @@ class Query(Exceptionable, Configurable, Saveable):
         indices: List[int] = None,
         just_directory: bool = False,
     ) -> str:
-        """Build path to config or object file for given mode and indices."""
+        """Build path to config or object file for given mode and indices.
+
+        :param mode: from Config or Object enum (e.g. Config.SAMPLE)
+        :param indices: list of indices (e.g. [0, 1, 2]). These are sample, model, and sim indices, respectively.
+            For just a sample or model, pass [0] or [0, 1], respectively.
+        :param just_directory: if True, return path to directory containing file, not the path to the file itself
+        :raises ValueError: if invalid mode is chosen
+        :return: path
+        """
         result = str()
 
         if indices is None:
@@ -227,8 +259,7 @@ class Query(Exceptionable, Configurable, Saveable):
                 'sim.obj',
             )
         else:
-            print(f'INVALID MODE: {type(mode)}')
-            Exceptionable(SetupMode.NEW).throw(55)
+            raise ValueError(f'INVALID MODE: {type(mode)}')
 
         if just_directory:
             result = os.path.join(*result.split(os.sep)[:-1])
@@ -241,8 +272,7 @@ class Query(Exceptionable, Configurable, Saveable):
 
             # ensure key is valid in data
             if key not in data:
-                print(f'ERRONEOUS KEY: {key}')
-                self.throw(54)
+                raise KeyError(f"Criterion key {key} not found in data")
 
             # corresponding values
             c_val = criteria[key]
@@ -289,10 +319,22 @@ class Query(Exceptionable, Configurable, Saveable):
         source_sim=None,
         tonly=False,
     ):
+        """Obtain threshold data as a pandas DataFrame.
+
+        :param ignore_missing: if True, missing threshold data will not cause an error.
+        :param source_sample: If 3d, use this sample as the source for morphological data.
+        :param ignore_no_activation: if True, missing activation data will not cause an error.
+        :param tortuosity: if True, calculate tortuosity and add to DataFrame.
+        :param source_sim: If 3d, use this sim as the source for fiber positions.
+        :param tonly: if True, only do peri thickness
+        :raises LookupError: If no results (called before Query.run())
+        :return: pandas DataFrame of thresholds.
+        """
+        # quick helper class for storing data values
 
         # validation
         if self._result is None:
-            self.throw(66)
+            raise LookupError("No query results, Query.run() must be called before calling analysis methods.")
 
         alldat = []
 
@@ -407,8 +449,8 @@ class Query(Exceptionable, Configurable, Saveable):
         else:
             if source_sim is not None:
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
-            fiberfile3D = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
-            ln = nd_line(np.loadtxt(fiberfile3D, skiprows=1))
+            fiberfilethreed = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
+            ln = nd_line(np.loadtxt(fiberfilethreed, skiprows=1))
             return ln.length / euclidean(ln.points[0], ln.points[-1])
 
     @staticmethod
@@ -463,15 +505,14 @@ class Query(Exceptionable, Configurable, Saveable):
 
         NOTE: for all key lists, the values themselves are lists, functioning as a JSON pointer.
 
-        :param: filepath (str): output filepath
-        :param: sample_keys (list, optional): Sample keys to output. Defaults to [].
-        :param: model_keys (list, optional): Model keys to output. Defaults to [].
-        :param: sim_keys (list, optional): Sim keys to output. Defaults to [].
-        :param: individual_indices (bool, optional): Include column for each index. Defaults tp True.
-        :param: config_paths (bool, optional): Include column for each config path. Defaults to True.
-        :param: column_width (int, optional): Column width for Excel document. Defaults to None (system default).
-        :param: console_output (bool, optional): Print progress to console. Defaults to False.
-        :return: None
+        :param: filepath: output filepath
+        :param: sample_keys: Sample keys to output. Defaults to [].
+        :param: model_keys: Model keys to output. Defaults to [].
+        :param: sim_keys: Sim keys to output. Defaults to [].
+        :param: individual_indices: Include column for each index. Defaults tp True.
+        :param: config_paths: Include column for each config path. Defaults to True.
+        :param: column_width: Column width for Excel document. Defaults to None (system default).
+        :param: console_output: Print progress to console. Defaults to False.
         """
         sims: dict = {}
         sample_keys: List[list] = sample_keys if sample_keys else []
