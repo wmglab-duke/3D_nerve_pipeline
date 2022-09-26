@@ -17,14 +17,14 @@ datas = []
 model = 0
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-for simdex in ['3']:
+for simdex in ['6','3']:
     simint = int(simdex)
     for sample_data in config['sample_data']:
         samp3d = sample_data['index3d']
         nerve_label = sample_data['name']
         samples2d = [x['index'] for x in sample_data['exsamples']]
         #%%
-        threshdat = get_datamatch(samples2d, samp3d, model, simint, nerve_label)
+        threshdat = get_datamatch(samples2d, samp3d, model, simint, nerve_label,tortuosity=True,source_sim=3,)
         datas.append(threshdat)
 data = pd.concat(datas)
 data.to_csv('thresh.csv', index=False)
