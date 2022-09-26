@@ -6,12 +6,10 @@ Please refer to the LICENSE and README.md files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 """
 
-from NEURON_Files.recording import Recording
-from NEURON_Files.stimulation import Stimulation
-from NEURON_Files.saving import Saving
+from .fiber import Fiber
+from .recording import Recording
+from .saving import Saving
+from .stimulation import Stimulation
 
-__all__ = [
-    'Recording',
-    'Stimulation',
-    'Saving',
-]
+__all__ = ['Fiber', 'Recording', 'Saving', 'Stimulation']
+

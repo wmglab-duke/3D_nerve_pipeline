@@ -24,8 +24,8 @@ import numpy as np
 import scipy.interpolate as sci
 
 from src.core import Sample
-from src.core.fiber import Fiber
-from src.utils import Config, Configurable, Env, Exceptionable, ExportMode, FiberXYMode, Saveable, SetupMode, WriteMode
+from wmglab_neuron import Fiber
+from src.utils import Config, Configurable, Env, Exceptionable, ExportMode, Saveable, SetupMode, WriteMode
 
 from .fiberset import FiberSet
 from .waveform import Waveform
@@ -731,37 +731,29 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         # neuron files
         try:
-            du.copy_tree(
-                os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'neuron'),
-                target,
+            shutil.copytree(
+                os.path.join(os.environ[Env.PROJECT_PATH.value], 'wmglab_neuron'),
+                os.path.join(target, 'wmglab_neuron'),
+                dirs_exist_ok=True
             )
         except Exception:
             pass
 
-        submit_target = os.path.join(target, 'submit.py')
-        if os.path.isfile(submit_target):
-            os.remove(submit_target)
-
-        submit_source = os.path.join('src', 'neuron', 'submit.py')
-        shutil.copy2(submit_source, submit_target)
-
-        # move run_controls.py from submit/NEURON_files/ to submit/ directory
-        run_controls_target = os.path.join(target, 'run_controls.py')
-        if os.path.isfile(run_controls_target):
-            os.remove(run_controls_target)
-        run_controls_source = os.path.join(target, 'NEURON_Files', 'run_controls.py')
-        shutil.move(run_controls_source, run_controls_target)
+        try:
+            shutil.copytree(
+                os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'neuron'),
+                os.path.join(target),
+                dirs_exist_ok=True
+            )
+        except Exception:
+            pass
 
     @staticmethod
     def export_src_files(target: str):
         # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
         utils_target = os.path.join(target, 'utils')  # submit/src/utils
-        core_target = os.path.join(target, 'core')  # submit/src/core
         if not os.path.exists(target):
             os.makedirs(target)
-
-            if not os.path.exists(core_target):
-                os.makedirs(core_target)
 
         # delete any existing submit/src/utils folders
         if os.path.exists(utils_target):
@@ -775,13 +767,6 @@ class Simulation(Exceptionable, Configurable, Saveable):
             )
         except Exception:
             pass
-
-        # copy fiber.py into fiber.py
-        fiber_target = os.path.join(target, 'core', 'fiber.py')
-        fiber_source = os.path.join('src', 'core', 'fiber.py')
-        if os.path.isfile(fiber_target):
-            os.remove(fiber_target)
-        shutil.copy2(fiber_source, fiber_target)
 
     @staticmethod
     def export_system_config_files(target: str):

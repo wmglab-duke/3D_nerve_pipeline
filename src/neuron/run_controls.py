@@ -11,7 +11,7 @@ import pickle
 import sys
 import time
 
-from NEURON_Files import Recording, Saving, Stimulation
+from wmglab_neuron import Recording, Saving, Stimulation
 
 
 def main(fiber_path: str, inner_ind: int, fiber_ind: int, potentials_path: str, waveform_path: str, sim_path: str):
