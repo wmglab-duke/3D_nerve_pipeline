@@ -490,14 +490,18 @@ class Simulation(Configurable, Saveable):
                                 if len(fiber_list) < len(inner_list):
                                     fiber_list.append(0)
                                 fiber_list[inner_list.index(inner_index)] += 1
+                            srcfile = os.path.join(
+                                sim_dir,
+                                str(sim_num),
+                                'potentials',
+                                str(potentials_ind),
+                                str(fiber_index) + '.dat',
+                            )
+                            # check for nan in srcfile
+                            if np.isnan(np.loadtxt(srcfile)).any():
+                                raise ValueError(f'nan in {srcfile}')
                             shutil.copyfile(
-                                os.path.join(
-                                    sim_dir,
-                                    str(sim_num),
-                                    'potentials',
-                                    str(potentials_ind),
-                                    str(fiber_index) + '.dat',
-                                ),
+                                srcfile,
                                 os.path.join(nsim_inputs_directory, filename_dat),
                             )
                     elif file == 'diams.txt':
@@ -531,8 +535,11 @@ class Simulation(Configurable, Saveable):
                     "(hint: check that if 'use' is true 'generate' was also true for the source Sim)."
                 )
             else:
-                ss_bases[basis_ind] = np.loadtxt(os.path.join(ss_bases_src_path, file))[1:]
-
+                fibersrc = np.loadtxt(os.path.join(ss_bases_src_path, file))[1:]
+                # check for nan
+                if np.isnan(fibersrc).any():
+                    raise ValueError(f'nan in {os.path.join(ss_bases_src_path, file)}')
+                ss_bases[basis_ind] = fibersrc
         return ss_fiberset_path, ss_bases
 
     def weight_potentials(self, active_src_vals, file, root, ss_bases, ss_fiberset_path):
