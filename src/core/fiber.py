@@ -512,7 +512,7 @@ class Fiber(Configurable, Saveable):
             node.diam = fiber_diam
             node.nseg = 1
             node.L = delta_z
-            if passive_end_nodes or (i == 0 or i == nsegments - 1):
+            if passive_end_nodes and (i == 0 or i == nsegments - 1):
                 node.insert('pas')
                 node.g_pas = 0.0001
                 if c_fiber_model_type == 1:
