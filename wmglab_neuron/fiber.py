@@ -35,8 +35,8 @@ class Fiber(Configurable, Saveable):
         Configurable.__init__(self)
 
         self.diameter = None
-        self.min = None
-        self.max = None
+        self.minimum = None
+        self.maximum = None
         self.offset = None
         self.seed = None
         self.fiber_mode = None
@@ -45,34 +45,49 @@ class Fiber(Configurable, Saveable):
         self.axonnodes = None
         self.delta_z = None
         self.passive_end_nodes = None
-        self.node = []
-        self.mysa = []
-        self.flut = []
-        self.stin = []
-        self.sec = []
+        self.segments = []
         self.n_aps = None
         self.inner_ind = None
         self.fiber_ind = None
         self.v_init = None
         return
 
-    def inherit(self):
-        """Inherit known properties of the fiber based on sim config.
+    def inherit(
+            self,
+            diameter: float = 8.7,
+            minimum: float = 0,
+            maximum: float = 0,
+            offset: float = 0.5,
+            seed: int = 0,
+            fiber_mode: str = 'MRG_DISCRETE',
+            temperature: float = 37
+    ):
+        """Inherit known properties of the fiber.
+        :param diameter: fiber diameter [um]
+        :param minimum: distal extent of the fiber along the length of the nerve closer to z=0 [um]
+        :param maximum: distal extent of the fiber along the length of the nerve closer to z=length of proximal medium [um]
+        :param offset: the fraction of the segment density that the center coordinate of the fiber is shifted along the z-axis from the longitudinal center of the proximal medium
+        :param seed: seed of the random number generator before any random offsets are created
+        :param fiber_mode: name of fiber model type
+        :param temperature: temperature of model [degrees celsius]
 
         :return: Fiber object
         """
-        self.diameter = self.search(Config.SIM, 'fibers', 'z_parameters', 'diameter')
-        self.min = self.search(Config.SIM, 'fibers', 'z_parameters', 'min')
-        self.max = self.search(Config.SIM, 'fibers', 'z_parameters', 'max')
-        self.offset = self.search(Config.SIM, 'fibers', 'z_parameters', 'offset')
-        self.seed = self.search(Config.SIM, 'fibers', 'z_parameters', 'seed')
-        self.fiber_mode = self.search(Config.SIM, 'fibers', 'mode')
-        self.myelination = self.search(Config.FIBER_Z, 'fiber_type_parameters', self.fiber_mode, 'myelinated')
-        self.temperature = self.search(Config.MODEL, 'temperature')
+        self.diameter = diameter
+        self.min = minimum
+        self.max = maximum
+        self.offset = offset
+        self.seed = seed
+        self.fiber_mode = fiber_mode
+        if fiber_mode != 'MRG_DISCRETE' and fiber_mode != 'MRG_INTERPOLATION':
+            self.myelination = False
+        else:
+            self.myelination = True
+        self.temperature = temperature
         return self
 
     def generate(self, n_fiber_coords: int):
-        """Build fiber model sections.
+        """Build fiber model sections with NEURON.
 
         :param n_fiber_coords: number of fiber coordinates from COMSOL
         :return: Fiber object
@@ -241,12 +256,12 @@ class Fiber(Configurable, Saveable):
             :param i: index of fiber segment
             :param fiber_diam: fiber diameter [um]
             :param paralength1: length of myelin attachment section of fiber segment (MYSA) [um]
-            :param rhoa:
+            :param rhoa: intracellular resistivity [Ohm-um]
             :param para_diam_1: diameter of myelin attachment section of fiber segment (MYSA) [um]
-            :param e_pas_vrest:
-            :param rpn1:
-            :param mycm:
-            :param mygm:
+            :param e_pas_vrest: resting potential of axon [mV]
+            :param rpn1: periaxonal space resistivity for MYSA segment [Mohms/cm]
+            :param mycm: lamella membrane capacitance [uF/cm2]
+            :param mygm: lamella membrane conductance [uF/cm2]
             :param nl: number of myelin lemella
             :return: nrn.Section
             """
@@ -284,12 +299,12 @@ class Fiber(Configurable, Saveable):
             :param i: index of fiber segment
             :param fiber_diam: fiber diameter [um]
             :param paralength2: length of main section of paranode fiber segment (FLUT) [um]
-            :param rhoa:
+            :param rhoa: intracellular resistivity [Ohm-um]
             :param para_diam_2: diameter of main section of paranode fiber segment (FLUT) [um]
-            :param e_pas_vrest:
-            :param para_diam_2:
-            :param mycm:
-            :param mygm:
+            :param e_pas_vrest: resting potential of axon [mV]
+            :param rpn2: periaxonal space resistivity for of paranode fiber segment (FLUT) [Mohms/cm]
+            :param mycm: lamella membrane capacitance [uF/cm2]
+            :param mygm: lamella membrane conductance [uF/cm2]
             :param nl: number of myelin lemella
             :return: nrn.Section
             """
@@ -327,12 +342,12 @@ class Fiber(Configurable, Saveable):
             :param i: index of fiber segment
             :param fiber_diam: fiber diameter [um]
             :param interlength: length of internodal fiber segment (STIN) [um]
-            :param rhoa:
+            :param rhoa: intracellular resistivity [Ohm-um]
             :param axon_diam: diameter of internodal fiber segment (STIN) [um]
-            :param e_pas_vrest:
-            :param rpx:
-            :param mycm:
-            :param mygm:
+            :param e_pas_vrest: resting potential of axon [mV]
+            :param rpx: periaxonal space resistivity for internodal fiber segment (STIN) [Mohms/cm]
+            :param mycm: lamella membrane capacitance [uF/cm2]
+            :param mygm: lamella membrane conductance [uF/cm2]
             :param nl: number of myelin lemella
             :return: nrn.Section
             """
@@ -371,14 +386,14 @@ class Fiber(Configurable, Saveable):
             :param index: index of fiber segment
             :param node_diam: diameter of node of Ranvier fiber segment [um]
             :param nodelength: Length of nodes of Ranvier [um]
-            :param rhoa:
-            :param mycm:
-            :param mygm:
+            :param rhoa: intracellular resistivity [Ohm-um]
+            :param mycm: lamella membrane capacitance [uF/cm2]
+            :param mygm: lamella membrane conductance [uF/cm2]
             :param passive: true for passive end node strategy, false otherwise
             :param axonnodes: number of node of Ranvier segments
             :param node_channels: true for Schild fiber models mechanisms, false otherwise
             :param nl: number of myelin lemella
-            :param rpn0:
+            :param rpn0: periaxonal space resistivity for node of Ranvier fiber segment [Mohms/cm]
             :return: nrn.Section
             """
             node = Section(name='node ' + str(index))
@@ -439,44 +454,28 @@ class Fiber(Configurable, Saveable):
         interlength = (deltaz - nodelength - (2 * paralength1) - (2 * paralength2)) / 6
 
         # Create the axon sections
-        for i in range(0, axonnodes):
-            new_node = create_node(
-                i,
-                node_diam,
-                nodelength,
-                rhoa,
-                mycm,
-                mygm,
-                passive_end_nodes,
-                axonnodes,
-                node_channels,
-                nl,
-                rpn0,
-            )
-            self.node.append(new_node)
-        for i in range(0, paranodes1):
-            new_mysa = create_mysa(i, fiber_diam, paralength1, rhoa, para_diam_1, e_pas_vrest, rpn1, mycm, mygm, nl)
-            self.mysa.append(new_mysa)
-        for i in range(0, paranodes2):
-            new_flut = create_flut(i, fiber_diam, paralength2, rhoa, para_diam_2, e_pas_vrest, rpn2, mycm, mygm, nl)
-            self.flut.append(new_flut)
-        for i in range(0, axoninter):
-            new_stin = create_stin(i, fiber_diam, interlength, rhoa, axon_diam, e_pas_vrest, rpx, mycm, mygm, nl)
-            self.stin.append(new_stin)
+        node_ind, mysa_ind, stin_ind, flut_ind = 0, 0, 0, 0
+        nsegments = axonnodes + paranodes1 + paranodes2 + axoninter
+        for ind in range(1, nsegments + 1):
+            if ind % 11 == 1:
+                segment = create_node(node_ind, node_diam, nodelength, rhoa, mycm, mygm, passive_end_nodes, axonnodes,
+                                       node_channels, nl, rpn0)
+                node_ind += 1
+            elif ind % 11 == 2 or ind % 11 == 0:
+                segment = create_mysa(mysa_ind, fiber_diam, paralength1, rhoa, para_diam_1, e_pas_vrest, rpn1, mycm, mygm, nl)
+                mysa_ind += 1
+            elif ind % 11 == 3 or ind % 11 == 10:
+                segment = create_flut(flut_ind, fiber_diam, paralength2, rhoa, para_diam_2, e_pas_vrest, rpn2, mycm, mygm, nl)
+                flut_ind += 1
+            else:
+                segment = create_stin(stin_ind, fiber_diam, interlength, rhoa, axon_diam, e_pas_vrest, rpx, mycm, mygm, nl)
+                stin_ind += 1
+            self.segments.append(segment)
 
         # Connect the axon sections
-        for i in range(0, axonnodes - 1):
-            self.mysa[2 * i].connect(self.node[i])
-            self.flut[2 * i].connect(self.mysa[2 * i])
-            self.stin[6 * i].connect(self.flut[2 * i])
-            self.stin[6 * i + 1].connect(self.stin[6 * i])
-            self.stin[6 * i + 2].connect(self.stin[6 * i + 1])
-            self.stin[6 * i + 3].connect(self.stin[6 * i + 2])
-            self.stin[6 * i + 4].connect(self.stin[6 * i + 3])
-            self.stin[6 * i + 5].connect(self.stin[6 * i + 4])
-            self.flut[2 * i + 1].connect(self.stin[6 * i + 5])
-            self.mysa[2 * i + 1].connect(self.flut[2 * i + 1])
-            self.node[i + 1].connect(self.mysa[2 * i + 1])
+        for i in range(0, nsegments - 1):
+            self.segments[i + 1].connect(self.segments[i])
+
         return self
 
     def create_unmyelinated_fiber(
@@ -504,10 +503,10 @@ class Fiber(Configurable, Saveable):
         """
         nsegments = int(length / delta_z)
 
-        self.sec = []
+        self.segments = []
         for i in range(0, nsegments):
             node = Section(name='node ' + str(i))
-            self.sec.append(node)
+            self.segments.append(node)
 
             node.diam = fiber_diam
             node.nseg = 1
@@ -649,7 +648,7 @@ class Fiber(Configurable, Saveable):
                 node.xg[0] = 1e10  # short circuit
 
         for i in range(0, nsegments - 1):
-            self.sec[i + 1].connect(self.sec[i])
+            self.segments[i + 1].connect(self.segments[i])
 
         return self
 
@@ -862,7 +861,7 @@ class Fiber(Configurable, Saveable):
             :param fiber: instance of Fiber class
             """
             v_rest = -55
-            for s in fiber.sec:
+            for s in fiber.segments:
                 if (-(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump) / (v_rest - s.ena)) < 0:
                     s.pumpina_extrapump = -(s.ina_nattxs + s.ina_nav1p9 + s.ina_nav1p8 + s.ina_h + s.ina_nakpump)
                 else:
@@ -938,42 +937,3 @@ class Fiber(Configurable, Saveable):
         if saving is None:
             print(f'{int(self.n_aps)} AP(s) detected')
         return self
-
-
-class GeometryObject:
-    # TODO: delete or implement
-    """Geometry Object to be used for custom user fiber models (not yet supported)."""
-
-    def __init__(self, fiber_diam, fiberDtoAxonD=0, axonDtoNL=0, nodelength=1, MYSAlength=3):
-        """Initialize Geometry class."""
-        self.fiberDtoAxonD, self.axonDtoNL, self.nodelength, self.MYSAlength = (
-            fiberDtoAxonD,
-            axonDtoNL,
-            nodelength,
-            MYSAlength,
-        )
-        self.FLUTlength = -0.171 * (fiber_diam**2) + 6.48 * fiber_diam - 0.935
-        if fiberDtoAxonD == 0:
-            self.axon_diam = 0.553 * fiber_diam - 0.024
-        elif fiberDtoAxonD == 1:
-            self.axon_diam = 0.688 * fiber_diam - 0.337
-        elif fiberDtoAxonD == 2:
-            self.axon_diam = 0.0156 * (fiber_diam**2) + 0.392 * fiber_diam + 0.188
-        elif fiberDtoAxonD == 3:
-            self.axon_diam = 0.684 * fiber_diam + 0.0821
-        elif fiberDtoAxonD == 4:
-            self.axon_diam = 0.621 * fiber_diam - 0.121
-
-        self.node_diam = 0.321 * self.axon_diam + 0.37
-
-        if axonDtoNL == 0:
-            self.nl = int(17.4 * self.axon_diam - 1.74)
-        elif axonDtoNL == 1:
-            self.nl = int(-1.17 * (self.axon_diam**2) + 24.9 * self.axon_diam + 17.7)
-
-        self.MYSAD = self.node_diam
-        self.FLUTD = self.axon_diam
-
-        self.interlength = (
-            (-3.22 * fiber_diam**2 + 148 * fiber_diam + -128) - self.nl - 2 * self.MYSAlength - 2 * self.FLUTlength
-        ) / 6

@@ -63,26 +63,18 @@ class Recording(Configurable):
 
         :param fiber: instance of Fiber class
         """
-        # if fiber is myelinated, create APCount for each node of Ranvier
-        if fiber.myelination:
-            for i, node in enumerate(fiber.node):
-                self.apc.append(h.APCount(node(0.5)))
-                thresh = fiber.search(Config.SIM, "protocol", "threshold", "value", optional=True)
-                if thresh is not None:
-                    self.apc[i].thresh = thresh
-                else:
-                    # if thresh is not specified in sim.json (only allowed for FINITE_AMPLITUDES), use default value
-                    self.apc[i].thresh = -30
-        # if fiber is not myelinated (c-fiber model), create APCount for each segment
-        else:
-            for i, node in enumerate(fiber.sec):
-                self.apc.append(h.APCount(node(0.5)))
-                thresh = fiber.search(Config.SIM, "protocol", "threshold", "value", optional=True)
-                if thresh is not None:
-                    self.apc[i].thresh = thresh
-                else:
-                    # if thresh is not specified in sim.json (only allowed for FINITE_AMPLITUDES), use default value
-                    self.apc[i].thresh = -30
+        for i in range(0, fiber.axonnodes):
+            if fiber.myelination:
+                ind = i*11
+            else:
+                ind = i
+            self.apc.append(h.APCount(fiber.segments[ind](0.5)))
+            thresh = fiber.search(Config.SIM, "protocol", "threshold", "value", optional=True)
+            if thresh is not None:
+                self.apc[i].thresh = thresh
+            else:
+                # if thresh is not specified in sim.json (only allowed for FINITE_AMPLITUDES), use default value
+                self.apc[i].thresh = -30
 
     def record_ap_end_times(self, fiber: object, ap_end_inds: list, ap_end_thresh: float):
         """Record when action potential occurs at specified indices. For 'end_ap_times' in sim.json.
@@ -96,29 +88,25 @@ class Recording(Configurable):
         for ap_end_vector, ap_end_ind in zip(self.ap_end_times, ap_end_inds):
             if fiber.myelination:
                 # if myelinated, create APCount at node of Ranvier
-                ap_count = h.APCount(fiber.node[ap_end_ind](0.5))
-                ap_count.thresh = ap_end_thresh
-                ap_count.record(ap_end_vector)  # save AP times detected by APCount to vector
-                self.ap_end_count.append(ap_count)
+                ap_count = h.APCount(fiber.segments[ap_end_ind*11](0.5))
             else:
                 # if unmyelinated, create APCount at axon segment
-                ap_end_min = h.APCount(fiber.sec[ap_end_ind](0.5))
-                ap_end_min.thresh = ap_end_thresh
-                ap_end_min.record(ap_end_vector)  # save AP times detected by APCount to vector
-                self.ap_end_count.append(ap_count)
+                ap_count = h.APCount(fiber.segments[ap_end_ind](0.5))
+            ap_count.thresh = ap_end_thresh
+            ap_count.record(ap_end_vector)  # save AP times detected by APCount to vector
+            self.ap_end_count.append(ap_count)
 
     def record_vm(self, fiber):
         """Record membrane voltage (mV) along the axon.
 
         :param fiber: instance of Fiber class
         """
-        for node_ind in range(0, fiber.axonnodes):
+        for ind in range(0, fiber.axonnodes):
             if fiber.myelination:
-                v_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_v)
-                self.vm.append(v_node)
+                v_node = h.Vector().record(fiber.segments[ind*11](0.5)._ref_v)
             else:
-                v_node = h.Vector().record(fiber.sec[node_ind](0.5)._ref_v)
-                self.vm.append(v_node)
+                v_node = h.Vector().record(fiber.segments[ind](0.5)._ref_v)
+            self.vm.append(v_node)
         return
 
     def record_istim(self, istim: object):
@@ -137,10 +125,10 @@ class Recording(Configurable):
         if fix_passive is False:
             # Set up recording vectors for h, m, mp, and s gating parameters all along the axon
             for node_ind in self.gating_inds:
-                h_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_h_inf_axnode_myel)
-                m_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_m_inf_axnode_myel)
-                mp_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_mp_inf_axnode_myel)
-                s_node = h.Vector().record(fiber.node[node_ind](0.5)._ref_s_inf_axnode_myel)
+                h_node = h.Vector().record(fiber.segments[node_ind*11](0.5)._ref_h_inf_axnode_myel)
+                m_node = h.Vector().record(fiber.segments[node_ind*11](0.5)._ref_m_inf_axnode_myel)
+                mp_node = h.Vector().record(fiber.segments[node_ind*11](0.5)._ref_mp_inf_axnode_myel)
+                s_node = h.Vector().record(fiber.segments[node_ind*11](0.5)._ref_s_inf_axnode_myel)
                 self.gating_h.append(h_node)
                 self.gating_m.append(m_node)
                 self.gating_mp.append(mp_node)

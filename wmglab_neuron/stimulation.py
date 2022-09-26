@@ -64,12 +64,12 @@ class Stimulation(Configurable):
         :param fiber: instance of Fiber class
         :return: instance of Stimulation class
         """
-        if fiber.myelination:  # attach at node of Ranvier
-            fiber_sections = fiber.node
-        else:  # unmyelinated fiber, attach at axon segment
-            fiber_sections = fiber.sec
         intrastim_pulsetrain_ind = fiber.search(Config.SIM, 'intracellular_stim', 'ind')
-        intracellular_stim = h.trainIClamp(fiber_sections[intrastim_pulsetrain_ind](0.5))
+        if fiber.myelination:
+            ind = intrastim_pulsetrain_ind*11
+        else:
+            ind = intrastim_pulsetrain_ind
+        intracellular_stim = h.trainIClamp(fiber.segments[ind](0.5))
         intracellular_stim.delay = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
         intracellular_stim.PW = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
         intracellular_stim.train = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
@@ -83,18 +83,8 @@ class Stimulation(Configurable):
 
         :param fiber: instance of Fiber class
         """
-        if fiber.myelination:  # for myelinated fibers, need to update each of the different segment types
-            for sec in fiber.node:
-                sec(0.5).e_extracellular = 0
-            for sec in fiber.mysa:
-                sec(0.5).e_extracellular = 0
-            for sec in fiber.flut:
-                sec(0.5).e_extracellular = 0
-            for sec in fiber.stin:
-                sec(0.5).e_extracellular = 0
-        else:
-            for sec in fiber.sec:
-                sec(0.5).e_extracellular = 0
+        for segment in fiber.segments:
+            segment(0.5).e_extracellular = 0
         return
 
     def update_extracellular(self, fiber: object, e_stims: str):
@@ -103,28 +93,5 @@ class Stimulation(Configurable):
         :param fiber: instance of Fiber class
         :param e_stims: list of extracellular stimulations to apply along fiber length
         """
-        if fiber.myelination:
-            node_stim, flut_stim, mysa_stim, stin_stim = [], [], [], []
-            # Use modulo function to determine order for stimulation based on myelinated fiber segments
-            for ind in range(1, len(e_stims) + 1):
-                if ind % 11 == 1:
-                    node_stim.append(e_stims[ind - 1])
-                elif ind % 11 == 2 or ind % 11 == 0:
-                    mysa_stim.append(e_stims[ind - 1])
-                elif ind % 11 == 3 or ind % 11 == 10:
-                    flut_stim.append(e_stims[ind - 1])
-                else:
-                    stin_stim.append(e_stims[ind - 1])
-
-            # Update all node, MYSA, FLUT, STIN segments
-            for x, sec in enumerate(fiber.node):
-                sec(0.5).e_extracellular = node_stim[x]
-            for x, sec in enumerate(fiber.mysa):
-                sec(0.5).e_extracellular = mysa_stim[x]
-            for x, sec in enumerate(fiber.flut):
-                sec(0.5).e_extracellular = flut_stim[x]
-            for x, sec in enumerate(fiber.stin):
-                sec(0.5).e_extracellular = stin_stim[x]
-        else:  # unmyelinated fiber; apply stimulations sequentially
-            for x, sec in enumerate(fiber.sec):
-                sec(0.5).e_extracellular = e_stims[x]
+        for x, segment in enumerate(fiber.segments):
+            segment(0.5).e_extracellular = e_stims[x]

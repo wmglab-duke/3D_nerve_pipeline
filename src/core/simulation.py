@@ -376,10 +376,27 @@ class Simulation(Exceptionable, Configurable, Saveable):
 
         # save general fiber object as sim/#/n_sims/t/fiber.obj
         nsim_fiber_path = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'fiber.obj')
+
+        diameter = self.search(Config.SIM, 'fibers', 'z_parameters', 'diameter')
+        minimum = self.search(Config.SIM, 'fibers', 'z_parameters', 'min')
+        maximum = self.search(Config.SIM, 'fibers', 'z_parameters', 'max')
+        offset = self.search(Config.SIM, 'fibers', 'z_parameters', 'offset')
+        seed = self.search(Config.SIM, 'fibers', 'z_parameters', 'seed')
+        fiber_mode = self.search(Config.SIM, 'fibers', 'mode')
+        temperature = self.search(Config.MODEL, 'temperature')
+
         fiber_obj = Fiber()
-        fiber_obj.add(SetupMode.OLD, Config.SIM, sim_copy).add(
+        fiber_obj.add(
+            SetupMode.OLD, Config.SIM, sim_copy
+        ).add(
             SetupMode.NEW, Config.FIBER_Z, os.path.join('config', 'system', 'fiber_z.json')
-        ).add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]).inherit().save(nsim_fiber_path)
+        ).add(
+            SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]
+        ).inherit(
+            diameter, minimum, maximum, offset, seed, fiber_mode, temperature
+        ).save(
+            nsim_fiber_path
+        )
 
         return nsim_inputs_directory, fiberset_ind, active_src_vals
 
