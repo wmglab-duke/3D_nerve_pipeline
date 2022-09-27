@@ -288,6 +288,7 @@ class Query(Exceptionable, Configurable, Saveable):
         tortuosity=False,
         source_sim=None,
         tonly=False,
+        cuffspan=None,
     ):
 
         # validation
@@ -368,6 +369,10 @@ class Query(Exceptionable, Configurable, Saveable):
                                 base_dict['tortuosity'] = self.get_tortuosity(
                                     base_dict, sim_dir, source_sample is not None, source_sim
                                 )
+                                if cuffspan is not None:
+                                    base_dict['cuff_tortuosity'] = self.get_tortuosity_span(
+                                        base_dict, sim_dir, source_sample is not None, cuffspan, source_sim
+                                    )
                             alldat.append(base_dict)
 
         return pd.DataFrame(alldat)
@@ -409,6 +414,20 @@ class Query(Exceptionable, Configurable, Saveable):
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
             fiberfile3D = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
             ln = nd_line(np.loadtxt(fiberfile3D, skiprows=1))
+            return ln.length / euclidean(ln.points[0], ln.points[-1])
+
+    @staticmethod
+    def get_tortuosity_span(base_dict, sim_dir, threed, cuffspan, source_sim=None):
+        # directory for specific n_sim
+        if not threed:
+            return 1
+        else:
+            if source_sim is not None:
+                sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
+            fiberfile3D = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
+            coords = np.loadtxt(fiberfile3D, skiprows=1)
+            # get line only in the cuffspan z range
+            ln = nd_line(coords[(coords[:, 2] > cuffspan[0]) & (coords[:, 2] < cuffspan[1])])
             return ln.length / euclidean(ln.points[0], ln.points[-1])
 
     @staticmethod

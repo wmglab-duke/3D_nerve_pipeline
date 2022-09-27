@@ -27,6 +27,8 @@ with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
 
 cuffspan = [28000, 30000]
+
+
 def run_comparison(simdex, comparison):
     allcorr = []
     plt.figure()
@@ -35,7 +37,8 @@ def run_comparison(simdex, comparison):
     plot_title = f'{comparison[0]}-{comparison[1]}-sim{simint}'
     print('Working:', plot_title)
     for sample_data in config['sample_data']:
-        if sample_data['name']!='2L': continue
+        if sample_data['name'] != '2L':
+            continue
         samp3d = sample_data['index3d']
         nerve_label = sample_data['name']
         samples2d = [x['index'] for x in sample_data['exsamples']]
