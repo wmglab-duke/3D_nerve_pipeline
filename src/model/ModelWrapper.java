@@ -296,6 +296,7 @@ public class ModelWrapper {
         model.result().numerical().create(id, "Interp");
         model.result().numerical(id).set("expr", "V");
         model.result().numerical(id).set("recover", "pprint");
+        model.result().numerical(id).set("matherr", "off");
         model.result().numerical(id).setInterpolationCoordinates(coordinates);
         double[][][] ve_pre = model.result().numerical(id).getData();
         int len = ve_pre[0][0].length; // number of coordinates
