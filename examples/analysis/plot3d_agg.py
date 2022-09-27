@@ -26,7 +26,7 @@ model = 0
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
 
-
+cuffspan = [28000, 30000]
 def run_comparison(simdex, comparison):
     allcorr = []
     plt.figure()
@@ -35,6 +35,7 @@ def run_comparison(simdex, comparison):
     plot_title = f'{comparison[0]}-{comparison[1]}-sim{simint}'
     print('Working:', plot_title)
     for sample_data in config['sample_data']:
+        if sample_data['name']!='2L': continue
         samp3d = sample_data['index3d']
         nerve_label = sample_data['name']
         samples2d = [x['index'] for x in sample_data['exsamples']]
@@ -48,8 +49,9 @@ def run_comparison(simdex, comparison):
                 model,
                 simint,
                 nerve_label,
-                tortuosity='tortuosity3d' in comparison,
+                tortuosity='tortuosity3d' in comparison or 'cuff_tortuosity' in comparison,
                 source_sim=config['source_sim'],
+                cuffspan=cuffspan,
             )
             if 'tortuosity3d' in comparison:
                 inputdata = inputdata.query(f'sample=={pd.unique(inputdata["sample"])[0]}')
@@ -75,10 +77,11 @@ def run_comparison(simdex, comparison):
     plt.gcf().savefig(f'out/analysis/{comparison[0]}-{comparison[1]}-sim{simint}')
 
 
-for simdex in config['sim_data'].keys():
+for simdex in ['3']:
     plt.close('all')
-    run_comparison(simdex, ['threshold', 'threshold3d'])
-    run_comparison(simdex, ['threshold', 'peri_thk'])
-    run_comparison(simdex, ['threshold3d', 'peri_thk'])
-    run_comparison(simdex, ['threshold3d', 'peri_thk_act_site'])
-    run_comparison(simdex, ['threshold3d', 'tortuosity3d'])
+    # run_comparison(simdex, ['threshold', 'threshold3d'])
+    # run_comparison(simdex, ['threshold', 'peri_thk'])
+    # run_comparison(simdex, ['threshold3d', 'peri_thk'])
+    # run_comparison(simdex, ['threshold3d', 'peri_thk_act_site'])
+    # run_comparison(simdex, ['threshold3d', 'tortuosity3d'])
+    run_comparison(simdex, ['threshold3d', 'cuff_tortuosity'])
