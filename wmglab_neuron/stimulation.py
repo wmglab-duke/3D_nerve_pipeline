@@ -7,18 +7,16 @@ https://github.com/wmglab-duke/ascent
 """
 
 from neuron import h
-from src.utils import Config, Configurable
 
 h.load_file('stdrun.hoc')
 
 
-class Stimulation(Configurable):
+class Stimulation():
     """Manage stimulation of NEURON simulations."""
 
     def __init__(self):
         """Initialize Stimulation class."""
         # initialize Configurable super class
-        Configurable.__init__(self)
 
         self.potentials = []
         self.waveform = []
@@ -58,23 +56,36 @@ class Stimulation(Configurable):
             self.waveform = [float(i) for i in file_lines]
         return self
 
-    def apply_intracellular(self, fiber: object):
+    def apply_intracellular(self, fiber: object,
+                            delay: float = 0,
+                            pw: float = 0,
+                            dur: float = 0,
+                            freq: float = 0,
+                            amp: float = 0,
+                            ind: int = 0
+                            ):
         """Create instance of trainIClamp for intracellular stimulation.
 
         :param fiber: instance of Fiber class
+        :param delay: the delay from the start of the simulation to the onset of the intracellular stimulation [ms]
+        :param pw: the pulse duration of the intracellular stimulation [ms]
+        :param dur: the duration from the start of the simulation to the end of the intracellular stimulation [ms]
+        :param freq: the intracellular stimulation frequency [Hz]
+        :param amp: the intracellular stimulation amplitude [nA]
+        :param ind: the section index (unmyelinated) or node of Ranvier number (myelinated) receiving stimulation
+
         :return: instance of Stimulation class
         """
-        intrastim_pulsetrain_ind = fiber.search(Config.SIM, 'intracellular_stim', 'ind')
         if fiber.myelination:
-            ind = intrastim_pulsetrain_ind*11
+            intrastim_pulsetrain_ind = ind*11
         else:
-            ind = intrastim_pulsetrain_ind
-        intracellular_stim = h.trainIClamp(fiber.segments[ind](0.5))
-        intracellular_stim.delay = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_delay')
-        intracellular_stim.PW = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'pw')
-        intracellular_stim.train = fiber.search(Config.SIM, 'intracellular_stim', 'times', 'IntraStim_PulseTrain_dur')
-        intracellular_stim.freq = fiber.search(Config.SIM, 'intracellular_stim', 'pulse_repetition_freq')
-        intracellular_stim.amp = fiber.search(Config.SIM, 'intracellular_stim', 'amp')
+            intrastim_pulsetrain_ind = ind
+        intracellular_stim = h.trainIClamp(fiber.sections[intrastim_pulsetrain_ind](0.5))
+        intracellular_stim.delay = delay
+        intracellular_stim.PW = pw
+        intracellular_stim.train = dur
+        intracellular_stim.freq = freq
+        intracellular_stim.amp = amp
         self.istim = intracellular_stim
         return self
 
@@ -83,8 +94,8 @@ class Stimulation(Configurable):
 
         :param fiber: instance of Fiber class
         """
-        for segment in fiber.segments:
-            segment(0.5).e_extracellular = 0
+        for section in fiber.sections:
+            section(0.5).e_extracellular = 0
         return
 
     def update_extracellular(self, fiber: object, e_stims: str):
@@ -93,5 +104,5 @@ class Stimulation(Configurable):
         :param fiber: instance of Fiber class
         :param e_stims: list of extracellular stimulations to apply along fiber length
         """
-        for x, segment in enumerate(fiber.segments):
-            segment(0.5).e_extracellular = e_stims[x]
+        for x, section in enumerate(fiber.sections):
+            section(0.5).e_extracellular = e_stims[x]

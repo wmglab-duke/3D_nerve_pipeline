@@ -11,16 +11,12 @@ import os
 
 import pandas as pd
 
-from src.utils import Config, Configurable
 
-
-class Saving(Configurable):
+class Saving:
     """Manage saving parameters to file for NEURON simulations."""
 
     def __init__(self):
         """Initialize Saving class."""
-        # initialize Configurable super class
-        Configurable.__init__(self)
 
         self.space_vm = None
         self.space_gating = None
@@ -37,39 +33,66 @@ class Saving(Configurable):
         self.output_path = None
         return
 
-    def inherit(self, sim_path: str, dt: float, fiber: object):
+    def inherit(self,
+                sim_path: str,
+                dt: float,
+                fiber: object,
+                space_vm: bool = False,
+                space_gating: bool = False,
+                space_times: list[float] = [],
+                time_vm: bool = False,
+                time_gating: bool = False,
+                istim: bool = False,
+                locs: list[float] = [],
+                end_ap_times: bool = False,
+                loc_min: float = 0.1,
+                loc_max: float = 0.9,
+                ap_end_thresh: float = -30,
+                ap_loctime: bool = False,
+                runtime: bool = False,
+                ):
         """Assign values to all Saving instance attributes.
 
         :param sim_path: path to n_sim directory
         :param dt: user-specified time step for simulation
         :param fiber: instance of Fiber class
+        :param space_vm: save transmembrane at all sections at the time stamps defined in 'space_times'
+        :param space_gating: save channel gating parameters at all sections at the time stamps defined in 'space_times'
+        :param space_times: times in the simulation at which to save the values of state variables [ms]
+        :param time_vm: save the transmembrane potential at each time step at the locations defined in 'locs'
+        :param time_gating: save the channel gating parameters at each time step at the locations defined in 'locs'
+        :param istim: save the applied intracellular stimulation at each time step
+        :param locs: locations (decimal percentages of fiber length) at which to save state variables at all time steps
+        :param end_ap_times: record when action potential occurs at specified indices
+        :param loc_min: if end_ap_times, decimal % of fiber length at which to save times when AP is triggered
+        :param loc_max: if end_ap_times, decimal % of fiber length at which to save times when Vm returns to threshold
+        :param ap_end_thresh: if end_ap_times, the threshold value for Vm to pass for an AP to be detected [mV]
+        :param ap_loctime: save, for each fiber node, the last time an AP passed over that node
+        :param runtime: save the simulation runtime
         :return: Saving object
         """
-        self.space_vm = fiber.search(Config.SIM, "saving", "space", "vm")
-        self.space_gating = fiber.search(Config.SIM, "saving", "space", "gating")
-        sim_times = fiber.search(Config.SIM, "saving", "space", "times")
+        self.space_vm = space_vm
+        self.space_gating = space_gating
+        sim_times = space_times
         self.time_inds = [int(t / dt) for t in sim_times]  # divide by dt to avoid indexing error
         self.time_inds.sort()
-        self.time_vm = fiber.search(Config.SIM, "saving", "time", "vm")
-        self.time_gating = fiber.search(Config.SIM, "saving", "time", "gating")
-        self.istim = fiber.search(Config.SIM, "saving", "time", "istim")
-        self.locs = fiber.search(Config.SIM, "saving", "time", "locs")
+        self.time_vm = time_vm
+        self.time_gating = time_gating
+        self.istim = istim
+        self.locs = locs
         if self.locs != 'all':
             self.node_inds = [int((fiber.axonnodes - 1) * loc) for loc in self.locs]
         elif self.locs == 'all':
             self.node_inds = list(range(0, fiber.axonnodes))
         self.node_inds.sort()
-        end_ap_times = fiber.search(Config.SIM, "saving", "end_ap_times", optional=True)
-        if end_ap_times is not None:
+        if end_ap_times:
             self.ap_end_times = True
-            loc_min = fiber.search(Config.SIM, "saving", "end_ap_times", "loc_min")
-            loc_max = fiber.search(Config.SIM, "saving", "end_ap_times", "loc_max")
             node_ind_min = int((fiber.axonnodes - 1) * loc_min)
             node_ind_max = int((fiber.axonnodes - 1) * loc_max)
             self.ap_end_inds = [node_ind_min, node_ind_max]
-            self.ap_end_thresh = fiber.search(Config.SIM, "saving", "end_ap_times", "threshold")
-        self.ap_loctime = fiber.search(Config.SIM, "saving", "ap_loctimes", optional=True)
-        self.runtime = fiber.search(Config.SIM, "saving", "runtimes")
+            self.ap_end_thresh = ap_end_thresh
+        self.ap_loctime = ap_loctime
+        self.runtime = runtime
         self.output_path = os.path.join(sim_path, 'data', 'outputs')
         return
 
