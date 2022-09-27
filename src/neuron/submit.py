@@ -231,6 +231,7 @@ def make_task(
     fiber_ind: int,
     potentials_path: str,
     waveform_path: str,
+    n_sim: int,
 ):
     """Create shell script used to run a fiber simulation.
 
@@ -243,6 +244,7 @@ def make_task(
     :param fiber_ind: the index of the fiber this simulation is for
     :param potentials_path: the string path to the potentials text file
     :param waveform_path: the string path to the waveform text file
+    :param n_sim: the index of the n_sim
     """
     with open(start_p, 'w+') as handle:
         if my_os == 'UNIX-LIKE':
@@ -255,7 +257,8 @@ def make_task(
                 f'\"{fiber_ind}\" '
                 f'\"{potentials_path}\" '
                 f'\"{waveform_path}\" '
-                f'\"{sim_p}\"\n',
+                f'\"{sim_p}\" ',
+                f'\"{n_sim}\"\n',
             ]
 
             if sub_con == 'cluster':
@@ -442,6 +445,7 @@ def make_fiber_tasks(submission_list, submission_context):
 
             potentials_path = os.path.join(sim_path, 'data', 'inputs', f'inner{inner_ind}_fiber{fiber_ind}.dat')
             waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
+            n_sim = sim_name.split('_')[-1]
             make_task(
                 OS,
                 submission_context,
@@ -452,6 +456,7 @@ def make_fiber_tasks(submission_list, submission_context):
                 fiber_ind,
                 potentials_path,
                 waveform_path,
+                n_sim,
             )
 
 

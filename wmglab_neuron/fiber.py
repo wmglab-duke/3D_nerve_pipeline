@@ -23,7 +23,7 @@ h.load_file('stdrun.hoc')
 class Fiber():
     """Create a fiber model from NEURON sections."""
 
-    def __init__(self, diameter, fiber_mode, temperature):
+    def __init__(self, diameter: float, fiber_mode: str, temperature: float):
         """Initialize Fiber class.
         :param diameter: fiber diameter [um]
         :param fiber_mode: name of fiber model type
@@ -54,9 +54,8 @@ class Fiber():
         :param n_fiber_coords: number of fiber coordinates from COMSOL
         :return: Fiber object
         """
-        f = open('wmglab_neuron/fiber_z.json')
-        fiber_parameters = json.load(f)['fiber_type_parameters'][self.fiber_mode]
-        f.close()
+        with open('wmglab_neuron/fiber_z.json') as file:
+            fiber_parameters = json.load(file)['fiber_type_parameters'][self.fiber_mode]
         # Determine geometrical parameters for fiber based on fiber model
         if self.fiber_mode != 'MRG_DISCRETE' and self.fiber_mode != 'MRG_INTERPOLATION':
             fiber_type = fiber_parameters['fiber_type']

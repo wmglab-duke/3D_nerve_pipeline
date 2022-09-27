@@ -6,7 +6,6 @@ source code can be found on the following GitHub repository:
 https://github.com/wmglab-duke/ascent
 """
 
-
 import os
 
 import pandas as pd
@@ -15,43 +14,25 @@ import pandas as pd
 class Saving:
     """Manage saving parameters to file for NEURON simulations."""
 
-    def __init__(self):
-        """Initialize Saving class."""
-
-        self.space_vm = None
-        self.space_gating = None
-        self.time_inds = []
-        self.time_vm = None
-        self.time_gating = None
-        self.istim = None
-        self.locs = []
-        self.node_inds = []
-        self.ap_end_times = None
-        self.ap_end_inds = []
-        self.ap_end_thresh = None
-        self.runtime = None
-        self.output_path = None
-        return
-
-    def inherit(self,
-                sim_path: str,
-                dt: float,
-                fiber: object,
-                space_vm: bool = False,
-                space_gating: bool = False,
-                space_times: list[float] = [],
-                time_vm: bool = False,
-                time_gating: bool = False,
-                istim: bool = False,
-                locs: list[float] = [],
-                end_ap_times: bool = False,
-                loc_min: float = 0.1,
-                loc_max: float = 0.9,
-                ap_end_thresh: float = -30,
-                ap_loctime: bool = False,
-                runtime: bool = False,
-                ):
-        """Assign values to all Saving instance attributes.
+    def __init__(self,
+                 sim_path: str,
+                 dt: float,
+                 fiber: object,
+                 space_vm: bool = False,
+                 space_gating: bool = False,
+                 space_times: list[float] = [],
+                 time_vm: bool = False,
+                 time_gating: bool = False,
+                 istim: bool = False,
+                 locs: list[float] = [],
+                 end_ap_times: bool = False,
+                 loc_min: float = 0.1,
+                 loc_max: float = 0.9,
+                 ap_end_thresh: float = -30,
+                 ap_loctime: bool = False,
+                 runtime: bool = False,
+                 ):
+        """Initialize instance of Saving class.
 
         :param sim_path: path to n_sim directory
         :param dt: user-specified time step for simulation
