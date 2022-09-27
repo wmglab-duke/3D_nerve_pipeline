@@ -733,7 +733,7 @@ def get_peri_site(samp3d, samp2d, model, simdex, nerve_label, source_sim=3):
     return dat3z
 
 
-def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=False, source_sim=None):
+def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=False, source_sim=None, cuffspan=None):
     global ax
     q = Query(
         {
@@ -750,7 +750,7 @@ def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=Fals
             'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
         }
     ).run()
-    dat3d = q3.data(source_sample=samples2d[0], tortuosity=tortuosity, source_sim=source_sim)
+    dat3d = q3.data(source_sample=samples2d[0], tortuosity=tortuosity, source_sim=source_sim, cuffspan=cuffspan)
     dat2d = datamatch(dat2d, dat3d, 'threshold')
     if tortuosity:
         dat2d = datamatch(dat2d, dat3d, 'tortuosity')
