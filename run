@@ -12,19 +12,13 @@ import sys
 
 import matplotlib
 
-matplotlib.use('agg')
 from src.runtools import list_util, parse_args, welcome
 
-os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
-try:
-    import pymunkoptions
+matplotlib.use('agg')
 
-    pymunkoptions.options["debug"] = False
-except Exception:
-    pass
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
 
 args = parse_args.parse()
-
 
 if args.script != 'install':
     env = os.environ.get('CONDA_PREFIX')
