@@ -439,6 +439,7 @@ class FiberSet(Configurable, Saveable):
                 if not True:  # TODO add point adjust param and buffer amt, also wrap this in funciton
                     raise MorphologyError(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
                 else:
+                    print('Correction')
                     # TODO: make this correction optional
                     tree = STRtree(innershapes)
                     correct_fascicle = tree.nearest(Point(fiber))
