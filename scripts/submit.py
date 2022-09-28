@@ -8,13 +8,12 @@ The source code can be found on the following GitHub repository: https://github.
 
 # builtins
 import os
-import subprocess
 import sys
 import time
 
 # ascent
 from src.runner import Runner
-from src.utils.enums import Config, Env, SetupMode
+from src.utils.enums import Config, SetupMode
 
 from .env_setup import run as env_setup
 
