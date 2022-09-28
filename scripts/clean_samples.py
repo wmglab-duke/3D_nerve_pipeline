@@ -35,11 +35,7 @@ def remove_empty_directories(directory: str, verbose):
         if os.path.isdir(subdirectory):
             remove_empty_directories(subdirectory, verbose)
 
-    if (
-        os.path.isdir(directory)
-        and len(os.listdir(directory)) == 0
-        and not any([directory.endswith(excluded_filename) for excluded_filename in EXCLUDED_FILENAMES])
-    ):
+    if os.path.isdir(directory) and len(os.listdir(directory)) == 0:
         try:
             if verbose:
                 print(f'\tREMOVE DIR: {directory}')
