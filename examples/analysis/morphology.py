@@ -75,3 +75,25 @@ lr = analysis.index.str.contains('L')
 analysis['side'] = ['left' if x else 'right' for x in lr]
 final = analysis.round(decimals=2)
 # TODO make this script check for merge split events
+# plot histogram of fascicle count
+sns.reset_orig()
+sns.set_theme()
+plt.figure()
+bins = np.arange(alldata.fascicle_count.min() - 0.5, alldata.fascicle_count.max() + 0.5, 1)
+sns.histplot(
+    data=alldata,
+    x='fascicle_count',
+    hue='sample',
+    binwidth=1,
+    element="step",
+    kde=True,
+    fill=False,
+    kde_kws={'bw_adjust': 2},
+)
+plt.title('Fascicle count distribution by sample')
+plt.show()
+# test for normality
+from scipy.stats import normaltest
+
+for sample in pd.unique(alldata['sample']):
+    print(f'{sample}: {normaltest(alldata[alldata["sample"]==sample]["fascicle_count"])}')
