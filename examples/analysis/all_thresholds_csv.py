@@ -23,7 +23,9 @@ for simdex in config['sim_data'].keys():
         samp3d = sample_data['index3d']
         nerve_label = sample_data['name']
         samples2d = [x['index'] for x in sample_data['exsamples']]
-        threshdat = get_datamatch(samples2d, samp3d, model, simint, nerve_label, source_sim=3)
+        threshdat = get_datamatch(
+            samples2d, samp3d, model, simint, nerve_label, source_sim=3, tortuosity=True, cuffspan=[27000, 29000]
+        )
         datas.append(threshdat)
 data = pd.concat(datas)
 data.to_csv('thresh.csv', index=False)

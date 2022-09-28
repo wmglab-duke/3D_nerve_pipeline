@@ -14,6 +14,7 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
+from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
 
 from src.core import Sample, Simulation
@@ -401,7 +402,12 @@ class Query(Configurable, Saveable):
                                 base_dict['threshold'] = self.get_threshold(
                                     ignore_missing, base_dict, sim_dir, source_sample is not None
                                 )
-                                base_dict['apnode'], base_dict['aptime'], base_dict['long_ap_pos'] = self.get_ap_info(
+                                (
+                                    base_dict['apnode'],
+                                    base_dict['aptime'],
+                                    base_dict['long_ap_pos'],
+                                    base_dict['n_ap_sites'],
+                                ) = self.get_ap_info(
                                     ignore_no_activation, base_dict, sim_dir, source_sample is not None
                                 )
                                 base_dict['peri_thk'] = self.get_peri_thickness(
@@ -496,16 +502,19 @@ class Query(Configurable, Saveable):
 
         node = np.argmin(aploc_data)
 
+        # find number of local minima in the aploc_data
+        n_local_minima = len(argrelextrema(aploc_data, np.less)[0])
+
         fiberset_dir = os.path.join(sim_dir, 'fibersets', str(base_dict['fiberset_index']))
 
         fiber = np.loadtxt(os.path.join(fiberset_dir, f"{base_dict['master_fiber_index']}.dat"), skiprows=1)
 
         # create message about AP time and location findings
         if time != float('inf'):
-            return node, time, fiber[11 * node, 2]
+            return node, time, fiber[11 * node, 2], n_local_minima
         else:
             if ignore_no_activation:
-                return np.nan, np.nan, np.nan
+                return np.nan, np.nan, np.nan, np.nan, np.nan
             else:
                 raise ValueError(f'No AP found in {aploctime_path}')
 
