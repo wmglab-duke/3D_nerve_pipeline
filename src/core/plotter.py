@@ -754,6 +754,7 @@ def get_datamatch(samples2d, samp3d, model, simdex, nerve_label, tortuosity=Fals
     dat2d = datamatch(dat2d, dat3d, 'threshold')
     if tortuosity:
         dat2d = datamatch(dat2d, dat3d, 'tortuosity')
+    dat2d['nerve_label'] = nerve_label
     return dat2d
 
 
