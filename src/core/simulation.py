@@ -497,9 +497,6 @@ class Simulation(Configurable, Saveable):
                                 str(potentials_ind),
                                 str(fiber_index) + '.dat',
                             )
-                            # check for nan in srcfile
-                            if np.isnan(np.loadtxt(srcfile)).any():
-                                raise ValueError(f'nan in {srcfile}')
                             shutil.copyfile(
                                 srcfile,
                                 os.path.join(nsim_inputs_directory, filename_dat),
