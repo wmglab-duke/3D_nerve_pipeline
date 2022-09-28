@@ -54,7 +54,7 @@ for simdex in config['sim_data'].keys():
         sharey=False,
         margin_titles=True,
     )
-    plt.suptitle('within-fascicle threshold variance')
+    plt.suptitle(f'within-fascicle threshold variance sim {simint}')
     plt.gcf().savefig('out/analysis/fascvar.png', dpi=400, bbox_inches='tight')
     plt.figure()
     sns.catplot(
@@ -68,7 +68,7 @@ for simdex in config['sim_data'].keys():
         sharey=False,
         margin_titles=True,
     )
-    plt.suptitle('within-fascicle threshold mean')
+    plt.suptitle(f'within-fascicle threshold mean sim {simint}')
     plt.gcf().savefig('out/analysis/fascmean.png', dpi=400, bbox_inches='tight')
     grouped = alldat.groupby(['sample', 'nsim', 'model'], as_index=False)
     all2 = grouped.agg({'threshold_mean': [np.var]})
@@ -84,5 +84,5 @@ for simdex in config['sim_data'].keys():
         sharey=False,
         margin_titles=True,
     )
-    plt.suptitle('between-fascicle threshold variance')
+    plt.suptitle(f'between-fascicle threshold variance sim {simint}')
     plt.gcf().savefig('out/analysis/compilevar.png', dpi=400, bbox_inches='tight')
