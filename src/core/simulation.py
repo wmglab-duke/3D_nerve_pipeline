@@ -533,9 +533,6 @@ class Simulation(Configurable, Saveable):
                 )
             else:
                 fibersrc = np.loadtxt(os.path.join(ss_bases_src_path, file))[1:]
-                # check for nan
-                if np.isnan(fibersrc).any():
-                    raise ValueError(f'nan in {os.path.join(ss_bases_src_path, file)}')
                 ss_bases[basis_ind] = fibersrc
         return ss_fiberset_path, ss_bases
 
