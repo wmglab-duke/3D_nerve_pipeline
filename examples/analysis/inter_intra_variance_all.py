@@ -42,7 +42,8 @@ for simdex in config['sim_data'].keys():
         data['nerve_label'] = nerve_label
         datas.append(data)
     alldat = pd.concat(datas)
-    alldat = alldat.query('nsim in [0,5]')
+    maxnsim = alldat['nsim'].max()
+    alldat = alldat.query(f'nsim in [0,{maxnsim}]')
     sns.catplot(
         data=alldat,
         kind='bar',
