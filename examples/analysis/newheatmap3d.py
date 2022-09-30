@@ -60,7 +60,7 @@ for simdex in config['sim_data'].keys():
             for ax in g.axes.ravel():
                 ax.set_xlabel('')
                 ax.set_ylabel('')
-            plt.savefig(f'out/analysis/heatmap3D-{samp2d}-{simint}', dpi=400, bbox_inches='tight')
+            plt.savefig(f'out/analysis/{str(simdex)}/heatmap3D-{samp2d}-{simint}', dpi=400, bbox_inches='tight')
             #%% Process seaborn data
 
             def add_colorbar(ax):

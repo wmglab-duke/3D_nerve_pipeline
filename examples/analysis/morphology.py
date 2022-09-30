@@ -8,6 +8,8 @@ import seaborn as sns
 # load in slides
 from matplotlib import pyplot as plt
 
+# TODO: make save tgo disk
+
 os.chdir('../../')
 slide_dict = {}
 for file in os.listdir('input/slides'):

@@ -9,13 +9,17 @@ repository: https://github.com/wmglab-duke/ascent
 
 import os
 import pickle
+import sys
 import warnings
 from typing import List, Union
 
 import numpy as np
 import pandas as pd
+import pickle5
+from matplotlib import pyplot as plt
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
+from shapely.geometry import Point
 
 from src.core import Sample, Simulation
 from src.utils import Config, Configurable, Object, Saveable, SetupMode
@@ -320,7 +324,11 @@ class Query(Configurable, Saveable):
         source_sim=None,
         tonly=False,
         cuffspan=None,
+        zpos=False,
+        peri_site=False,
+        label=None,
     ):
+        # TODO: make this also get fiber diam and waveform info
         """Obtain threshold data as a pandas DataFrame.
 
         :param ignore_missing: if True, missing threshold data will not cause an error.
@@ -397,22 +405,36 @@ class Query(Configurable, Saveable):
                                 'fiberset_index': fiberset_index,
                                 'waveform_index': waveform_index,
                                 'active_src_index': active_src_index,
+                                'nerve_label': label,
                             }
-                            if not tonly:
-                                base_dict['threshold'] = self.get_threshold(
-                                    ignore_missing, base_dict, sim_dir, source_sample is not None
-                                )
+                            base_dict['threshold'] = self.get_threshold(
+                                ignore_missing, base_dict, sim_dir, source_sample is not None
+                            )
+                            (
+                                base_dict['apnode'],
+                                base_dict['aptime'],
+                                base_dict['long_ap_pos'],
+                                base_dict['n_ap_sites'],
+                            ) = self.get_ap_info(ignore_no_activation, base_dict, sim_dir, source_sample is not None)
+                            base_dict['peri_thk'] = self.get_peri_thickness(
+                                sample_object.slides[0].fascicles[outer].inners[specific_inner]
+                            )
+                            if zpos:
                                 (
-                                    base_dict['apnode'],
-                                    base_dict['aptime'],
-                                    base_dict['long_ap_pos'],
-                                    base_dict['n_ap_sites'],
-                                ) = self.get_ap_info(
-                                    ignore_no_activation, base_dict, sim_dir, source_sample is not None
+                                    base_dict['activation_xpos'],
+                                    base_dict['activation_ypos'],
+                                    base_dict['activation_zpos'],
+                                ) = self.get_actual_zpos(
+                                    base_dict, sim_dir, source_sample is not None, source_sim=source_sim
                                 )
-                                base_dict['peri_thk'] = self.get_peri_thickness(
-                                    sample_object.slides[0].fascicles[outer].inners[specific_inner]
+                            if peri_site:
+                                base_dict['peri_thk_act_site'] = self.get_activation_site_peri_thickness(
+                                    base_dict, source_sample is not None, source_sim=source_sim
                                 )
+                                if cuffspan is not None:
+                                    base_dict['smallest_thk_under_cuff'] = self.get_smallest_thk_under_cuff(
+                                        base_dict, source_sample is not None, cuffspan, source_sim=source_sim
+                                    )
                             if tortuosity:
                                 base_dict['tortuosity'] = self.get_tortuosity(
                                     base_dict, sim_dir, source_sample is not None, source_sim
@@ -424,6 +446,86 @@ class Query(Configurable, Saveable):
                             alldat.append(base_dict)
 
         return pd.DataFrame(alldat)
+
+    def get_peri_thickness(self, inner):
+        fit = {'a': 0.03702, 'b': 10.5}
+        return fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
+
+    @staticmethod
+    def get_actual_zpos(base_dict, sim_dir, threed, source_sim=None):
+        if not threed:
+            return np.nan, np.nan, base_dict['long_ap_pos']
+        else:
+            if source_sim is not None:
+                sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
+            fiberpath = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
+            fiberline = nd_line(np.loadtxt(fiberpath, skiprows=1))
+            return tuple(fiberline.interp(base_dict['long_ap_pos']))
+
+    @staticmethod
+    def get_activation_site_peri_thickness(base_dict, threed, source_sim=None):
+        if not threed:
+            return base_dict['peri_thk']
+        else:
+            zpos = base_dict['activation_zpos']
+            with open(f'input/slides/{base_dict["nerve_label"]}slides.obj', 'rb') as f:
+                slidelist = pickle5.load(f)
+            slice_spacing = 20  # microns
+            slice_index = int(round(zpos / slice_spacing))
+            slide = slidelist[slice_index]
+            slide.scale(1.2)  # shrinkage correction
+            slide.scale(0.5)  # wrong scaling correction #TODO remove this
+            point = Point(base_dict['activation_xpos'], base_dict['activation_ypos'])
+            inner = None
+            try:
+                inner = [inner for fasc in slide.fascicles for inner in fasc.inners if inner.contains(point)][0]
+            except:
+                print('ope')
+                iteration = 0
+                innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
+                innerlist = [x.deepcopy() for x in innersave]
+                while inner is None:
+                    if iteration > 5:
+                        plt.figure()
+                        plt.scatter(base_dict['activation_xpos'], base_dict['activation_ypos'])
+                        [inner.plot() for inner in innerlist]
+                        # slide.plot()
+                        plt.show()
+                        plt.title(
+                            f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
+                        )
+                        break
+                    else:
+                        iteration += 1
+                    [x.offset(distance=10) for x in innerlist]
+                    try:
+                        inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
+                        print('ope fixed')
+                    except Exception:
+                        pass
+            if inner is not None:
+                fit = {'a': 0.03702, 'b': 10.5}
+                thk = fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
+                return thk
+
+    @staticmethod
+    def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, source_sim=None):
+        if not threed:
+            return base_dict['peri_thk']
+        else:
+            with open(f'input/slides/{base_dict["nerve_label"]}slides.obj', 'rb') as f:
+                slidelist = pickle5.load(f)
+            slice_spacing = 20  # microns
+            slice_indices = [int(round(z / slice_spacing)) for z in cuffspan]
+            slides = slidelist[slice_indices[0] : slice_indices[1]]
+            for slide in slides:
+                slide.scale(1.2)  # shrinkage correction
+                slide.scale(0.5)  # wrong scaling correction #TODO remove this
+            return 'not implemented'
+            # if inner is not None:
+            #     fit = {'a': 0.03702, 'b': 10.5}
+            #     thk = fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
+            #     return thk
 
     @staticmethod
     def get_threshold(ignore_missing, base_dict, sim_dir, threed):
@@ -504,6 +606,9 @@ class Query(Configurable, Saveable):
 
         # find number of local minima in the aploc_data
         n_local_minima = len(argrelextrema(aploc_data, np.less)[0])
+
+        if n_local_minima > 1:
+            warnings.warn(f'Found multiple activation sites.')
 
         fiberset_dir = os.path.join(sim_dir, 'fibersets', str(base_dict['fiberset_index']))
 
@@ -686,7 +791,3 @@ class Query(Configurable, Saveable):
                 writer.sheets[sheet_name].set_column(0, 256)
 
         writer.save()
-
-    def get_peri_thickness(self, inner):
-        fit = {'a': 0.03702, 'b': 10.5}
-        return fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")

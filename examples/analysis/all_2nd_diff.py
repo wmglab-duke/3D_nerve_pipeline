@@ -10,6 +10,7 @@ sample = 252
 samp3d = 253
 model = 0
 sim = 3
+# todo: make loop sampples and save to disk
 threshdat = pd.read_csv('thresh.csv')
 threshdat = threshdat.query(f'sample=={sample} & nsim==0 & model=={model} & sim=={sim}')
 sns.set_style('whitegrid')
