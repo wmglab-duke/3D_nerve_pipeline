@@ -17,7 +17,7 @@ datas = []
 model = 0
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-for simdex in config['sim_data'].keys():
+for simdex in ['3']:
     simint = int(simdex)
     for sample_data in config['sample_data']:
         samp3d = sample_data['index3d']
@@ -69,7 +69,7 @@ for simdex in config['sim_data'].keys():
         sharey=False,
         margin_titles=True,
     )
-    plt.suptitle(f'within-fascicle threshold mean sim {simint}')
+    plt.suptitle(f'within-fascicle threshold mean sim {simint}'),
     plt.gcf().savefig('out/analysis/fascmean.png', dpi=400, bbox_inches='tight')
     grouped = alldat.groupby(['sample', 'nsim', 'model'], as_index=False)
     all2 = grouped.agg({'threshold_mean': [np.var]})

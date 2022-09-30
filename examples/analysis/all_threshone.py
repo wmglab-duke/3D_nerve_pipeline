@@ -7,6 +7,8 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 
+# TODO: make save to
+
 os.chdir('../../')
 threshdat = pd.read_csv('thresh.csv')
 sns.set_style('whitegrid')
