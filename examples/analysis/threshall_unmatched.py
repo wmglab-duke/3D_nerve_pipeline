@@ -18,17 +18,18 @@ model = 0
 source_sim = 3
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-for simdex in [config['sim_data'].keys()]:
+for simdex in config['sim_data'].keys():
     simint = int(simdex)
     for sample_data in config['sample_data']:
         samp3d = sample_data['index3d']
+        print(sample_data)
         nerve_label = sample_data['name']
         samples2d = [x['index'] for x in sample_data['exsamples']]
         q = Query(
             {
                 'partial_matches': False,
                 'include_downstream': True,
-                'indices': {'sample': samples2d, 'model': [model], 'sim': [simdex]},
+                'indices': {'sample': samples2d, 'model': [model], 'sim': [simint]},
             }
         ).run()
         dat2d = q.data(tortuosity=True, peri_site=True, zpos=True, cuffspan=[27000, 29000], label='2L')
@@ -43,7 +44,7 @@ for simdex in [config['sim_data'].keys()]:
             {
                 'partial_matches': False,
                 'include_downstream': True,
-                'indices': {'sample': [samp3d], 'model': [model], 'sim': [simdex]},
+                'indices': {'sample': [samp3d], 'model': [model], 'sim': [simint]},
             }
         ).run()
         dat3d = q3.data(
