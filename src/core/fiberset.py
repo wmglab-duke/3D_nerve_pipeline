@@ -102,26 +102,30 @@ class FiberSet(Configurable, Saveable):
         fiberfiles.sort()
         for fiber in fiberfiles:
             half_nerve_length = self.search(Config.MODEL, 'nerve_length') / 2
-            absolute_offset = self.search(Config.SIM, 'fibers', 'z_parameters', optional=True).get('absolute_offset', 0)
-            fiber_3d = np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1)
-            # if fiber_3d[-1][-1] < fiber_3d[0][-1]:
-            #     fiber_3d = np.flip(fiber_3d, axis=0)
-            longit = np.loadtxt(f'{sim_directory}/ss_coords/{fiber}.dat', skiprows=1)
-            ztarget = absolute_offset + half_nerve_length
-            shiftpoint = np.argmin(np.abs(fiber_3d[:, 2] - ztarget))
-            shiftdist = nd_line(fiber_3d[0:shiftpoint]).length
-            shiftloc = longit[np.argmin(np.abs(longit[:, 2] - shiftdist)), 2]
+            absolute_offset = self.search(Config.SIM, 'fibers', 'z_parameters', 'absolute_offset', optional=True)
             length = float(np.loadtxt(f'{sim_directory}/ss_lengths/{fiber}.dat'))
-            override_shift = shiftloc - length / 2
-            fib = self._generate_z([(0, 0)], override_length=length - 5, override_shift=override_shift)
-            fib[0] = [(x[0], x[1], x[2] + 2.5) for x in fib[0]]
-            # validation
-            fibarr = np.array(fib)
-            nodes = fibarr[0][::11][:, 2]
-            fibers.extend(fib)
-            test3d = nd_line(np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1))
-            valid = [test3d.interp(node)[-1] - ztarget for node in nodes]
-            assert min(np.abs(valid)) < 5, "point was not shifted correctly"
+            if absolute_offset is not None:
+                fiber_3d = np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1)
+                # if fiber_3d[-1][-1] < fiber_3d[0][-1]:
+                #     fiber_3d = np.flip(fiber_3d, axis=0)
+                longit = np.loadtxt(f'{sim_directory}/ss_coords/{fiber}.dat', skiprows=1)
+                ztarget = absolute_offset + half_nerve_length
+                shiftpoint = np.argmin(np.abs(fiber_3d[:, 2] - ztarget))
+                shiftdist = nd_line(fiber_3d[0:shiftpoint]).length
+                shiftloc = longit[np.argmin(np.abs(longit[:, 2] - shiftdist)), 2]
+                override_shift = shiftloc - length / 2
+                fib = self._generate_z([(0, 0)], override_length=length - 5, override_shift=override_shift)
+                fib[0] = [(x[0], x[1], x[2] + 2.5) for x in fib[0]]
+                # validation
+                fibarr = np.array(fib)
+                nodes = fibarr[0][::11][:, 2]
+                fibers.extend(fib)
+                test3d = nd_line(np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1))
+                valid = [test3d.interp(node)[-1] - ztarget for node in nodes]
+                assert min(np.abs(valid)) < 5, "point was not shifted correctly"
+            else:
+                fib = self._generate_z([(0, 0)], override_length=length - 5)
+                fib[0] = [(x[0], x[1], x[2] + 2.5) for x in fib[0]]
             # TODO: modulus by INL
         self.fibers = fibers
         return self
