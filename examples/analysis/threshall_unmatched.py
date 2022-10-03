@@ -52,7 +52,7 @@ for simdex in config['sim_data'].keys():
             tortuosity=True,
             peri_site=True,
             zpos=True,
-            cuffspan=[27000, 29000],
+            cuffspan=[28000, 30000],
             source_sim=source_sim,
             label='2L',
         )

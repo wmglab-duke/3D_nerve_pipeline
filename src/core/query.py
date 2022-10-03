@@ -460,6 +460,10 @@ class Query(Configurable, Saveable):
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
             fiberpath = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
             fiberline = nd_line(np.loadtxt(fiberpath, skiprows=1))
+            nsimfiberpath = os.path.join(
+                sim_dir, 'fibersets', f'{base_dict["fiberset_index"]}', f'{base_dict["master_fiber_index"]}.dat'
+            )
+            nsimfiber = nd_line(np.loadtxt(nsimfiberpath, skiprows=1))
             return tuple(fiberline.interp(base_dict['long_ap_pos']))
 
     @staticmethod
