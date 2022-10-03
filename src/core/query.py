@@ -608,7 +608,8 @@ class Query(Configurable, Saveable):
         n_local_minima = len(argrelextrema(aploc_data, np.less)[0])
 
         if n_local_minima > 1:
-            warnings.warn(f'Found multiple activation sites.')
+            print(f'Found multiple activation sites.')
+            print(base_dict)
 
         fiberset_dir = os.path.join(sim_dir, 'fibersets', str(base_dict['fiberset_index']))
 
