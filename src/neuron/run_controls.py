@@ -46,13 +46,23 @@ def main(
     saving_configs = sim_configs['saving']
     istim_configs = sim_configs['intracellular_stim']
 
-    # create stimulation object instance
-    stimulation = Stimulation()
-    stimulation.load_potentials(potentials_path).load_waveform(waveform_path)
+    # Read in waveform array, time step, and stop time
+    with open(waveform_path, 'r') as waveform_file:
+        dt = float(waveform_file.readline().strip())  # time step
+        tstop = int(waveform_file.readline().strip())  # stop time
+        file_lines = waveform_file.read().splitlines()
+        waveform = [float(i) for i in file_lines]
+
+    # Read in extracellular potentials
+    with open(potentials_path, 'r') as potentials_file:
+        axontotal = int(potentials_file.readline())
+        file_lines = potentials_file.read().splitlines()
+        potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
+
+    stimulation = Stimulation(potentials_list=potentials, waveform_list=waveform, dt=dt, tstop=tstop)
 
     # create NEURON fiber sections
-    n_fiber_coords = len(stimulation.potentials)
-    fiber.generate(n_fiber_coords)
+    fiber.generate(axontotal)
 
     # attach intracellular stimulation
     stimulation.apply_intracellular(fiber,
@@ -73,8 +83,7 @@ def main(
     runtime = True if 'runtime' in saving_configs.keys() else False
 
     # create saving object instance
-    saving = Saving(sim_path,
-                    stimulation.dt,
+    saving = Saving(stimulation.dt,
                     fiber,
                     space_vm=saving_configs['space']['vm'],
                     space_gating=saving_configs['space']['gating'],
@@ -89,6 +98,7 @@ def main(
                     ap_end_thresh=ap_end_thresh,
                     ap_loctime=ap_loctime,
                     runtime=runtime,
+                    output_path=os.path.join(sim_path, 'data', 'outputs')
                     )
 
     # create recording object instance
