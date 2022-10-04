@@ -490,14 +490,16 @@ class Query(Configurable, Saveable):
                 innerlist = [x.deepcopy() for x in innersave]
                 while inner is None:
                     if iteration > 5:
-                        plt.figure()
-                        plt.scatter(base_dict['activation_xpos'], base_dict['activation_ypos'])
-                        [inner.plot() for inner in innerlist]
-                        # slide.plot()
-                        plt.show()
-                        plt.title(
-                            f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
-                        )
+                        # plt.figure()
+                        # plt.scatter(base_dict['activation_xpos'], base_dict['activation_ypos'])
+                        # [inner.plot() for inner in innerlist]
+                        # # slide.plot()
+                        # plt.show()
+                        # plt.title(
+                        #     f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
+                        # )
+                        print('Could not correct fiber location within 5 iterations.')
+                        print(base_dict)
                         break
                     else:
                         iteration += 1
