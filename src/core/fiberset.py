@@ -119,13 +119,13 @@ class FiberSet(Configurable, Saveable):
                 # validation
                 fibarr = np.array(fib)
                 nodes = fibarr[0][::11][:, 2]
-                fibers.extend(fib)
                 test3d = nd_line(np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1))
                 valid = [test3d.interp(node)[-1] - ztarget for node in nodes]
                 assert min(np.abs(valid)) < 5, "point was not shifted correctly"
             else:
                 fib = self._generate_z([(0, 0)], override_length=length - 5)
                 fib[0] = [(x[0], x[1], x[2] + 2.5) for x in fib[0]]
+            fibers.extend(fib)
             # TODO: modulus by INL
         self.fibers = fibers
         return self
