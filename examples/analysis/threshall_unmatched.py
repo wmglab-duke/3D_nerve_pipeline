@@ -32,14 +32,13 @@ for simdex in config['sim_data'].keys():
                 'indices': {'sample': samples2d, 'model': [model], 'sim': [simint]},
             }
         ).run()
-        dat2d = q.data(tortuosity=True, peri_site=True, zpos=True, cuffspan=[27000, 29000], label='2L')
+        dat2d = q.data(tortuosity=True, peri_site=True, zpos=True, cuffspan=[28000, 30000], label=nerve_label)
         dat2d['type'] = '2D'
         dat2d['contact'] = ''
         anodic = dat2d['sample'].astype(str).str.endswith('0')
         dat2d.loc[anodic, 'contact'] = 'anodic'
         cathodic = dat2d['sample'].astype(str).str.endswith('2')
         dat2d.loc[cathodic, 'contact'] = 'cathodic'
-        datas.append(dat2d)
         q3 = Query(
             {
                 'partial_matches': False,
@@ -49,14 +48,27 @@ for simdex in config['sim_data'].keys():
         ).run()
         dat3d = q3.data(
             source_sample=samples2d[0],
-            tortuosity=True,
-            peri_site=True,
-            zpos=True,
-            cuffspan=[28000, 30000],
+            # tortuosity=True,
+            # peri_site=True,
+            # zpos=True,
+            # cuffspan=[28000, 30000],
             source_sim=source_sim,
-            label='2L',
+            label=nerve_label,
         )
         dat3d['type'] = '3D'
+        # for each nsim within the sim, use the fiber_diam and pulse_width from the nsim key
+        # each nsim has a different pulse width and fiber diameter
+        nsim_key = config['sim_data'][simdex]['nsim_key']
+        for nsim in config['sim_data'][simdex]['nsims']:
+            pulse_width = nsim_key[nsim]['pulse_width']
+            fiber_diam = nsim_key[nsim]['fiber_diam']
+            # find where dat2d and dat3d sim and nsim match the current sim and nsim
+            # then add the pulse width and fiber diameter to the data
+            dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == nsim), 'pulse_width'] = pulse_width
+            dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
+            dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'pulse_width'] = pulse_width
+            dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
+        datas.append(dat2d)
         datas.append(dat3d)
 data = pd.concat(datas)
 data.to_csv('thresh_unmatched.csv', index=False)

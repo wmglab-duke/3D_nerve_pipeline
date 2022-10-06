@@ -100,16 +100,116 @@
   ],
   "sim_data": {
     "3": {
-      "nsim_count": 6
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.25,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.25,
+          "fiber_diam": 5
+        },
+        "2": {
+          "pulse_width": 0.25,
+          "fiber_diam": 7
+        },
+        "3": {
+          "pulse_width": 0.25,
+          "fiber_diam": 9
+        },
+        "4": {
+          "pulse_width": 0.25,
+          "fiber_diam": 11
+        },
+        "5": {
+          "pulse_width": 0.25,
+          "fiber_diam": 13
+        }
+      }
     },
     "7": {
-      "nsim_count": "idk"
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.1,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.25,
+          "fiber_diam": 3
+        },
+        "2": {
+          "pulse_width": 0.4,
+          "fiber_diam": 3
+        },
+        "3": {
+          "pulse_width": 0.1,
+          "fiber_diam": 13
+        },
+        "4": {
+          "pulse_width": 0.25,
+          "fiber_diam": 13
+        },
+        "5": {
+          "pulse_width": 0.4,
+          "fiber_diam": 13
+        }
+      }
     },
     "10": {
-      "nsim_count": "idk"
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.25,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.25,
+          "fiber_diam": 5
+        },
+        "2": {
+          "pulse_width": 0.25,
+          "fiber_diam": 7
+        },
+        "3": {
+          "pulse_width": 0.25,
+          "fiber_diam": 9
+        },
+        "4": {
+          "pulse_width": 0.25,
+          "fiber_diam": 11
+        },
+        "5": {
+          "pulse_width": 0.25,
+          "fiber_diam": 13
+        }
+      }
     },
     "11": {
-      "nsim_count": "idk"
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.25,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.25,
+          "fiber_diam": 5
+        },
+        "2": {
+          "pulse_width": 0.25,
+          "fiber_diam": 7
+        },
+        "3": {
+          "pulse_width": 0.25,
+          "fiber_diam": 9
+        },
+        "4": {
+          "pulse_width": 0.25,
+          "fiber_diam": 11
+        },
+        "5": {
+          "pulse_width": 0.25,
+          "fiber_diam": 13
+        }
+      }
     }
   }
 }
