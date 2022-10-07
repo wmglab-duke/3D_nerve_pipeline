@@ -199,7 +199,7 @@ class Fascicle:
             color = [None] * len(self.inners)
 
         for i, (inner, c) in enumerate(zip(self.inners, color)):
-            inner.plot(plot_format, color=c, ax=ax, line_kws=line_kws)
+            inner.plot(plot_format, color=c, ax=ax, line_kws=line_kws, linewidth=2)
             if inner_index_start is not None:
                 ax.text(*inner.centroid(), s=str(i + inner_index_start), ha='center', va='center')
 
