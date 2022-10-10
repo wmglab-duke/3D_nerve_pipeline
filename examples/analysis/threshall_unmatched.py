@@ -13,13 +13,13 @@ sys.path.append('.')
 
 from src.core.query import Query
 
-datas = []
 model = 0
 source_sim = 3
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
 for simdex in config['sim_data'].keys():
     simint = int(simdex)
+    datas = []
     for sample_data in config['sample_data']:
         samp3d = sample_data['index3d']
         print(sample_data)
@@ -48,10 +48,10 @@ for simdex in config['sim_data'].keys():
         ).run()
         dat3d = q3.data(
             source_sample=samples2d[0],
-            # tortuosity=True,
-            # peri_site=True,
-            # zpos=True,
-            # cuffspan=[28000, 30000],
+            tortuosity=True,
+            peri_site=True,
+            zpos=True,
+            cuffspan=[28000, 30000],
             source_sim=source_sim,
             label=nerve_label,
         )
@@ -59,7 +59,7 @@ for simdex in config['sim_data'].keys():
         # for each nsim within the sim, use the fiber_diam and pulse_width from the nsim key
         # each nsim has a different pulse width and fiber diameter
         nsim_key = config['sim_data'][simdex]['nsim_key']
-        for nsim in config['sim_data'][simdex]['nsims']:
+        for nsim in nsim_key.keys():
             pulse_width = nsim_key[nsim]['pulse_width']
             fiber_diam = nsim_key[nsim]['fiber_diam']
             # find where dat2d and dat3d sim and nsim match the current sim and nsim
@@ -68,7 +68,8 @@ for simdex in config['sim_data'].keys():
             dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
             dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'pulse_width'] = pulse_width
             dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
+            print(dat2d)
         datas.append(dat2d)
         datas.append(dat3d)
-data = pd.concat(datas)
-data.to_csv('thresh_unmatched.csv', index=False)
+    data = pd.concat(datas)
+    data.to_csv(f'thresh_unmatched_sim{simint}.csv', index=False)
