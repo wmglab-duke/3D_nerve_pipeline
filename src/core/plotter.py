@@ -509,13 +509,14 @@ def _build_path(
     return result
 
 
-def datamatch(dest, dat3d, importval):
+def datamatch(dest, dat3d, importval, merge=False):
     dest[importval + '3d'] = np.nan
     for i in range(len(dest)):
         row = dest.iloc[i, :]
         val = dat3d[
             (dat3d["model"] == row['model'])
             & (dat3d["sim"] == row['sim'])
+            & (dat3d["nerve_label"] == row['nerve_label'])
             & (dat3d["nsim"] == row['nsim'])
             & (dat3d["master_fiber_index"] == row['master_fiber_index'])
         ][importval]

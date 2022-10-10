@@ -61,6 +61,17 @@ for simdex in config['sim_data'].keys():
                 ax.set_xlabel('')
                 ax.set_ylabel('')
             plt.savefig(f'out/analysis/{str(simdex)}/heatmap3D-{samp2d}-{simint}', dpi=400, bbox_inches='tight')
+            #%%
+            g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
+            g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, mode='inners')
+
+            # Title and clear axis labels
+            plt.subplots_adjust(top=0.95)
+            plt.suptitle('Grid of activation threshold heatmaps')
+            for ax in g.axes.ravel():
+                ax.set_xlabel('')
+                ax.set_ylabel('')
+            plt.savefig(f'out/analysis/{str(simdex)}/heatmap3Dinner-{samp2d}-{simint}', dpi=400, bbox_inches='tight')
             #%% Process seaborn data
 
             def add_colorbar(ax):
@@ -79,6 +90,7 @@ for simdex in config['sim_data'].keys():
                 this = threshdat.query(f"nsim=={n}")
                 min_prenorm, max_prenorm = min(this.threshold), max(this.threshold)
                 this.threshold = this.threshold / max(this.threshold)
+                #%%
                 g = sns.FacetGrid(this, col='sample', sharex=False, sharey=False)
                 g.map(
                     heatmaps,
@@ -99,3 +111,24 @@ for simdex in config['sim_data'].keys():
                     ax.set_ylabel('')
                 add_colorbar(g.axes)
                 plt.savefig(f'out/analysis/heatmaps/{samp2d}-{simint}-{n}', dpi=400, bbox_inches='tight')
+                #%%
+                g = sns.FacetGrid(this, col='sample', sharex=False, sharey=False)
+                g.map(
+                    heatmaps,
+                    *threshdat.columns,
+                    sample_object=sample_obj,
+                    sim_object=sim_obj,
+                    colorbar=False,
+                    min_thresh=min(this.threshold),
+                    max_thresh=max(this.threshold),
+                    mode='inners',
+                )
+
+                # Title and clear axis labels
+                plt.subplots_adjust(top=0.8)
+                plt.suptitle(f'Paired heatmaps for nsim {n}')
+                for ax in g.axes.ravel():
+                    ax.set_xlabel('')
+                    ax.set_ylabel('')
+                add_colorbar(g.axes)
+                plt.savefig(f'out/analysis/heatmaps/inner{samp2d}-{simint}-{n}', dpi=400, bbox_inches='tight')

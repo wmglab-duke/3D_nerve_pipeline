@@ -17,7 +17,7 @@ model = 0
 source_sim = 3
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-for simdex in config['sim_data'].keys():
+for simdex in ['3']:
     simint = int(simdex)
     datas = []
     for sample_data in config['sample_data']:
@@ -68,7 +68,6 @@ for simdex in config['sim_data'].keys():
             dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
             dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'pulse_width'] = pulse_width
             dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
-            print(dat2d)
         datas.append(dat2d)
         datas.append(dat3d)
     data = pd.concat(datas)

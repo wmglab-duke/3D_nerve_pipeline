@@ -7,10 +7,17 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy.stats import pearsonr
 
+os.chdir('../../')
+import sys
+
+from src.core.plotter import datamatch
+
 # TODO: make save to
 
-os.chdir('../../')
-threshdat = pd.read_csv('thresh.csv')
+
+sys.path.pop(-2)
+threshload = pd.read_csv('thresh_unmatched.csv')
+threshdat = datamatch(threshload.query('type=2D'), threshload.query('type=3D'), 'threshold')
 sns.set_style('whitegrid')
 sns.scatterplot(data=threshdat, x='threshold3d', y='threshold', hue='nsim', palette='colorblind')
 # plot one one line out to max of 3d
@@ -32,7 +39,7 @@ plt.title(
 # calculate percentage of 2d threshold greater than 3d
 plt.show()
 # generate boxplot of 2d and 3d thresholds
-sns.barplot(data=threshdat[['threshold', 'threshold3d']])
+sns.catplot(kind='bar', col='nsim', data=threshload[['threshold', 'threshold3d']])
 plt.ylabel('Threshold')
 plt.xlabel('2D vs 3D')
 plt.title('2D vs 3D Thresholds for all samples and fiber diameters')
