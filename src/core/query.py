@@ -235,7 +235,6 @@ class Query(Configurable, Saveable):
         :raises ValueError: if invalid mode is chosen
         :return: path
         """
-        result = str()
 
         if indices is None:
             indices = [
@@ -376,7 +375,8 @@ class Query(Configurable, Saveable):
                             fiberset_index,
                         ) = sim_object.potentials_product[potentials_product_index]
                         # fetch outer->inner->fiber and out->inner maps
-                        out_in_fib, out_in = sim_object.fiberset_map_pairs[0]
+
+                        out_in_fib, out_in = sim_object.fiberset_map_pairs[fiberset_index]
 
                         # build base dirs for fetching thresholds
                         sim_dir = self.build_path(

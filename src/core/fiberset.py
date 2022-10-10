@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 from nd_line.nd_line import nd_line
+from scipy.interpolate import griddata
 from shapely.affinity import scale
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
@@ -86,7 +87,7 @@ class FiberSet(Configurable, Saveable):
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
         self.fibers = self._generate_z(fibers_xy, super_sample=super_sample)
         self.validate()
-        self.plot_fibers_on_sample(fibers_xy, sim_directory)
+        self.plot_fibers_on_sample(sim_directory)
 
         return self
 
@@ -472,10 +473,9 @@ class FiberSet(Configurable, Saveable):
                 points[i] = newpoint
         return points
 
-    def plot_fibers_on_sample(self, points, sim_directory):
+    def plot_fibers_on_sample(self, sim_directory):
         """Plot the xy coordinates of the fibers on the sample.
 
-        :param points: The xy coordinates of the fibers.
         :param sim_directory: The directory of the simulation.
         """
         fig = plt.figure()
@@ -495,6 +495,7 @@ class FiberSet(Configurable, Saveable):
     def plot(
         self,
         ax: plt.Axes = None,
+        meshgridcolors=None,
         scatter_kws: dict = None,
     ):
         """Plot the xy coordinates of the fibers.
@@ -506,15 +507,26 @@ class FiberSet(Configurable, Saveable):
             ax = plt.gca()
         if scatter_kws is None:
             scatter_kws = {}
-        scatter_kws.setdefault('c', 'red')
-        scatter_kws.setdefault('s', 10)
-        scatter_kws.setdefault('marker', 'o')
         x, y = self.xy_points(split_xy=True)
-        ax.scatter(
-            x,
-            y,
-            **scatter_kws,
-        )
+        if meshgridcolors is not None:
+            scatter_kws.setdefault('c', 'red')
+            scatter_kws.setdefault('s', 10)
+            scatter_kws.setdefault('marker', 'o')
+            ax.scatter(
+                x,
+                y,
+                **scatter_kws,
+            )
+        else:
+            # set up meshgrid from x and y points, where values comes from meshgridcolor
+            x = np.array(x)
+            y = np.array(y)
+            xi = np.linspace(min(x), max(x))
+            yi = np.linspace(min(y), max(y))
+            zi = griddata((x, y), meshgridcolors, (xi[None, :], yi[:, None]), method='cubic')
+            plt.pcolormesh(xi, yi, zi)
+            plt.colorbar()
+            plt.show()
 
     def _generate_z(
         self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False, override_shift=None

@@ -18,6 +18,8 @@ import numpy as np
 import pandas as pd
 import pickle5
 import seaborn as sns
+from scipy.interpolate import griddata
+from scipy.ndimage import gaussian_filter
 from scipy.stats import pearsonr
 from shapely.geometry import Point
 
@@ -115,6 +117,8 @@ class _HeatmapPlotter:
         :param cbar_kws: Keyword arguments to pass to matplotlib.colorbar.Colorbar.
         :param scatter_kws: Keyword arguments to pass to matplotlib.pyplot.scatter.
         :param line_kws: Keyword arguments to pass to matplotlib.pyplot.plot.
+        :param min_thresh: Minimum threshold to use for plotting. Use this to override the default minimum.
+        :param max_thresh: Maximum threshold to use for plotting. Use this to override the default maximum.
         :param color: Color passed in by seaborn when using FacetGrid. Not used.
         """
         # add variables to self from input args
@@ -146,6 +150,7 @@ class _HeatmapPlotter:
         self.get_objects()
         self.create_cmap()
         self.determine_colors(data)
+        self.data = data
 
     def plot(self, ax):
         """Make heatmap plot.
@@ -180,8 +185,49 @@ class _HeatmapPlotter:
             line_kws=self.line_kws,
         )
         if np.any([bool(x) for x in self.fiber_colors]):
-            self.scatter_kws['c'] = self.fiber_colors
-            self.sim.fibersets[0].plot(ax=ax, scatter_kws=self.scatter_kws)
+            if not self.mode == 'fibermeshgrid':
+                self.scatter_kws['c'] = self.fiber_colors
+                self.sim.fibersets[0].plot(ax=ax, meshgridcolors=self.fiber_colors, scatter_kws=self.scatter_kws)
+            else:
+                x, y = self.sim.fibersets[0].xy_points(split_xy=True)
+                # set up meshgrid from x and y points, where values comes from meshgridcolor
+                xs = self.sample.slides[0].fascicles[0].inners[0].points[:, 0]
+                ys = self.sample.slides[0].fascicles[0].inners[0].points[:, 1]
+                # go through each point in xs and zs and find the closest point in self.data
+                # then add the threshold from that index from self.data.threshold to minthreshes
+                minthreshes = []
+                for i in range(len(xs)):
+                    minthreshes.append(self.fiber_colors[np.argmin(np.sqrt((xs[i] - x) ** 2 + (ys[i] - y) ** 2))])
+                minthreshes = np.array(minthreshes)
+                # minthreshes will be stepwise, first find the midpoint of each step
+                # first find all places where np.diff is nonzero
+                diff = np.diff(minthreshes)
+                diff = np.where(diff != 0)[0]
+                # now find the midpoint of each step
+                midpoints = []
+                for i in range(len(diff)):
+                    midpoints.append((diff[i] + diff[i - 1]) / 2)
+                midpoints = np.array(midpoints)
+                # replace the original minthreshes with nan where its not a midpoint
+                for i in range(len(minthreshes)):
+                    if i not in midpoints:
+                        minthreshes[i] = np.nan
+                # now interpolate the nans, connecting the ends of the array
+                minthreshes = np.interp(
+                    np.arange(len(minthreshes)),
+                    np.where(~np.isnan(minthreshes))[0],
+                    minthreshes[~np.isnan(minthreshes)],
+                    period=len(minthreshes),
+                )
+                x = np.concatenate([x, xs])
+                y = np.concatenate([y, ys])
+                z = np.concatenate([self.fiber_colors, minthreshes])
+                xi = np.linspace(min(x), max(x), 1000)
+                yi = np.linspace(min(y), max(y), 1000)
+                zi = griddata((x, y), z, (xi[None, :], yi[:, None]), method='cubic')
+                plt.contour(xi, yi, zi, cmap=self.cmap, levels=15)
+                # plt.scatter(x,y,c=z,cmap=self.cmap)
+                plt.show()
 
     def create_cmap(self):
         """Create color map and mappable for assigning colorbar and ticks."""
@@ -254,6 +300,8 @@ class _HeatmapPlotter:
                 fiber_color_list.append(
                     self.suprathresh_color if fiberthresh > self.cutoff_thresh else self.subthresh_color
                 )
+            elif self.mode == 'fibermeshgrid':
+                fiber_color_list.append(fiberthresh)
             else:
                 fiber_color_list.append(None)
         # set colors for inners and fibers
@@ -286,12 +334,14 @@ class _HeatmapPlotter:
 
         :param data: DataFrame of thresholds.
         """
-        assert self.mode in ['fibers', 'inners', 'fibers_on_off', 'inners_on_off']
+        assert self.mode in ['fibers', 'inners', 'fibers_on_off', 'inners_on_off', 'fibermeshgrid'], 'Invalid mode'
         if self.mode in ['fibers_on_off', 'inners_on_off']:
-            assert self.cutoff_thresh is not None
+            assert self.cutoff_thresh is not None, 'Must provide cutoff threshold for on/off mode.'
         # make sure only one sample, model, sim, and nsim for this plot
         for index in ['sample', 'model', 'sim', 'nsim']:
-            assert len(pd.unique(data[index])) == 1
+            assert (
+                len(pd.unique(data[index])) == 1
+            ), f'Only one {index} allowed for this plot. Append something like q.threshold_data.query(\'{index}==0\')'
             setattr(self, index + '_index', pd.unique(data[index])[0])
 
     def plot_cuff_orientation(self, ax):

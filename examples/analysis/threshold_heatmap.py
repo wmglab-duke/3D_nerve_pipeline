@@ -25,5 +25,5 @@ q = Query(
 ).run()
 
 # Build heatmap
-heatmaps(data=q.data().query('nsim==0'), cuff_orientation=True)
+heatmaps(data=q.data().query('nsim==0'), cuff_orientation=True, mode='fibermeshgrid')
 plt.title('Activation threshold heatmap')
