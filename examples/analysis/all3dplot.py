@@ -1,0 +1,349 @@
+# -*- coding: utf-8 -*-
+import json
+import os
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
+from scipy.stats import pearsonr, variation
+
+os.chdir('../../')
+import sys
+
+sys.path.pop(-2)
+from src.core.plotter import datamatch
+
+
+def corrcalc(data, comparison):
+    corrs = []
+    for nsim in pd.unique(data['nsim']):
+        # ax.set_title(f'fiber diam: {s}μm')
+        corr = {}
+        for sample in pd.unique(data['sample']):
+            thisdat = data[(data["nsim"] == nsim) & (data["sample"] == sample)]
+            corr[sample] = round(pearsonr(thisdat[comparison[0]], thisdat[comparison[1]])[0], 3)
+        corrs.append(corr)
+    return corrs
+
+
+def addpwfd(data, sim):
+    with open('examples/analysis/plotconfig.json') as f:
+        config = json.load(f)
+    nsim_key = config['sim_data'][sim]['nsim_key']
+    for nsim in nsim_key:
+        pulse_width = nsim_key[nsim]['pulse_width']
+        fiber_diam = nsim_key[nsim]['fiber_diam']
+        nsim = int(nsim)
+        data.loc[data['nsim'] == nsim, 'pulse_width'] = pulse_width
+        data.loc[data['nsim'] == nsim, 'fiber_diam'] = fiber_diam
+    return data
+
+
+sys.exit()
+#%% Setup
+sns.set_style('whitegrid')
+threshload = pd.read_csv('thresh_unmatched.csv').query('sim==3')
+threshload = addpwfd(threshload, '3')
+matched = datamatch(threshload.query('type=="2D"'), threshload.query('type=="3D"'), 'threshold').drop(columns='type')
+# add new EMsample column to matched dataframe, which is the nerve label plus the first letter of the contact type capitalized
+matched['EMsample'] = matched['nerve_label'] + matched['contact'].str[0].str.upper()
+repeated = matched.melt(
+    id_vars=[x for x in matched.columns if 'threshold' not in x],
+    value_vars=['threshold3d', 'threshold'],
+    var_name='type',
+    value_name='threshold',
+)
+repeated['type'] = repeated['type'].replace({'threshold': '2D', 'threshold3d': '3D'})
+repeated['type'] = pd.Categorical(repeated['type'], categories=['2D', '3D'], ordered=True)
+
+#%% all thresholds with unity line
+sns.scatterplot(data=matched, x='threshold', y='threshold3d', hue='fiber_diam', palette='colorblind')
+# plot one one line out to max of 3d
+plt.plot([0, matched.threshold.max()], [0, matched.threshold.max()], 'r', linewidth=2)
+plt.ylabel('3D Threshold (mA)')
+plt.xlabel('2D Threshold (mA)')
+# set legend title
+plt.legend(title='Fiber Diameter (μm)')
+plt.xscale('log')
+plt.yscale('log')
+# make axes squre
+plt.gca().set_aspect('equal', adjustable='box')
+# calculate correlation between 2d and 3d and percentage 2d greater than 3d, add to title
+r, p = pearsonr(matched.threshold, matched.threshold3d)
+perc = sum(matched.threshold > matched.threshold3d) / len(matched.threshold)
+plt.title(
+    '2D vs 3D Thresholds for all samples and fiber diameters\n'
+    f'Correlation between 2D and 3D thresholds: r={r:.2f}, p={p:.2f}\n'
+    f'percentage of 3D threshold lower than 2D counterpart: {perc:.2f}'
+)
+plt.show()
+#%% threshold barplot
+# generate boxplot of 2d and 3d thresholds
+sns.set_style('whitegrid')
+g = sns.catplot(
+    kind='bar',
+    col='fiber_diam',
+    data=threshload.query("nsim in [0,5]"),
+    x='type',
+    y='threshold',
+    sharey=False,
+    errorbar='se',
+)
+g.fig.set_size_inches(4, 6, forward=True)
+plt.subplots_adjust(top=0.9, wspace=0.4)
+g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+plt.suptitle('2D vs 3D Thresholds for all samples')
+plt.show()
+
+#%% organization compare nsim
+# remove all samples which dont end with a 2
+sns.reset_orig()
+threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
+data = threshdat.query('nsim in [0,5] and sim == 3')
+# apply minmax normalization within sample and nsim
+data['threshold'] = data.groupby(['sample', 'nsim', 'type'])['threshold'].transform(
+    lambda x: (x - x.min()) / (x.max() - x.min())
+)
+# set nsim as categorical
+data['nsim'] = data['nsim'].astype('category')
+# nsim 0 is three and nsim 5 is thirteen
+data['nsim'].cat.rename_categories({0: '3', 5: '13'}, inplace=True)
+g = sns.FacetGrid(data, col="nerve_label", row='type', sharey=False, margin_titles=True)
+g.map_dataframe(sns.boxplot, x='nsim', y='threshold', palette='colorblind', boxprops={'facecolor': "none"})
+g.map_dataframe(sns.stripplot, linewidth=1, x='nsim', y='threshold', palette='colorblind', jitter=False)
+g.map_dataframe(sns.lineplot, x='nsim', y='threshold', units='master_fiber_index', estimator=None, color='k')
+plt.subplots_adjust(top=0.9)
+plt.suptitle('min-max normalized thresholds compared between 3 um and 13 um thresholds (cath 2DEM)')
+plt.savefig('matchsim.png', dpi=400)
+#%% organization compare type
+# remove all samples which dont end with a 2
+sns.reset_orig()
+threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
+# subtract 1 from sample if type is 3D
+threshdat['sample'] = threshdat.apply(lambda x: x['sample'] - 1 if x.type == "3D" else x['sample'], axis=1)
+data = threshdat.query('nsim in [0,5] and sim == 3')
+# apply minmax normalization within sample and nsim
+g = sns.FacetGrid(data, col="nerve_label", row='nsim', sharey=False, margin_titles=True)
+g.map_dataframe(sns.boxplot, x='type', y='threshold', palette='colorblind', boxprops={'facecolor': "none"})
+g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='threshold', palette='colorblind')
+g.map_dataframe(sns.lineplot, x='type', y='threshold', units='master_fiber_index', estimator=None, color='k')
+plt.subplots_adjust(top=0.9)
+g.fig.set_size_inches(12, 8)
+plt.suptitle('thresholds compared between 2D (cathodic) and 3D')
+plt.savefig('matchsim.png', dpi=400)
+#%% All thresholds compare
+g = sns.catplot(
+    data=repeated.query('nsim in [0,5]'),
+    x='EMsample',
+    y='threshold',
+    hue='type',
+    kind='box',
+    palette='colorblind',
+    col='fiber_diam',
+    sharey=False,
+)
+g.set(ylim=(0, None))
+plt.subplots_adjust(top=0.9)
+plt.suptitle('2D vs 3D Thresholds for all samples')
+#%% coeff of variation
+grouped = repeated.groupby(['sample', 'fiber_diam', 'sim', 'type'])
+# calculate coefficient of variation for thresholds on grouped data
+analysis = grouped.agg({'threshold': [variation]})
+analysis.columns = ["_".join(col_name).rstrip('_') for col_name in analysis.columns]
+analysis = analysis.reset_index()
+sns.catplot(data=analysis, x='type', y='threshold_variation', hue='fiber_diam', kind='box', palette='colorblind')
+plt.ylabel('Threshold Coefficient of Variation')
+plt.title('Coefficient of Variation of Thresholds for 2D and 3D')
+#%% threshold variances
+vardat = repeated.query('nsim in [0,5] and sim==3')
+grouped = vardat.groupby(['EMsample', 'fiber_diam', 'sim', 'type', 'inner'])
+analysis = grouped.agg({'threshold': [np.var, np.mean]})
+analysis.columns = ["_".join(col_name).rstrip('_') for col_name in analysis.columns]
+analysis.reset_index(inplace=True)
+g = sns.catplot(
+    errorbar='se',
+    data=analysis,
+    sharey=False,
+    col='fiber_diam',
+    x='EMsample',
+    y='threshold_var',
+    hue='type',
+    kind='bar',
+    palette='colorblind',
+)
+plt.suptitle('Variance values of thresholds within fascicles')
+g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
+g = sns.catplot(
+    errorbar='se',
+    data=analysis,
+    sharey=False,
+    x='type',
+    col='fiber_diam',
+    y='threshold_var',
+    kind='bar',
+    palette='colorblind',
+    aspect=0.5,
+)
+g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
+plt.subplots_adjust(top=0.9)
+plt.suptitle('Variance values of thresholds within fascicles')
+
+# now do variance between fascicle mean thresholds
+grouped = analysis.groupby(['EMsample', 'fiber_diam', 'type'])
+analysis = grouped.agg({'threshold_mean': [np.var]})
+analysis.columns = ["_".join(col_name).rstrip('_') for col_name in analysis.columns]
+analysis.reset_index(inplace=True)
+g = sns.catplot(
+    data=analysis,
+    sharey=False,
+    col='fiber_diam',
+    x='EMsample',
+    y='threshold_mean_var',
+    hue='type',
+    kind='bar',
+    palette='colorblind',
+)
+g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
+plt.suptitle('Variance values of fascicle thresholds')
+g = sns.catplot(
+    data=analysis,
+    sharey=False,
+    x='type',
+    col='fiber_diam',
+    y='threshold_mean_var',
+    kind='bar',
+    palette='colorblind',
+    aspect=0.5,
+    errorbar=('se'),
+)
+g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
+plt.subplots_adjust(top=0.9)
+plt.suptitle('Variance values of fascicle thresholds')
+#%% Dose-response info
+levels = {
+    'onset': 0.01,
+    'half': 0.5,
+    'saturation': 1,
+}
+grouped = threshload.query('sim==3 and nsim in [0,5]').groupby(['sample', 'fiber_diam', 'sim', 'type', 'nerve_label'])
+analysis = grouped.agg({'threshold': [np.amin, np.median, np.amax]})
+analysis.columns = ["_".join(col_name).rstrip('_') for col_name in analysis.columns]
+analysis.rename(
+    columns={'threshold_amin': 'onset', 'threshold_median': 'half', 'threshold_amax': 'saturation'}, inplace=True
+)
+analysis = analysis.reset_index()
+# combine onset, saturation, and half into one column with identifier
+compiled_data = analysis.melt(
+    id_vars=['sample', 'fiber_diam', 'sim', 'type', 'nerve_label'],
+    value_vars=['onset', 'half', 'saturation'],
+    var_name='level',
+    value_name='threshold',
+)
+# subtract 1 from index if type is 3D
+for fiber_diam in pd.unique(compiled_data.fiber_diam):
+    ax = sns.boxplot(
+        data=compiled_data.query(f'fiber_diam=={int(fiber_diam)}'),
+        x='level',
+        y='threshold',
+        hue='type',
+        palette='colorblind',
+        color='w',
+        boxprops={'facecolor': "none"},
+    )
+    sns.swarmplot(
+        data=compiled_data.query(f'fiber_diam=={int(fiber_diam)}'),
+        x='level',
+        y='threshold',
+        hue='type',
+        palette='colorblind',
+        dodge=True,
+    )
+    ax.set_ylim([0, None])
+    ax.set_ylabel('Threshold (mA)')
+    handles, labels = ax.get_legend_handles_labels()
+    l = plt.legend(handles[2:], labels[2:])
+    plt.title(f'fiber_diam={int(fiber_diam)} μm')
+    plt.show()
+# TODO get this to be paired boxplots again an dline up datapoints
+# set up facetgrid with nsim as row and level as columns
+compiled_data.reset_index(inplace=True)
+# set fiber_diam to category
+compiled_data.type = compiled_data.type.astype('category')
+# remove all rows where modulus sample with 0 is 0
+compiled_data = compiled_data.query('sample % 10 != 0')
+# add a units column with unique number for each combination of fiber_diam and level
+compiled_data['units'] = compiled_data.groupby(['fiber_diam', 'level', 'nerve_label']).ngroup()
+g = sns.FacetGrid(compiled_data, col="level", row="fiber_diam", sharey=False, margin_titles=True)
+g.map_dataframe(sns.boxplot, x='type', y='threshold', palette='colorblind', boxprops={'facecolor': "none"})
+g.map_dataframe(sns.swarmplot, x='type', y='threshold', palette='colorblind')
+g.map_dataframe(sns.lineplot, x='type', y='threshold', units='units', estimator=None, color='k')
+plt.subplots_adjust(top=0.9)
+plt.suptitle('Dose-response curves changes between model types (2D is cathodic leading only)')
+#%% all dose-response
+# TODO add percent activated to initial processing
+drdat = threshload.copy()
+drdat['percent_activated'] = 0
+drdat = drdat.rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
+for fiber_diam in [3, 13]:
+    infodat = drdat.query(f'sim==3 and fiber_diam=={fiber_diam}')
+    for i, row in infodat.iterrows():
+        thisdat = infodat.query(
+            'modeltype == @row.modeltype and samplenum == @row.samplenum and fiber_diam == @row.fiber_diam and sim == @row.sim'
+        )
+        # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
+        infodat.loc[i, 'percent_activated'] = len(thisdat.query('threshold <= @row.threshold')) / len(thisdat)
+        # could shade in min and max to show response range
+    plt.figure()
+    infodat.sort_values('modeltype', inplace=True)
+    sns.scatterplot(data=infodat, x='percent_activated', y='threshold', hue='modeltype', palette='colorblind')
+    plt.xlabel('Percent of fibers activated')
+    plt.ylabel('Threshold (mA)')
+    plt.title(f'Dose-Response for all samples fiber diam={fiber_diam} μm')
+#%% strength-duration
+# seaborn facet scatterplot with x as pulse width, y as threshold, and column as diameter
+threshsd = addpwfd(pd.read_csv('thresh_unmatched.csv').query('sim==7'), '7')
+sns.set(font_scale=1.5)
+sns.set_style('whitegrid')
+g = sns.catplot(
+    kind='violin',
+    data=threshsd,
+    col="fiber_diam",
+    col_wrap=2,
+    sharey=False,
+    x='pulse_width',
+    y='threshold',
+    palette='colorblind',
+    hue='type',
+    dodge=True,
+    linewidth=1,
+)
+plt.subplots_adjust(top=0.85)
+g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+plt.suptitle('Threshold vs. Pulse Width')
+#%%z-score
+sns.set(font_scale=1.25)
+sns.set_style('whitegrid')
+threshdat = threshload.copy()
+threshdat['z_score'] = 0
+threshdat['z_score_error'] = 0
+threshdat = threshdat.rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
+for i, row in threshdat.iterrows():
+    thisdat = threshdat.query(
+        'modeltype == @row.modeltype and samplenum == @row.samplenum and fiber_diam == @row.fiber_diam and sim == @row.sim'
+    )
+    # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
+    threshdat.loc[i, 'z_score'] = (row.threshold - np.mean(thisdat.threshold)) / np.std(thisdat.threshold)
+for i, row in threshdat.iterrows():
+    # subtract this row z score from the z score of fiber_diam 0
+    threshdat.loc[i, 'z_score_error'] = float(
+        row.z_score
+        - np.mean(
+            threshdat.query(
+                'master_fiber_index == @row.master_fiber_index and modeltype == @row.modeltype and samplenum == @row.samplenum and sim == @row.sim'
+            ).z_score
+        )
+    )
+sns.catplot(data=threshdat, x='modeltype', y='z_score_error', hue='fiber_diam', kind='box', palette='colorblind')
+plt.title('Z Score Residual for 2D and 3D')
+plt.ylabel('Z Score Residual from mean')

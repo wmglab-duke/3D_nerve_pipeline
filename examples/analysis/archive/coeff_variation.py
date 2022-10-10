@@ -7,18 +7,18 @@ import seaborn as sns
 from scipy.stats import variation
 
 os.chdir('../../')
-
-
+sns.set_style('whitegrid')
 threshdat = pd.read_csv('thresh.csv')
 # melt threshdat threshold and threshold3d to one column
 threshdat.rename(columns={'threshold3d': '3D', 'threshold': '2D'}, inplace=True)
+# remove all samples ending in 0
 threshdat = threshdat.melt(
     id_vars=['sample', 'nsim', 'sim', 'master_fiber_index', 'inner'],
     value_vars=['2D', '3D'],
     var_name='type',
     value_name='threshold',
 )
-sns.catplot(
+g = sns.catplot(
     data=threshdat.query('nsim in [0,5]'),
     x='sample',
     y='threshold',
@@ -28,7 +28,13 @@ sns.catplot(
     col='nsim',
     sharey=False,
 )
+for i, ax in enumerate(g.axes.ravel()):
+    ylims = ax.get_ylim()
+    ax.set_ylim([0, ylims[1]])
+    ax.set_title(f'fiber diam = {[3,13][i]} micron')
+plt.subplots_adjust(top=0.85)
 plt.suptitle('2D vs 3D Thresholds for all samples')
+plt.gcf().savefig('test.png', transparent=True, dpi=400)
 
 grouped = threshdat.groupby(['sample', 'nsim', 'sim', 'type'])
 # calculate coefficient of variation for thresholds on grouped data

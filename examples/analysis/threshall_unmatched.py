@@ -18,7 +18,7 @@ model = 0
 source_sim = 3
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-for simdex in config['sim_data'].keys():
+for simdex in ['3']:
     simint = int(simdex)
     for sample_data in config['sample_data']:
         samp3d = sample_data['index3d']
@@ -59,15 +59,15 @@ for simdex in config['sim_data'].keys():
         # for each nsim within the sim, use the fiber_diam and pulse_width from the nsim key
         # each nsim has a different pulse width and fiber diameter
         nsim_key = config['sim_data'][simdex]['nsim_key']
-        for nsim in config['sim_data'][simdex]['nsims']:
+        for nsim in nsim_key:
             pulse_width = nsim_key[nsim]['pulse_width']
             fiber_diam = nsim_key[nsim]['fiber_diam']
             # find where dat2d and dat3d sim and nsim match the current sim and nsim
             # then add the pulse width and fiber diameter to the data
-            dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == nsim), 'pulse_width'] = pulse_width
-            dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
-            dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'pulse_width'] = pulse_width
-            dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == nsim), 'fiber_diam'] = fiber_diam
+            dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == int(nsim)), 'pulse_width'] = pulse_width
+            dat2d.loc[(dat2d['sim'] == simint) & (dat2d['nsim'] == int(nsim)), 'fiber_diam'] = fiber_diam
+            dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == int(nsim)), 'pulse_width'] = pulse_width
+            dat3d.loc[(dat3d['sim'] == simint) & (dat3d['nsim'] == int(nsim)), 'fiber_diam'] = fiber_diam
         datas.append(dat2d)
         datas.append(dat3d)
 data = pd.concat(datas)
