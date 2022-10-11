@@ -2,13 +2,8 @@
 import json
 import sys
 
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
 
-matplotlib.use('agg')
 sys.path.append('.')
 
 from src.core.query import Query
@@ -48,10 +43,10 @@ for simdex in ['3']:
         ).run()
         dat3d = q3.data(
             source_sample=samples2d[0],
-            # tortuosity=True,
-            # peri_site=True,
-            # zpos=True,
-            # cuffspan=[28000, 30000],
+            tortuosity=True,
+            peri_site=True,
+            zpos=True,
+            cuffspan=[28000, 30000],
             source_sim=source_sim,
             label=nerve_label,
         )
