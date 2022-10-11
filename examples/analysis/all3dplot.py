@@ -2,11 +2,11 @@
 import json
 import os
 
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-import matplotlib as mpl
 from scipy.stats import pearsonr, variation
 
 os.chdir('../../')
@@ -16,6 +16,7 @@ sys.path.pop(-2)
 from src.core.plotter import datamatch
 
 mpl.rcParams['figure.dpi'] = 400
+
 
 def corrcalc(data, comparison):
     corrs = []
@@ -41,16 +42,17 @@ def addpwfd(data, sim):
         data.loc[data['nsim'] == nsim, 'fiber_diam'] = fiber_diam
     return data
 
+
 #%% Setup
 sns.set_style('whitegrid')
-#base data
+# base data
 threshload = pd.read_csv('thresh_unmatched_sim3.csv').query('sim==3')
 threshload = addpwfd(threshload, '3')
-#3d and 2d trhresholds as different col same row
+# 3d and 2d trhresholds as different col same row
 matched = datamatch(threshload.query('type=="2D"'), threshload.query('type=="3D"'), 'threshold').drop(columns='type')
 # add new EMsample column to matched dataframe, which is the nerve label plus the first letter of the contact type capitalized
 matched['EMsample'] = matched['nerve_label'] + matched['contact'].str[0].str.upper()
-#for matched boxplots
+# for matched boxplots
 repeated = matched.melt(
     id_vars=[x for x in matched.columns if 'threshold' not in x],
     value_vars=['threshold3d', 'threshold'],
@@ -351,42 +353,60 @@ sns.catplot(data=threshdat, x='modeltype', y='z_score_error', hue='fiber_diam', 
 plt.title('Z Score Residual for 2D and 3D')
 plt.ylabel('Z Score Residual from mean')
 #%% Plot histogram of activation z positions
-g = sns.displot(data = threshload, y='activation_zpos',row='fiber_diam', hue='type', kind='kde', palette='colorblind')
-g.fig.set_size_inches([3,10])
-g = sns.displot(data = threshload.query("type=='3D' and nsim in [0,5]"), y='activation_zpos',col='fiber_diam', hue='nerve_label', facet_kws={'sharex':False},kind='kde', palette='colorblind')
+g = sns.displot(data=threshload, y='activation_zpos', row='fiber_diam', hue='type', kind='kde', palette='colorblind')
+g.fig.set_size_inches([3, 10])
+g = sns.displot(
+    data=threshload.query("type=='3D' and nsim in [0,5]"),
+    y='activation_zpos',
+    col='fiber_diam',
+    hue='nerve_label',
+    facet_kws={'sharex': False},
+    kind='kde',
+    palette='colorblind',
+)
 #%% Correlation2d3d
 sns.reset_orig()
-usedata = matched.rename(columns = {'threshold':'threshold2d'})
+usedata = matched.rename(columns={'threshold': 'threshold2d'})
 for comparison in [
-        ['threshold2d', 'threshold3d'],
-        ['threshold2d', 'peri_thk'],
-        ['threshold3d', 'peri_thk'],
-        ]:
-    corrs = usedata.groupby(['sample','fiber_diam','contact','nerve_label'])[comparison].corr().iloc[0::2,-1]
-    corrs = corrs.reset_index().rename(columns = {comparison[1]:'correlation'})
+    ['threshold2d', 'threshold3d'],
+    ['threshold2d', 'peri_thk'],
+    ['threshold3d', 'peri_thk'],
+]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
     corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
-    corrs['contact'] = pd.Categorical(corrs['contact'],categories = ['cathodic','anodic'], ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], categories=['cathodic', 'anodic'], ordered=True)
     plt.figure()
-    sns.scatterplot(data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind',style='contact')
+    sns.scatterplot(
+        data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind', style='contact'
+    )
     ax = sns.lineplot(
-        data=corrs, x='fiber_diam', y='correlation', style='contact', hue='nerve_label', legend=False, palette='colorblind'
+        data=corrs,
+        x='fiber_diam',
+        y='correlation',
+        style='contact',
+        hue='nerve_label',
+        legend=False,
+        palette='colorblind',
     )
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-    plt.gca().set_ylim([0,1])
+    plt.gca().set_ylim([0, 1])
     plt.title(f'Correlation between {comparison[0]} and {comparison[1]}')
-    
+
 #%% 3D correlations
 sns.reset_orig()
-usedata = threshload.rename(columns = {'threshold':'threshold3d'})
+usedata = threshload.rename(columns={'threshold': 'threshold3d'})
 for comparison in [
-        ['threshold3d', 'tortuosity'],
-        ['threshold3d', 'peri_thk'],
-        ['threshold3d', 'peri_thk_act_site'],
-        # ['threshold', 'smallest_thk_under_cuff'],
-        ['threshold3d', 'cuff_tortuosity'],
-        ]:
-    corrs = usedata.query('type=="3D"').groupby(['sample','fiber_diam','nerve_label'])[comparison].corr().iloc[0::2,-1]
-    corrs = corrs.reset_index().rename(columns = {comparison[1]:'correlation'})
+    ['threshold3d', 'tortuosity'],
+    ['threshold3d', 'peri_thk'],
+    ['threshold3d', 'peri_thk_act_site'],
+    # ['threshold', 'smallest_thk_under_cuff'],
+    ['threshold3d', 'cuff_tortuosity'],
+]:
+    corrs = (
+        usedata.query('type=="3D"').groupby(['sample', 'fiber_diam', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    )
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
     corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
     plt.figure()
     sns.scatterplot(data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind')
@@ -394,20 +414,25 @@ for comparison in [
         data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', legend=False, palette='colorblind'
     )
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-    plt.gca().set_ylim([-1,1])
+    plt.gca().set_ylim([-1, 1])
     plt.title(f'Correlation between {comparison[0]} and {comparison[1]}')
     #%% 3D correlations monopolar
     sns.reset_orig()
-    usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'),'10').rename(columns = {'threshold':'threshold3d'})
+    usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10').rename(columns={'threshold': 'threshold3d'})
     for comparison in [
-            ['threshold3d', 'tortuosity'],
-            ['threshold3d', 'peri_thk'],
-            ['threshold3d', 'peri_thk_act_site'],
-            # ['threshold', 'smallest_thk_under_cuff'],
-            ['threshold3d', 'cuff_tortuosity'],
-            ]:
-        corrs = usedata.query('type=="3D"').groupby(['sample','fiber_diam','nerve_label'])[comparison].corr().iloc[0::2,-1]
-        corrs = corrs.reset_index().rename(columns = {comparison[1]:'correlation'})
+        ['threshold3d', 'tortuosity'],
+        ['threshold3d', 'peri_thk'],
+        ['threshold3d', 'peri_thk_act_site'],
+        # ['threshold', 'smallest_thk_under_cuff'],
+        ['threshold3d', 'cuff_tortuosity'],
+    ]:
+        corrs = (
+            usedata.query('type=="3D"')
+            .groupby(['sample', 'fiber_diam', 'nerve_label'])[comparison]
+            .corr()
+            .iloc[0::2, -1]
+        )
+        corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
         corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
         plt.figure()
         sns.scatterplot(data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind')
@@ -415,29 +440,36 @@ for comparison in [
             data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', legend=False, palette='colorblind'
         )
         sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-        plt.gca().set_ylim([-1,1])
+        plt.gca().set_ylim([-1, 1])
         plt.title(f'Correlation between {comparison[0]} and {comparison[1]} (MM)')
     #%%correlations monopolar
-    usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'),'10')
+    usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10')
     usedata = datamatch(usedata.query('type=="2D"'), usedata.query('type=="3D"'), 'threshold').drop(columns='type')
     # add new EMsample column to matched dataframe, which is the nerve label plus the first letter of the contact type capitalized
     usedata['EMsample'] = usedata['nerve_label'] + usedata['contact'].str[0].str.upper()
-    usedata = usedata.rename(columns = {'threshold':'threshold2d'})
+    usedata = usedata.rename(columns={'threshold': 'threshold2d'})
     for comparison in [
-            ['threshold2d', 'threshold3d'],
-            ['threshold2d', 'peri_thk'],
-            ['threshold3d', 'peri_thk'],
-            ]:
-        corrs = usedata.groupby(['sample','fiber_diam','contact','nerve_label'])[comparison].corr().iloc[0::2,-1]
-        corrs = corrs.reset_index().rename(columns = {comparison[1]:'correlation'})
+        ['threshold2d', 'threshold3d'],
+        ['threshold2d', 'peri_thk'],
+        ['threshold3d', 'peri_thk'],
+    ]:
+        corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+        corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
         corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
-        corrs['contact'] = pd.Categorical(corrs['contact'],categories = ['cathodic','anodic'], ordered=True)
+        corrs['contact'] = pd.Categorical(corrs['contact'], categories=['cathodic', 'anodic'], ordered=True)
         plt.figure()
-        sns.scatterplot(data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind',style='contact')
+        sns.scatterplot(
+            data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind', style='contact'
+        )
         ax = sns.lineplot(
-            data=corrs, x='fiber_diam', y='correlation', style='contact', hue='nerve_label', legend=False, palette='colorblind'
+            data=corrs,
+            x='fiber_diam',
+            y='correlation',
+            style='contact',
+            hue='nerve_label',
+            legend=False,
+            palette='colorblind',
         )
         sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-        plt.gca().set_ylim([0,1])
+        plt.gca().set_ylim([0, 1])
         plt.title(f'Correlation between {comparison[0]} and {comparison[1]} (MM)')
-        

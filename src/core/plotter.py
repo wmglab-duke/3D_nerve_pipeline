@@ -189,45 +189,64 @@ class _HeatmapPlotter:
                 self.scatter_kws['c'] = self.fiber_colors
                 self.sim.fibersets[0].plot(ax=ax, meshgridcolors=self.fiber_colors, scatter_kws=self.scatter_kws)
             else:
-                x, y = self.sim.fibersets[0].xy_points(split_xy=True)
+                points = self.sim.fibersets[0].xy_points()
                 # set up meshgrid from x and y points, where values comes from meshgridcolor
-                xs = self.sample.slides[0].fascicles[0].inners[0].points[:, 0]
-                ys = self.sample.slides[0].fascicles[0].inners[0].points[:, 1]
-                # go through each point in xs and zs and find the closest point in self.data
-                # then add the threshold from that index from self.data.threshold to minthreshes
-                minthreshes = []
-                for i in range(len(xs)):
-                    minthreshes.append(self.fiber_colors[np.argmin(np.sqrt((xs[i] - x) ** 2 + (ys[i] - y) ** 2))])
-                minthreshes = np.array(minthreshes)
-                # minthreshes will be stepwise, first find the midpoint of each step
-                # first find all places where np.diff is nonzero
-                diff = np.diff(minthreshes)
-                diff = np.where(diff != 0)[0]
-                # now find the midpoint of each step
-                midpoints = []
-                for i in range(len(diff)):
-                    midpoints.append((diff[i] + diff[i - 1]) / 2)
-                midpoints = np.array(midpoints)
-                # replace the original minthreshes with nan where its not a midpoint
-                for i in range(len(minthreshes)):
-                    if i not in midpoints:
-                        minthreshes[i] = np.nan
-                # now interpolate the nans, connecting the ends of the array
-                minthreshes = np.interp(
-                    np.arange(len(minthreshes)),
-                    np.where(~np.isnan(minthreshes))[0],
-                    minthreshes[~np.isnan(minthreshes)],
-                    period=len(minthreshes),
-                )
-                x = np.concatenate([x, xs])
-                y = np.concatenate([y, ys])
-                z = np.concatenate([self.fiber_colors, minthreshes])
-                xi = np.linspace(min(x), max(x), 1000)
-                yi = np.linspace(min(y), max(y), 1000)
-                zi = griddata((x, y), z, (xi[None, :], yi[:, None]), method='cubic')
-                plt.contour(xi, yi, zi, cmap=self.cmap, levels=15)
-                # plt.scatter(x,y,c=z,cmap=self.cmap)
-                plt.show()
+                inner_index = 0
+                for i, fascicle in enumerate(self.sample.slides[0].fascicles):
+                    for inner in fascicle.inners:
+                        # find indices of points that are in this inner
+                        inds = np.where([inner.contains(Point(x, y)) for x, y in points])[0]
+                        inner_index += 1
+                        # get points to pass in to
+                        self.add_inner_meshgrid(inner, np.array(self.fiber_colors)[inds], np.array(points)[inds])
+
+    def add_inner_meshgrid(self, inner, thresholds, points):
+        """Add a meshgrid to the plot.
+
+        :param ax: axis to plot on
+        :param inner: inner to plot
+        :param thresholds: thresholds to use
+        :param points: points to use
+        """
+        # get the points for the inner
+        xs = inner.points[:, 0]
+        ys = inner.points[:, 1]
+        # go through each point in xs and zs and find the closest point in self.data
+        # then add the threshold from that index from self.data.threshold to minthreshes
+        minthreshes = []
+        for i in range(len(xs)):
+            minthreshes.append(thresholds[np.argmin(np.sqrt((xs[i] - points[0]) ** 2 + (ys[i] - points[1]) ** 2))])
+        minthreshes = np.array(minthreshes)
+        # minthreshes will be stepwise, first find the midpoint of each step
+        # first find all places where np.diff is nonzero
+        diff = np.diff(minthreshes)
+        if not np.all(diff == 0):
+            diff = np.where(diff != 0)[0]
+            # now find the midpoint of each step
+            midpoints = []
+            for i in range(len(diff)):
+                midpoints.append(int((diff[i] + diff[i - 1]) / 2))
+            midpoints = np.array(midpoints)
+            # replace the original minthreshes with nan where its not a midpoint
+            for i in range(len(minthreshes)):
+                if i not in midpoints:
+                    minthreshes[i] = np.nan
+            # now interpolate the nans, connecting the ends of the array
+            minthreshes = np.interp(
+                np.arange(len(minthreshes)),
+                np.where(~np.isnan(minthreshes))[0],
+                minthreshes[~np.isnan(minthreshes)],
+                period=len(minthreshes),
+            )
+        x = np.concatenate([points[:, 0], xs])
+        y = np.concatenate([points[:, 1], ys])
+        z = np.concatenate([thresholds, minthreshes])
+        xi = np.linspace(min(x), max(x), 1000)
+        yi = np.linspace(min(y), max(y), 1000)
+        zi = griddata((x, y), z, (xi[None, :], yi[:, None]), method='linear')
+        # plt.pcolormesh(xi, yi, zi, cmap=self.cmap, vmin=self.min_thresh, vmax=self.max_thresh) # TODO: figure out how to pass mappable in
+        # plt.contour(xi, yi, zi, cmap=self.cmap, levels=15)
+        plt.scatter(x, y, c=z, cmap=self.cmap, vmin=self.min_thresh, vmax=self.max_thresh)
 
     def create_cmap(self):
         """Create color map and mappable for assigning colorbar and ticks."""

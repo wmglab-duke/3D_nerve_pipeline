@@ -20,6 +20,7 @@ from matplotlib import pyplot as plt
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
 from shapely.geometry import Point
+from shapely.strtree import STRtree
 
 from src.core import Sample, Simulation
 from src.utils import Config, Configurable, Object, Saveable, SetupMode
@@ -433,7 +434,7 @@ class Query(Configurable, Saveable):
                                 )
                                 if cuffspan is not None:
                                     base_dict['smallest_thk_under_cuff'] = self.get_smallest_thk_under_cuff(
-                                        base_dict, source_sample is not None, cuffspan, source_sim=source_sim
+                                        base_dict, source_sample is not None, cuffspan, sim_dir, source_sim=source_sim
                                     )
                             if tortuosity:
                                 base_dict['tortuosity'] = self.get_tortuosity(
@@ -515,23 +516,43 @@ class Query(Configurable, Saveable):
                 return thk
 
     @staticmethod
-    def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, source_sim=None):
+    def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, sim_dir, source_sim=None):
         if not threed:
             return base_dict['peri_thk']
         else:
+            if source_sim is not None:
+                sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
             with open(f'input/slides/{base_dict["nerve_label"]}slides.obj', 'rb') as f:
                 slidelist = pickle5.load(f)
             slice_spacing = 20  # microns
             slice_indices = [int(round(z / slice_spacing)) for z in cuffspan]
+            z_positions = np.arange(cuffspan[0], cuffspan[1], slice_spacing)
             slides = slidelist[slice_indices[0] : slice_indices[1]]
-            for slide in slides:
+            fiberfilethreed = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
+            fiber = np.loadtxt(fiberfilethreed, skiprows=1)
+            thks = []
+            for slide, zpos in zip(slides, z_positions):
                 slide.scale(1.2)  # shrinkage correction
                 slide.scale(0.5)  # wrong scaling correction #TODO remove this
-            return 'not implemented'
-            # if inner is not None:
-            #     fit = {'a': 0.03702, 'b': 10.5}
-            #     thk = fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
-            #     return thk
+
+                idx = (np.abs(fiber[:, 2] - zpos)).argmin()
+                # get the x,y coordinates at that index
+                x = fiber[idx, 0]
+                y = fiber[idx, 1]
+                point = Point(x, y)
+                # create strtree of inners
+                inners = [inner for fasc in slide.fascicles for inner in fasc.inners]
+                innerpoly = [inner.polygon() for inner in inners]
+                inners_tree = STRtree(innerpoly)
+                # find nearest inner
+                nearest_inner = inners_tree.nearest(point)
+                # get the index of the nearest inner
+                area = inners[innerpoly.index(nearest_inner)].area()
+                # calculate peri thickness
+                fit = {'a': 0.03702, 'b': 10.5}
+                thk = fit.get("a") * 2 * np.sqrt(area / np.pi) + fit.get("b")
+                thks.append(thk)
+            return np.min(thks)
 
     @staticmethod
     def get_threshold(ignore_missing, base_dict, sim_dir, threed):
