@@ -43,6 +43,7 @@ def addpwfd(data, sim):
     return data
 
 
+sys.exit()
 #%% Setup
 sns.set_style('whitegrid')
 # base data
@@ -104,6 +105,7 @@ plt.show()
 #%% organization compare nsim
 # remove all samples which dont end with a 2
 sns.reset_orig()
+mpl.rcParams['figure.dpi'] = 400
 threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
 data = threshdat.query('nsim in [0,5] and sim == 3')
 # apply minmax normalization within sample and nsim
@@ -124,17 +126,18 @@ plt.savefig('matchsim.png', dpi=400)
 #%% organization compare type
 # remove all samples which dont end with a 2
 sns.reset_orig()
+mpl.rcParams['figure.dpi'] = 400
 threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
 # subtract 1 from sample if type is 3D
 threshdat['sample'] = threshdat.apply(lambda x: x['sample'] - 1 if x.type == "3D" else x['sample'], axis=1)
 data = threshdat.query('nsim in [0,5] and sim == 3')
 # apply minmax normalization within sample and nsim
-g = sns.FacetGrid(data, col="nerve_label", row='nsim', sharey=False, margin_titles=True)
+g = sns.FacetGrid(data, col="nerve_label", row='fiber_diam', sharey=False, margin_titles=True)
 g.map_dataframe(sns.boxplot, x='type', y='threshold', palette='colorblind', boxprops={'facecolor': "none"})
 g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='threshold', palette='colorblind')
 g.map_dataframe(sns.lineplot, x='type', y='threshold', units='master_fiber_index', estimator=None, color='k')
 plt.subplots_adjust(top=0.9)
-g.fig.set_size_inches(12, 8)
+# g.fig.set_size_inches(12, 8)
 plt.suptitle('thresholds compared between 2D (cathodic) and 3D')
 plt.savefig('matchsim.png', dpi=400)
 #%% All thresholds compare
@@ -226,6 +229,7 @@ g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
 plt.subplots_adjust(top=0.9)
 plt.suptitle('Variance values of fascicle thresholds')
 #%% Dose-response info
+plt.figure()
 levels = {
     'onset': 0.01,
     'half': 0.5,
@@ -364,8 +368,28 @@ g = sns.displot(
     kind='kde',
     palette='colorblind',
 )
+g = sns.displot(
+    data=threshload.query("type=='2D' and nsim in [0,5]"),
+    y='activation_zpos',
+    col='fiber_diam',
+    hue='nerve_label',
+    facet_kws={'sharex': False},
+    kind='kde',
+    palette='colorblind',
+)
+g = sns.displot(
+    data=threshload.query("nsim in [0]"),
+    y='activation_zpos',
+    col='type',
+    hue='nerve_label',
+    facet_kws={'sharex': False},
+    kind='kde',
+    palette='colorblind',
+)
+plt.suptitle('Activation z-position for 3um fibers')
 #%% Correlation2d3d
 sns.reset_orig()
+mpl.rcParams['figure.dpi'] = 400
 usedata = matched.rename(columns={'threshold': 'threshold2d'})
 for comparison in [
     ['threshold2d', 'threshold3d'],
@@ -395,6 +419,7 @@ for comparison in [
 
 #%% 3D correlations
 sns.reset_orig()
+mpl.rcParams['figure.dpi'] = 400
 usedata = threshload.rename(columns={'threshold': 'threshold3d'})
 for comparison in [
     ['threshold3d', 'tortuosity'],
@@ -418,6 +443,7 @@ for comparison in [
     plt.title(f'Correlation between {comparison[0]} and {comparison[1]}')
     #%% 3D correlations monopolar
     sns.reset_orig()
+    mpl.rcParams['figure.dpi'] = 400
     usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10').rename(columns={'threshold': 'threshold3d'})
     for comparison in [
         ['threshold3d', 'tortuosity'],
@@ -473,3 +499,52 @@ for comparison in [
         sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
         plt.gca().set_ylim([0, 1])
         plt.title(f'Correlation between {comparison[0]} and {comparison[1]} (MM)')
+#%%
+tortuosities = [1, 1.01, 1.05, 1.1]
+total_distance = 2  # meters
+actual_distance = [total_distance / t for t in tortuosities]
+diams = {10: 55.6, 11.5: 63.7, 12.8: 71.2, 14: 78.4, 15: 85.5, 16: 91.6}
+eff = {t: {key: value / t for key, value in diams.items()} for t in tortuosities}
+
+df = pd.DataFrame({'tortuosity': tortuosities, 'distance': actual_distance})
+
+effdat = (
+    pd.DataFrame(eff)
+    .melt(ignore_index=False)
+    .reset_index()
+    .rename(columns={'index': 'diam', 'variable': 'tortuosity', 'value': 'cv'})
+)
+
+sns.lineplot(data=effdat, x='diam', y='cv', hue='tortuosity')
+plt.gcf().savefig('out/analysis/tort.png', dpi=400, bbox_inches='tight')
+
+plt.figure()
+sns.histplot(data=threshload.query('type=="3D"'), x='tortuosity')
+plt.figure()
+sns.lmplot(
+    data=threshload.query('type=="3D" and nsim in [0,5]'),
+    facet_kws={'sharex': False, 'sharey': False},
+    col='fiber_diam',
+    hue='nerve_label',
+    y='threshold',
+    x='tortuosity',
+    palette='colorblind',
+)
+#%% Percent Error
+def pe(correct, est):
+    """Calculate the percent error.
+
+    :param correct: correct value
+    :param est: estimated value
+    :return: percent error
+    """
+    return 100 * abs(est - correct) / correct
+
+
+# apply pe to all rows of dataframe matched, with threshold3d as the correct value and threshold as the estimated value
+matched['pe'] = matched.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
+# boxplot of percent error by fiber diameter
+sns.barplot(data=matched, x='fiber_diam', y='pe')
+# boxplot of percent error by nerve label and fiber diameter
+plt.figure()
+sns.barplot(data=matched, x='nerve_label', y='pe')
