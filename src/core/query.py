@@ -9,14 +9,12 @@ repository: https://github.com/wmglab-duke/ascent
 
 import os
 import pickle
-import sys
 import warnings
 from typing import List, Union
 
 import numpy as np
 import pandas as pd
 import pickle5
-from matplotlib import pyplot as plt
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
 from shapely.geometry import Point
@@ -417,6 +415,11 @@ class Query(Configurable, Saveable):
                                 base_dict['long_ap_pos'],
                                 base_dict['n_ap_sites'],
                             ) = self.get_ap_info(ignore_no_activation, base_dict, sim_dir, source_sample is not None)
+
+                            base_dict['peak_second_diff'], base_dict['peak_second_diff_node'] = self.peak_second_diff(
+                                base_dict, sim_dir
+                            )
+
                             base_dict['peri_thk'] = self.get_peri_thickness(
                                 sample_object.slides[0].fascicles[outer].inners[specific_inner]
                             )
@@ -447,6 +450,26 @@ class Query(Configurable, Saveable):
                             alldat.append(base_dict)
 
         return pd.DataFrame(alldat)
+
+    @staticmethod
+    def peak_second_diff(base_dict, sim_dir):
+        # directory for specific n_sim
+        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(base_dict['nsim']))
+
+        potfile = os.path.join(
+            sim_dir,
+            'potentials',
+            f'{base_dict["master_fiber_index"]}.dat',
+        )
+
+        potentials = np.loadtxt(potfile, skiprows=0)
+        # calculate second derivative
+        second_diff = np.diff(potentials, n=2)
+        # find peak
+        peak_second_diff = np.max(second_diff)
+        peak_second_diff_node = np.argmax(second_diff) + 2
+        # added 2 because the first two nodes are not included in the second derivative
+        return peak_second_diff, peak_second_diff_node
 
     def get_peri_thickness(self, inner):
         fit = {'a': 0.03702, 'b': 10.5}

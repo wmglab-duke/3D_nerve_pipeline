@@ -578,6 +578,26 @@ def _build_path(
     return result
 
 
+def datamatch_agg(dest, dat3d, importval, merge=False):
+    dest[importval + '3d'] = np.nan  # todo: update this to take input columns to use for matching
+    for i in range(len(dest)):
+        row = dest.iloc[i, :]
+        val = dat3d[
+            (dat3d["model"] == row['model'])
+            & (dat3d["sim"] == row['sim'])
+            & (dat3d["nerve_label"] == row['nerve_label'])
+            & (dat3d["nsim"] == row['nsim'])
+            & (dat3d["level"] == row['level'])
+        ][importval]
+        val = list(val)
+        if len(val) != 1:
+            sys.exit('issue here')
+        dest.iloc[i, -1] = val[0]
+    if np.any(dest[importval] == np.nan):
+        sys.exit('issue here too')
+    return dest
+
+
 def datamatch(dest, dat3d, importval, merge=False):
     dest[importval + '3d'] = np.nan
     for i in range(len(dest)):
@@ -595,6 +615,27 @@ def datamatch(dest, dat3d, importval, merge=False):
         dest.iloc[i, -1] = val[0]
     if np.any(dest[importval] == np.nan):
         sys.exit('issue here too')
+    return dest
+
+
+def datamatchlist(dest, dat3d, importvals, merge=False):
+    for ival in importvals:
+        dest[ival + '3d'] = np.nan
+        for i in range(len(dest)):
+            row = dest.iloc[i, :]
+            val = dat3d[
+                (dat3d["model"] == row['model'])
+                & (dat3d["sim"] == row['sim'])
+                & (dat3d["nerve_label"] == row['nerve_label'])
+                & (dat3d["nsim"] == row['nsim'])
+                & (dat3d["master_fiber_index"] == row['master_fiber_index'])
+            ][ival]
+            val = list(val)
+            if len(val) != 1:
+                sys.exit('issue here')
+            dest.iloc[i, -1] = val[0]
+        if np.any(dest[ival] == np.nan):
+            sys.exit('issue here too')
     return dest
 
 

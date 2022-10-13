@@ -13,7 +13,7 @@ os.chdir('../../')
 import sys
 
 sys.path.pop(-2)
-from src.core.plotter import datamatch
+from src.core.plotter import datamatch, datamatchlist
 
 mpl.rcParams['figure.dpi'] = 400
 
@@ -62,6 +62,10 @@ repeated = matched.melt(
 )
 repeated['type'] = repeated['type'].replace({'threshold': '2D', 'threshold3d': '3D'})
 repeated['type'] = pd.Categorical(repeated['type'], categories=['2D', '3D'], ordered=True)
+
+multimatched = datamatchlist(
+    threshload.query('type=="2D"'), threshload.query('type=="3D"'), ['threshold', 'activation_zpos']
+).drop(columns='type')
 
 #%% all thresholds with unity line
 sns.scatterplot(data=matched, x='threshold', y='threshold3d', hue='fiber_diam', palette='colorblind')
@@ -235,7 +239,9 @@ levels = {
     'half': 0.5,
     'saturation': 1,
 }
-grouped = threshload.query('sim==3 and nsim in [0,5]').groupby(['sample', 'fiber_diam', 'sim', 'type', 'nerve_label'])
+grouped = threshload.query('sim==3 and nsim in [0,5]').groupby(
+    ['sample', 'fiber_diam', 'sim', 'type', 'nerve_label', 'model', 'nsim']
+)
 analysis = grouped.agg({'threshold': [np.amin, np.median, np.amax]})
 analysis.columns = ["_".join(col_name).rstrip('_') for col_name in analysis.columns]
 analysis.rename(
@@ -244,7 +250,7 @@ analysis.rename(
 analysis = analysis.reset_index()
 # combine onset, saturation, and half into one column with identifier
 compiled_data = analysis.melt(
-    id_vars=['sample', 'fiber_diam', 'sim', 'type', 'nerve_label'],
+    id_vars=['sample', 'fiber_diam', 'sim', 'type', 'nerve_label', 'model', 'nsim'],
     value_vars=['onset', 'half', 'saturation'],
     var_name='level',
     value_name='threshold',
@@ -289,6 +295,29 @@ g.map_dataframe(sns.swarmplot, x='type', y='threshold', palette='colorblind')
 g.map_dataframe(sns.lineplot, x='type', y='threshold', units='units', estimator=None, color='k')
 plt.subplots_adjust(top=0.9)
 plt.suptitle('Dose-response curves changes between model types (2D is cathodic leading only)')
+# get datamatch for compiled_data
+plt.figure()
+from src.core.plotter import datamatch_agg
+
+errordr = datamatch_agg(compiled_data.query('type=="2D"'), compiled_data.query('type=="3D"'), 'threshold').drop(
+    columns='type'
+)
+errordr['pe'] = errordr.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
+ax = sns.barplot(data=errordr, hue='fiber_diam', x='level', y='pe', errorbar='se')
+plt.title('Percent error between 2D and 3D dose-response (per sample)')
+plt.ylabel('Threshold Percent error')
+
+plt.figure()
+# now calculate mean population threshold for 2D and 3D
+popdat = errordr.groupby(['fiber_diam', 'level'])['threshold', 'threshold3d'].mean()
+popdat.reset_index(inplace=True)
+popdat['pe'] = popdat.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
+popdat['level'] = pd.Categorical(popdat['level'], categories=['onset', 'half', 'saturation'], ordered=True)
+plt.ylim(ax.get_ylim())
+sns.barplot(data=popdat, hue='fiber_diam', x='level', y='pe', errorbar='se')
+plt.title('Percent error between 2D and 3D dose-response (population mean)')
+plt.ylabel('Threshold Percent error')
+
 #%% all dose-response
 # TODO add percent activated to initial processing
 drdat = threshload.copy()
@@ -425,7 +454,7 @@ for comparison in [
     ['threshold3d', 'tortuosity'],
     ['threshold3d', 'peri_thk'],
     ['threshold3d', 'peri_thk_act_site'],
-    # ['threshold', 'smallest_thk_under_cuff'],
+    ['threshold3d', 'smallest_thk_under_cuff'],
     ['threshold3d', 'cuff_tortuosity'],
 ]:
     corrs = (
@@ -449,7 +478,7 @@ for comparison in [
         ['threshold3d', 'tortuosity'],
         ['threshold3d', 'peri_thk'],
         ['threshold3d', 'peri_thk_act_site'],
-        # ['threshold', 'smallest_thk_under_cuff'],
+        # ['threshold3d', 'smallest_thk_under_cuff'],
         ['threshold3d', 'cuff_tortuosity'],
     ]:
         corrs = (
@@ -478,7 +507,7 @@ for comparison in [
         ['threshold2d', 'threshold3d'],
         ['threshold2d', 'peri_thk'],
         ['threshold3d', 'peri_thk'],
-    ]:
+    ]:  # TODO: make this into a function
         corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
         corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
         corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
@@ -542,9 +571,50 @@ def pe(correct, est):
 
 
 # apply pe to all rows of dataframe matched, with threshold3d as the correct value and threshold as the estimated value
-matched['pe'] = matched.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
-# boxplot of percent error by fiber diameter
-sns.barplot(data=matched, x='fiber_diam', y='pe')
-# boxplot of percent error by nerve label and fiber diameter
+multimatched['pe'] = multimatched.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
+# calculate difference between activation_zpos and activation_zpos3d
+multimatched['zdiff'] = multimatched['activation_zpos'] - multimatched['activation_zpos3d']
+multimatched['zdiff_abs'] = multimatched['zdiff'].abs()
+sns.barplot(data=multimatched, x='fiber_diam', y='pe')
+plt.title('Threshold Percent Error by fiber diameter')
+plt.ylabel('Percent Error')
+# barplot of percent error by nerve label and fiber diameter
 plt.figure()
-sns.barplot(data=matched, x='nerve_label', y='pe')
+sns.barplot(data=multimatched, x='nerve_label', y='pe')
+plt.title('Threshold Percent Error by sample')
+plt.ylabel('Percent Error')
+plt.figure()
+sns.barplot(data=multimatched, x='nerve_label', y='zdiff_abs')
+plt.title('Activation Z Position Difference by sample')
+plt.ylabel('Z Position Difference (mm, absolute value)')
+plt.figure()
+sns.scatterplot(data=multimatched, x='zdiff_abs', y='pe')
+plt.title('Activation Z Position Difference vs. Threshold Percent Error')
+plt.ylabel('Percent Error')
+plt.xlabel('Z Position Difference (mm, absolute value)')
+
+sns.reset_orig()
+mpl.rcParams['figure.dpi'] = 400
+usedata = multimatched.rename(columns={'threshold': 'threshold2d'})
+for comparison in [['pe', 'zdiff'], ['pe', 'zdiff_abs'], ['activation_zpos', 'activation_zpos3d']]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
+    corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], categories=['cathodic', 'anodic'], ordered=True)
+    plt.figure()
+    sns.scatterplot(
+        data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind', style='contact'
+    )
+    ax = sns.lineplot(
+        data=corrs,
+        x='fiber_diam',
+        y='correlation',
+        style='contact',
+        hue='nerve_label',
+        legend=False,
+        palette='colorblind',
+    )
+    sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+    plt.gca().set_ylim([-1, 1])
+    plt.title(f'Correlation between {comparison[0]} and {comparison[1]}')
+#%% percent error of dose response (onset, half, sat, for population and individuals)

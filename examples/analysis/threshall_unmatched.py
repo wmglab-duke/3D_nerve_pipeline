@@ -12,7 +12,7 @@ model = 0
 source_sim = 3
 with open('examples/analysis/plotconfig.json') as f:
     config = json.load(f)
-for simdex in ['3']:
+for simdex in config['sim_data'].keys():
     simint = int(simdex)
     datas = []
     for sample_data in config['sample_data']:
