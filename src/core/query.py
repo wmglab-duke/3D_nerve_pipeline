@@ -15,7 +15,7 @@ from typing import List, Union
 
 import numpy as np
 import pandas as pd
-import pickle5
+import pickle
 from matplotlib import pyplot as plt
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
@@ -474,7 +474,7 @@ class Query(Configurable, Saveable):
         else:
             zpos = base_dict['activation_zpos']
             with open(f'input/slides/{base_dict["nerve_label"]}slides.obj', 'rb') as f:
-                slidelist = pickle5.load(f)
+                slidelist = pickle.load(f)
             slice_spacing = 20  # microns
             slice_index = int(round(zpos / slice_spacing))
             slide = slidelist[slice_index]
@@ -523,7 +523,7 @@ class Query(Configurable, Saveable):
             if source_sim is not None:
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
             with open(f'input/slides/{base_dict["nerve_label"]}slides.obj', 'rb') as f:
-                slidelist = pickle5.load(f)
+                slidelist = pickle.load(f)
             slice_spacing = 20  # microns
             slice_indices = [int(round(z / slice_spacing)) for z in cuffspan]
             z_positions = np.arange(cuffspan[0], cuffspan[1], slice_spacing)
