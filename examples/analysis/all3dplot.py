@@ -42,6 +42,15 @@ def addpwfd(data, sim):
         data.loc[data['nsim'] == nsim, 'fiber_diam'] = fiber_diam
     return data
 
+def pe(correct, est):
+    """Calculate the percent error.
+
+    :param correct: correct value
+    :param est: estimated value
+    :return: percent error
+    """
+    return 100 * abs(est - correct) / correct
+
 
 sys.exit()
 #%% Setup
@@ -200,7 +209,7 @@ g = sns.catplot(
     kind='bar',
     palette='colorblind',
 )
-plt.suptitle('Variance values of thresholds within fascicles')
+# plt.suptitle('Variance values of thresholds within fascicles')
 g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
 g = sns.catplot(
     errorbar='se',
@@ -215,7 +224,10 @@ g = sns.catplot(
 )
 g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
 plt.subplots_adjust(top=0.9)
-plt.suptitle('Variance values of thresholds within fascicles')
+for ax,diam in zip(g.axes.ravel(), [3,13]):
+    ax.set_xlabel('')
+    ax.set_title(f'{diam} μm')
+# plt.suptitle('Variance values of thresholds within fascicles')
 
 # now do variance between fascicle mean thresholds
 grouped = analysis.groupby(['EMsample', 'fiber_diam', 'type'])
@@ -233,7 +245,7 @@ g = sns.catplot(
     palette='colorblind',
 )
 g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
-plt.suptitle('Variance values of fascicle thresholds')
+# plt.suptitle('Variance values of fascicle thresholds')
 g = sns.catplot(
     data=analysis,
     sharey=False,
@@ -245,10 +257,15 @@ g = sns.catplot(
     aspect=0.5,
     errorbar=('se'),
 )
+for ax,diam in zip(g.axes.ravel(), [3,13]):
+    ax.set_xlabel('')
+    ax.set_title(f'{diam} μm')
 g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
 plt.subplots_adjust(top=0.9)
-plt.suptitle('Variance values of fascicle thresholds')
+# plt.suptitle('Variance values of fascicle thresholds')
 #%% Dose-response info
+sns.set(font_scale=1.25)
+sns.set_style('whitegrid')
 plt.figure()
 levels = {
     'onset': 0.01,
@@ -305,12 +322,13 @@ compiled_data.type = compiled_data.type.astype('category')
 compiled_data = compiled_data.query('sample % 10 != 0')
 # add a units column with unique number for each combination of fiber_diam and level
 compiled_data['units'] = compiled_data.groupby(['fiber_diam', 'level', 'nerve_label']).ngroup()
-g = sns.FacetGrid(compiled_data, col="level", row="fiber_diam", sharey=False, margin_titles=True)
-g.map_dataframe(sns.boxplot, x='type', y='threshold', palette='colorblind', boxprops={'facecolor': "none"})
-g.map_dataframe(sns.swarmplot, x='type', y='threshold', palette='colorblind')
-g.map_dataframe(sns.lineplot, x='type', y='threshold', units='units', estimator=None, color='k')
+compiled_data['fiber_diam'] = compiled_data['fiber_diam'].astype(int)
+g = sns.FacetGrid(compiled_data.rename(columns = {'fiber_diam':"Fiber Diameter (μm)", 'threshold':"Threshold (mA)"}), col="level", row="Fiber Diameter (μm)", sharey=False, margin_titles=True)
+g.map_dataframe(sns.boxplot, x='type', y='Threshold (mA)', palette='colorblind', boxprops={'facecolor': "none"})
+g.map_dataframe(sns.swarmplot, x='type', y='Threshold (mA)', palette='colorblind')
+g.map_dataframe(sns.lineplot, x='type', y='Threshold (mA)', units='units', estimator=None, color='k')
 plt.subplots_adjust(top=0.9)
-plt.suptitle('Dose-response curves changes between model types (2D is cathodic leading only)')
+# plt.suptitle('Dose-response curves changes between model types (2D is cathodic leading only)')
 # get datamatch for compiled_data
 plt.figure()
 from src.core.plotter import datamatch_agg
@@ -336,24 +354,29 @@ plt.ylabel('Threshold Percent error')
 
 #%% all dose-response
 # TODO add percent activated to initial processing
+sns.set(font_scale=1.25)
+sns.set_style('whitegrid')
 drdat = threshload.copy()
 drdat['percent_activated'] = 0
 drdat = drdat.rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
-for fiber_diam in [3, 13]:
-    infodat = drdat.query(f'sim==3 and fiber_diam=={fiber_diam}')
-    for i, row in infodat.iterrows():
-        thisdat = infodat.query(
-            'modeltype == @row.modeltype and samplenum == @row.samplenum and fiber_diam == @row.fiber_diam and sim == @row.sim'
-        )
-        # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
-        infodat.loc[i, 'percent_activated'] = len(thisdat.query('threshold <= @row.threshold')) / len(thisdat)
-        # could shade in min and max to show response range
-    plt.figure()
-    infodat.sort_values('modeltype', inplace=True)
-    sns.scatterplot(data=infodat, x='percent_activated', y='threshold', hue='modeltype', palette='colorblind')
-    plt.xlabel('Percent of fibers activated')
-    plt.ylabel('Threshold (mA)')
-    plt.title(f'Dose-Response for all samples fiber diam={fiber_diam} μm')
+for i, row in drdat.iterrows():
+    thisdat = drdat.query(
+        'modeltype == @row.modeltype and samplenum == @row.samplenum and fiber_diam == @row.fiber_diam and sim == @row.sim'
+    )
+    # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
+    drdat.loc[i, 'percent_activated'] = len(thisdat.query('threshold <= @row.threshold')) / len(thisdat)
+    # could shade in min and max to show response range
+plt.figure()
+drdat.sort_values('modeltype', inplace=True)
+g = sns.relplot(data=drdat.query("fiber_diam in [3,13]"), facet_kws=dict(sharey=False),kind='scatter',x='percent_activated',row='fiber_diam', y='threshold', hue='modeltype', palette='colorblind')
+for ax, diam in zip(g.axes.ravel(),[3,13]):
+    ax.set_xlabel('Proportion of fibers activated')
+    ax.set_title(f'{diam} μm')
+    ax.set_ylim([0,None])
+    ax.set_ylabel('Threshold (mA)')
+g.fig.set_size_inches([6,6])
+plt.legend(title='')
+# plt.suptitle(f'Dose-Response for all samples fiber diam={fiber_diam} μm')
 #%% strength-duration
 # seaborn facet scatterplot with x as pulse width, y as threshold, and column as diameter
 threshsd = addpwfd(pd.read_csv('thresh_unmatched.csv').query('sim==7'), '7')
@@ -423,17 +446,20 @@ g = sns.displot(
     palette='colorblind',
 )
 g = sns.displot(
-    data=threshload.query("nsim in [0]"),
+    data=threshload.query("nsim in [0]").rename(columns={'nerve_label':'Sample'}),
     y='activation_zpos',
     col='type',
-    hue='nerve_label',
+    hue='Sample',
     facet_kws={'sharex': False},
     kind='kde',
     palette='colorblind',
 )
-plt.suptitle('Activation z-position for 3um fibers')
+g.axes.ravel()[0].set_ylabel('Z-position of activation (μm)')
+# plt.suptitle('Activation z-position for 3um fibers')
 #%% Correlation2d3d
 sns.reset_orig()
+sns.set(font_scale=1.5)
+sns.set_style('whitegrid')
 mpl.rcParams['figure.dpi'] = 400
 usedata = matched.rename(columns={'threshold': 'threshold2d'})
 for comparison in [
@@ -458,9 +484,11 @@ for comparison in [
         legend=False,
         palette='colorblind',
     )
+    plt.legend(title='Sample')
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     plt.gca().set_ylim([0, 1])
-    plt.title(f'Correlation between {comparison[0]} and {comparison[1]}')
+    plt.xlabel('Fiber Diameter (μm)')
+    # plt.title(f'Correlation between {comparison[0]} and {comparison[1]}')
 
 #%% 3D correlations
 sns.reset_orig()
@@ -514,6 +542,8 @@ for comparison in [
         plt.gca().set_ylim([-1, 1])
         plt.title(f'Correlation between {comparison[0]} and {comparison[1]} (MM)')
     #%%correlations monopolar
+    sns.set(font_scale=1.25)
+    sns.set_style('whitegrid')
     usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10')
     usedata = datamatch(usedata.query('type=="2D"'), usedata.query('type=="3D"'), 'threshold').drop(columns='type')
     # add new EMsample column to matched dataframe, which is the nerve label plus the first letter of the contact type capitalized
@@ -543,7 +573,7 @@ for comparison in [
         )
         sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
         plt.gca().set_ylim([0, 1])
-        plt.title(f'Correlation between {comparison[0]} and {comparison[1]} (MM)')
+        # plt.title(f'Correlation between {comparison[0]} and {comparison[1]} (MM)')
 #%%
 tortuosities = [1, 1.01, 1.05, 1.1]
 total_distance = 2  # meters
@@ -580,16 +610,6 @@ g.axes.ravel()[0].set_ylabel('Threshold (mA)')
 g.axes.ravel()[0].set_title('3 μm')
 g.axes.ravel()[1].set_title('13 μm')
 #%% Percent Error
-def pe(correct, est):
-    """Calculate the percent error.
-
-    :param correct: correct value
-    :param est: estimated value
-    :return: percent error
-    """
-    return 100 * abs(est - correct) / correct
-
-
 # apply pe to all rows of dataframe matched, with threshold3d as the correct value and threshold as the estimated value
 multimatched['pe'] = multimatched.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
 # calculate difference between activation_zpos and activation_zpos3d

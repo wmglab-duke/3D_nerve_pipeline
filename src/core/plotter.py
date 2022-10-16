@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as tick
 import numpy as np
 import pandas as pd
-import pickle5
 import seaborn as sns
 from scipy.interpolate import griddata
 from scipy.ndimage import gaussian_filter
@@ -799,7 +798,7 @@ def get_peri_site(samp3d, samp2d, model, simdex, nerve_label, source_sim=3):
         zpos = dat3z.loc[i, 'activation_zpos']
         # Load in pickled slidelist
         with open(f'input/slides/{nerve_label}slides.obj', 'rb') as f:
-            slidelist = pickle5.load(f)
+            slidelist = pickle.load(f)
         # find the slice nearest the activation site.
         slice_spacing = 20  # microns
         slice_index = int(round(zpos / slice_spacing))
