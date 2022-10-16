@@ -49,6 +49,7 @@ sns.set_style('whitegrid')
 # base data
 threshload = pd.read_csv('thresh_unmatched_sim3.csv').query('sim==3')
 threshload = addpwfd(threshload, '3')
+threshload['fiber_diam'] = threshload['fiber_diam'].astype(int)
 # 3d and 2d trhresholds as different col same row
 matched = datamatch(threshload.query('type=="2D"'), threshload.query('type=="3D"'), 'threshold').drop(columns='type')
 # add new EMsample column to matched dataframe, which is the nerve label plus the first letter of the contact type capitalized
@@ -68,11 +69,13 @@ multimatched = datamatchlist(
 ).drop(columns='type')
 
 #%% all thresholds with unity line
-sns.scatterplot(data=matched, x='threshold', y='threshold3d', hue='fiber_diam', palette='colorblind')
+sns.set(font_scale=1.25)
+sns.set_style('whitegrid')
+sns.scatterplot(data=matched.sort_values('fiber_diam'), x='threshold', y='threshold3d', hue='fiber_diam', s=20)
 # plot one one line out to max of 3d
 plt.plot([0, matched.threshold.max()], [0, matched.threshold.max()], 'r', linewidth=2)
-plt.ylabel('3D Threshold (mA)')
-plt.xlabel('2D Threshold (mA)')
+plt.ylabel('3D Threshold (mA, log scale)')
+plt.xlabel('2D Threshold (mA, log scale)')
 # set legend title
 plt.legend(title='Fiber Diameter (μm)')
 plt.xscale('log')
@@ -87,9 +90,11 @@ plt.title(
     f'Correlation between 2D and 3D thresholds: r={r:.2f}, p={p:.2f}\n'
     f'percentage of 3D threshold lower than 2D counterpart: {perc:.2f}'
 )
+sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
 plt.show()
 #%% threshold barplot
 # generate boxplot of 2d and 3d thresholds
+sns.set(font_scale=1.25)
 sns.set_style('whitegrid')
 g = sns.catplot(
     kind='bar',
@@ -103,7 +108,9 @@ g = sns.catplot(
 g.fig.set_size_inches(4, 6, forward=True)
 plt.subplots_adjust(top=0.9, wspace=0.4)
 g.axes.ravel()[0].set_ylabel('Threshold (mA)')
-plt.suptitle('2D vs 3D Thresholds for all samples')
+# plt.suptitle('2D vs 3D Thresholds for all samples')
+g.axes.ravel()[0].set_title('3 μm')
+g.axes.ravel()[1].set_title('13 μm')
 plt.show()
 
 #%% organization compare nsim
@@ -139,7 +146,16 @@ data = threshdat.query('nsim in [0,5] and sim == 3')
 g = sns.FacetGrid(data, col="nerve_label", row='fiber_diam', sharey=False, margin_titles=True)
 g.map_dataframe(sns.boxplot, x='type', y='threshold', palette='colorblind', boxprops={'facecolor': "none"})
 g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='threshold', palette='colorblind')
-g.map_dataframe(sns.lineplot, x='type', y='threshold', units='master_fiber_index', estimator=None, color='k')
+g.map_dataframe(
+    sns.lineplot,
+    x='type',
+    y='threshold',
+    units='master_fiber_index',
+    estimator=None,
+    color='k',
+    alpha=0.25,
+    linewidth=1,
+)
 plt.subplots_adjust(top=0.9)
 # g.fig.set_size_inches(12, 8)
 plt.suptitle('thresholds compared between 2D (cathodic) and 3D')
@@ -546,19 +562,23 @@ effdat = (
 
 sns.lineplot(data=effdat, x='diam', y='cv', hue='tortuosity')
 plt.gcf().savefig('out/analysis/tort.png', dpi=400, bbox_inches='tight')
-
+sns.set(font_scale=1.5)
+sns.set_style('whitegrid')
 plt.figure()
 sns.histplot(data=threshload.query('type=="3D"'), x='tortuosity')
 plt.figure()
-sns.lmplot(
-    data=threshload.query('type=="3D" and nsim in [0,5]'),
+g = sns.lmplot(
+    data=threshload.query('type=="3D" and nsim in [0,5]').rename(columns={'nerve_label': 'Sample'}),
     facet_kws={'sharex': False, 'sharey': False},
     col='fiber_diam',
-    hue='nerve_label',
+    hue='Sample',
     y='threshold',
     x='tortuosity',
     palette='colorblind',
 )
+g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+g.axes.ravel()[0].set_title('3 μm')
+g.axes.ravel()[1].set_title('13 μm')
 #%% Percent Error
 def pe(correct, est):
     """Calculate the percent error.
@@ -575,16 +595,20 @@ multimatched['pe'] = multimatched.apply(lambda row: pe(row['threshold3d'], row['
 # calculate difference between activation_zpos and activation_zpos3d
 multimatched['zdiff'] = multimatched['activation_zpos'] - multimatched['activation_zpos3d']
 multimatched['zdiff_abs'] = multimatched['zdiff'].abs()
-sns.barplot(data=multimatched, x='fiber_diam', y='pe')
+sns.barplot(data=multimatched, x='fiber_diam', y='pe', errorbar='se')
 plt.title('Threshold Percent Error by fiber diameter')
 plt.ylabel('Percent Error')
 # barplot of percent error by nerve label and fiber diameter
 plt.figure()
-sns.barplot(data=multimatched, x='nerve_label', y='pe')
+sns.barplot(data=multimatched, x='nerve_label', y='pe', errorbar='se')
 plt.title('Threshold Percent Error by sample')
 plt.ylabel('Percent Error')
 plt.figure()
-sns.barplot(data=multimatched, x='nerve_label', y='zdiff_abs')
+sns.barplot(data=multimatched, x='nerve_label', y='pe', hue='fiber_diam', errorbar='se')
+plt.title('Threshold Percent Error by sample and fiber diameter')
+plt.ylabel('Percent Error')
+plt.figure()
+sns.barplot(data=multimatched, x='nerve_label', y='zdiff_abs', errorbar='se')
 plt.title('Activation Z Position Difference by sample')
 plt.ylabel('Z Position Difference (mm, absolute value)')
 plt.figure()
