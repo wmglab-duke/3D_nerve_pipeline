@@ -42,6 +42,7 @@ def addpwfd(data, sim):
         data.loc[data['nsim'] == nsim, 'fiber_diam'] = fiber_diam
     return data
 
+
 def pe(correct, est):
     """Calculate the percent error.
 
@@ -113,6 +114,7 @@ g = sns.catplot(
     y='threshold',
     sharey=False,
     errorbar='se',
+    palette='colorblind',
 )
 g.fig.set_size_inches(4, 6, forward=True)
 plt.subplots_adjust(top=0.9, wspace=0.4)
@@ -146,19 +148,26 @@ plt.savefig('matchsim.png', dpi=400)
 #%% organization compare type
 # remove all samples which dont end with a 2
 sns.reset_orig()
+sns.set(font_scale=1.25, style='whitegrid')
 mpl.rcParams['figure.dpi'] = 400
 threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
 # subtract 1 from sample if type is 3D
 threshdat['sample'] = threshdat.apply(lambda x: x['sample'] - 1 if x.type == "3D" else x['sample'], axis=1)
 data = threshdat.query('nsim in [0,5] and sim == 3')
 # apply minmax normalization within sample and nsim
-g = sns.FacetGrid(data, col="nerve_label", row='fiber_diam', sharey=False, margin_titles=True)
-g.map_dataframe(sns.boxplot, x='type', y='threshold', palette='colorblind', boxprops={'facecolor': "none"})
-g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='threshold', palette='colorblind')
+g = sns.FacetGrid(
+    data.rename(columns={"threshold": "Threshold (mA)", "nerve_label": "Sample", "fiber_diam": "Fiber Diameter (μm)"}),
+    col="Sample",
+    row='Fiber Diameter (μm)',
+    sharey=False,
+    margin_titles=True,
+)
+g.map_dataframe(sns.boxplot, x='type', y='Threshold (mA)', palette='colorblind', boxprops={'facecolor': "none"})
+g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='Threshold (mA)', palette='colorblind')
 g.map_dataframe(
     sns.lineplot,
     x='type',
-    y='threshold',
+    y='Threshold (mA)',
     units='master_fiber_index',
     estimator=None,
     color='k',
@@ -167,7 +176,7 @@ g.map_dataframe(
 )
 plt.subplots_adjust(top=0.9)
 # g.fig.set_size_inches(12, 8)
-plt.suptitle('thresholds compared between 2D (cathodic) and 3D')
+# plt.suptitle('thresholds compared between 2D (cathodic) and 3D')
 plt.savefig('matchsim.png', dpi=400)
 #%% All thresholds compare
 g = sns.catplot(
@@ -189,9 +198,16 @@ grouped = repeated.groupby(['sample', 'fiber_diam', 'sim', 'type'])
 analysis = grouped.agg({'threshold': [variation]})
 analysis.columns = ["_".join(col_name).rstrip('_') for col_name in analysis.columns]
 analysis = analysis.reset_index()
-sns.catplot(data=analysis, x='type', y='threshold_variation', hue='fiber_diam', kind='box', palette='colorblind')
+sns.catplot(
+    data=analysis.rename(columns={"fiber_diam": "Fiber Diameter(μm)"}),
+    x='type',
+    y='threshold_variation',
+    hue='Fiber Diameter(μm)',
+    kind='box',
+    palette='RdPu',
+)
 plt.ylabel('Threshold Coefficient of Variation')
-plt.title('Coefficient of Variation of Thresholds for 2D and 3D')
+# plt.title('Coefficient of Variation of Thresholds for 2D and 3D')
 #%% threshold variances
 vardat = repeated.query('nsim in [0,5] and sim==3')
 grouped = vardat.groupby(['EMsample', 'fiber_diam', 'sim', 'type', 'inner'])
@@ -224,7 +240,7 @@ g = sns.catplot(
 )
 g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
 plt.subplots_adjust(top=0.9)
-for ax,diam in zip(g.axes.ravel(), [3,13]):
+for ax, diam in zip(g.axes.ravel(), [3, 13]):
     ax.set_xlabel('')
     ax.set_title(f'{diam} μm')
 # plt.suptitle('Variance values of thresholds within fascicles')
@@ -257,7 +273,7 @@ g = sns.catplot(
     aspect=0.5,
     errorbar=('se'),
 )
-for ax,diam in zip(g.axes.ravel(), [3,13]):
+for ax, diam in zip(g.axes.ravel(), [3, 13]):
     ax.set_xlabel('')
     ax.set_title(f'{diam} μm')
 g.axes.ravel()[0].set_ylabel('Variance (mA^2)')
@@ -323,7 +339,13 @@ compiled_data = compiled_data.query('sample % 10 != 0')
 # add a units column with unique number for each combination of fiber_diam and level
 compiled_data['units'] = compiled_data.groupby(['fiber_diam', 'level', 'nerve_label']).ngroup()
 compiled_data['fiber_diam'] = compiled_data['fiber_diam'].astype(int)
-g = sns.FacetGrid(compiled_data.rename(columns = {'fiber_diam':"Fiber Diameter (μm)", 'threshold':"Threshold (mA)"}), col="level", row="Fiber Diameter (μm)", sharey=False, margin_titles=True)
+g = sns.FacetGrid(
+    compiled_data.rename(columns={'fiber_diam': "Fiber Diameter (μm)", 'threshold': "Threshold (mA)"}),
+    col="level",
+    row="Fiber Diameter (μm)",
+    sharey=False,
+    margin_titles=True,
+)
 g.map_dataframe(sns.boxplot, x='type', y='Threshold (mA)', palette='colorblind', boxprops={'facecolor': "none"})
 g.map_dataframe(sns.swarmplot, x='type', y='Threshold (mA)', palette='colorblind')
 g.map_dataframe(sns.lineplot, x='type', y='Threshold (mA)', units='units', estimator=None, color='k')
@@ -368,13 +390,22 @@ for i, row in drdat.iterrows():
     # could shade in min and max to show response range
 plt.figure()
 drdat.sort_values('modeltype', inplace=True)
-g = sns.relplot(data=drdat.query("fiber_diam in [3,13]"), facet_kws=dict(sharey=False),kind='scatter',x='percent_activated',row='fiber_diam', y='threshold', hue='modeltype', palette='colorblind')
-for ax, diam in zip(g.axes.ravel(),[3,13]):
+g = sns.relplot(
+    data=drdat.query("fiber_diam in [3,13]"),
+    facet_kws=dict(sharey=False),
+    kind='scatter',
+    x='percent_activated',
+    row='fiber_diam',
+    y='threshold',
+    hue='modeltype',
+    palette='colorblind',
+)
+for ax, diam in zip(g.axes.ravel(), [3, 13]):
     ax.set_xlabel('Proportion of fibers activated')
     ax.set_title(f'{diam} μm')
-    ax.set_ylim([0,None])
+    ax.set_ylim([0, None])
     ax.set_ylabel('Threshold (mA)')
-g.fig.set_size_inches([6,6])
+g.fig.set_size_inches([6, 6])
 plt.legend(title='')
 # plt.suptitle(f'Dose-Response for all samples fiber diam={fiber_diam} μm')
 #%% strength-duration
@@ -446,7 +477,7 @@ g = sns.displot(
     palette='colorblind',
 )
 g = sns.displot(
-    data=threshload.query("nsim in [0]").rename(columns={'nerve_label':'Sample'}),
+    data=threshload.query("nsim in [0]").rename(columns={'nerve_label': 'Sample'}),
     y='activation_zpos',
     col='type',
     hue='Sample',
@@ -472,19 +503,19 @@ for comparison in [
     corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
     corrs['contact'] = pd.Categorical(corrs['contact'], categories=['cathodic', 'anodic'], ordered=True)
     plt.figure()
+    corrs.rename(inplace=True, columns={"nerve_label": "Sample"})
     sns.scatterplot(
-        data=corrs, x='fiber_diam', y='correlation', hue='nerve_label', s=100, palette='colorblind', style='contact'
+        data=corrs, x='fiber_diam', y='correlation', hue='Sample', s=100, palette='colorblind', style='contact'
     )
     ax = sns.lineplot(
         data=corrs,
         x='fiber_diam',
         y='correlation',
         style='contact',
-        hue='nerve_label',
+        hue='Sample',
         legend=False,
         palette='colorblind',
     )
-    plt.legend(title='Sample')
     sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
     plt.gca().set_ylim([0, 1])
     plt.xlabel('Fiber Diameter (μm)')
@@ -624,9 +655,12 @@ sns.barplot(data=multimatched, x='nerve_label', y='pe', errorbar='se')
 plt.title('Threshold Percent Error by sample')
 plt.ylabel('Percent Error')
 plt.figure()
-sns.barplot(data=multimatched, x='nerve_label', y='pe', hue='fiber_diam', errorbar='se')
-plt.title('Threshold Percent Error by sample and fiber diameter')
+sns.barplot(data=multimatched, x='nerve_label', y='pe', hue='fiber_diam', errorbar='se', palette="RdPu")
+# plt.title('Threshold Percent Error by sample and fiber diameter')
+plt.legend(title='Fiber Diameter (μm)')
+plt.xlabel('Sample')
 plt.ylabel('Percent Error')
+plt.gca().set_aspect(0.1)
 plt.figure()
 sns.barplot(data=multimatched, x='nerve_label', y='zdiff_abs', errorbar='se')
 plt.title('Activation Z Position Difference by sample')

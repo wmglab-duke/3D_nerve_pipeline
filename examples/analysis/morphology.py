@@ -79,20 +79,22 @@ final = analysis.round(decimals=2)
 # TODO make this script check for merge split events
 # plot histogram of fascicle count
 sns.reset_orig()
-sns.set_theme()
+sns.set_style('whitegrid')
 plt.figure()
 bins = np.arange(alldata.fascicle_count.min() - 0.5, alldata.fascicle_count.max() + 0.5, 1)
 sns.histplot(
-    data=alldata,
+    data=alldata.rename(columns={"sample": "Sample"}),
     x='fascicle_count',
-    hue='sample',
+    hue='Sample',
     binwidth=1,
     element="step",
     kde=True,
     fill=False,
+    stat="probability",
     kde_kws={'bw_adjust': 2},
 )
-plt.title('Fascicle count distribution by sample')
+# plt.title('Fascicle count distribution by sample')
+plt.xlabel('Fascicle Count')
 plt.show()
 # test for normality
 from scipy.stats import normaltest
