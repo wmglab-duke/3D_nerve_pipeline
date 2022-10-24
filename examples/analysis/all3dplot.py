@@ -140,7 +140,7 @@ sns.set_style('whitegrid')
 usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10')
 usedata = matched = datamatch(usedata.query('type=="2D"'), usedata.query('type=="3D"'), 'threshold').drop(columns='type')
 nsimdata = usedata.query('fiber_diam in [3,13]')
-g= sns.relplot(data=nsimdata,kind='scatter',row='fiber_diam', x='threshold', y='threshold3d', hue='nerve_label', s=20,
+g= sns.relplot(data=nsimdata,kind='scatter',col='fiber_diam', x='threshold', y='threshold3d', hue='nerve_label', s=20,
                 palette = 'colorblind', facet_kws = {'sharex':False,'sharey':False})
 # plot one one line out to max of 3d
 
@@ -544,8 +544,16 @@ g = sns.lineplot(
     palette='colorblind',
     estimator=None
 )
+g = sns.scatterplot(
+    data=drdat.query("fiber_diam in [3] and contact != 'anodic'"),#stopped here
+    x='percent_activated',
+    y='threshold',
+    hue='modeltype',
+    palette='colorblind',
+)
 # plt.yscale('log')
-sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
+plt.gcf().set_size_inches([4,8])
+# sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
 plt.ylabel('Threshold (mA)')
 plt.xlabel('Proportion of fibers activated')
 #%% strength-duration
@@ -855,6 +863,7 @@ plt.legend(title='Fiber Diameter (μm)')
 plt.xlabel('Sample')
 plt.ylabel('Percent Error')
 plt.gca().set_aspect(0.08)
+sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
 plt.figure()
 sns.barplot(data=multimatched, x='nerve_label', y='zdiff_abs', errorbar='se')
 plt.title('Activation Z Position Difference by sample')
@@ -1021,12 +1030,20 @@ sns.set(font_scale=1.25)
 sns.set_style('whitegrid')
 diam=3
 nsimdata = threshload.query(f'fiber_diam=={diam}')
+corrs = nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label','type'])['threshold','peri_thk'].corr().iloc[0::2, -1]
+corrs = corrs.reset_index().rename(columns={'threshold': 'correlation'})
+corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+means = corrs.groupby('type').agg(np.mean)
+# plot one one line out to max of 3d
 g = sns.lmplot(data=nsimdata, y='threshold', x='peri_thk', hue='nerve_label',
                 palette = 'colorblind',row='type',scatter_kws={'linewidths':1,'edgecolor':'k'})
-# plot one one line out to max of 3d
 g.axes.flat[1].set_xlabel('Threshold (mA)')
-for ax in g.axes.flat:
+for ax,r in zip(g.axes.flat,means['peri_thk']):
     ax.set_ylabel('Perineurium Thickness (micron)')
+    ax.text(
+        0, 1,
+        f'mean r={r:.2f}',transform=ax.transAxes
+    )
 # plt.xlabel('3D Threshold (mA)')
 # plt.title(f'Fiber Diameter: {diam} μm')
 plt.show()
@@ -1083,3 +1100,36 @@ for nerve in pd.unique(threshdat['nerve_label']):
 #         percent_peri = drdat.query(f'sample=={samp} and inner=={inner}')['peri_thk'][0]
 #         #fiber weight is number of fibers in the inner divided by the total perineurium thickness
 
+#%% organization compare type
+# remove all samples which dont end with a 2
+sns.reset_orig()
+sns.set(font_scale=1.25, style='whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
+# subtract 1 from sample if type is 3D
+threshdat['sample'] = threshdat.apply(lambda x: x['sample'] - 1 if x.type == "3D" else x['sample'], axis=1)
+data = threshdat.query('nsim in [0,5] and sim == 3')
+# apply minmax normalization within sample and nsim
+g = sns.FacetGrid(
+    data.rename(columns={"threshold": "Threshold (mA)", "nerve_label": "Sample", "fiber_diam": "Fiber Diameter (μm)"}),
+    col="Sample",
+    row='Fiber Diameter (μm)',
+    sharey=False,
+    margin_titles=True,
+)
+g.map_dataframe(sns.boxplot, x='type', y='Threshold (mA)', palette='colorblind', boxprops={'facecolor': "none"})
+g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='Threshold (mA)', palette='colorblind')
+g.map_dataframe(
+    sns.lineplot,
+    x='type',
+    y='Threshold (mA)',
+    units='master_fiber_index',
+    estimator=None,
+    color='k',
+    alpha=0.25,
+    linewidth=1,
+)
+plt.subplots_adjust(top=0.9)
+# g.fig.set_size_inches(12, 8)
+# plt.suptitle('thresholds compared between 2D (cathodic) and 3D')
+plt.savefig('matchsim.png', dpi=400)
