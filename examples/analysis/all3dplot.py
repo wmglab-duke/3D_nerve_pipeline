@@ -132,7 +132,7 @@ for diam in [3, 13]:
     plt.title(f'Fiber Diameter: {diam} μm')
     plt.show()
 #%% sample thresholds with unity line
-sns.set(font_scale=1.25)
+sns.set(font_scale=1.5)
 sns.set_style('whitegrid')
 usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10')
 usedata = matched = datamatch(usedata.query('type=="2D"'), usedata.query('type=="3D"'), 'threshold').drop(
@@ -142,13 +142,14 @@ nsimdata = usedata.query('fiber_diam in [3,13]')
 g = sns.relplot(
     data=nsimdata,
     kind='scatter',
-    row='fiber_diam',
+    col='fiber_diam',
     x='threshold',
     y='threshold3d',
     hue='nerve_label',
     s=20,
     palette='colorblind',
     facet_kws={'sharex': False, 'sharey': False},
+    legend=False,
 )
 # plot one one line out to max of 3d
 
@@ -169,10 +170,14 @@ for diam, pos, ax in zip([3, 13], (0.2, 0.8), g.axes.ravel()):
     #     f'percentage of 3D threshold lower than 2D counterpart: {perc:.2f}'
     # )
     # add correlation to plot
-    ax.text(0, 1, f'r={r:.2f}', transform=ax.transAxes)
+    ax.text(0.02, 0.9, f'r={r:.2f}', transform=ax.transAxes)
+    ax.set_title(f'Fiber Diameter: {diam} μm')
     ax.plot([0, rdata.threshold.max()], [0, rdata.threshold.max()], 'r', linewidth=2)
-    ax.set_ylabel('3D Threshold (mA)')
+    ax.set_xlim([0, None])
+    ax.set_ylim([0, None])
     ax.set_xlabel('2D Threshold (mA)')
+g.axes.ravel()[0].set_ylabel('3D Threshold (mA)')
+g.axes.ravel()[1].set_ylabel('')
 #%% threshold barplot
 # generate boxplot of 2d and 3d thresholds
 sns.set(font_scale=1.25)
@@ -203,11 +208,12 @@ g = sns.barplot(
     x='type',
     y='threshold',
     errorbar='se',
-    palette='binary',
+    palette='Blues',
 )
 plt.gca().set_aspect(2)
 plt.subplots_adjust(top=0.9, wspace=0.4)
 plt.ylabel('Threshold (mA)')
+plt.xlabel('')
 plt.show()
 
 #%% organization compare nsim
@@ -481,7 +487,7 @@ plt.ylabel('Threshold Percent error')
 
 #%% all dose-response
 # TODO add percent activated to initial processing
-sns.set(font_scale=1.25)
+sns.set(font_scale=1.5)
 sns.set_style('whitegrid')
 drdat = threshload.copy()
 drdat['percent_activated'] = 0
@@ -548,19 +554,15 @@ g = sns.lineplot(
     hue='modeltype',
     palette='colorblind',
     estimator=None,
-)
-g = sns.scatterplot(
-    data=drdat.query("fiber_diam in [3] and contact != 'anodic'"),#stopped here
-    x='percent_activated',
-    y='threshold',
-    hue='modeltype',
-    palette='colorblind',
+    linewidth=3,
 )
 # plt.yscale('log')
-plt.gcf().set_size_inches([4,8])
+plt.gcf().set_size_inches([4, 8])
 # sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
+plt.legend(title='')
 plt.ylabel('Threshold (mA)')
 plt.xlabel('Proportion of fibers activated')
+plt.xlim([0, 1])
 #%% strength-duration
 # seaborn facet scatterplot with x as pulse width, y as threshold, and column as diameter
 threshsd = addpwfd(pd.read_csv('thresh_unmatched_sim7.csv'), '7')
@@ -668,10 +670,14 @@ g = sns.displot(
     palette='colorblind',
 )
 plt.ylim([19000, 31000])
+#%%final zpos
+sns.set(font_scale=1.5, style='whitegrid')
 g.axes.ravel()[0].set_ylabel('Z-position of activation (μm)')
+newthreshz = threshload.copy()
+newthreshz['activation_zpos'] = newthreshz['activation_zpos'] / 10000
 # plt.suptitle('Activation z-position for 3um fibers')
 g = sns.displot(
-    data=threshload.query("nsim in [0,5]").rename(columns={'nerve_label': 'Sample'}),
+    data=newthreshz.query("nsim in [0,5]").rename(columns={'nerve_label': 'Sample'}),
     y='activation_zpos',
     col='type',
     row='fiber_diam',
@@ -680,11 +686,19 @@ g = sns.displot(
     kind='kde',
     palette='colorblind',
     common_norm=False,
+    legend=False,
 )
 ylim = g.axes[0][0].get_ylim()
+for ax in g.axes.ravel():
+    ax.set_title('')
+for i, diam in enumerate([3, 13]):
+    g.axes[i][0].set_xlim(reversed(g.axes[i][0].get_xlim()))
+    g.axes[i][0].set_ylabel(f'Activation Location (cm)\n{diam} μm fibers')
+
 zloadmono = pd.read_csv('thresh_unmatched_sim10.csv')
 zloadmono = addpwfd(zloadmono, '10')
 zloadmono['fiber_diam'] = zloadmono['fiber_diam'].astype(int)
+zloadmono['activation_zpos'] = zloadmono['activation_zpos'] / 10000
 g = sns.displot(
     data=zloadmono.query("nsim in [0,5]").rename(columns={'nerve_label': 'Sample'}),
     y='activation_zpos',
@@ -695,10 +709,14 @@ g = sns.displot(
     kind='kde',
     palette='colorblind',
     common_norm=False,
+    legend=False,
 )
 for ax in g.axes.ravel():
     plt.ylim(ylim)
-
+    ax.set_title('')
+for i, diam in enumerate([3, 13]):
+    g.axes[i][0].set_xlim(reversed(g.axes[i][0].get_xlim()))
+    g.axes[i][0].set_ylabel(f'Activation Location (cm)\n{diam} μm fibers')
 #%% Correlation2d3d
 sns.reset_orig()
 sns.set(font_scale=1.5)
@@ -852,6 +870,7 @@ g.axes.ravel()[0].set_ylabel('Threshold (mA)')
 g.axes.ravel()[0].set_title('3 μm')
 g.axes.ravel()[1].set_title('13 μm')
 plt.figure()
+sns.set(font_scale=1.5, style='whitegrid')
 g = sns.lmplot(
     data=threshload.query('type=="3D"and nsim==0').rename(columns={'nerve_label': 'Sample'}),
     facet_kws={'sharex': False, 'sharey': False},
@@ -861,10 +880,11 @@ g = sns.lmplot(
     x='tortuosity',
     palette='colorblind',
 )
-plt.ylabel('Threshold (mA)')
+plt.ylabel('3D Threshold (mA)')
 #%% Percent Error
 sns.reset_orig()
 mpl.rcParams['figure.dpi'] = 400
+mpl.rcParams['font.size'] = 14
 # sns.set(font_scale=1.25)
 # apply pe to all rows of dataframe matched, with threshold3d as the correct value and threshold as the estimated value
 multimatched['pe'] = multimatched.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
@@ -988,7 +1008,13 @@ g.map_dataframe(sns.boxplot, x='type', y='Threshold (mA)', palette='colorblind',
 g.map_dataframe(sns.swarmplot, x='type', y='Threshold (mA)', color='black')
 g.map_dataframe(sns.lineplot, x='type', y='Threshold (mA)', units='units', hue='nerve_label', estimator=None, color='k')
 plt.subplots_adjust(top=0.9)
-plt.legend()
+plt.legend(title='Sample', bbox_to_anchor=(1.05, 1.5))
+g.set_titles(col_template='{col_name}', row_template='')
+for ax in g.axes.ravel():
+    ax.set_xlabel('')
+g.axes[0][0].set_ylabel('Threshold (mA)\n3 μm fibers')
+g.axes[1][0].set_ylabel('Threshold (mA)\n13 μm fibers')
+
 # plt.suptitle('Dose-response curves changes between model types (2D is cathodic leading only)')
 # get datamatch for compiled_data
 plt.figure()
@@ -1047,26 +1073,32 @@ plt.xlabel('3D Threshold (mA)')
 plt.title(f'Fiber Diameter: {diam} μm')
 plt.show()
 #%% peri-thk with 2d3d
-sns.set(font_scale=1.25)
+sns.set(font_scale=1.5)
 sns.set_style('whitegrid')
 diam = 3
 nsimdata = threshload.query(f'fiber_diam=={diam}')
-corrs = nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label','type'])['threshold','peri_thk'].corr().iloc[0::2, -1]
+corrs = nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'type'])['threshold', 'peri_thk'].corr().iloc[0::2, -1]
 corrs = corrs.reset_index().rename(columns={'threshold': 'correlation'})
 corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
 means = corrs.groupby('type').agg(np.mean)
 # plot one one line out to max of 3d
-g = sns.lmplot(data=nsimdata, y='threshold', x='peri_thk', hue='nerve_label',
-                palette = 'colorblind',row='type',scatter_kws={'linewidths':1,'edgecolor':'k'})
-g.axes.flat[1].set_xlabel('Threshold (mA)')
-for ax,r in zip(g.axes.flat,means['peri_thk']):
-    ax.set_ylabel('Perineurium Thickness (micron)')
-    ax.text(
-        0, 1,
-        f'mean r={r:.2f}',transform=ax.transAxes
-    )
+g = sns.lmplot(
+    data=nsimdata.rename(columns={"nerve_label": "Sample"}),
+    y='threshold',
+    x='peri_thk',
+    hue='Sample',
+    palette='colorblind',
+    row='type',
+    scatter_kws={'linewidths': 1, 'edgecolor': 'k'},
+)
+g.axes.flat[1].set_xlabel('Perineurium Thickness (μm)')
+for ax, r in zip(g.axes.flat, means['peri_thk']):
+    ax.set_title('')
+    ax.text(0, 1.05, f'mean r={r:.2f}', transform=ax.transAxes)
 # plt.xlabel('3D Threshold (mA)')
 # plt.title(f'Fiber Diameter: {diam} μm')
+g.axes.flat[0].set_ylabel('2D Threshold (mA)')
+g.axes.flat[1].set_ylabel('3D Threshold (mA)')
 plt.show()
 #%% peri-thk with 2d3d
 sns.set(font_scale=1.25)
@@ -1082,19 +1114,19 @@ plt.show()
 #%% organization compare type
 # remove all samples which dont end with a 2
 sns.reset_orig()
-sns.set(font_scale=1.25, style='whitegrid')
+sns.set(font_scale=1.75, style='whitegrid')
 mpl.rcParams['figure.dpi'] = 400
 threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
 # subtract 1 from sample if type is 3D
 threshdat['sample'] = threshdat.apply(lambda x: x['sample'] - 1 if x.type == "3D" else x['sample'], axis=1)
 for nerve in pd.unique(threshdat['nerve_label']):
     for n in [0, 5]:
-        plt.figure()
+        plt.figure().set_size_inches([4, 6])
         data = threshdat.query(f'nsim=={n} and sim == 3 and nerve_label=="{nerve}"').rename(
             columns={"threshold": "Threshold (mA)", "nerve_label": "Sample", "fiber_diam": "Fiber Diameter (μm)"}
         )
         sns.boxplot(data=data, x='type', y='Threshold (mA)', palette='colorblind', boxprops={'facecolor': "none"})
-        sns.stripplot(data=data, jitter=False, linewidth=1, x='type', y='Threshold (mA)', palette='colorblind')
+        sns.stripplot(data=data, jitter=False, linewidth=1, x='type', y='Threshold (mA)', palette='Blues')
         sns.lineplot(
             data=data,
             x='type',
@@ -1105,6 +1137,7 @@ for nerve in pd.unique(threshdat['nerve_label']):
             # alpha=0.25,
             linewidth=1,
         )
+        plt.xlabel('')
 #%% all dose-response fascicle scaled
 # # TODO add percent activated to initial processing
 # sns.set(font_scale=1.25)
