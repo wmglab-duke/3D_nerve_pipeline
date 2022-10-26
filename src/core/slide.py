@@ -237,7 +237,8 @@ class Slide:
             center = np.array(unary_union([fasc.outer.polygon() for fasc in self.fascicles]).centroid.coords[0])
             shift = list(point - center) + [0]
         # apply shift to nerve trace and all fascicles
-        self.nerve.shift(shift)
+        if not self.monofasc():
+            self.nerve.shift(shift)
 
         for fascicle in self.fascicles:
             fascicle.shift(shift)
