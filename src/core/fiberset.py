@@ -508,7 +508,7 @@ class FiberSet(Configurable, Saveable):
         if scatter_kws is None:
             scatter_kws = {}
         x, y = self.xy_points(split_xy=True)
-        if meshgridcolors is not None:
+        if meshgridcolors is None:
             scatter_kws.setdefault('c', 'red')
             scatter_kws.setdefault('s', 10)
             scatter_kws.setdefault('marker', 'o')
