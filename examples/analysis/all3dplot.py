@@ -151,6 +151,8 @@ g = sns.relplot(
     facet_kws={'sharex': False, 'sharey': False},
     legend=False,
 )
+g.map(plt.plot, [0, nsimdata.threshold.max()], [0, nsimdata.threshold.max()], 'r', linewidth=2,label='1:1 line')
+g.map(sns.regplot, 'threshold', 'threshold3d', scatter=False, color='k', label='linear fit')
 # plot one one line out to max of 3d
 
 # set legend title
@@ -176,8 +178,12 @@ for diam, pos, ax in zip([3, 13], (0.2, 0.8), g.axes.ravel()):
     ax.set_xlim([0, None])
     ax.set_ylim([0, None])
     ax.set_xlabel('2D Threshold (mA)')
+    #set y tixks to match x ticks
+    ax.set_yticks(ax.get_xticks())
+
 g.axes.ravel()[0].set_ylabel('3D Threshold (mA)')
 g.axes.ravel()[1].set_ylabel('')
+
 #%% threshold barplot
 # generate boxplot of 2d and 3d thresholds
 sns.set(font_scale=1.25)
