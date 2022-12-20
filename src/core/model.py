@@ -12,7 +12,7 @@ import numpy as np
 from quantiphy import Quantity
 from shapely.geometry import Point
 
-from src.core import Sample, Waveform
+from src.core import Waveform, Slide
 from src.utils import (
     Config,
     Configurable,
@@ -28,6 +28,7 @@ from src.utils import (
 )
 
 
+
 class Model(Configurable, Saveable):
     """Controls parameters associated with a model."""
 
@@ -36,7 +37,7 @@ class Model(Configurable, Saveable):
         # Initializes superclass
         Configurable.__init__(self)
 
-    def compute_cuff_shift(self, sample: Sample, sample_config: dict):
+    def compute_cuff_shift(self, slide: Slide, sample_config: dict, addl_cuff_buffer=0,ignore_uncentered=False):
         """Compute the Cuff Shift for a given model.
 
         :param sample: Sample, sample object
@@ -47,9 +48,6 @@ class Model(Configurable, Saveable):
         # NOTE: ASSUMES SINGLE SLIDE
         # add temporary model configuration
         self.add(SetupMode.OLD, Config.SAMPLE, sample_config)
-
-        # fetch slide
-        slide = sample.slides[0]
 
         # fetch nerve mode
         nerve_mode: NerveMode = self.search_mode(NerveMode, Config.SAMPLE)
@@ -83,7 +81,10 @@ class Model(Configurable, Saveable):
             theta_i,
             x,
             y,
-        ) = self.get_cuff_shift_parameters(cuff_config, deform_ratio, nerve_copy, sample_config, slide)
+        ) = self.get_cuff_shift_parameters(cuff_config, deform_ratio, nerve_copy, sample_config, slide,ignore_uncentered)
+
+        if addl_cuff_buffer != 0:
+            cuff_r_buffer += addl_cuff_buffer
 
         r_i, theta_f = self.check_cuff_expansion_radius(cuff_code, cuff_config, expandable, r_f, theta_i)
 
@@ -173,7 +174,7 @@ class Model(Configurable, Saveable):
 
         return self
 
-    def get_cuff_shift_parameters(self, cuff_config, deform_ratio, nerve_copy, sample_config, slide):
+    def get_cuff_shift_parameters(self, cuff_config, deform_ratio, nerve_copy, sample_config, slide, ignore_uncentered):
         """Calculate parameters for cuff shift.
 
         :param cuff_config: cuff configuration
@@ -211,13 +212,16 @@ class Model(Configurable, Saveable):
         # if poly fasc, use centroid of all fascicle as reference, not 0, 0
         # angle of centroid of nerve to center of minimum bounding circle
         reference_x = reference_y = 0.0
-        if not slide.monofasc() and not (round(slide.nerve.centroid()[0]) == round(slide.nerve.centroid()[1]) == 0):
+        if not ignore_uncentered and not slide.monofasc() and not (round(slide.nerve.centroid()[0]) == round(slide.nerve.centroid()[1]) == 0):
             raise MorphologyError(
                 "Slide is not centered at [0,0]"
             )  # if the slide has nerve and is not centered at the nerve throw error
         if not slide.monofasc():
-            reference_x, reference_y = slide.fascicle_centroid()
-        theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
+            try:
+                reference_x, reference_y = slide.fascicle_centroid()
+                theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
+            except ZeroDivisionError:
+                theta_c = 0
         # calculate final necessary radius by adding buffer
         r_f = r_bound + cuff_r_buffer
         # fetch initial cuff rotation (convert to rads)

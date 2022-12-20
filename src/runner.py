@@ -198,7 +198,7 @@ class Runner(Configurable):
             model.add(SetupMode.OLD, Config.MODEL, model_config).add(SetupMode.OLD, Config.SAMPLE, sample).add(
                 SetupMode.OLD, Config.RUN, self.configs[Config.RUN.value]
             ).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]).compute_cuff_shift(
-                sample, all_configs[Config.SAMPLE.value][0]
+                sample.slides[0], all_configs[Config.SAMPLE.value][0]
             ).compute_electrical_parameters().validate().write(
                 model_config_file
             ).save(
@@ -533,6 +533,7 @@ class Runner(Configurable):
             raise JavaError("Java compiler (javac) encountered an error during compilation operations.")
         # run java code
         exit_code = os.system(java_command)
+        print(java_command)
         if exit_code != 0:
             raise JavaError("Encountered an error during handoff to java.")
         os.chdir('..')

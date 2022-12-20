@@ -61,6 +61,7 @@ class Slide:
 
         self.orientation_point: Optional[Tuple[float, float]] = None
         self.orientation_angle: Optional[float] = None
+        self.scale_from_init = 1
 
     def monofasc(self) -> bool:
         """Check if slide is monofascicular.
@@ -92,6 +93,8 @@ class Slide:
         die: bool = True,
         tolerance: float = None,
         plotpath=None,
+        plot_debug=False,
+        intersection_target = 'outers'
     ) -> bool:
         """Check to make sure nerve geometry is not overlapping itself.
 
@@ -105,7 +108,7 @@ class Slide:
 
         def debug_plot():
             print('Slide validation failed, saving debug sample plot.')
-            if plotpath is None:
+            if plotpath is None and not plot_debug:
                 return
             plt.figure()
             self.plot(
@@ -114,33 +117,45 @@ class Slide:
                 axlabel=u"\u03bcm",
                 title='Debug sample which failed validation.',
             )
-            plt.savefig(plotpath + '/sample_debug')
+            if plot_debug:
+                plt.show()
+            else:
+                plt.savefig(plotpath + '/sample_debug')
             plt.clf()
             plt.close()
 
         if self.fascicles_too_small():
             debug_plot()
-            raise MorphologyError(
-                "A white area which results in a fascicle trace with <3 points was detected. "
-                "Check your input mask for specks."
-            )
+            if die:
+                raise MorphologyError(
+                    "A white area which results in a fascicle trace with <3 points was detected. "
+                    "Check your input mask for specks."
+                )
+            else:
+                return False
 
         if self.monofasc():
             return True
 
         if specific:
-            if self.fascicle_fascicle_intersection():
+            if self.fascicle_fascicle_intersection(target=intersection_target):
                 debug_plot()
-                raise MorphologyError("Fascicle-fascicle intersection found")
-
+                if die:
+                    raise MorphologyError("Fascicle-fascicle intersection found")
+                else:
+                    return False
             if self.fascicle_nerve_intersection():
                 debug_plot()
-                raise MorphologyError("Fascicle-nerve intersection found")
-
+                if die:
+                    raise MorphologyError("Fascicle-nerve intersection found")
+                else:
+                    return False
             if self.fascicles_outside_nerve():
                 debug_plot()
-                raise MorphologyError("Not all fascicles fall within nerve")
-
+                if die:
+                    raise MorphologyError("Not all fascicles fall within nerve")
+                else:
+                    return False
         else:
             if any(
                 [
@@ -156,8 +171,7 @@ class Slide:
                     raise MorphologyError("Slide validation failed")
                 else:
                     return False
-            else:
-                return True
+        return True
 
     def fascicles_too_close(self, tolerance: float = None) -> bool:
         """Check to see if any fascicles are too close to each other.
@@ -188,7 +202,7 @@ class Slide:
             check.extend([len(i.points) < 3 for i in f.inners])
         return any(check)
 
-    def fascicle_fascicle_intersection(self) -> bool:
+    def fascicle_fascicle_intersection(self,target) -> bool:
         """Check to see if any fascicles intersect each other.
 
         :raises MethodError: If called on a monofascicular slide
@@ -196,8 +210,11 @@ class Slide:
         """
         if self.monofasc():
             raise MethodError("Method fascicle_fascicle_intersection does not apply for monofascicle nerves")
-
-        pairs = itertools.combinations(self.fascicles, 2)
+        if target=='outers':
+            iterfasc = self.fascicles
+        elif target=='inners':
+            iterfasc = [i for f in self.fascicles for i in f.inners]
+        pairs = itertools.combinations(iterfasc, 2)
         return any([first.intersects(second) for first, second in pairs])
 
     def fascicle_nerve_intersection(self) -> bool:
@@ -303,7 +320,7 @@ class Slide:
 
         # if not the last graph plotted
         if fix_aspect_ratio:
-            ax.set_aspect('equal', 'datalim')
+            ax.set_aspect('equal')
 
         # loop through constituents and plot each
         if not self.monofasc():
@@ -363,6 +380,8 @@ class Slide:
 
         for fascicle in self.fascicles:
             fascicle.scale(factor, center)
+            
+        self.scale_from_init*=factor
 
     def smooth_traces(self, n_distance, i_distance):
         """Smooth traces for the slide.
