@@ -379,7 +379,7 @@ g = sns.catplot(
     kind='bar',
     palette='colorblind',
     aspect=0.5,
-    errorbar=('se'),
+    errorbar='se',
 )
 for ax, diam in zip(g.axes.ravel(), [3, 13]):
     ax.set_xlabel('')

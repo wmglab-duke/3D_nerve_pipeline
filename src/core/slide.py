@@ -13,6 +13,8 @@ from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.ndimage import binary_fill_holes
+
 from PIL import Image, ImageDraw, ImageFont
 
 # packages
@@ -383,7 +385,7 @@ class Slide:
             
         self.scale_from_init*=factor
 
-    def smooth_traces(self, n_distance, i_distance):
+    def smooth_traces(self, n_distance, i_distance,as_ratios=False):
         """Smooth traces for the slide.
 
         :param n_distance: distance to inflate and deflate the nerve trace
@@ -394,9 +396,9 @@ class Slide:
             raise ValueError("Fascicle smoothing distance cannot be None")
         for trace in self.trace_list():
             if isinstance(trace, Nerve):
-                trace.smooth(n_distance)
+                trace.smooth(n_distance,as_ratio=as_ratios)
             else:
-                trace.smooth(i_distance)
+                trace.smooth(i_distance,as_ratio=as_ratios)
 
     def generate_perineurium(self, fit: dict):
         """Generate perineurium for all fascicles in the slide.
@@ -444,7 +446,7 @@ class Slide:
         if self.monofasc():
             trace_list = [f.outer for f in self.fascicles]
         else:
-            trace_list = [self.nerve] + [f.outer for f in self.fascicles]
+            trace_list = [self.nerve] + [f.outer for f in self.fascicles] + [i for f in self.fascicles for i in f.inners]
         return trace_list
 
     def write(self, mode: WriteMode, path: str):

@@ -33,7 +33,7 @@ outpath = 'out/analysis/videos'
 def init():
     flat_data = data.flatten()
     ax.set_ylim(np.min(flat_data), np.max(flat_data))
-    return (ln,)
+    return ln,
 
 
 # define update function for each frame of animation

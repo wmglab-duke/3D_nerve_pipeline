@@ -112,7 +112,7 @@ class Trace:
 
         return distance
 
-    def smooth(self, distance, area_compensation=True):
+    def smooth(self, distance, area_compensation=True,as_ratio=False):
         """Smooth a contour using a dilation followed by erosion.
 
         :param distance: amount to use for dilation and erosion, in whatever units the trace is using
@@ -124,6 +124,8 @@ class Trace:
             raise ValueError("Smoothing value cannot be negative (Sample.json)")
         if distance == 0:
             return
+        if as_ratio:
+            distance = distance*self.ecd()
         pre_area = self.area()
         self.offset(fit=None, distance=distance)
         self.offset(fit=None, distance=-distance)
@@ -135,6 +137,9 @@ class Trace:
         else:
             self.scale(1)
         self.points = np.flip(self.points, axis=0)  # set points to opencv orientation
+
+    def ecd(self):
+        return np.sqrt(self.area()/np.pi)*2
 
     def scale(self, factor: float = 1, center: Union[List[float], str] = 'centroid'):
         """Scales the trace by a given factor.
@@ -154,6 +159,13 @@ class Trace:
         self.points = None
         self.append([list(coord[:2]) + [0] for coord in scaled_polygon.boundary.coords])
         self.__update()
+
+    def scale_to_area(self, target_area, center: Union[List[float], str] = 'centroid'):
+        """
+        """
+        factor = np.sqrt(target_area)/np.sqrt(self.area())
+
+        self.scale(factor=factor,center=center)
 
     def rotate(self, angle: float, center: Union[List[float], str] = 'centroid'):
         """Rotate the trace by a given angle.
