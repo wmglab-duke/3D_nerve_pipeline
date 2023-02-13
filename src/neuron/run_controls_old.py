@@ -11,7 +11,7 @@ import sys
 import time
 import json
 
-from wmglab_neuron import FiberBuilder, FiberModel, Stimulation
+from wmglab_neuron import Recording, Saving, Stimulation
 
 
 def main(
