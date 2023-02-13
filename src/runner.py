@@ -533,7 +533,6 @@ class Runner(Configurable):
             raise JavaError("Java compiler (javac) encountered an error during compilation operations.")
         # run java code
         exit_code = os.system(java_command)
-        print(java_command)
         if exit_code != 0:
             raise JavaError("Encountered an error during handoff to java.")
         os.chdir('..')
