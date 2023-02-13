@@ -144,6 +144,7 @@ input/
 # samples
 *.class*
 out/
+3d_outputs/
 */system/env.json
 
 # machine-specific neuron mod files
