@@ -32,7 +32,6 @@ class Config(ASCENTEnum, Enum):
     MATERIALS = 'materials'
     FIBER_Z = 'fiber_z'
     CUFFS = 'cuffs'
-    EXCEPTIONS = 'exceptions'
     CLI_ARGS = 'cli_args'
     ENV = 'env'
     CI_PERINEURIUM_THICKNESS = 'ci_perineurium_thickness'
@@ -63,6 +62,15 @@ class Env(ASCENTEnum, Enum):
     NSIM_EXPORT_PATH = prefix + 'NSIM_EXPORT_PATH'
 
     vals = [COMSOL_PATH, JDK_PATH, PROJECT_PATH, NSIM_EXPORT_PATH]
+
+
+@unique
+class OptionalEnv(ASCENTEnum, Enum):
+    prefix = 'ASCENT_'
+
+    ASCENT_DATASET_EXPORT_PATH = prefix + 'DATASET_EXPORT_PATH'
+
+    vals = [ASCENT_DATASET_EXPORT_PATH]
 
 
 # %% Trace functionality
@@ -152,7 +160,6 @@ class PopulateMode(ASCENTEnum, Enum):
 
 @unique
 class DiamDistMode(ASCENTEnum, Enum):
-
     TRUNCNORM = 0
     UNIFORM = 1
 
@@ -266,7 +273,6 @@ class WaveformMode(ASCENTEnum, Enum):
 
 @unique
 class ExportMode(ASCENTEnum, Enum):
-
     OVERWRITE = "overwrite"
     ERROR = "error"
     SELECTIVE = "selective"

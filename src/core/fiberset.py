@@ -26,10 +26,11 @@ from src.utils import (
     Config,
     Configurable,
     DiamDistMode,
-    Exceptionable,
     FiberGeometry,
     FiberXYMode,
     FiberZMode,
+    IncompatibleParametersError,
+    MorphologyError,
     MyelinatedSamplingType,
     MyelinationMode,
     Saveable,
@@ -40,18 +41,16 @@ from src.utils import (
 from .sample import Sample
 
 
-class FiberSet(Exceptionable, Configurable, Saveable):
+class FiberSet(Configurable, Saveable):
     """Class methods for generating fiber coordinates to use in NEURON simulations."""
 
-    def __init__(self, sample: Sample, exceptions_config: list):
+    def __init__(self, sample: Sample):
         """Initialize the FiberSet class.
 
         :param sample: The sample to be used for the nerve model.
-        :param exceptions_config: The exceptions config.
         """
         # set up superclasses
         Configurable.__init__(self)
-        Exceptionable.__init__(self, SetupMode.OLD, exceptions_config)
 
         # initialize empty lists of fiber points
         self.sample = sample
@@ -65,9 +64,13 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         )
 
     def init_post_config(self):
-        """Make sure Model and Simulation are configured."""
+        """Make sure Model and Simulation are configured.
+
+        :raises KeyError: If Model or Simulation are not configured.
+        :return: self
+        """
         if any([config.value not in self.configs.keys() for config in (Config.MODEL, Config.SIM)]):
-            self.throw(78)
+            raise KeyError("Missing Model or Simulation configuration.")
         return self
 
     def generate(self, sim_directory: str, super_sample: bool = False):
@@ -75,7 +78,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
         :param sim_directory: The directory to save the simulation files to.
         :param super_sample: Whether to generate a super sample.
-        :return:
+        :return: self
         """
         fibers_xy = self._generate_xy(sim_directory)
         self.out_to_fib, self.out_to_in = self._generate_maps(fibers_xy)
@@ -90,22 +93,22 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
         :param mode: Type of file to write to.
         :param path: Path to the file to write to.
+        :raises ValueError: If some fibers have diameter attribute and others do not.
+        :return: self
         """
         diams = []
-        for i, fiber_pre in enumerate(self.fibers if self.fibers is not None else []):
-
-            if not isinstance(fiber_pre, dict):
-                fiber = fiber_pre
-            else:
-                fiber = fiber_pre['fiber']
-                diam = fiber_pre['diam']
-                diams.append(diam)
+        offset_ratios = []
+        for i, fiber in enumerate(self.fibers if self.fibers is not None else []):
+            diams.append(fiber['diam'])
+            z_coords = fiber['fiber']
+            offset_ratios.append(fiber['offset_ratio'])
+            os.makedirs(path, exist_ok=True)
 
             with open(
                 os.path.join(path, str(i) + WriteMode.file_endings.value[mode.value]),
                 'w',
             ) as f:
-                for row in [len(fiber)] + list(fiber):
+                for row in [len(z_coords)] + list(z_coords):
                     if not isinstance(row, int):
                         for el in row:
                             f.write(str(el) + ' ')
@@ -113,10 +116,23 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                         f.write(str(row) + ' ')
                     f.write("\n")
 
-        if len(diams) > 0:
+        if diams.count(None) == 0:
             diams_key_path = os.path.join(path, 'diams.txt')
             with open(diams_key_path, "w") as f2:
                 np.savetxt(f2, diams, fmt='%0.1f')
+        elif diams.count(None) == len(diams):
+            pass
+        else:
+            raise ValueError('Some fibers have diameters and some do not.')
+
+        if offset_ratios.count(None) == 0:
+            offset_ratios_key_path = os.path.join(path, 'offsets.txt')
+            with open(offset_ratios_key_path, "w") as f3:
+                np.savetxt(f3, offset_ratios, fmt='%0.2f')
+        elif offset_ratios.count(None) == len(offset_ratios):
+            pass
+        else:
+            raise ValueError('Some fibers have offsets and some do not.')
 
         return self
 
@@ -147,10 +163,12 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         """Generate the xy coordinates of the fibers.
 
         :param sim_directory: The directory of the simulation.
+        :raises NotImplementedError: If a mode is not supported.
+        :return: xy coordinates of the fibers
         """
         # get required parameters from configuration JSON (using inherited Configurable methods)
         xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
-        xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
+        self.xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
         xy_parameters: dict = self.search(Config.SIM, 'fibers', 'xy_parameters')
         my_xy_seed: int = xy_parameters.get('seed', 0)
 
@@ -159,27 +177,26 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
         # perform implemented mode
         if self.search_mode(FiberZMode, Config.MODEL) == FiberZMode.EXTRUSION:
-
             # error if an invalid mode is selected
-            if xy_mode not in FiberXYMode:
-                self.throw(151)
+            if self.xy_mode not in FiberXYMode:
+                raise NotImplementedError("Invalid FiberXYMode in Sim.")
 
-            if xy_mode == FiberXYMode.CENTROID:
+            if self.xy_mode == FiberXYMode.CENTROID:
                 points = self.generate_centroid_points()
 
-            elif xy_mode == FiberXYMode.UNIFORM_DENSITY:
+            elif self.xy_mode == FiberXYMode.UNIFORM_DENSITY:
                 points = self.generate_uniform_density_points(buffer, my_xy_seed)
 
-            elif xy_mode == FiberXYMode.UNIFORM_COUNT:
+            elif self.xy_mode == FiberXYMode.UNIFORM_COUNT:
                 points = self.generate_uniform_count_points(buffer, my_xy_seed)
 
-            elif xy_mode == FiberXYMode.WHEEL:
+            elif self.xy_mode == FiberXYMode.WHEEL:
                 points = self.generate_wheel_points(buffer)
 
-            elif xy_mode == FiberXYMode.EXPLICIT:
+            elif self.xy_mode == FiberXYMode.EXPLICIT:
                 points = self.load_explicit_coords(sim_directory)
         else:
-            self.throw(30)
+            raise NotImplementedError("That FiberZMode is not yet implemented.")
 
         return points
 
@@ -331,6 +348,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         """Load the xy coordinates of the fibers from an explicit file.
 
         :param sim_directory: The directory of the simulation.
+        :raises FileNotFoundError: If the coordinates file is not found.
+        :raises MorphologyError: If any of the coordinates fall outside of the fascicles.
         :return: The xy coordinates of the fibers.
         """
         explicit_index = self.search(
@@ -357,7 +376,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 f'\n\t\t{sim_directory}'
             )
         if not os.path.exists(os.path.join(sim_directory, 'explicit.txt')):
-            self.throw(83)
+            raise FileNotFoundError(
+                "FiberXYMode is EXPLICIT in Sim but no explicit.txt file with coordinates is in the Sim directory. "
+                "See config/system/templates/explicit.txt for example of this file's required format."
+            )
         with open(os.path.join(sim_directory, 'explicit.txt')) as f:
             # advance header
             next(f)
@@ -372,8 +394,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     for inner in fascicle.inners
                 ]
             ):
-                print(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
-                self.throw(71)
+                raise MorphologyError(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
         return points
 
     def plot_fibers_on_sample(self, points, sim_directory):
@@ -428,11 +449,16 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         :param fibers_xy: The xy coordinates of the fibers.
         :param override_length: The length of the fibers (forced).
         :param super_sample: Whether to use supersampling.
+        :raises NotImplementedError: If the z mode is not supported.
         :return: The z coordinates of the fibers.
         """
+        # get top-level fiber z generation
+        fiber_z_mode: FiberZMode = self.search_mode(FiberZMode, Config.MODEL)
+        # all functionality is only defined for EXTRUSION as of now
+        if fiber_z_mode != FiberZMode.EXTRUSION:
+            raise NotImplementedError(f"{fiber_z_mode} FiberZMode is not yet implemented.")
 
         def clip(values: list, start, end, myel: bool, is_points: bool = False) -> list:
-
             step = 1
             if myel:
                 step = 11
@@ -451,6 +477,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             """Generate the z coordinates of the fibers for a myelinated nerve.
 
             :param diameter: The diameter of the myelinated nerve.
+            :raises ValueError: If diameter is not within the valid range
             :return: The z coordinates of the fibers.
             """
 
@@ -499,7 +526,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
             # load in all the required specifications for finding myelinated z coordinates
             if sampling_mode == MyelinatedSamplingType.DISCRETE.value:
-
                 diameters, my_delta_zs, paranodal_length_2s = (
                     self.search(
                         Config.FIBER_Z,
@@ -516,7 +542,6 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 inter_length = eval(inter_length_str)
 
             elif sampling_mode == MyelinatedSamplingType.INTERPOLATION.value:
-
                 paranodal_length_2_str, delta_z_str, inter_length_str = (
                     self.search(
                         Config.FIBER_Z,
@@ -533,7 +558,9 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     delta_z = eval(delta_z_str)
                 elif fiber_geometry_mode_name == FiberGeometry.MRG_INTERPOLATION.value:
                     if diameter > 16.0 or diameter < 2.0:
-                        self.throw(77)
+                        raise ValueError(
+                            "Diameter entered for MRG_INTERPOLATION must be between 2.0 and 16.0 (inclusive)."
+                        )
                     if diameter >= 5.643:
                         delta_z = eval(delta_z_str["diameter_greater_or_equal_5.643um"])
                     else:
@@ -562,6 +589,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             :param my_x: The x coordinate of the fiber.
             :param my_y: The y coordinate of the fiber.
             :param additional_offset: The additional offset of the fiber.
+            :raises ValueError: If offset is not within the valid range
             :return: The fiber.
             """
             random_offset_value = 0
@@ -587,7 +615,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 if 0 <= offset <= 1:
                     offset = offset * dz
                 else:
-                    self.throw(99)
+                    raise ValueError(
+                        "Sim->fibers->z_parameters->offset is a fraction of 1 node length. "
+                        "Needs to be a value between 0 and 1 (inclusive)"
+                    )
 
             # compute offset z coordinate
             z_offset = [my_z + offset + random_offset_value + additional_offset for my_z in z_values]
@@ -600,13 +631,16 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             )
 
             my_fiber = [(my_x, my_y, z) for z in z_offset]
+            random_offset_ratio = random_offset_value / dz
 
-            return my_fiber
+            return my_fiber, random_offset_ratio
 
         def generate_z_unmyel(mydiams):
             """Generate the z values for an unmyelinated fiber.
 
             :param mydiams: The diameters of the fiber.
+            :raises IncompatibleParametersError: If no dz is provided for supersampled bases.
+            :raises ValueError: If the fiber generated is too long.
             :return: The z values of the fiber.
             """
             fibers = []
@@ -614,7 +648,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 if 'dz' in self.configs[Config.SIM.value]['supersampled_bases']:
                     delta_z = self.search(Config.SIM, 'supersampled_bases', 'dz')
                 else:
-                    self.throw(79)
+                    raise IncompatibleParametersError("No dz provided for Sim generating super-sampled bases.")
 
             else:
                 delta_z = self.search(
@@ -631,18 +665,8 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                 z_top_half = z_top_half[:-1]
                 z_bottom_half = z_bottom_half[1:]
 
-            if len(mydiams) == 0:
-                diams = [
-                    self.search(
-                        Config.SIM,
-                        'fibers',
-                        FiberZMode.parameters.value,
-                        'diameter',
-                    )
-                ] * len(fibers_xy)
-
             for (x, y), diam in zip(fibers_xy, diams):
-                fiber_pre = build_fiber_with_offset(
+                fiber_pre, offset_ratio = build_fiber_with_offset(
                     list(np.concatenate((z_bottom_half[:-1], z_top_half))),
                     myelinated,
                     delta_z,
@@ -650,11 +674,10 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     y,
                 )
                 if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(np.array(fiber_pre)[:, 2]) > fiber_length:
-                    self.throw(119)
-                if diam_distribution:
-                    fiber = {'diam': diam, 'fiber': fiber_pre}
-                else:
-                    fiber = fiber_pre
+                    raise ValueError("Fiber generated is longer than chosen fiber length")
+
+                fiber = {'diam': diam, 'fiber': fiber_pre, 'offset_ratio': offset_ratio}
+
                 fibers.append(fiber)
             return fibers
 
@@ -662,6 +685,7 @@ class FiberSet(Exceptionable, Configurable, Saveable):
             """Generate the z values for a myelinated fiber.
 
             :param mydiams: The diameters of the fiber.
+            :raises ValueError: If the fiber is too long.
             :return: The z values of the fiber.
             """
             fibers = []
@@ -675,77 +699,72 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     z_shift_to_center_in_fiber_range,
                 ) = generate_myel_fiber_zs(diam)
 
-                fiber_pre = build_fiber_with_offset(zs, myelinated, delta_z, x, y, z_shift_to_center_in_fiber_range)
+                fiber_pre, offset_ratio = build_fiber_with_offset(
+                    zs, myelinated, delta_z, x, y, z_shift_to_center_in_fiber_range
+                )
                 if np.amax(np.array(fiber_pre)[:, 2]) - np.amin(np.array(fiber_pre)[:, 2]) > fiber_length:
-                    self.throw(119)
-                if diam_distribution:
-                    fiber = {'diam': diam, 'fiber': fiber_pre}
-                else:
-                    fiber = fiber_pre
+                    raise ValueError("Fiber generated is longer than chosen fiber length")
+
+                fiber = {'diam': diam, 'fiber': fiber_pre, 'offset_ratio': offset_ratio}
                 fibers.append(fiber)
             return fibers
 
-        # get top-level fiber z generation
-        fiber_z_mode: FiberZMode = self.search_mode(FiberZMode, Config.MODEL)
+        fiber_length, model_length = self.calculate_fiber_length_params(override_length)
+        shift = self.search(
+            Config.SIM,
+            'fibers',
+            FiberZMode.parameters.value,
+            'absolute_offset',
+            optional=True,
+        )
 
-        # all functionality is only defined for EXTRUSION as of now
-        if fiber_z_mode == FiberZMode.EXTRUSION:
+        fiber_geometry_mode_name: str = self.search(Config.SIM, 'fibers', 'mode')
 
-            fiber_length, model_length = self.calculate_fiber_length_params(override_length)
-            shift = self.search(
-                Config.SIM,
-                'fibers',
-                FiberZMode.parameters.value,
-                'absolute_offset',
-                optional=True,
-            )
+        # use key from above to get myelination mode from fiber_z
+        diameter = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'diameter')
 
-            fiber_geometry_mode_name: str = self.search(Config.SIM, 'fibers', 'mode')
+        diams, my_z_seed, myelinated = self.calculate_fiber_diams(
+            diameter, fiber_geometry_mode_name, fibers_xy, super_sample
+        )
 
-            # use key from above to get myelination mode from fiber_z
-            diams = []
-            diameter = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'diameter')
-            diam_distribution: bool = type(diameter) is dict
+        if myelinated and not super_sample:  # MYELINATED
+            fibers = generate_z_myelinated(diams)
 
-            diams, myelinated = self.calculate_fiber_diams(
-                diam_distribution, diams, fiber_geometry_mode_name, fibers_xy, super_sample
-            )
-
-            my_z_seed = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'seed')
-
-            if myelinated and not super_sample:  # MYELINATED
-                fibers = generate_z_myelinated(diams)
-
-            else:  # UNMYELINATED
-                fibers = generate_z_unmyel(diams)
-
-        else:
-            self.throw(31)
+        else:  # UNMYELINATED
+            fibers = generate_z_unmyel(diams)
 
         return fibers
 
-    def calculate_fiber_diams(self, diameter, diams, fiber_geometry_mode_name, fibers_xy, super_sample):
+    def calculate_fiber_diams(self, diameter, fiber_geometry_mode_name, fibers_xy, super_sample):
         """Calculate the diameters of the fibers.
 
-        :param diameter: The diameter of the fiber.
+        :param diameter: The diameter of the fiber, or a dictionary of parameters for the diameter distribution.
         :param fiber_geometry_mode_name: The name of the fiber geometry mode.
         :param fibers_xy: The xy coordinates of the fibers.
-        :param super_sample: Whether or not to super sample the fibers.
+        :param super_sample: Whether to super sample the fibers.
+        :raises IncompatibleParametersError: If an improper mode is chosen
+        :raises ValueError: If lower_fiber_diam is too low
         :return: The diameters of the fibers.
         """
         diam_distribution: bool = type(diameter) is dict
+        diams = []
 
         if super_sample:
             myelinated = False
+            my_z_seed = None
+            diams = [None] * len(fibers_xy)
         else:
-            myelinated: bool = self.search(
+            myelinated = self.search(
                 Config.FIBER_Z,
                 MyelinationMode.parameters.value,
                 fiber_geometry_mode_name,
                 'myelinated',
             )
+            my_z_seed = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'seed')
 
-            if diam_distribution:
+            if not diam_distribution:
+                diams = [diameter] * len(fibers_xy)
+            else:
                 sampling_mode = self.search(
                     Config.FIBER_Z,
                     MyelinationMode.parameters.value,
@@ -753,89 +772,49 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                     'sampling',
                 )
                 if myelinated and (sampling_mode != MyelinatedSamplingType.INTERPOLATION.value):
-                    self.throw(104)
+                    raise IncompatibleParametersError(
+                        "To simulate myelinated fibers from a distribution of diameters must use MRG_INTERPOLATION"
+                    )
+                distribution_mode_name = diameter['mode']
 
-                distribution_mode_name = self.search(
-                    Config.SIM,
-                    'fibers',
-                    FiberZMode.parameters.value,
-                    'diameter',
-                    'mode',
-                )
                 distribution_mode: DiamDistMode = [
                     mode for mode in DiamDistMode if str(mode).split('.')[-1] == distribution_mode_name
                 ][0]
                 # seed rng
-                my_diam_seed: int = self.search(
-                    Config.SIM,
-                    'fibers',
-                    FiberZMode.parameters.value,
-                    'diameter',
-                    'seed',
-                )
+                my_diam_seed: int = diameter['seed']
                 np.random.seed(my_diam_seed)
 
                 fiber_diam_dist = None
                 if distribution_mode == DiamDistMode.UNIFORM:
-
                     # load parameters
-                    lower_fiber_diam: float = self.search(
-                        Config.SIM,
-                        'fibers',
-                        FiberZMode.parameters.value,
-                        'diameter',
-                        'lower',
-                    )
-                    upper_fiber_diam: float = self.search(
-                        Config.SIM,
-                        'fibers',
-                        FiberZMode.parameters.value,
-                        'diameter',
-                        'upper',
-                    )
+                    lower_fiber_diam: float = diameter['lower']
+                    upper_fiber_diam: float = diameter['upper']
 
                     # parameter checking
                     # positive values, order makes sense, etc
                     if lower_fiber_diam < 0:
-                        self.throw(100)
+                        raise ValueError("lower_fiber_diam bound must be positive length for UNIFORM method")
                     if lower_fiber_diam > upper_fiber_diam:
-                        self.throw(101)
+                        raise ValueError("upper_fiber_diam bound must be >= lower_fiber_diam bound for UNIFORM method")
 
                     fiber_diam_dist = stats.uniform(lower_fiber_diam, upper_fiber_diam - lower_fiber_diam)
 
                 elif distribution_mode == DiamDistMode.TRUNCNORM:
-
                     # load parameters
-                    n_std_fiber_diam_limit: float = self.search(
-                        Config.SIM,
-                        'fibers',
-                        FiberZMode.parameters.value,
-                        'diameter',
-                        'n_std_limit',
-                    )
-                    mu_fiber_diam: float = self.search(
-                        Config.SIM,
-                        'fibers',
-                        FiberZMode.parameters.value,
-                        'diameter',
-                        'mu',
-                    )
-                    std_fiber_diam: float = self.search(
-                        Config.SIM,
-                        'fibers',
-                        FiberZMode.parameters.value,
-                        'diameter',
-                        'std',
-                    )
+                    n_std_fiber_diam_limit: float = diameter['n_std_limit']
+                    mu_fiber_diam: float = diameter['mu']
+                    std_fiber_diam: float = diameter['std']
                     lower_fiber_diam = mu_fiber_diam - n_std_fiber_diam_limit * std_fiber_diam
                     upper_fiber_diam = mu_fiber_diam + n_std_fiber_diam_limit * std_fiber_diam
 
                     # parameter checking
                     # positive values, order makes sense, etc
                     if n_std_fiber_diam_limit == 0 and std_fiber_diam != 0:
-                        self.throw(102)
+                        raise IncompatibleParametersError(
+                            "Conflicting arguments for std_fiber_diam and n_std_fiber_diam_limit for TRUNCNORM method"
+                        )
                     if lower_fiber_diam < 0:
-                        self.throw(103)
+                        raise ValueError("lower_fiber_diam must be defined as >= 0 for TRUNCNORM method")
 
                     fiber_diam_dist = stats.truncnorm(
                         (lower_fiber_diam - mu_fiber_diam) / std_fiber_diam,
@@ -843,14 +822,14 @@ class FiberSet(Exceptionable, Configurable, Saveable):
                         loc=mu_fiber_diam,
                         scale=std_fiber_diam,
                     )
-
                 diams = fiber_diam_dist.rvs(len(fibers_xy))
-        return diams, myelinated
+        return diams, my_z_seed, myelinated
 
     def calculate_fiber_length_params(self, override_length):
         """Calculate the fiber length parameters.
 
         :param override_length: Whether or not to override the length.
+        :raises IncompatibleParametersError: If parameters are not set properly.
         :return: The fiber length parameters.
         """
         model_length = (
@@ -878,13 +857,18 @@ class FiberSet(Exceptionable, Configurable, Saveable):
 
         else:
             if self.configs['sims']['fibers']['z_parameters'].get('full_nerve_length') is True:
-                self.throw(127)
+                raise IncompatibleParametersError(
+                    "If min and max are defined (sim config>fiber>z_parameters), "
+                    "then full_nerve_length must either not be defined, or be false"
+                )
 
             min_fiber_z_limit = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'min')
             max_fiber_z_limit = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'max')
 
             if not max_fiber_z_limit > min_fiber_z_limit:
-                self.throw(105)
+                raise IncompatibleParametersError(
+                    "sims->fibers->z_parameters->min is greater than sims->fibers->z_parameters->max"
+                )
 
             fiber_length = (max_fiber_z_limit - min_fiber_z_limit) if override_length is None else override_length
         if (
@@ -905,14 +889,27 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         return fiber_length, model_length
 
     def validate(self):
-        """Check to ensure fiberset is valid."""
+        """Check to ensure fiberset is valid.
+
+        :raises MorphologyError: if fiber points are too close to an inner boundary.
+        """
         # check that all fibers are inside inners, accounting for trace buffer
-        buffer: float = self.search(Config.SIM, 'fibers', 'xy_trace_buffer')
         all_inners = [inner.deepcopy() for fascicle in self.sample.slides[0].fascicles for inner in fascicle.inners]
-        [inner.offset(distance=-buffer) for inner in all_inners]
-        allpoly = unary_union([inner.polygon() for inner in all_inners])
-        if not np.all([Point(fiber).within(allpoly) for fiber in self.fibers]):
-            self.throw(147)
+        if self.xy_mode != FiberXYMode.CENTROID:
+            buffer: float = self.search(Config.SIM, 'fibers', 'xy_trace_buffer')
+            [inner.offset(distance=-buffer) for inner in all_inners]
+        else:
+            warnings.warn("Ignoring xy_trace_buffer since xy_mode is centroid")
+        allpoly = unary_union([inner.polygon().buffer(0) for inner in all_inners])
+        if not np.all(
+            [
+                Point(fiber['fiber'][0][:-1]).within(allpoly) if type(fiber) is dict else Point(fiber).within(allpoly)
+                for fiber in self.fibers
+            ]
+        ):
+            raise MorphologyError(
+                "Fiber points were detected too close to an inner boundary (as defined by xy_trace_buffer in SIM)."
+            )
         # add other checks below
 
     def xy_points(self, split_xy=False):
@@ -921,7 +918,11 @@ class FiberSet(Exceptionable, Configurable, Saveable):
         :param split_xy: Whether or not to split the xy points into separate arrays.
         :return: The xy points of the fibers.
         """
-        points = [(f[0][0], f[0][1]) for f in self.fibers]
+        if isinstance(self.fibers[0], dict):
+            points = [(f['fiber'][0][0], f['fiber'][0][1]) for f in self.fibers]
+        else:
+            points = [(f[0][0], f[0][1]) for f in self.fibers]
+
         if split_xy:
             return list(zip(*points))[0], list(zip(*points))[1]
         else:

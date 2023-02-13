@@ -8,24 +8,14 @@ The source code can be found on the following GitHub repository: https://github.
 import argparse
 import sys
 
-
-class versionAction(argparse.Action):
-    """Used for version command line arg."""
-
-    def __call__(self, parser, args, values, option_string=None):
-        """Print version and exit."""
-        from config.system import _version
-
-        print(f'ASCENT version {_version.__version__}')
-        sys.exit()
-
+from config.system import _version
 
 # Set up parser and top level args
 parser = argparse.ArgumentParser(
     description='ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds'
 )
 parser.add_argument('-v', '--verbose', action='store_true', help='verbose printing')
-parser.add_argument('--version', action=versionAction, nargs=0, help='print version')
+parser.add_argument('--version', action='version', version=f'ASCENT version {_version.__version__}')
 parser.add_argument(
     '-l',
     '--list',
@@ -157,6 +147,15 @@ install_parser.add_argument('--no-conda', action='store_true', help='Skip conda 
 
 # parser for env setup
 env_parser = subparsers.add_parser('env_setup', help='Set ASCENT environment variables')
+
+# parser for biuld_dataset
+bd_parser = subparsers.add_parser('build_dataset', help='Export dataset from ASCENT runs in SPARC format')
+bd_parser.add_argument(
+    'dataset_indices',
+    nargs='+',
+    type=int,
+    help='Space separated dataset indices to export',
+)
 
 
 def parse():

@@ -50,21 +50,16 @@ from typing import List
 
 import numpy as np
 
-from src.utils import Config, Configurable, Exceptionable, SetupMode
+from src.utils import Config, Configurable, SetupMode
 
 
-class Map(Exceptionable, Configurable):
+class Map(Configurable):
     """Required (Config.) JSON's SAMPLE."""
 
-    def __init__(self, exception_config):
-        """
-        :param main_config:
-        :param exception_config:
-        :param mode:
-        """
+    def __init__(self):
+        """Initialize Map object."""
 
-        # set up super classes
-        Exceptionable.__init__(self, SetupMode.OLD, exception_config)
+        # set up super class
         Configurable.__init__(self)
         self.slides = None
         self.output_path = None
@@ -74,7 +69,6 @@ class Map(Exceptionable, Configurable):
         self.data_root = None
 
     def init_post_config(self, mode: SetupMode = SetupMode.NEW):
-
         # "root" of data within SAMPLE config
         # stored as list because will be "splatted" later when using self.search and self.path
         self.data_root = 'slide_map'
@@ -110,8 +104,12 @@ class Map(Exceptionable, Configurable):
         elif self.mode == SetupMode.SYNTHETIC:
             # must create a "synthetic" map
 
+            inputpath = os.path.join('input', self.sample)
+            if not os.path.exists(inputpath):
+                raise FileNotFoundError(f'Input folder specified in sample.json does not exist ({inputpath})')
+
             # assume path to synthetic map is input/<SAMPLE>/map.json
-            self.source_path = os.path.join('input', self.sample, 'map.json')
+            self.source_path = os.path.join(inputpath, 'map.json')
 
             # load/edit map template
             mapper = self.load(os.path.join('config', 'templates', 'map.json'))
@@ -129,7 +127,7 @@ class Map(Exceptionable, Configurable):
 
         else:
             # the above if statements are exhaustive, so this should be unreachable
-            self.throw(136)
+            raise ValueError("Invalid SetupMode for Map object")
 
     def find(self, cassette: str, number: int) -> 'SlideInfo':
         """Returns first slide that matches search parameters (there should

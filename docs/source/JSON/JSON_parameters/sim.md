@@ -285,7 +285,7 @@ weight<sub>2</sub> (for src 2 on)]]
 
 The value of potentials/ is applied to a model fiber in NEURON
 multiplied by the stimulation amplitude, which is either from a list of
-finite amplitudes or a binary search for thresholds ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols))
+finite amplitudes or a bisection search for thresholds ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols))
 
 ![f4]
 
@@ -377,7 +377,9 @@ length of the fiber). Required.
 
   - `“absolute_offset”`: The value (Double) is the distance (micrometers) that the center coordinate of the fiber is
     shifted along the z-axis from the longitudinal center of the
-    proximal medium. This value is additive with `"offset"`. Note that the shift is with respect to the model center. If a negative value is passed, the fiber will be shifted in the -z direction.
+    proximal medium. This value is additive with `"offset"`.
+    The shift is with respect to the model center. If a negative value is passed, the fiber will be shifted in the -z direction.
+    Any offset from this parameter is cumulative with that from `"offset"`.
 
   - `“seed”`: The value (Integer) seeds the random number generator
     before any random offsets are created. Required only if “offset”
@@ -505,7 +507,8 @@ following JSON Objects containing “WaveformMode”-specific parameters.
 The user can only loop parameters for one type of waveform in a
 **_Sim_**.
 
-Note: the “digits” parameter for the following “WaveformModes” sets the
+```{note}
+The “digits” parameter for the following “WaveformModes” sets the
 precision of the unscaled current amplitude. For waveforms that are only
 ever +/-1 and 0 (e.g., `MONOPHASIC_PULSE_TRAIN`, `BIPHASIC_FULL_DUTY`,
 `BIPHASIC_PULSE_TRAIN`), the user can represent the waveform faithfully
@@ -515,12 +518,15 @@ intermediate values (e.g., `SINUSOID`,
 of precision may be required to achieve numerical accuracy. An excessive
 number of digits of precision will increase computational load and waste
 storage resources.
+```
 
-Note: if one of the parameter values in the `“WaveformMode”` JSON Object
+```{Note}
+If one of the parameter values in the `“WaveformMode”` JSON Object
 is a list, then there are `n_sim/` folders created for as many waveforms
 as parameter values in the list. If more than one parameter value is a
 list, then there are `n_sim/` folders created for each combination of
 waveform parameters among the lists (i.e., the Cartesian product).
+```
 
 - `“MONOPHASIC_PULSE_TRAIN”`
 
@@ -742,7 +748,7 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     is included.
 
 - `“runtimes”`: The value (Boolean), if true, tells the program to save
-  the NEURON runtime for either the finite amplitude or binary search for
+  the NEURON runtime for either the finite amplitude or bisection search for
   threshold simulation. If this key-value pair is omitted, the default
   behavior is False.
 
@@ -800,16 +806,16 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     `“BLOCK_THRESHOLDS”`) only. Optional for `"FINITE_AMPLITUDES"` protocol.
 
 - `“bounds_search”`: the value (JSON Object) contains key-value pairs
-  to define how to search for upper and lower bounds in binary search
+  to define how to search for upper and lower bounds in bisection search
   algorithms ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols)). Required for threshold finding protocols (i.e.,
   `“ACTIVATION_THRESHOLDS”` and `“BLOCK_THRESHOLDS”`).
 
   - `“mode”`: the value (String) is the `“SearchAmplitudeIncrementMode”`
     that tells the program how to change the initial upper and lower
-    bounds for the binary search; the bounds are adjusted
+    bounds for the bisection search; the bounds are adjusted
     iteratively until the initial upper bound (i.e., “top”)
     activates/blocks and until the initial lower bound does not
-    activate/block, before starting the binary search ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols)). Required.
+    activate/block, before starting the bisection search ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols)). Required.
 
     - As listed in Enums ([Enums](../../Code_Hierarchy/Python.md#enums)), known `“SearchAmplitudeIncrementModes”`
       include:
@@ -827,15 +833,15 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
         percentage (e.g., 10 for 10%).
 
   - `“top”`: The value (Double) is the upper-bound stimulation
-    amplitude first tested in a binary search for thresholds.
+    amplitude first tested in a bisection search for thresholds.
     Required.
 
   - `“bottom”`: The value (Double) is the lower-bound stimulation
-    amplitude first tested in a binary search for thresholds.
+    amplitude first tested in a bisection search for thresholds.
     Required.
 
   - `“step”`: The value (Double) is the incremental increase/decrease
-    of the upper/lower bound in the binary search. Required.
+    of the upper/lower bound in the bisection search. Required.
 
     - If `“ABSOLUTE_INCREMENT”`, the value (Double, unit: mA) is an
       increment in milliamps.
@@ -854,7 +860,7 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     (i.e., the path you set in config/system/env.json) for fiber0 of each
     inner for each n_sim. The program will load this threshold value and use
     it as a starting point for the threshold bounds for each inner in your new Sim.
-    The upper- and lower-bounds in the binary search will be "bounds_search" -> "step" %
+    The upper- and lower-bounds in the bisection search will be "bounds_search" -> "step" %
     higher and lower, respectively, of the scout Sim's fiber0 threshold. All parameters except
     fiber location (i.e., "fibers" -> "xy_location" in Sim) must match between
     the scout Sim and the current Sim, since the n_sim indices must match between the
@@ -880,17 +886,17 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
       include:
 
       - `“ABSOLUTE_DIFFERENCE”`: If the upper bound and lower
-        bound in the binary search are within a fixed
+        bound in the bisection search are within a fixed
         “tolerance” amount (e.g., 0.001 mA), the upper bound
         value is threshold.
 
         - `“tolerance”`: The value (Double) is the absolute
           difference between upper and lower bound in the
-          binary search for finding threshold (unit: mA).
+          bisection search for finding threshold (unit: mA).
           Required.
 
       - `“PERCENT_DIFFERENCE”`: If the upper bound and lower
-        bound in the binary search are within a relative
+        bound in the bisection search are within a relative
         “percent” amount (e.g., 1%), the upper bound value is
         threshold. This mode is generally recommended as the
         `ABSOLUTE_DIFFERENCE` approach requires adjustment of the
@@ -899,7 +905,7 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
 
         - `“percent”`: The value (Double) is the percent
           difference between upper and lower bound in the
-          binary search for finding threshold (e.g., 1 is 1%).
+          bisection search for finding threshold (e.g., 1 is 1%).
           Required.
 
 `“supersampled_bases”`: Optional. Required only for either generating or
@@ -943,17 +949,17 @@ fiber types can be simulated at the same location in the nerve cross-section wit
       include:
 
       - `"ABSOLUTE_DIFFERENCE"`: If the upper bound and lower
-        bound in the binary search are within a fixed
+        bound in the bisection search are within a fixed
         "tolerance" amount (e.g., 0.001 mA), the upper bound
         value is threshold.
 
         - `"tolerance"`: The value (Double) is the absolute
           difference between upper and lower bound in the
-          binary search for finding threshold (unit: mA).
+          bisection search for finding threshold (unit: mA).
           Required.
 
       - `"PERCENT_DIFFERENCE"`: If the upper bound and lower
-        bound in the binary search are within a relative
+        bound in the bisection search are within a relative
         "percent" amount (e.g., 1%), the upper bound value is
         threshold. This mode is generally recommended as the
         `ABSOLUTE_DIFFERENCE` approach requires adjustment of the
@@ -962,7 +968,7 @@ fiber types can be simulated at the same location in the nerve cross-section wit
 
         - `"percent"`: The value (Double) is the percent
           difference between upper and lower bound in the
-          binary search for finding threshold (e.g., 1 is 1%).
+          bisection search for finding threshold (e.g., 1 is 1%).
           Required.
 
 `"supersampled_bases"`: Optional. Required only for either generating or

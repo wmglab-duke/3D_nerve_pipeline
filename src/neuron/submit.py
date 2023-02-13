@@ -19,15 +19,19 @@ import sys
 import time
 import warnings
 
+import numpy as np
 import pandas as pd
 
 
-# %%Set up parser and top level arguments
-class listAction(argparse.Action):
+# %%Set up parser and top level args
+class ListAction(argparse.Action):
     """Custom action for argparse to list run info."""
 
-    def __call__(self, parser, values, option_string=None, **kwargs):
-        """Print run info and exit."""
+    def __call__(self, parser, values, *args, option_string=None, **kwargs):
+        """Print run info and exit. # noqa: DAR101.
+
+        This function is called when the --list option is used and should not be called directly.
+        """
         run_path = 'runs'
         jsons = [file for file in os.listdir(run_path) if file.endswith('.json')]
         data = []
@@ -35,9 +39,8 @@ class listAction(argparse.Action):
             with open(run_path + '/' + j) as f:
                 try:
                     rundata = json.load(f)
-                except Exception as e:
-                    print(f'WARNING: Could not load {j}')
-                    print(e)
+                except JSONDecodeError as e:
+                    print(f'WARNING: Could not load {j}, check for syntax errors. Original error: {e}')
                     continue
                 data.append(
                     {
@@ -87,7 +90,7 @@ parser.add_argument(
 parser.add_argument(
     '-l',
     '--list-runs',
-    action=listAction,
+    action=ListAction,
     nargs=0,
     help='List info for available runs.z If supplying this argument, do not pass any run indices',
 )
@@ -144,7 +147,10 @@ class WarnOnlyOnce:
 
     @classmethod
     def warn(cls, message):
-        """Print warning message if first call."""
+        """Print warning message if first call.
+
+        :param message: Warning message to print
+        """
         # storing int == less memory then storing raw message
         h = hash(message)
         if h not in cls.warnings:
@@ -191,8 +197,7 @@ def ensure_dir(directory):
 
     :param directory: the string path to the directory
     """
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    os.makedirs(directory, exist_ok=True)
 
 
 def auto_compile(override: bool = False):
@@ -202,7 +207,7 @@ def auto_compile(override: bool = False):
     :return: True if ran compilation, False if not
     """
     if (
-        (not os.path.exists(os.path.join('x86_64')) and OS == 'UNIX-LIKE')
+        (not os.path.exists(os.path.join('MOD_Files', 'x86_64', 'special')) and OS == 'UNIX-LIKE')
         or (not os.path.exists(os.path.join('MOD_Files', 'nrnmech.dll')) and OS == 'WINDOWS')
         or override
     ):
@@ -213,7 +218,6 @@ def auto_compile(override: bool = False):
             print(exit_data.stderr)
             sys.exit("Error in compiling of NEURON files. Exiting...")
         os.chdir('..')
-        shutil.copytree('MOD_Files/x86_64', 'x86_64')
         compiled = True
     else:
         print('skipped compile')
@@ -221,51 +225,210 @@ def auto_compile(override: bool = False):
     return compiled
 
 
+def get_diameter(my_inner_fiber_diam_key, my_inner_ind, my_fiber_ind):
+    """Get the diameter of the fiber from the inner fiber diameter key.
+
+    :param my_inner_fiber_diam_key: the key for the fiber diameters
+    :param my_inner_ind: the index of the inner
+    :param my_fiber_ind: the index of the fiber within the inner
+    :return: the diameter for this fiber
+    """
+    for item in my_inner_fiber_diam_key:
+        if item[0] == my_inner_ind and item[1] == my_fiber_ind:
+            my_diameter = item[2]
+            break
+        else:
+            continue
+    if isinstance(my_diameter, list) and len(my_diameter) == 1:
+        my_diameter = my_diameter[0]
+
+    return my_diameter
+
+
+def get_deltaz(fiber_model, diameter):
+    """Get the deltaz (node spacing) for a given fiber model and diameter.
+
+    :param fiber_model: the string name of the fiber model
+    :param diameter: the diameter of the fiber in microns
+    :return: the deltaz for this fiber, the neuron flag for the fiber model
+    """
+    fiber_z_config = load(os.path.join('config', 'system', 'fiber_z.json'))
+    fiber_model_info: dict = fiber_z_config['fiber_type_parameters'][fiber_model]
+
+    if fiber_model_info.get("geom_determination_method") == 0:
+        diameters, delta_zs, paranodal_length_2s = (
+            fiber_model_info[key] for key in ('diameters', 'delta_zs', 'paranodal_length_2s')
+        )
+        diameter_index = diameters.index(diameter)
+        delta_z = delta_zs[diameter_index]
+
+    elif fiber_model_info.get("geom_determination_method") == 1:
+        paranodal_length_2_str, delta_z_str, inter_length_str = (
+            fiber_model_info[key] for key in ('paranodal_length_2', 'delta_z', 'inter_length')
+        )
+
+        if diameter >= 5.643:
+            delta_z = eval(delta_z_str["diameter_greater_or_equal_5.643um"])
+        else:
+            delta_z = eval(delta_z_str["diameter_less_5.643um"])
+
+    elif fiber_model_info.get("neuron_flag") == 3:  # C Fiber
+        delta_z = fiber_model_info["delta_zs"]
+
+    neuron_flag = fiber_model_info.get("neuron_flag")
+
+    return delta_z, neuron_flag
+
+
+def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
+    """Get threshold bounds (upper and lower) for this simulation.
+
+    :param sim_dir: the string path to the simulation directory
+    :param sim_name: the string name of the n_sim
+    :param inner_ind: the index of the inner this fiber is in
+    :return: the upper and lower threshold bounds
+    """
+    top, bottom = None, None
+
+    sample = sim_name.split('_')[0]
+    n_sim = sim_name.split('_')[3]
+
+    sim_config = load(os.path.join(sim_dir, sim_name, f'{n_sim}.json'))
+
+    if sim_config['protocol']['mode'] == 'ACTIVATION_THRESHOLD' or sim_config['protocol']['mode'] == 'BLOCK_THRESHOLD':
+        if 'scout' in sim_config['protocol']['bounds_search']:
+            # load in threshold from scout_sim (example use: run centroid first, then any other xy-mode after)
+            scout = sim_config['protocol']['bounds_search']['scout']
+            scout_sim_dir = os.path.join('n_sims')
+            scout_sim_name = f"{sample}_{scout['model']}_{scout['sim']}_{n_sim}"
+            scout_sim_path = os.path.join(scout_sim_dir, scout_sim_name)
+            scout_output_path = os.path.abspath(os.path.join(scout_sim_path, 'data', 'outputs'))
+            scout_thresh_path = os.path.join(scout_output_path, f'thresh_inner{inner_ind}_fiber{0}.dat')
+
+            if os.path.exists(scout_thresh_path):
+                stimamp = np.loadtxt(scout_thresh_path)
+
+                if len(np.atleast_1d(stimamp)) > 1:
+                    stimamp = stimamp[-1]
+
+                step = sim_config['protocol']['bounds_search']['step'] / 100
+                top = (1 + step) * stimamp
+                bottom = (1 - step) * stimamp
+
+                unused_protocol_keys = ['top', 'bottom']
+
+                if any(
+                    unused_protocol_key in sim_config['protocol']['bounds_search']
+                    for unused_protocol_key in unused_protocol_keys
+                ):
+                    if args.verbose:
+                        warnings.warn(
+                            'WARNING: scout_sim is defined in Sim, so not using "top" or "bottom" '
+                            'which you also defined \n'
+                        )
+                    else:
+                        WarnOnlyOnce.warn(
+                            'WARNING: scout_sim is defined in Sim, so not using "top" or "bottom" '
+                            'which you also defined \n'
+                        )
+
+            else:
+                if args.verbose:
+                    warnings.warn(
+                        f"No fiber threshold exists for scout sim: "
+                        f"inner{inner_ind} fiber0, using standard top and bottom"
+                    )
+                else:
+                    WarnOnlyOnce.warn(
+                        "Missing at least one scout threshold, using standard top and bottom. "
+                        "Rerun with --verbose flag for specific inner index."
+                    )
+
+                top = sim_config['protocol']['bounds_search']['top']
+                bottom = sim_config['protocol']['bounds_search']['bottom']
+
+        else:
+            top = sim_config['protocol']['bounds_search']['top']
+            bottom = sim_config['protocol']['bounds_search']['bottom']
+
+    elif sim_config['protocol']['mode'] == 'FINITE_AMPLITUDES':
+        top, bottom = 0, 0
+
+    return top, bottom
+
+
 def make_task(
-    my_os: str,
     sub_con: str,
+    my_os: str,
     start_p: str,
     sim_p: str,
-    fiber_path: str,
-    inner_ind: int,
-    fiber_ind: int,
-    potentials_path: str,
-    waveform_path: str,
-    n_sim: int,
+    inner: int,
+    fiber: int,
+    top: float,
+    bottom: float,
+    diam: float,
+    deltaz: float,
+    axonnodes: int,
 ):
     """Create shell script used to run a fiber simulation.
 
     :param my_os: the string name of the operating system
-    :param sub_con: the string name of the submission context
     :param start_p: the string path to the start_dir
     :param sim_p: the string path to the sim_dir
-    :param fiber_path: the string path to the fiber.obj object
-    :param inner_ind: the index of the inner this fiber is in
-    :param fiber_ind: the index of the fiber this simulation is for
-    :param potentials_path: the string path to the potentials text file
-    :param waveform_path: the string path to the waveform text file
-    :param n_sim: the index of the n_sim
+    :param inner: the index of the inner this fiber is in
+    :param fiber: the index of the fiber this simulation is for
+    :param top: the upper threshold bound
+    :param bottom: the lower threshold bound
+    :param diam: the diameter of the fiber
+    :param deltaz: the deltaz for the fiber
+    :param axonnodes: the number of axon nodes
     """
     with open(start_p, 'w+') as handle:
         if my_os == 'UNIX-LIKE':
             lines = [
                 '#!/bin/bash\n',
-                'cd ../../\n',
-                f'python run_controls.py '
-                f'\"{fiber_path}\" '
-                f'\"{inner_ind}\" '
-                f'\"{fiber_ind}\" '
-                f'\"{potentials_path}\" '
-                f'\"{waveform_path}\" '
-                f'\"{sim_p}\" ',
-                f'\"{n_sim}\"\n',
+                f'cd "{sim_p}\"\n',
+                'chmod a+rwx special\n',
+                './special -nobanner '
+                '-c \"strdef sim_path\" '
+                f'-c \"sim_path=\\\"{sim_p}\\\"\" '
+                f'-c \"inner_ind={inner}\" '
+                f'-c \"fiber_ind={fiber}\" '
+                f'-c \"stimamp_top={top}\" '
+                f'-c \"stimamp_bottom={bottom}\" '
+                f'-c \"fiberD={diam:.1f}\" '
+                f'-c \"deltaz={deltaz:.4f}\" '
+                f'-c \"axonnodes={axonnodes}\" '
+                '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
+                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
+                '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n',
             ]
+            if sub_con != 'cluster':
+                lines.remove(f'cd "{sim_p}\"\n')
 
-            if sub_con == 'cluster':
-                lines.remove('cd ../../\n')
+            # copy special files ahead of time to avoid 'text file busy error'
+            if not os.path.exists('special'):
+                shutil.copy(os.path.join('MOD_Files', 'x86_64', 'special'), sim_p)
 
         else:  # OS is 'WINDOWS'
-            pass
+            sim_path_win = os.path.join(*sim_p.split(os.pathsep)).replace('\\', '\\\\')
+            lines = [
+                'nrniv -nobanner '
+                f'-dll \"{os.getcwd()}/MOD_Files/nrnmech.dll\" '
+                '-c \"strdef sim_path\" '
+                f'-c \"sim_path=\\\"{sim_path_win}\"\" '
+                f'-c \"inner_ind={inner}\" '
+                f'-c \"fiber_ind={fiber}\" '
+                f'-c \"stimamp_top={top}\" '
+                f'-c \"stimamp_bottom={bottom}\" '
+                f'-c \"fiberD={diam:.1f}\" '
+                f'-c \"deltaz={deltaz:.4f}\" '
+                f'-c \"axonnodes={axonnodes}\" '
+                '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
+                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
+                '-c \"saveflag_ap_loctime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
+                '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n'
+            ]
 
         handle.writelines(lines)
         handle.close()
@@ -300,7 +463,6 @@ def submit_fibers(submission_context, submission_data):
     n_fibers = sum(len(v) for v in submission_data.values())
 
     for sim_name, runfibers in submission_data.items():
-        sample, model, sim, n_sim = sim_name.split('_')
         if args.verbose:
             print(f'\n\n################ {sim_name} ################\n\n')
         # skip if no fibers to run for this nsim
@@ -349,13 +511,13 @@ def submit_fibers(submission_context, submission_data):
                             i + 1,
                             len(runfibers),
                             length=40,
-                            prefix=f'Sample {sample}, Model {model}, Sim {sim}, n_sim {n_sim}:',
+                            prefix='Sample {}, Model {}, Sim {}, n_sim {}:'.format(*sim_name.split('_')),  # noqa FS002
                         )
             os.chdir("../..")
 
 
 def cluster_submit(runfibers, sim_name, sim_path, start_path_base):
-    """Submit fiber simulations on a slurm-based high performance computer cluster.
+    """Submit fiber simulations on a slurm-based high performance computing cluster.
 
     :param runfibers: the list of fiber data for submission
     :param sim_name: the string name of the n_sim

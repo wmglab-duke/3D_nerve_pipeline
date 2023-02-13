@@ -25,7 +25,7 @@ copyright_info = '2021, Duke University'
 author = 'Musselman ED, Cariello JE, Grill WM, Pelot NA.'
 
 # The full version, including alpha/beta/rc tags
-release = 'dev'
+release = 'v1.2.1'
 
 # -- General configuration ---------------------------------------------------
 
@@ -43,7 +43,9 @@ extensions = [
     'sphinx_copybutton',
     'sphinx_rtd_dark_mode',
     'sphinx_github_changelog',
+    'sphinx_inline_tabs',
     'sphinx.ext.autodoc',
+    'sphinx_inline_tabs',
 ]
 
 source_suffix = {
@@ -69,6 +71,7 @@ autodoc_mock_imports = [
     'skimage',
     'pygame',
     'pymunk',
+    'quantiphy',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

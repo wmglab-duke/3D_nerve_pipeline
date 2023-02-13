@@ -13,15 +13,16 @@ from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+from quantiphy import Quantity
 
-from src.utils import Exceptionable, NerveMode, ReshapeNerveMode, SetupMode, WriteMode
+from src.utils import MethodError, MorphologyError, NerveMode, ReshapeNerveMode, WriteMode
 
 from .fascicle import Fascicle
 from .nerve import Nerve
 from .trace import Trace
 
 
-class Slide(Exceptionable):
+class Slide:
     """The Slide class is used to represent a slide of fascicles and nerves.
 
     The fascicles and nerve boundary are represented
@@ -33,7 +34,6 @@ class Slide(Exceptionable):
         fascicles: List[Fascicle],
         nerve: Nerve,
         nerve_mode: NerveMode,
-        exception_config: list,
         will_reposition: bool = False,
     ):
         """Initialize a Slide object.
@@ -41,33 +41,36 @@ class Slide(Exceptionable):
         :param fascicles: List of fascicles
         :param nerve: Nerve (effectively is a Trace)
         :param nerve_mode: from Enums, indicates if the nerve exists or not (PRESENT, NOT_PRESENT)
-        :param exception_config: pre-loaded configuration data
         :param will_reposition: boolean flag that tells the initializer whether or not it should be validating the
-           geometries - if it will be reposition then this is not a concern
+            geometries - if it will be reposition then this is not a concern
+        :raises ValueError: if will repositon is True and the nerve mode is not PRESENT
         """
-        # init superclasses
-        Exceptionable.__init__(self, SetupMode.OLD, exception_config)
-
         self.nerve_mode = nerve_mode
 
         self.nerve: Nerve = nerve
         self.fascicles: List[Fascicle] = fascicles
 
         if not will_reposition:
-            self.validation()
+            self.validate()
         else:
             if self.nerve_mode == NerveMode.NOT_PRESENT:
-                self.throw(39)
+                raise ValueError("Cannot deform monofascicle")
 
         self.orientation_point: Optional[Tuple[float, float]] = None
         self.orientation_angle: Optional[float] = None
 
     def monofasc(self) -> bool:
-        """Check if slide is monofascicular."""
+        """Check if slide is monofascicular.
+
+        :return: True if there is only one fascicle
+        """
         return self.nerve_mode == NerveMode.NOT_PRESENT and len(self.fascicles) == 1
 
     def fascicle_centroid(self) -> Tuple[float, float]:
-        """Calculate the centroid of all fascicles."""
+        """Calculate the centroid of all fascicles.
+
+        :return: Tuple of x and y coordinates of centroid
+        """
         area_sum = x_sum = y_sum = 0.0
 
         for fascicle in self.fascicles:
@@ -80,18 +83,20 @@ class Slide(Exceptionable):
 
         return (x_sum / area_sum), (y_sum / area_sum)
 
-    def validation(
+    def validate(
         self,
-        specific: bool = True,
         die: bool = True,
         tolerance: float = None,
         plotpath=None,
+        shapely: bool = True,
     ) -> bool:
         """Check to make sure nerve geometry is not overlapping itself.
 
-        :param specific: if you want to know what made it fail first
-        :param die: if non-specific, decides whether or not to throw an error if it fails
+        :param die: if non-specific, decides whether to throw an error_message if it fails
         :param tolerance: minimum separation distance for unit you are currently in
+        :param plotpath: path to save plot to
+        :param shapely: if True, uses shapely to check for valid polygons
+        :raises MorphologyError: if the nerve morphology is invalid
         :return: Boolean for True (no intersection) or False (issues with geometry overlap)
         """
 
@@ -110,52 +115,55 @@ class Slide(Exceptionable):
             plt.clf()
             plt.close()
 
+        error_message = ''
+
         if self.fascicles_too_small():
             debug_plot()
-            self.throw(146)
+            error_message = (
+                "A white area which results in a fascicle trace with <3 points was detected. "
+                "Check your input mask for specks."
+            )
 
-        if self.monofasc():
-            return True
+        if shapely and not self.polygons_are_valid():
+            debug_plot()
+            error_message = "A polygon was detected which is invalid. Using smoothing may fix this error_message."
 
-        if specific:
+        if not self.monofasc():
             if self.fascicle_fascicle_intersection():
                 debug_plot()
-                self.throw(10)
+                error_message = "Fascicle-fascicle intersection found"
 
             if self.fascicle_nerve_intersection():
                 debug_plot()
-                self.throw(11)
+                error_message = "Fascicle-nerve intersection found"
 
             if self.fascicles_outside_nerve():
                 debug_plot()
-                self.throw(12)
+                error_message = "Not all fascicles fall within nerve"
 
+            if self.fascicles_too_close(tolerance):
+                debug_plot()
+                error_message = "Fascicles are too close to each other"
+
+        if error_message == '':
+            return True
         else:
-            if any(
-                [
-                    self.fascicle_fascicle_intersection(),
-                    self.fascicle_nerve_intersection(),
-                    self.fascicles_outside_nerve(),
-                    self.fascicles_too_close(tolerance),
-                    self.fascicles_too_small(),
-                ],
-            ):
-                if die:
-                    debug_plot()
-                    self.throw(13)
-                else:
-                    return False
+            debug_plot()
+            if die:
+                raise MorphologyError(error_message)
             else:
-                return True
+                print(MorphologyError(error_message))
+                return False
 
     def fascicles_too_close(self, tolerance: float = None) -> bool:
         """Check to see if any fascicles are too close to each other.
 
         :param tolerance: Minimum separation distance
+        :raises MethodError: If called on a monofascicular slide
         :return: Boolean for True for fascicles too close as defined by tolerance
         """
         if self.monofasc():
-            self.throw(41)
+            raise MethodError("Method fascicles_too_close does not apply for monofascicle nerves")
 
         if tolerance is None:
             return False
@@ -179,10 +187,11 @@ class Slide(Exceptionable):
     def fascicle_fascicle_intersection(self) -> bool:
         """Check to see if any fascicles intersect each other.
 
+        :raises MethodError: If called on a monofascicular slide
         :return: True if any fascicle intersects another fascicle, otherwise False
         """
         if self.monofasc():
-            self.throw(42)
+            raise MethodError("Method fascicle_fascicle_intersection does not apply for monofascicle nerves")
 
         pairs = itertools.combinations(self.fascicles, 2)
         return any([first.intersects(second) for first, second in pairs])
@@ -190,20 +199,22 @@ class Slide(Exceptionable):
     def fascicle_nerve_intersection(self) -> bool:
         """Check for intersection between the fascicles and nerve.
 
+        :raises MethodError: If called on a monofascicular slide
         :return: True if any fascicle intersects the nerve, otherwise False
         """
         if self.monofasc():
-            self.throw(43)
+            raise MethodError("Method fascicle_nerve_intersection does not apply for monofascicle nerves")
 
         return any([fascicle.intersects(self.nerve) for fascicle in self.fascicles])
 
     def fascicles_outside_nerve(self) -> bool:
         """Check if any fascicle is outside the nerve.
 
+        :raises MethodError: If called on a monofascicular slide
         :return: True if any fascicle lies outside the nerve, otherwise False
         """
         if self.monofasc():
-            self.throw(44)
+            raise MethodError("Method fascicles_outside_nerve does not apply for monofascicle nerves")
 
         return any([not fascicle.within_nerve(self.nerve) for fascicle in self.fascicles])
 
@@ -228,13 +239,15 @@ class Slide(Exceptionable):
     def reshaped_nerve(self, mode: ReshapeNerveMode, buffer: float = 0.0) -> Nerve:
         """Get a nerve trace equal to the area of the current nerve trace.
 
-        :param buffer:
+        :param buffer: buffer distance to subtract from nerve trace radius (microns)
         :param mode: Final form of reshaped nerve, either circle or ellipse
+        :raises MethodError: If called on a monofascicular slide
+        :raises ValueError: for an invalid mode
         :return: a copy of the nerve with reshaped nerve boundary, preserves point count which is SUPER critical for
-           fascicle repositioning
+            fascicle repositioning
         """
         if self.monofasc():
-            self.throw(45)
+            raise MethodError("Method reshaped_nerve does not apply for monofascicle nerves")
 
         if mode == ReshapeNerveMode.CIRCLE:
             return self.nerve.to_circle(buffer)
@@ -243,7 +256,7 @@ class Slide(Exceptionable):
         elif mode == ReshapeNerveMode.NONE:
             return self.nerve
         else:
-            self.throw(16)
+            raise ValueError("Invalid reshape mode.")
 
     def plot(
         self,
@@ -257,19 +270,29 @@ class Slide(Exceptionable):
         inner_index_labels: bool = False,
         show_axis: bool = True,
         axlabel: str = None,
+        scalebar: bool = False,
+        scalebar_length: float = 1,
+        scalebar_units: str = 'mm',
         line_kws=None,
     ):
         """Quick util for plotting the nerve and fascicles.
 
-        :param show_axis:
-        :param inner_index_labels:
-        :param outers_flag:
-        :param fascicle_colors:
-        :param ax:
+        :param line_kws: Additional keyword arguments to pass to matplotlib.pyplot.plot
+        :param axlabel: label for x and y axes
+        :param show_axis: If False, hide the axis
+        :param inner_index_labels: whether to label the inner traces with their index
+        :param outers_flag: whether to plot the outers of the fascicles
+        :param fascicle_colors: List of colors for fascicle fill, ig None, no fill. Colors must be
+            of a form accepted by matplotlib
+        :param ax: axis to plot on
         :param title: optional string title for plot
         :param final: optional, if False, will not show or add title (if comparisons are being overlayed)
         :param inner_format: optional format for inner traces of fascicles
         :param fix_aspect_ratio: optional, if True, will set equal aspect ratio
+        :param scalebar: If True, add a scalebar to the plot
+        :param scalebar_length: Length of scalebar
+        :param scalebar_units: Units of scalebar
+        :raises ValueError: If fascicle_colors is not None and not the same length as the number of inners
         """
         if ax is None:
             ax = plt.gca()
@@ -295,7 +318,7 @@ class Slide(Exceptionable):
 
         if fascicle_colors is not None:
             if inner_ind != len(fascicle_colors):
-                self.throw(65)
+                raise ValueError("Length of fascicle colors list must match length of fascicles list.")
         else:
             fascicle_colors = [None] * inner_ind
 
@@ -322,6 +345,26 @@ class Slide(Exceptionable):
             ax.set_xlabel(axlabel)
             ax.set_ylabel(axlabel)
 
+        if scalebar:
+            # convert scalebar length to meters and calculat span across axes
+            quantity = Quantity(scalebar_length, scalebar_units, scale='m')
+            scalespan = quantity.scale('micron') / np.diff(ax.get_ylim())[0]
+            # add scalebar and label
+            ax.add_patch(
+                plt.Rectangle(
+                    (0.99, 0.02), -scalespan, 0.02, fill='black', facecolor='black', linewidth=0, transform=ax.transAxes
+                )
+            )
+            ax.text(
+                0.99,
+                0.05,
+                f'{scalebar_length} {scalebar_units}',
+                horizontalalignment='right',
+                verticalalignment='bottom',
+                transform=ax.transAxes,
+                color='black',
+            )
+
         # if final plot, show
         if final:
             plt.show()
@@ -345,9 +388,10 @@ class Slide(Exceptionable):
 
         :param n_distance: distance to inflate and deflate the nerve trace
         :param i_distance: distance to inflate and deflate the fascicle traces
+        :raises ValueError: if i_distance is None
         """
         if i_distance is None:
-            self.throw(113)
+            raise ValueError("Fascicle smoothing distance cannot be None")
         for trace in self.trace_list():
             if isinstance(trace, Nerve):
                 trace.smooth(n_distance)
@@ -358,7 +402,7 @@ class Slide(Exceptionable):
         """Generate perineurium for all fascicles in the slide.
 
         :param fit: dictionary of fit parameters
-           (Linear fit for perineurium thickness based on fascicle area)
+            (Linear fit for perineurium thickness based on fascicle area)
         """
         for fascicle in self.fascicles:
             fascicle.perineurium_setup(fit=fit)
@@ -377,7 +421,7 @@ class Slide(Exceptionable):
         for fascicle in self.fascicles:
             fascicle.rotate(angle, center)
 
-        self.validation()
+        self.validate()
 
     def bounds(self):
         """Get the bounding box for the slide.
@@ -408,11 +452,12 @@ class Slide(Exceptionable):
 
         :param mode: Sectionwise for now... could be other types in the future (STL, DXF)
         :param path: root path of slide
+        :raises IOError: if path does not exist
         """
         start = os.getcwd()
 
         if not os.path.exists(path):
-            self.throw(26)
+            raise IOError("Invalid path to write Slide to.")
         else:
             # go to directory to write to
             os.chdir(path)
@@ -428,8 +473,7 @@ class Slide(Exceptionable):
 
             for items, folder in trace_list:
                 # build path if not already existing
-                if not os.path.exists(folder):
-                    os.makedirs(folder)
+                os.makedirs(folder, exist_ok=True)
                 os.chdir(folder)
 
                 # write all items (give filename as i (index) without the extension
@@ -444,8 +488,8 @@ class Slide(Exceptionable):
 
                         # go to indexed folder for each fascicle
                         index_folder = str(i)
-                        if not os.path.exists(index_folder):
-                            os.makedirs(index_folder)
+                        os.makedirs(index_folder, exist_ok=True)
+
                         os.chdir(index_folder)
                         item.write(mode, os.getcwd())
 
@@ -456,3 +500,15 @@ class Slide(Exceptionable):
                 os.chdir(sub_start)
 
         os.chdir(start)
+
+    def polygons_are_valid(self):
+        """Check if all polygons are valid and attempt to fix if not.
+
+        :return: True if all polygons are valid, False if not
+        """
+        for trace in self.trace_list():
+            if not trace.polygon().is_valid:
+                trace.offset(distance=0)
+                if not trace.polygon().is_valid:
+                    return False
+        return True
