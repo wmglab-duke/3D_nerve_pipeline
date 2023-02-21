@@ -22,7 +22,7 @@ from shapely.strtree import STRtree
 
 from src.core import Sample, Simulation
 from src.utils import Config, Configurable, Object, Saveable, SetupMode
-from src.utils.nd_line import nd_line
+from nd_line.nd_line import nd_line
 
 
 class Query(Configurable, Saveable):
