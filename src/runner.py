@@ -453,7 +453,7 @@ class Runner(Configurable):
                         )
 
                     elif not models_exit_status[model_index]:
-                        if False: #TODO: make this optionally error, for now will for error
+                        if True: #TODO: make this optionally error, for now will for error
                             print(
                                 f'\nDid not create NEURON simulations for Sims associated with: \n'
                                 f'\t Model Index: {model_num} \n'
