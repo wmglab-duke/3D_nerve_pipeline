@@ -417,7 +417,11 @@ class Runner(Configurable):
                     print('\nTO PYTHON\n')
                 else:
                     print('\nSKIPPING JAVA - all required extracted potentials already exist\n')
-
+                
+                if self.configs[Config.CLI_ARGS.value].get('break_point') == 'post_java':
+                    print('KILLING POST JAVA')
+                    return
+                
                 self.remove(Config.RUN)
                 run_path = os.path.join('config', 'user', 'runs', f'{self.number}.json')
                 self.add(SetupMode.NEW, Config.RUN, run_path)

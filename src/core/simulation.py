@@ -558,8 +558,9 @@ class Simulation(Configurable, Saveable):
         f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
         try:
             neuron_potentials_input = f(neuron_fiber_coords)
-        except:
-            print('remove this')
+        except Exception as e:
+            print("Error on interpolation for fiber {os.path.join(root, file)}")
+            raise e
         # throw error if there are any nans in the neuron_potentials_input
         if np.isnan(neuron_potentials_input).any():
             print('WARNING: NANs in neuron_potentials_input. Using temp fix to avoid error.')
