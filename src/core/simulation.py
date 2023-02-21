@@ -549,26 +549,17 @@ class Simulation(Configurable, Saveable):
         ss_weighted_bases_vec = np.zeros(len(ss_bases[0]))
         for src_ind, src_weight in enumerate(active_src_vals[0]):
             ss_weighted_bases_vec += ss_bases[src_ind] * src_weight
+            
         # down-sample super_save_vec
-        with open(os.path.join(root, file), 'r') as neuron_fiberset_file:
-            neuron_fiberset_file_lines = neuron_fiberset_file.readlines()[1:]
-            neuron_fiber_coords = []
-            for neuron_fiberset_file_line in neuron_fiberset_file_lines:
-                neuron_fiber_coords = np.append(
-                    neuron_fiber_coords,
-                    float(neuron_fiberset_file_line.split(' ')[-2]),
-                )
-        with open(os.path.join(ss_fiberset_path, file), 'r') as ss_fiberset_file:
-            ss_fiberset_file_lines = ss_fiberset_file.readlines()[1:]
-            ss_fiber_coords = []
-            for ss_fiberset_file_line in ss_fiberset_file_lines:
-                ss_fiber_coords = np.append(
-                    ss_fiber_coords,
-                    float(ss_fiberset_file_line.split(' ')[2]),
-                )
+        neuron_fiber_coords = np.loadtxt(os.path.join(root, file),skiprows=1)[:,-1]
+        ss_fiber_coords = np.loadtxt(os.path.join(ss_fiberset_path, file),skiprows=1)[:,-1]
+        
         # create interpolation from super_coords and super_bases
         f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
-        neuron_potentials_input = f(neuron_fiber_coords)
+        try:
+            neuron_potentials_input = f(neuron_fiber_coords)
+        except:
+            print('remove this')
         # throw error if there are any nans in the neuron_potentials_input
         if np.isnan(neuron_potentials_input).any():
             print('WARNING: NANs in neuron_potentials_input. Using temp fix to avoid error.')

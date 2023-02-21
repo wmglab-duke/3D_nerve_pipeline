@@ -311,7 +311,7 @@ class Sample(Configurable, Saveable):
         if self.scale_input_mode is None:
             self.scale_input_mode = ScaleInputMode.MASK
         if self.contour_mode is None:
-            self.contour_mode = ContourMode.SIMPLE
+            self.contour_mode = ContourMode.NONE #note changed default here for 3D
 
     @staticmethod
     def mask_exists(mask_file_name: MaskFileNames):

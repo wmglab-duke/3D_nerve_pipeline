@@ -453,11 +453,17 @@ class Runner(Configurable):
                         )
 
                     elif not models_exit_status[model_index]:
-                        print(
-                            f'\nDid not create NEURON simulations for Sims associated with: \n'
-                            f'\t Model Index: {model_num} \n'
-                            f'since COMSOL failed to create required potentials. \n'
-                        )
+                        if False: #TODO: make this optionally error, for now will for error
+                            print(
+                                f'\nDid not create NEURON simulations for Sims associated with: \n'
+                                f'\t Model Index: {model_num} \n'
+                                f'since COMSOL failed to create required potentials. \n'
+                            )
+                        else:
+                            raise RuntimeError(
+                                f'\t Model Index: {model_num}: \n'
+                                f'COMSOL failed to create required potentials. \n'
+                            )
         # 3D block
         else:
             sample_num = self.configs[Config.RUN.value]['sample']
