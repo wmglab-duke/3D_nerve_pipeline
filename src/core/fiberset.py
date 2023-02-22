@@ -544,7 +544,7 @@ class FiberSet(Configurable, Saveable):
         if fiber_z_mode != FiberZMode.EXTRUSION:
             raise NotImplementedError("That FiberZMode is not yet implemented.")
 
-        def clip(values: list, start, end, myel: bool, is_points: bool = False,zbuffer = 1) -> list:
+        def clip(values: list, start, end, myel: bool, is_points: bool = False, zbuffer = 5) -> list:
             
             step = 1
             if myel:
@@ -723,6 +723,7 @@ class FiberSet(Configurable, Saveable):
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'min'),
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'max'),
                 myel,
+                zbuffer = 10 if not super_sample else 5 #todo instead of fixed value make supersample dz
             )
 
             my_fiber = [(my_x, my_y, z) for z in z_offset]
