@@ -177,6 +177,7 @@ class Simulation(Configurable, Saveable):
                 )
             self.ss_fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
             self.ss_fibersets.append(fiberset)
+            #TODO: check that all SS bases coords contain all r egular fiberet coords
 
         return self
 
@@ -559,7 +560,7 @@ class Simulation(Configurable, Saveable):
         try:
             neuron_potentials_input = f(neuron_fiber_coords)
         except Exception as e:
-            print("Error on interpolation for fiber {os.path.join(root, file)}")
+            print(f"Error on interpolation for fiber {os.path.join(root, file)}")
             raise e
         # throw error if there are any nans in the neuron_potentials_input
         if np.isnan(neuron_potentials_input).any():

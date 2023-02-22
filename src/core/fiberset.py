@@ -723,7 +723,7 @@ class FiberSet(Configurable, Saveable):
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'min'),
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'max'),
                 myel,
-                zbuffer = 1 if not super_sample else 0 #todo instead of 1 make supersample dz
+                zbuffer = 10 if not super_sample else 5 #todo instead of fixed value make supersample dz
             )
 
             my_fiber = [(my_x, my_y, z) for z in z_offset]
