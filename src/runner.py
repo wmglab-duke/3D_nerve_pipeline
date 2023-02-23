@@ -126,7 +126,6 @@ class Runner(Configurable):
         # ensure NEURON files exist in export location
         Simulation.export_neuron_files(os.environ[Env.NSIM_EXPORT_PATH.value])
         Simulation.export_system_config_files(os.path.join(os.environ[Env.NSIM_EXPORT_PATH.value], 'config', 'system'))
-        Simulation.export_src_files(os.path.join(os.environ[Env.NSIM_EXPORT_PATH.value], 'src'))
 
         for deprecated_key in ['break_points', 'local_avail_cpus', 'submission_context', 'partial_fem']:
             if deprecated_key in self.configs[Config.RUN.value]:

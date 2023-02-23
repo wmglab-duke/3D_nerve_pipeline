@@ -24,8 +24,7 @@ import numpy as np
 import scipy.interpolate as sci
 
 from src.core import Sample
-from wmglab_neuron import Fiber
-from src.utils import Config, Configurable, Env, Exceptionable, ExportMode, Saveable, SetupMode, WriteMode
+from src.utils import Config, Configurable, Env, ExportMode, IncompatibleParametersError, Saveable, SetupMode, WriteMode
 
 from .fiberset import FiberSet
 from .waveform import Waveform
@@ -240,29 +239,6 @@ class Simulation(Configurable, Saveable):
 
         return self
 
-    def validate_sim_configs(self):
-        # Make sure that saving parameters in sim config are valid
-        saving_dict = self.search(Config.SIM, 'saving')
-        for time in saving_dict['space']['times']:
-            for waveform in self.waveforms:
-                time = time / waveform.dt
-                if time < 0 or time > waveform.wave.size:
-                    self.throw(155)
-        locs = saving_dict['time']['locs']
-        if locs != 'all':
-            for loc in locs:
-                if loc < 0 or loc > 1:
-                    self.throw(156)
-        fiber_mode = self.search(Config.SIM, 'fibers', 'mode')
-        if (
-            fiber_mode != 'MRG_DISCRETE'
-            and fiber_mode != 'MRG_INTERPOLATION'
-            and (saving_dict['space']['gating'] or saving_dict['time']['gating'])
-        ):
-            self.throw(157)
-
-        return self
-
     def validate_srcs(self, sim_directory) -> 'Simulation':
         """Validate the active_srcs in the simulation config.
 
@@ -362,27 +338,49 @@ class Simulation(Configurable, Saveable):
         # save the paired down simulation config to its corresponding neuron simulation t folder
         with open(os.path.join(sim_dir, str(sim_num), "n_sims", str(t), f"{t}.json"), "w") as handle:
             handle.write(json.dumps(sim_copy, indent=2))
+        return active_src_vals[0], fiberset_ind, nsim_inputs_directory
 
-        # save general fiber object as sim/#/n_sims/t/fiber.obj
-        nsim_fiber_path = os.path.join(sim_dir, str(sim_num), 'n_sims', str(t), 'fiber.obj')
+    def get_bases(self, file: str, sim_dir: str, source_sim: int, fiberset_ind: int = None):
+        """Get the bases potentials for the simulation, and the corresponding fiberset/ss coords.
 
-        diameter = self.search(Config.SIM, 'fibers', 'z_parameters', 'diameter')
-        fiber_mode = self.search(Config.SIM, 'fibers', 'mode')
-        temperature = self.search(Config.MODEL, 'temperature')
+        :param file: fiber file get bases from
+        :param sim_dir: directory of the simulation
+        :param source_sim: index of the source simulation from which the bases are taken
+        :param fiberset_ind: index of the fiberset
+        :raises ValueError: if the bases file or folder does not exist
+        :return: coords, bases
+        """
+        bases = [None for _ in range(self.n_bases)]
+        for basis_ind in range(self.n_bases):
+            if fiberset_ind is not None:
+                # NOT super sampled bases
+                bases_path = os.path.join(
+                    sim_dir, str(source_sim), 'fibersets_bases', str(fiberset_ind), str(basis_ind)
+                )
+                coords_path = os.path.join(sim_dir, str(source_sim), 'fibersets', str(fiberset_ind))
+            else:
+                # YES super sampled bases
+                bases_path = os.path.join(sim_dir, str(source_sim), 'ss_bases', str(basis_ind))
+                coords_path = os.path.join(sim_dir, str(source_sim), 'ss_coords')
 
-        fiber_obj = Fiber(diameter, fiber_mode, temperature)
-        fiber_obj.save(
-            nsim_fiber_path
-        )
+            if not os.path.exists(bases_path):
+                raise ValueError(f"bases_path {bases_path} does not exist")
 
-        return nsim_inputs_directory, fiberset_ind, active_src_vals
+            if not os.path.exists(os.path.join(bases_path, file)):
+                raise ValueError(f"bases_path {os.path.join(bases_path, file)} does not exist")
+            else:
+                bases[basis_ind] = np.loadtxt(os.path.join(bases_path, file))[1:]
+
+        return coords_path, bases
 
     def validate_ss_dz(self, supersampled_bases, sim_dir):
         """Validate the ss_dz in the simulation. Make sure that the parent SS dz is the same as this one.
 
         :param supersampled_bases: information about the supersampled bases from Sim
         :param sim_dir: directory of the source simulation with previously supersampled bases
-        :return: self
+        :raises FileNotFoundError: if the supersampled source sim is not found
+        :raises ValueError: if the supersampled source sim has a different ss_dz
+        :return: None
         """
         source_sim = supersampled_bases.get('source_sim')
 
@@ -390,7 +388,10 @@ class Simulation(Configurable, Saveable):
         source_sim_obj_dir = os.path.join(sim_dir, str(source_sim))
 
         if not os.path.exists(source_sim_obj_dir):
-            self.throw(94)
+            raise FileNotFoundError(
+                "Source Sim (i.e. source_sim in Sim->supersampled_bases) does not exist. "
+                "Either set proper source_sim that has your previously supersampled potentials or set use to false."
+            )
 
         source_sim_obj_file = os.path.join(source_sim_obj_dir, 'sim.obj')
 
@@ -400,9 +401,11 @@ class Simulation(Configurable, Saveable):
 
         if 'dz' in supersampled_bases:
             if supersampled_bases.get('dz') != source_dz:
-                self.throw(79)
+                raise ValueError("Supersampling dz does not match source simulation dz")
         elif 'dz' not in supersampled_bases:
             warnings.warn(f'dz not provided in Sim, so will accept dz={source_dz} specified in source Sim')
+
+        return self
 
     def build_n_sims(self, sim_dir, sim_num) -> 'Simulation':
         """Set up the neuron simulation for the given simulation.
@@ -412,171 +415,151 @@ class Simulation(Configurable, Saveable):
         :return: self
         """
 
-        def make_inner_fiber_diam_key(my_fiberset_ind, my_potentials_directory, my_file):
+        def make_inner_fiber_diam_key(my_fiberset_ind, my_nsim_inputs_directory, my_potentials_directory, my_file):
             """Make the key for the inner-fiber-diameter key file.
 
-            :param my_fiberset_ind: index of the fiberset we are building the key for
+            :param my_fiberset_ind: index of the fiberset
+            :param my_nsim_inputs_directory: directory of the neuron simulation inputs
             :param my_potentials_directory: directory of the potentials
             :param my_file: file we are making
+            :return: None
             """
             inner_fiber_diam_key = []
-            diams = np.loadtxt(os.path.join(my_potentials_directory, my_file))
-            for fiber_ind in range(len(diams)):
+            diams = np.loadtxt(os.path.join(my_potentials_directory, my_file), unpack=True)
+            for fiber_ind in range(diams.size):
                 diam = diams[fiber_ind]
 
                 inner, fiber = self.indices_fib_to_n(my_fiberset_ind, fiber_ind)
 
                 inner_fiber_diam_key.append((inner, fiber, diam))
 
-            inner_fiber_diam_key_filename = os.path.join(nsim_inputs_directory, 'inner_fiber_diam_key.obj')
+            inner_fiber_diam_key_filename = os.path.join(my_nsim_inputs_directory, 'inner_fiber_diam_key.obj')
             with open(inner_fiber_diam_key_filename, 'wb') as f:
                 pickle.dump(inner_fiber_diam_key, f)
                 f.close()
 
-        n_inners = 0
-        for fascicle in self.sample.morphology['Fascicles']:
-            n_inners += len(fascicle["inners"])
+            return None
 
-        n_fiber_coords = []
-        for fiberset in self.fibersets:
-            n_fiber_coords.append(len(fiberset.fibers[0]))
+        supersampled_bases: dict = self.search(Config.SIM, 'supersampled_bases', optional=True)
+        do_supersample: bool = supersampled_bases is not None and supersampled_bases.get('use') is True
 
         for t, (potentials_ind, waveform_ind) in enumerate(self.master_product_indices):
-            nsim_inputs_directory, fiberset_ind, active_src_vals = self.n_sim_setup(
-                sim_dir, sim_num, potentials_ind, waveform_ind, t
+            active_src_vals, fiberset_ind, nsim_inputs_directory = self.n_sim_setup(
+                potentials_ind, sim_dir, sim_num, t, waveform_ind
             )
-            # copy in potentials data into neuron simulation data/inputs folder
-            # the potentials files are matched to their inner and fiber index, and saved in destination folder with
-            # this naming convention... this allows for control of upper/lower bounds for thresholds by fascicle
-            # (useful since within a fascicle thresholds should be similar)
-            inner_list = []
-            fiber_list = []
 
-            supersampled_bases: dict = self.search(Config.SIM, 'supersampled_bases', optional=True)
-            do_supersample: bool = supersampled_bases is not None and supersampled_bases.get('use') is True
+            src_bases_indices = self.srcs_mapping(sim_dir)
 
-            potentials_directory = os.path.join(sim_dir, str(sim_num), 'potentials', str(fiberset_ind))
             fiberset_directory = os.path.join(sim_dir, str(sim_num), 'fibersets', str(fiberset_ind))
 
-            for root, _, files in os.walk(fiberset_directory):
-                for file in files:
-                    if re.match('[0-9]+\\.dat', file):
+            for fname_prefix, weights, bases_indices in zip([''], [active_src_vals], [src_bases_indices]):
+                if not any(np.isnan(weights)):
+                    # get the weights in order of the bases,
+                    # since the weights are for a single cuff, but the bases span cuffs
+                    all_weights = list(np.zeros(self.n_bases))
+                    for i, basis_index in enumerate(bases_indices):
+                        all_weights[basis_index] = weights[i]
 
-                        master_fiber_index = int(file.split('.')[0])
+                    for root, _, files in os.walk(fiberset_directory):
+                        for file in files:
+                            if re.match('[0-9]+\\.dat', file):
+                                master_fiber_index = int(file.split('.')[0])
+                                inner_index, fiber_index = self.indices_fib_to_n(fiberset_ind, master_fiber_index)
+                                filename_dat = f'{fname_prefix}inner{inner_index}_fiber{fiber_index}.dat'
 
-                        inner_index: int
-                        fiber_index: int
+                                if not do_supersample:
+                                    # getting potentials from fibersets_bases
+                                    # fibersets_bases\<fiberset_index>\<basis_index>\<fibers>
+                                    _, bases = self.get_bases(file, sim_dir, sim_num, fiberset_ind)
+                                    neuron_potentials_input = self.weight_bases(all_weights, bases)
 
-                        inner_index, fiber_index = self.indices_fib_to_n(fiberset_ind, master_fiber_index)
+                                else:
+                                    # getting potentials from supersampled bases
+                                    # ss_bases\<basis_index>\<fibers>
+                                    self.validate_ss_dz(supersampled_bases, sim_dir)
+                                    source_sim = supersampled_bases.get('source_sim')
+                                    ss_coords_root, ss_bases = self.get_bases(file, sim_dir, source_sim)
+                                    weighted_ss_bases = self.weight_bases(all_weights, ss_bases)
+                                    fiber_coords = get_z_coords(root, file)
+                                    ss_coords = get_z_coords(ss_coords_root, file)
+                                    neuron_potentials_input = self.interpolate_2d(
+                                        fiber_coords, ss_coords, weighted_ss_bases
+                                    )
 
-                        filename_dat = f'inner{inner_index}_fiber{fiber_index}.dat'
+                                np.savetxt(
+                                    os.path.join(nsim_inputs_directory, filename_dat),
+                                    neuron_potentials_input,
+                                    fmt='%0.18f',
+                                    header=str(len(neuron_potentials_input)),
+                                    comments='',
+                                )
+                            elif file == 'diams.txt':
+                                make_inner_fiber_diam_key(
+                                    fiberset_ind,
+                                    nsim_inputs_directory,
+                                    fiberset_directory,
+                                    file,
+                                )
 
-                        if do_supersample:
-                            # SUPER SAMPLING - PROBED COMSOL AT SS_COORDS --> /SS_BASES
-                            self.validate_ss_dz(supersampled_bases, sim_dir)
-                            source_sim = supersampled_bases.get('source_sim')
-                            ss_bases = [None for _ in active_src_vals[0]]
-
-                            ss_fiberset_path, ss_bases = self.get_ss_bases(
-                                active_src_vals, file, sim_dir, source_sim, ss_bases
-                            )
-
-                            neuron_potentials_input = self.weight_potentials(
-                                active_src_vals, file, root, ss_bases, ss_fiberset_path
-                            )
-                            np.savetxt(
-                                os.path.join(nsim_inputs_directory, filename_dat),
-                                neuron_potentials_input,
-                                fmt='%0.18f',
-                                header=str(len(neuron_potentials_input)),
-                                comments='',
-                            )
-                        else:
-                            # NOT SUPER SAMPLING - PROBED COMSOL AT /FIBERSETS --> /POTENTIALS
-                            is_member = np.in1d(inner_index, inner_list)
-                            if not is_member:
-                                inner_list.append(inner_index)
-                                if len(fiber_list) < len(inner_list):
-                                    fiber_list.append(0)
-                                fiber_list[inner_list.index(inner_index)] += 1
-                            shutil.copyfile(
-                                os.path.join(
-                                    sim_dir,
-                                    str(sim_num),
-                                    'potentials',
-                                    str(potentials_ind),
-                                    str(fiber_index) + '.dat',
-                                ),
-                                os.path.join(nsim_inputs_directory, filename_dat),
-                            )
-                    elif file == 'diams.txt':
-                        make_inner_fiber_diam_key(
-                            fiberset_ind,
-                            potentials_directory,
-                            file,
-                        )
         return self
+
+    def srcs_mapping(self, sim_dir):
+        """Get the bases indices of the sources contacts for the simulation from COMSOL's Identifier Manager.
+
+        :param sim_dir: directory of the simulation
+        :return: recording bases indices, sources bases indices
+        """
+        # using the cuff indices in Sim, what are the bases files using the cuff_indexes saved in im.json?
+        im_path = os.path.join(os.path.split(sim_dir)[0], 'mesh', 'im.json')
+        im_config = self.load_json(im_path)
+
+        src_bases_indices = []
+        current_ids = im_config['currentIDs']
+        for c_id in current_ids.keys():
+            src_bases_indices.append(int(c_id) - 1)
+
+        src_bases_indices.sort()
+
+        return src_bases_indices
 
     def get_ss_bases(self, active_src_vals, file, sim_dir, source_sim, ss_bases):
         """Get the supersampled bases for the given simulation.
 
-        :param active_src_vals:
-        :param file:
-        :param sim_dir:
-        :param source_sim:
-        :param ss_bases:
-        :return:
+        :param active_src_vals: active source values (weights)
+        :param file: file we are getting the supersampled bases from
+        :param sim_dir: directory of simulations
+        :param source_sim: source simulation index where the supersampled bases are from
+        :param ss_bases: supersampled bases values
+        :raises FileNotFoundError: if the supersampled potentials are not found
+        :return: the path to the supersampled bases coordinates, ss_bases
         """
         ss_fiberset_path = os.path.join(sim_dir, str(source_sim), 'ss_coords')
 
         for basis_ind in range(len(active_src_vals[0])):
-
             ss_bases_src_path = os.path.join(sim_dir, str(source_sim), 'ss_bases', str(basis_ind))
 
-            if not os.path.exists(ss_bases_src_path):
-                self.throw(81)
-
-            if not os.path.exists(os.path.join(ss_bases_src_path, file)):
-                self.throw(81)
+            if not os.path.exists(ss_bases_src_path) or not os.path.exists(os.path.join(ss_bases_src_path, file)):
+                raise FileNotFoundError(
+                    "Trying to use super-sampled potentials that do not exist. "
+                    "(hint: check that if 'use' is true 'generate' was also true for the source Sim)."
+                )
             else:
                 ss_bases[basis_ind] = np.loadtxt(os.path.join(ss_bases_src_path, file))[1:]
 
         return ss_fiberset_path, ss_bases
 
-    def weight_potentials(self, active_src_vals, file, root, ss_bases, ss_fiberset_path):
-        """Calculate the sum of weighted bases.
+    def weight_bases(self, weights, bases):
+        """Weight the bases.
 
-        :param active_src_vals:
-        :param file:
-        :param root:
-        :param ss_bases:
-        :param ss_fiberset_path:
-        :return:
+        :param weights: weights to weight the bases with (defined in Sim Config active_srcs, active_recs)
+        :param bases: vector of bases to weight for each active source/rec
+        :return: weighted bases
         """
-        ss_weighted_bases_vec = np.zeros(len(ss_bases[0]))
-        for src_ind, src_weight in enumerate(active_src_vals[0]):
-            ss_weighted_bases_vec += ss_bases[src_ind] * src_weight
-        # down-sample super_save_vec
-        with open(os.path.join(root, file), 'r') as neuron_fiberset_file:
-            neuron_fiberset_file_lines = neuron_fiberset_file.readlines()[1:]
-            neuron_fiber_coords = []
-            for neuron_fiberset_file_line in neuron_fiberset_file_lines:
-                neuron_fiber_coords = np.append(
-                    neuron_fiber_coords,
-                    float(neuron_fiberset_file_line.split(' ')[-2]),
-                )
-        with open(os.path.join(ss_fiberset_path, file), 'r') as ss_fiberset_file:
-            ss_fiberset_file_lines = ss_fiberset_file.readlines()[1:]
-            ss_fiber_coords = []
-            for ss_fiberset_file_line in ss_fiberset_file_lines:
-                ss_fiber_coords = np.append(
-                    ss_fiber_coords,
-                    float(ss_fiberset_file_line.split(' ')[2]),
-                )
-        # create interpolation from super_coords and super_bases
-        f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
-        neuron_potentials_input = f(neuron_fiber_coords)
-        return neuron_potentials_input
+        weighted_potentials = np.zeros(len(bases[0]))
+        for src_ind, src_weight in enumerate(weights):
+            weighted_potentials += bases[src_ind] * src_weight
+
+        return weighted_potentials
 
     def indices_fib_to_n(self, fiberset_ind, fiber_ind) -> Tuple[int, int]:
         """Get inner and fiber indices from fiber index and fiberset_index.
@@ -620,9 +603,8 @@ class Simulation(Configurable, Saveable):
     def _build_file_structure(sim_obj_dir, t):
         """Build the file structure for the simulation.
 
-        :param sim_obj_dir:
+        :param sim_obj_dir: simulation object directory for sim in question
         :param t: master production index
-        :return: None
         """
         sim_dir = os.path.join(sim_obj_dir, "n_sims", str(t))
 
@@ -631,7 +613,7 @@ class Simulation(Configurable, Saveable):
             for subfolder_name in subfolder_names:
                 os.makedirs(os.path.join(sim_dir, "data", subfolder_name))
 
-    def _copy_and_edit_config(self, config, key, setval, copy_again=True):
+    def _copy_and_edit_config(self, config, key, param_list, copy_again=True):
         """Copy the config file and edits the key to set.
 
         :param config: config file to copy
@@ -644,7 +626,7 @@ class Simulation(Configurable, Saveable):
         if copy_again:
             cp = copy.deepcopy(config)
 
-        for path, value in zip(key, list(setval)):
+        for path, value in zip(key, list(param_list)):
             path_parts = path.split('->')
             pointer = cp
             for path_part in path_parts[:-1]:
@@ -660,15 +642,13 @@ class Simulation(Configurable, Saveable):
         :param project_root: project root
         :param target:  target directory
         :param overwrite: overwrite existing run config if it exists
-        :return: None
         """
         target_dir = os.path.join(target, 'runs')
         target_full = os.path.join(target_dir, str(num) + '.json')
         if overwrite and os.path.exists(target_full):
             os.remove(target_full)
 
-        if not os.path.exists(target_dir):
-            os.makedirs(target_dir)
+        os.makedirs(target_dir, exist_ok=True)
 
         source = os.path.join(project_root, 'config', 'user', 'runs', str(num) + '.json')
 
@@ -691,7 +671,6 @@ class Simulation(Configurable, Saveable):
         :param sim_obj_dir: Simulation object directory
         :param target: Target directory
         :param export_behavior: If the directory exists, what to do (i.e., override or error or skip
-        :return: None
         """
         sim_dir = os.path.join(sim_obj_dir, str(sim), 'n_sims')
         sim_export_base = os.path.join(target, 'n_sims', f'{sample}_{model}_{sim}_')
@@ -717,50 +696,22 @@ class Simulation(Configurable, Saveable):
         """Export the neuron files to the target directory.
 
         :param target: Target directory
-        :return: None
         """
         # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
-        if not os.path.exists(target):
-            os.makedirs(target)
+        os.makedirs(target, exist_ok=True)
 
         # neuron files
-        try:
-            shutil.copytree(
-                os.path.join(os.environ[Env.PROJECT_PATH.value], 'wmglab_neuron'),
-                os.path.join(target, 'wmglab_neuron'),
-                dirs_exist_ok=True
-            )
-        except Exception:
-            pass
+        du.copy_tree(
+            os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'neuron'),
+            target,
+        )
 
-        try:
-            shutil.copytree(
-                os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'neuron'),
-                os.path.join(target),
-                dirs_exist_ok=True
-            )
-        except Exception:
-            pass
+        submit_target = os.path.join(target, 'submit.py')
+        if os.path.isfile(submit_target):
+            os.remove(submit_target)
 
-    @staticmethod
-    def export_src_files(target: str):
-        # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
-        utils_target = os.path.join(target, 'utils')  # submit/src/utils
-        if not os.path.exists(target):
-            os.makedirs(target)
-
-        # delete any existing submit/src/utils folders
-        if os.path.exists(utils_target):
-            shutil.rmtree(utils_target)
-
-        # copy entire src/utils folder over to submit/
-        try:
-            shutil.copytree(
-                os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'utils'),
-                utils_target,
-            )
-        except Exception:
-            pass
+        submit_source = os.path.join('src', 'neuron', 'submit.py')
+        shutil.copy2(submit_source, submit_target)
 
     @staticmethod
     def export_system_config_files(target: str):
