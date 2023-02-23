@@ -2280,7 +2280,7 @@ public class ModelWrapper {
         );
         if (morphology.isNull("Nerve")) { //Monofascicle, no-epineurium case
             nerveParams.set("a_nerve", "NaN");
-            if (modelData.has("r_nerve_override")) {
+            if (false && modelData.has("r_nerve_override")) {
                 nerveParams.set(
                     "r_nerve",
                     modelData.getDouble("r_nerve_override") + " [" + morphology_unit + "]"
