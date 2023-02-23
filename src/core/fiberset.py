@@ -454,7 +454,7 @@ class FiberSet(Configurable, Saveable):
                     tree = STRtree(innershapes)
                     correct_fascicle = tree.nearest(Point(fiber))
                     movedist = (
-                        Point(fiber).distance(correct_fascicle) + 5
+                        Point(fiber).distance(correct_fascicle) + buffer
                     )  # TODO add some leeway instead of doing +5 micron
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
