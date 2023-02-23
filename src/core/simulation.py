@@ -407,8 +407,8 @@ class Simulation(Configurable, Saveable):
         :param sim_dir: directory of the simulation we are building n_sims for
         :param sim_num: index of the simulation we are building n_sims for
         :return: self
-        """
-
+        """ 
+        #TODO: figure out why this is taking forever on 3d
         def make_inner_fiber_diam_key(my_fiberset_ind, my_potentials_directory, my_file):
             """Make the key for the inner-fiber-diameter key file.
 

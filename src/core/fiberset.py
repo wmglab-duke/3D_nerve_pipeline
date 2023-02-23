@@ -437,7 +437,7 @@ class FiberSet(Configurable, Saveable):
             # advance header
             next(f)
             reader = csv.reader(f, delimiter=" ")
-            points = [(float(row[0]), float(row[1])) for row in reader]
+            points = [(float(row[0]), -float(row[1])) for row in reader] #TODO: TEMP negative but should not stay
         # check that all fibers are within exactly one inner
         for i, fiber in enumerate(points):
             innertraces = [

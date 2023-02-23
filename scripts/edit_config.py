@@ -53,15 +53,15 @@ def configval(path, param, val):
 import os
 import shutil
 
-os.chdir('d:/ASCENt/fresh')
+#os.chdir('..')
 
 if c == 'm':
-    samples = [2110]
-    models = [11, 12, 21, 22, 23, 31, 32, 33]
+    samples = [250,252,2501,2521]
+    models = [0]
 
-    change = ['medium', 'distal', 'radius']
+    change = ['cuff', 'preset']
 
-    newval = 20040.963
+    newval = 'LivaNova2000_v2.json'
 
     clear = False
 
@@ -106,6 +106,23 @@ elif c == 'r':
     oldval = configval(f'config/user/runs/{run}.json', change, newval)
 
     print(f'Updated run {run} parameter {change} from {oldval} to {newval}.')
+#%%
+elif c == 'e':
+    samples = [250,252,370,372,570,572,650,652,670,672,2501,2521,3701,3721,5701,5721,6701,6721]
+    models = [0]
+
+    change = ['scale', 'shrinkage']
+
+    newval = 0
+
+    clear = False
+
+    for sample in samples:
+            try:
+                oldval = configval(f'samples/{sample}/sample.json', change, newval)
+                print(f'Updated sample {sample} parameter {change} from {oldval} to {newval}.')
+            except:
+                print('oopsie')
 
 else:
     print('Not implemented')
