@@ -53,7 +53,7 @@ def configval(path, param, val):
 import os
 import shutil
 
-#os.chdir('..')
+os.chdir('..')
 
 if c == 'm':
     samples = [250,252,2501,2521]
@@ -111,9 +111,9 @@ elif c == 'e':
     samples = [250,252,370,372,570,572,650,652,670,672,2501,2521,3701,3721,5701,5721,6701,6721]
     models = [0]
 
-    change = ['scale', 'shrinkage']
+    change = ['modes','deform']
 
-    newval = 0
+    newval = "NONE"
 
     clear = False
 

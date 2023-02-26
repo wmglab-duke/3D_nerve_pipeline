@@ -1553,7 +1553,7 @@ public class ModelWrapper {
                             mw.addNerve(sample, nerveParams, modelData);
                         } else {
                             nerveParams.set("a_nerve", "NaN");
-                            if (modelData.has("r_nerve_override")) {
+                            if (false && modelData.has("r_nerve_override")) {
                                 nerveParams.set(
                                     "r_nerve",
                                     modelData.getDouble("r_nerve_override") +
@@ -2315,7 +2315,7 @@ public class ModelWrapper {
             //
 
             if (deform_ratio < 1) { //Use trace
-                if (modelData.has("r_nerve_override")) {
+                if (false && modelData.has("r_nerve_override")) {
                     nerveParams.set(
                         "r_nerve",
                         modelData.getDouble("r_nerve_override") + " [" + morphology_unit + "]"
