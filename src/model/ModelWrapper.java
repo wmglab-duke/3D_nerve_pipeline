@@ -1553,10 +1553,10 @@ public class ModelWrapper {
                             mw.addNerve(sample, nerveParams, modelData);
                         } else {
                             nerveParams.set("a_nerve", "NaN");
-                            if (false && modelData.has("r_nerve_override")) {
+                            if (modelData.has("3d_nerve_override")) {
                                 nerveParams.set(
                                     "r_nerve",
-                                    modelData.getDouble("r_nerve_override") +
+                                    modelData.getDouble("3d_nerve_override") +
                                     " [" +
                                     morphology_unit +
                                     "]"
@@ -2280,10 +2280,10 @@ public class ModelWrapper {
         );
         if (morphology.isNull("Nerve")) { //Monofascicle, no-epineurium case
             nerveParams.set("a_nerve", "NaN");
-            if (false && modelData.has("r_nerve_override")) {
+            if (modelData.has("3d_nerve_override")) {
                 nerveParams.set(
                     "r_nerve",
-                    modelData.getDouble("r_nerve_override") + " [" + morphology_unit + "]"
+                    modelData.getDouble("3d_nerve_override") + " [" + morphology_unit + "]"
                 );
             } else {
                 nerveParams.set(
@@ -2315,10 +2315,10 @@ public class ModelWrapper {
             //
 
             if (deform_ratio < 1) { //Use trace
-                if (false && modelData.has("r_nerve_override")) {
+                if (modelData.has("3d_nerve_override")) {
                     nerveParams.set(
                         "r_nerve",
-                        modelData.getDouble("r_nerve_override") + " [" + morphology_unit + "]"
+                        modelData.getDouble("3d_nerve_override") + " [" + morphology_unit + "]"
                     );
                 } else {
                     nerveParams.set(

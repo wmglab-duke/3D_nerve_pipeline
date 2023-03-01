@@ -56,12 +56,12 @@ import shutil
 os.chdir('..')
 
 if c == 'm':
-    samples = [250,252,2501,2521]
+    samples = [250,252,2501,2521,270,272,2701,2721,370,372,3701,3721,570,572,5701,5721,650,652,670,672,6701,6721]
     models = [0]
 
-    change = ['cuff', 'preset']
+    change = ['outer_interp_tol']
 
-    newval = 'LivaNova2000_v2.json'
+    newval = .005
 
     clear = False
 
