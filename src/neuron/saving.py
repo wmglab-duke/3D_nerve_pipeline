@@ -23,11 +23,11 @@ class Saving:
         fiber: object,
         space_vm: bool = False,
         space_gating: bool = False,
-        space_times: list[float] = None,
+        space_times: list = None,
         time_vm: bool = False,
         time_gating: bool = False,
         istim: bool = False,
-        locs: list[float] = None,
+        locs: list = None,
         end_ap_times: bool = False,
         loc_min: float = 0.1,
         loc_max: float = 0.9,
@@ -53,10 +53,12 @@ class Saving:
         :param ap_end_thresh: if end_ap_times, the threshold value for Vm to pass for an AP to be detected [mV]
         :param ap_loctime: save, for each fiber node, the last time an AP passed over that node
         :param runtime: save the simulation runtime
+        :param output_path: the path to the n_sim/data/outputs directory for saving data
         :return: Saving object
         """
         # TODO: switch output_path to be some directory,
         #  add feature to check if exists/create, then in ASCENT, pass in data/outputs path
+        nodecount = len(fiber.nodes)
         self.inner_ind = inner_ind
         self.fiber_ind = fiber_ind
         self.space_vm = space_vm
@@ -69,16 +71,18 @@ class Saving:
         self.istim = istim
         self.locs = locs
         if self.locs != 'all':
-            self.node_inds = [int((fiber.nodes - 1) * loc) for loc in self.locs]
+            self.node_inds = [int((nodecount - 1) * loc) for loc in self.locs]
         elif self.locs == 'all':
-            self.node_inds = list(range(0, fiber.nodes))
+            self.node_inds = list(range(0, nodecount))
         self.node_inds.sort()
         if end_ap_times:
             self.ap_end_times = True
-            node_ind_min = int((fiber.nodes - 1) * loc_min)
-            node_ind_max = int((fiber.nodes - 1) * loc_max)
+            node_ind_min = int((nodecount - 1) * loc_min)
+            node_ind_max = int((nodecount - 1) * loc_max)
             self.ap_end_inds = [node_ind_min, node_ind_max]
             self.ap_end_thresh = ap_end_thresh
+        else:
+            self.ap_end_times = None
         self.ap_loctime = ap_loctime
         self.runtime = runtime
         self.output_path = os.path.join(sim_path, 'data', 'outputs')
@@ -97,7 +101,6 @@ class Saving:
     def save_runtime(self, runtime: float, amp_ind: int = 0):
         """Save NEURON simulation runtime to file.
 
-        :param fiber: instance of Fiber class
         :param runtime: runtime of NEURON simulation
         :param amp_ind: index of amplitude in list of amplitudes for finite_amplitude protocol
         """
@@ -112,7 +115,6 @@ class Saving:
     def save_activation(self, amp_ind):
         """Save the number of action potentials that occurred at the location specified in sim config to file.
 
-        :param fiber: instance of Fiber class
         :param amp_ind: index of amplitude in list of amplitudes for finite_amplitude protocol
         """
         # save number of action potentials to submit/n_sims/#/data/outputs/activation_inner#_fiber#_amp#.dat
@@ -160,16 +162,19 @@ class Saving:
             return header
 
         # Put all recorded data into pandas DataFrame
-        vm_data = pd.DataFrame(fiber.vm)
-        all_gating_data = [pd.DataFrame(gating_vector) for gating_vector in fiber.gating]
-        istim_data = pd.DataFrame(stimulation.istim)
+        vm_data = pd.DataFrame([list(vm) for vm in fiber.vm if vm is not None])
+        all_gating_data = [pd.DataFrame([list(g) for g in fiber.gating[gating_parameter] if g is not None]) for gating_parameter in list(fiber.gating.keys())]
+        istim_data = pd.DataFrame(list(stimulation.istim_vector))
 
         if self.space_vm:
             vm_space_path = os.path.join(
                 self.output_path, f'Vm_space_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
             )
             vm_space_data = vm_data[self.time_inds]  # save data only at user-specified times
-            vm_space_data.insert(0, 'Node#', len(fiber.nodes))
+            if fiber.passive_end_nodes:
+                vm_space_data.insert(0, 'Node#', [i for i in range(2, len(fiber.nodes))])
+            else:
+                vm_space_data.insert(0, 'Node#', [i for i in range(1, len(fiber.nodes)+1)])
             vm_space_header = create_header('space', 'vm', 'mV')
             vm_space_data.to_csv(vm_space_path, header=vm_space_header, sep='\t', float_format='%.6f', index=False)
 
@@ -181,7 +186,10 @@ class Saving:
                     f'gating_{gating_param}_space_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat',
                 )
                 gating_space_data = gating_data[self.time_inds]  # save data only at user-specified times
-                gating_space_data.insert(0, 'Node#', len(fiber.nodes))
+                if fiber.passive_end_nodes:
+                    gating_space_data.insert(0, 'Node#', [i for i in range(2, len(fiber.nodes))])
+                else:
+                    gating_space_data.insert(0, 'Node#', [i for i in range(1, len(fiber.nodes) + 1)])
                 gating_space_header = create_header('space', gating_param)
                 gating_space_data.to_csv(
                     gating_space_path, header=gating_space_header, sep='\t', float_format='%.6f', index=False
@@ -192,7 +200,7 @@ class Saving:
                 self.output_path, f'Vm_time_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
             )
             vm_time_data = vm_data.T[self.node_inds]  # save data only at user-specified locations
-            vm_time_data.insert(0, 'Time', recording.time)
+            vm_time_data.insert(0, 'Time', stimulation.time)
             vm_time_header = create_header('time', 'vm', 'mV')
             vm_time_data.to_csv(vm_time_path, header=vm_time_header, sep='\t', float_format='%.6f', index=False)
 
@@ -204,7 +212,7 @@ class Saving:
                     f'gating_{gating_param}_time_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat',
                 )
                 gating_time_data = gating_data.T[self.node_inds]  # save data only at user-specified locations
-                gating_time_data.insert(0, 'Time', recording.time)
+                gating_time_data.insert(0, 'Time', stimulation.time)
                 gating_time_header = create_header('time', gating_param)
                 gating_time_data.to_csv(
                     gating_time_path, header=gating_time_header, sep='\t', float_format='%.6f', index=False
@@ -214,33 +222,35 @@ class Saving:
             istim_path = os.path.join(
                 self.output_path, f'Istim_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
             )
-            istim_data.insert(0, 'Time', recording.time)
+            istim_data.insert(0, 'Time', stimulation.time)
             istim_header = create_header('time', 'istim', 'nA')
             istim_data.to_csv(istim_path, header=istim_header, sep='\t', float_format='%.6f', index=False)
 
+        # todo: fix
         if self.ap_end_times:
             ap_end_times_path = os.path.join(
                 self.output_path, f'Aptimes_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
             )
-            with open(ap_end_times_path, 'w') as ap_end_file:
-                ap_end_file.write(f'Node{self.ap_end_inds[0] + 1} \t Node{self.ap_end_inds[1] + 1} \n')
+            # with open(ap_end_times_path, 'w') as ap_end_file:
+            #     ap_end_file.write(f'Node{self.ap_end_inds[0] + 1} \t Node{self.ap_end_inds[1] + 1} \n')
+            #
+            #     min_size, max_size = recording.ap_end_times[0].size(), recording.ap_end_times[1].size()
+            #     n_rows = max(min_size, max_size)
+            #     for i in range(0, n_rows):
+            #         if i < min_size and i < max_size:
+            #             ap_end_file.write(
+            #                 f'{recording.ap_end_times[0][i]:.6f} \t {recording.ap_end_times[1][i]:.6f} \n'
+            #             )
+            #         elif min_size > i >= max_size:
+            #             ap_end_file.write(f'{recording.ap_end_times[0][i]:.6f} \t  nan \n')
+            #         elif min_size <= i < max_size:
+            #             ap_end_file.write(f'nan \t {recording.ap_end_times[1][i]:.6f} \n')
 
-                min_size, max_size = recording.ap_end_times[0].size(), recording.ap_end_times[1].size()
-                n_rows = max(min_size, max_size)
-                for i in range(0, n_rows):
-                    if i < min_size and i < max_size:
-                        ap_end_file.write(
-                            f'{recording.ap_end_times[0][i]:.6f} \t {recording.ap_end_times[1][i]:.6f} \n'
-                        )
-                    elif min_size > i >= max_size:
-                        ap_end_file.write(f'{recording.ap_end_times[0][i]:.6f} \t  nan \n')
-                    elif min_size <= i < max_size:
-                        ap_end_file.write(f'nan \t {recording.ap_end_times[1][i]:.6f} \n')
-
+        # todo: fix
         if self.ap_loctime:
             ap_loctime_path = os.path.join(
                 self.output_path, f'ap_loctime_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
             )
-            with open(ap_loctime_path, 'w') as ap_loctime_file:
-                for loc_node_ind in range(0, fiber.nodes):
-                    ap_loctime_file.write(f'{recording.apc[loc_node_ind].time}\n')
+            # with open(ap_loctime_path, 'w') as ap_loctime_file:
+            #     for loc_node_ind in range(0, fiber.nodes):
+            #         ap_loctime_file.write(f'{recording.apc[loc_node_ind].time}\n')

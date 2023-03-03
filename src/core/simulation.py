@@ -738,6 +738,23 @@ class Simulation(Configurable, Saveable):
         )
 
     @staticmethod
+    def export_wmglab_neuron(target: str):
+        """Export the wmglab_neuron files to the target directory.
+
+        :param target: Target directory
+        """
+        # define path to the directory (ascent/submit/wmglab_neuron)
+        wmglab_neuron_path = os.path.join(target, 'wmglab_neuron')
+        # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
+        os.makedirs(wmglab_neuron_path, exist_ok=True)
+
+        # neuron files
+        du.copy_tree(
+            os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'wmglab_neuron'),
+            wmglab_neuron_path,
+        )
+
+    @staticmethod
     def import_n_sims(
         sample: int,
         model: int,

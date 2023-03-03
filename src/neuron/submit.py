@@ -218,7 +218,10 @@ def auto_compile(override: bool = False):
             print(exit_data.stderr)
             sys.exit("Error in compiling of NEURON files. Exiting...")
         os.chdir('..')
+        shutil.copytree(os.path.join(os.getcwd(), 'MOD_Files', 'x86_64'), os.path.join(os.getcwd(), 'x86_64'))
         compiled = True
+    elif (not os.path.exists('x86_64') and OS == 'UNIX-LIKE') or (not os.path.exists('nrnmech.dll') and OS == 'WINDOWS'):
+        shutil.copytree(os.path.join(os.getcwd(), 'MOD_Files', 'x86_64'), os.path.join(os.getcwd(), 'x86_64'))
     else:
         print('skipped compile')
         compiled = False
@@ -358,80 +361,54 @@ def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
 
 
 def make_task(
-    sub_con: str,
     my_os: str,
+    sub_con: str,
     start_p: str,
     sim_p: str,
-    inner: int,
-    fiber: int,
-    top: float,
-    bottom: float,
-    diam: float,
-    deltaz: float,
-    axonnodes: int,
+    inner_ind: int,
+    fiber_ind: int,
+    potentials_path: str,
+    waveform_path: str,
+    n_sim: int,
+    temperature: float,
 ):
     """Create shell script used to run a fiber simulation.
 
+    :param sub_con: the string name of the submission context.
     :param my_os: the string name of the operating system
+    :param sub_con: the string name of the submission context
     :param start_p: the string path to the start_dir
     :param sim_p: the string path to the sim_dir
-    :param inner: the index of the inner this fiber is in
-    :param fiber: the index of the fiber this simulation is for
-    :param top: the upper threshold bound
-    :param bottom: the lower threshold bound
-    :param diam: the diameter of the fiber
-    :param deltaz: the deltaz for the fiber
-    :param axonnodes: the number of axon nodes
+    :param inner_ind: the index of the inner this fiber is in
+    :param fiber_ind: the index of the fiber this simulation is for
+    :param potentials_path: the string path to the potentials text file
+    :param waveform_path: the string path to the waveform text file
+    :param n_sim: the index of the n_sim
     """
     with open(start_p, 'w+') as handle:
         if my_os == 'UNIX-LIKE':
             lines = [
                 '#!/bin/bash\n',
-                f'cd "{sim_p}\"\n',
-                'chmod a+rwx special\n',
-                './special -nobanner '
-                '-c \"strdef sim_path\" '
-                f'-c \"sim_path=\\\"{sim_p}\\\"\" '
-                f'-c \"inner_ind={inner}\" '
-                f'-c \"fiber_ind={fiber}\" '
-                f'-c \"stimamp_top={top}\" '
-                f'-c \"stimamp_bottom={bottom}\" '
-                f'-c \"fiberD={diam:.1f}\" '
-                f'-c \"deltaz={deltaz:.4f}\" '
-                f'-c \"axonnodes={axonnodes}\" '
-                '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n',
+                'cd ../../\n',
+                f'python run_controls.py '
+                f'\"{inner_ind}\" '
+                f'\"{fiber_ind}\" '
+                f'\"{potentials_path}\" '
+                f'\"{waveform_path}\" '
+                f'\"{sim_p}\" ',
+                f'\"{n_sim}\" ',
+                f'\"{temperature}\"\n',
             ]
-            if sub_con != 'cluster':
-                lines.remove(f'cd "{sim_p}\"\n')
 
-            # copy special files ahead of time to avoid 'text file busy error'
-            if not os.path.exists('special'):
-                shutil.copy(os.path.join('MOD_Files', 'x86_64', 'special'), sim_p)
+            if sub_con == 'cluster':
+                lines.remove('cd ../../\n')
 
         else:  # OS is 'WINDOWS'
-            sim_path_win = os.path.join(*sim_p.split(os.pathsep)).replace('\\', '\\\\')
-            lines = [
-                'nrniv -nobanner '
-                f'-dll \"{os.getcwd()}/MOD_Files/nrnmech.dll\" '
-                '-c \"strdef sim_path\" '
-                f'-c \"sim_path=\\\"{sim_path_win}\"\" '
-                f'-c \"inner_ind={inner}\" '
-                f'-c \"fiber_ind={fiber}\" '
-                f'-c \"stimamp_top={top}\" '
-                f'-c \"stimamp_bottom={bottom}\" '
-                f'-c \"fiberD={diam:.1f}\" '
-                f'-c \"deltaz={deltaz:.4f}\" '
-                f'-c \"axonnodes={axonnodes}\" '
-                '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"saveflag_ap_loctime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n'
-            ]
+            pass
 
         handle.writelines(lines)
         handle.close()
+
 
 
 def local_submit(fiber_data: dict):
@@ -598,8 +575,6 @@ def make_fiber_tasks(submission_list, submission_context):
         ]:
             ensure_dir(cur_dir)
 
-        # load generic instance of Fiber class for given n_sim
-        fiber_path = os.path.join(sim_path, 'fiber.obj')
         for fiber_data in runfibers:
             inner_ind, fiber_ind = fiber_data['inner'], fiber_data['fiber']
 
@@ -613,13 +588,14 @@ def make_fiber_tasks(submission_list, submission_context):
                 submission_context,
                 start_path,
                 sim_path,
-                fiber_path,
                 inner_ind,
                 fiber_ind,
                 potentials_path,
                 waveform_path,
                 n_sim,
+                37,
             )
+            # todo: find a way to pass in temperature
 
 
 def make_run_sub_list(run_number: int):
