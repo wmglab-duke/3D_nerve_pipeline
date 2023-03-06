@@ -327,10 +327,9 @@ class Stimulation:
         else:
             return bool(fiber.apc[node_index].n)
 
-    # todo: istim can be taken out, since it is already a known property of the stimulation class
-    def record_istim(self, istim):
+    def record_istim(self):
         """Record applied intracellular stimulation (nA).
 
         :param istim: instance of intracellular stimulation object
         """
-        self.istim_vector = h.Vector().record(istim._ref_i)
+        self.istim_vector = h.Vector().record(self.istim._ref_i)

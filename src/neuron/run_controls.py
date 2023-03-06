@@ -109,16 +109,16 @@ def main(
     loc_min = saving_configs['end_ap_times']['loc_min'] if end_ap_times else None
     loc_max = saving_configs['end_ap_times']['loc_max'] if end_ap_times else None
     ap_end_thresh = saving_configs['end_ap_times']['threshold'] if end_ap_times else None
-    ap_loctime = True if 'aploctime' in saving_configs.keys() else False
-    runtime = True if 'runtime' in saving_configs.keys() else False
-
+    ap_loctime = True if 'aploctime' in saving_configs.keys() and saving_configs['aploctime'] else False
+    runtimes = True if 'runtimes' in saving_configs.keys() and saving_configs['runtimes'] else False
+    print(runtimes)
     # create saving object instance
     if saving_configs['space']['vm'] is not None or saving_configs['time']['vm'] is not None:
         fiber.set_save_vm()
     if saving_configs['space']['gating'] is not None or saving_configs['time']['gating'] is not None:
         fiber.set_save_gating()
     if saving_configs['time']['istim']:
-        stimulation.record_istim(stimulation.istim)
+        stimulation.record_istim()
 
     saving = Saving(inner_ind, fiber_ind, sim_path, stimulation.dt,
                     fiber,
@@ -134,11 +134,19 @@ def main(
                     loc_max=loc_max,
                     ap_end_thresh=ap_end_thresh,
                     ap_loctime=ap_loctime,
-                    runtime=runtime,
+                    runtime=runtimes,
                     )
 
     # submit fiber for simulation
     amps = protocol_configs['amplitudes'] if protocol_configs['mode'] == 'FINITE_AMPLITUDES' else False
+
+    ap_detect_location = protocol_configs['threshold']['ap_detect_location']
+    istim_delay = istim_configs['times']['IntraStim_PulseTrain_delay']
+    run_kwargs = {
+        'ap_detect_location': ap_detect_location,
+        'istim_delay': istim_delay,
+    }
+    kwargs = {k: v for k, v in run_kwargs.items() if v is not None}
 
     if not amps:
         if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
@@ -147,24 +155,43 @@ def main(
             condition = ThresholdCondition.BLOCK
         if protocol_configs['termination_criteria']['mode'] == 'PERCENT_DIFFERENCE':
             termination_mode = TerminationMode.PERCENT_DIFFERENCE
+            termination_tolerance = protocol_configs['termination_criteria']['percent']
         elif protocol_configs['termination_criteria']['mode'] == 'ABSOLUTE_DIFFERENCE':
             termination_mode = TerminationMode.ABSOLUTE_DIFFERENCE
+            termination_tolerance = protocol_configs['termination_criteria']['tolerance']
+
+        if 'bounds_search' in protocol_configs.keys():
+            bounds_search_mode = protocol_configs['bounds_search']['mode']
+            bounds_search_step = protocol_configs['bounds_search']['step']
+            stimamp_top = protocol_configs['bounds_search']['top']
+            stimamp_bottom = protocol_configs['bounds_search']['bottom']
+            if 'max_steps' in protocol_configs['bounds_search'].keys():
+                max_iterations = protocol_configs['bounds_search']['max_steps']
+            else:
+                max_iterations = None
+        else:
+            bounds_search_mode = None
+            bounds_search_step = None
+            stimamp_top = None
+            stimamp_bottom = None
+
+        # todo: implement check_threshold_interval
+
+        threshold_args = [condition, bounds_search_mode, bounds_search_step, termination_mode, termination_tolerance,
+                          stimamp_top, stimamp_bottom, max_iterations]
+
+        args = [arg for arg in threshold_args if arg is not None]
+
         amp, ap = stimulation.find_threshold(
-            condition=condition,
-            bounds_search_mode=protocol_configs['bounds_search']['mode'],
-            bounds_search_step=protocol_configs['bounds_search']['step'],
-            termination_mode=termination_mode,
-            termination_tolerance=protocol_configs['termination_criteria']['percent'],
-            stimamp_top=protocol_configs['bounds_search']['top'],
-            stimamp_bottom=protocol_configs['bounds_search']['bottom'],
+            *args,
+            **kwargs,
             )
         print(f'Threshold found! {amp}nA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
         saving.save_thresh(amp)  # Save threshold value to file
         time_individual = time.time() - start_time
         saving.save_variables(fiber, stimulation)  # Save user-specified variables
-        saving.save_runtime(fiber, time_individual)  # Save runtime of simulation
+        saving.save_runtime(time_individual)  # Save runtime of simulation
 
-        #todo: check termination_tolerance, max_iterations, kwargs
         #todo: remove ap_end_times, ap_loctimes from Recording
     else:
         time_total = 0
@@ -173,16 +200,15 @@ def main(
 
             ap, ap_time = stimulation.run_sim(
                 stimamp=amp,
-                ap_detect_location=protocol_configs['threshold']['ap_detect_location'],
-                istim_delay=sim_configs['intracellular_stim']['times']['IntraStim_PulseTrain_delay'],
+                **kwargs,
                )
+            print(f'{amp}: {ap} {ap_time}')
             time_individual = time.time() - start_time - time_total
             saving.save_variables(self, recording, stimulation.dt, amp_ind)  # Save user-specified variables
             saving.save_activation(self, amp_ind)  # Save number of APs triggered
-            saving.save_runtime(self, time_individual, amp_ind)  # Save runtime of inidividual run
+            saving.save_runtime(time_individual, amp_ind)  # Save runtime of inidividual run
 
             time_total += time_individual
-            # todo: check check_threhsold, check_threshold_interval,
 
 # load in arguments from command line
 if __name__ == "__main__":  # Allows for the safe importing of the main module
