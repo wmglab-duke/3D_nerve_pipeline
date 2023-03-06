@@ -691,6 +691,11 @@ class Simulation(Configurable, Saveable):
 
             shutil.copytree(os.path.join(sim_dir, product_index), sim_export_base + product_index)
 
+            # need to export model.json file to get temperature value for fiber simulation
+            src = os.path.join(os.getcwd(), 'samples', str(sample), 'models', str(model), 'model.json')
+            dst = os.path.join(sim_export_base + product_index, 'model.json')
+            shutil.copy(src, dst)
+
     @staticmethod
     def export_neuron_files(target: str):
         """Export the neuron files to the target directory.

@@ -25,7 +25,6 @@ def main(
         waveform_path: str,
         sim_path: str,
         n_sim: int,
-        temperature: float = 37,
 ):
     """Control flow of a single n_sim NEURON simulation.
 
@@ -40,6 +39,11 @@ def main(
 
     with open(f'{sim_path}/{n_sim}.json') as file:
         sim_configs = json.load(file)
+
+    with open(f'{sim_path}/model.json') as file:
+        model_configs = json.load(file)
+
+    temperature = model_configs['temperature']
 
     # Read in waveform array, time step, and stop time
     with open(waveform_path, 'r') as waveform_file:
@@ -218,7 +222,6 @@ if __name__ == "__main__":  # Allows for the safe importing of the main module
     waveform_path = sys.argv[4]
     sim_path = sys.argv[5]
     n_sim = sys.argv[6]
-    temperature = sys.argv[7]
 
     main(
         inner_ind,
@@ -227,6 +230,5 @@ if __name__ == "__main__":  # Allows for the safe importing of the main module
         waveform_path,
         sim_path,
         n_sim,
-        temperature,
     )
     print('done')

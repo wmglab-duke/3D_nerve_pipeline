@@ -370,7 +370,6 @@ def make_task(
     potentials_path: str,
     waveform_path: str,
     n_sim: int,
-    temperature: float,
 ):
     """Create shell script used to run a fiber simulation.
 
@@ -397,7 +396,6 @@ def make_task(
                 f'\"{waveform_path}\" '
                 f'\"{sim_p}\" ',
                 f'\"{n_sim}\" ',
-                f'\"{temperature}\"\n',
             ]
 
             if sub_con == 'cluster':
@@ -593,7 +591,6 @@ def make_fiber_tasks(submission_list, submission_context):
                 potentials_path,
                 waveform_path,
                 n_sim,
-                37,
             )
             # todo: find a way to pass in temperature
 
