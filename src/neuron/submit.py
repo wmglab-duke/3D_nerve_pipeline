@@ -592,7 +592,6 @@ def make_fiber_tasks(submission_list, submission_context):
                 waveform_path,
                 n_sim,
             )
-            # todo: find a way to pass in temperature
 
 
 def make_run_sub_list(run_number: int):

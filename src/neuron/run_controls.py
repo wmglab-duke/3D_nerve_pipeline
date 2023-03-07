@@ -17,7 +17,6 @@ from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCond
 
 from saving import Saving
 
-#todo: pass in temperature
 def main(
         inner_ind: int,
         fiber_ind: int,
@@ -115,7 +114,7 @@ def main(
     ap_end_thresh = saving_configs['end_ap_times']['threshold'] if end_ap_times else None
     ap_loctime = True if 'aploctime' in saving_configs.keys() and saving_configs['aploctime'] else False
     runtimes = True if 'runtimes' in saving_configs.keys() and saving_configs['runtimes'] else False
-    print(runtimes)
+
     # create saving object instance
     if saving_configs['space']['vm'] is not None or saving_configs['time']['vm'] is not None:
         fiber.set_save_vm()
@@ -202,14 +201,13 @@ def main(
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
-            ap, ap_time = stimulation.run_sim(
+            n_aps = stimulation.run_sim(
                 stimamp=amp,
                 **kwargs,
                )
-            print(f'{amp}: {ap} {ap_time}')
             time_individual = time.time() - start_time - time_total
-            saving.save_variables(self, recording, stimulation.dt, amp_ind)  # Save user-specified variables
-            saving.save_activation(self, amp_ind)  # Save number of APs triggered
+            saving.save_variables(fiber, stimulation)  # Save user-specified variables
+            saving.save_activation(n_aps)  # Save number of APs triggered
             saving.save_runtime(time_individual, amp_ind)  # Save runtime of inidividual run
 
             time_total += time_individual

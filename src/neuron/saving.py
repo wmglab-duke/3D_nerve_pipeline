@@ -112,17 +112,17 @@ class Saving:
             with open(runtimes_path, 'w') as runtime_file:
                 runtime_file.write(f'{runtime:.3f}s')
 
-    def save_activation(self, amp_ind):
+    def save_activation(self, n_aps: int):
         """Save the number of action potentials that occurred at the location specified in sim config to file.
 
-        :param amp_ind: index of amplitude in list of amplitudes for finite_amplitude protocol
+        :param n_aps: number of action potentials that occurred
         """
         # save number of action potentials to submit/n_sims/#/data/outputs/activation_inner#_fiber#_amp#.dat
         output_file_path = os.path.join(
             self.output_path, f'activation_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
         )
         with open(output_file_path, 'w') as activation_file:
-            activation_file.write(f'{self.n_aps:.3f}')
+            activation_file.write(f'{n_aps:.3f}')
 
     def save_variables(self, fiber: object, stimulation: object, amp_ind: int = 0):  # noqa: C901
         # TODO: reduce complexity
@@ -226,31 +226,29 @@ class Saving:
             istim_header = create_header('time', 'istim', 'nA')
             istim_data.to_csv(istim_path, header=istim_header, sep='\t', float_format='%.6f', index=False)
 
-        # todo: fix
-        if self.ap_end_times:
-            ap_end_times_path = os.path.join(
-                self.output_path, f'Aptimes_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
-            )
-            # with open(ap_end_times_path, 'w') as ap_end_file:
-            #     ap_end_file.write(f'Node{self.ap_end_inds[0] + 1} \t Node{self.ap_end_inds[1] + 1} \n')
-            #
-            #     min_size, max_size = recording.ap_end_times[0].size(), recording.ap_end_times[1].size()
-            #     n_rows = max(min_size, max_size)
-            #     for i in range(0, n_rows):
-            #         if i < min_size and i < max_size:
-            #             ap_end_file.write(
-            #                 f'{recording.ap_end_times[0][i]:.6f} \t {recording.ap_end_times[1][i]:.6f} \n'
-            #             )
-            #         elif min_size > i >= max_size:
-            #             ap_end_file.write(f'{recording.ap_end_times[0][i]:.6f} \t  nan \n')
-            #         elif min_size <= i < max_size:
-            #             ap_end_file.write(f'nan \t {recording.ap_end_times[1][i]:.6f} \n')
-
-        # todo: fix
-        if self.ap_loctime:
-            ap_loctime_path = os.path.join(
-                self.output_path, f'ap_loctime_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
-            )
-            # with open(ap_loctime_path, 'w') as ap_loctime_file:
-            #     for loc_node_ind in range(0, fiber.nodes):
-            #         ap_loctime_file.write(f'{recording.apc[loc_node_ind].time}\n')
+        # if self.ap_end_times:
+        #     ap_end_times_path = os.path.join(
+        #         self.output_path, f'Aptimes_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
+        #     )
+        #     with open(ap_end_times_path, 'w') as ap_end_file:
+        #         ap_end_file.write(f'Node{self.ap_end_inds[0] + 1} \t Node{self.ap_end_inds[1] + 1} \n')
+        #
+        #         min_size, max_size = recording.ap_end_times[0].size(), recording.ap_end_times[1].size()
+        #         n_rows = max(min_size, max_size)
+        #         for i in range(0, n_rows):
+        #             if i < min_size and i < max_size:
+        #                 ap_end_file.write(
+        #                     f'{recording.ap_end_times[0][i]:.6f} \t {recording.ap_end_times[1][i]:.6f} \n'
+        #                 )
+        #             elif min_size > i >= max_size:
+        #                 ap_end_file.write(f'{recording.ap_end_times[0][i]:.6f} \t  nan \n')
+        #             elif min_size <= i < max_size:
+        #                 ap_end_file.write(f'nan \t {recording.ap_end_times[1][i]:.6f} \n')
+        #
+        # if self.ap_loctime:
+        #     ap_loctime_path = os.path.join(
+        #         self.output_path, f'ap_loctime_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
+        #     )
+        #     with open(ap_loctime_path, 'w') as ap_loctime_file:
+        #         for loc_node_ind in range(0, fiber.nodes):
+        #             ap_loctime_file.write(f'{recording.apc[loc_node_ind].time}\n')
