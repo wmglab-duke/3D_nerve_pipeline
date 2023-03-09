@@ -503,7 +503,35 @@ class FiberSet(Configurable, Saveable):
                 innerbuffer = [x.deepcopy() for x in innertraces]
                 [x.offset(distance=-buffer) for x in innerbuffer]
                 innershapes = [x.polygon() for x in innerbuffer]
-                assert Point(points[i]).within(unary_union(innershapes))
+                #reshift any points which are slightly off
+                fiber = points[i]
+                if not Point(fiber).within(unary_union(innershapes)):
+                    if not True or Point(fiber).distance(unary_union(innershapes))>5: # TODO add point adjust param and buffer amt, also wrap this in funciton
+                        plt.scatter(np.array(points)[:,0],np.array(points)[:,1])
+                        self.sample.slides[0].plot()    
+                        print(Point(fiber).distance(unary_union(innershapes)))
+                        raise MorphologyError(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
+                    else:
+                        # TODO: make this correction optional
+                        tree = STRtree(innershapes)
+                        correct_fascicle = tree.nearest(Point(fiber))
+                        movedist = (
+                            Point(fiber).distance(correct_fascicle) + buffer
+                        )  # TODO add some leeway instead of doing +5 micron
+                        dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
+                        newpoint = distpoint(fiber, dest, movedist)
+                        try:
+                            assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                        except AssertionError:
+                            # get the nearest point on the boundary of the correct fascicle and shift away from that
+                            # TODO: change it to always work this way
+                            from shapely.ops import nearest_points
+
+                            nearest = nearest_points(Point(fiber), correct_fascicle)[1]
+                            dest = (nearest.x, nearest.y)
+                            newpoint = distpoint(fiber, dest, movedist)
+                            assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                    points[i] = newpoint
         return points
 
     def plot_fibers_on_sample(self, sim_directory):
