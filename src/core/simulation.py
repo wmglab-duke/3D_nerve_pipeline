@@ -177,7 +177,7 @@ class Simulation(Configurable, Saveable):
                 )
             self.ss_fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
             self.ss_fibersets.append(fiberset)
-            #TODO: check that all SS bases coords contain all r egular fiberet coords
+            # TODO: check that all SS bases coords contain all r egular fiberet coords
 
         return self
 
@@ -408,7 +408,7 @@ class Simulation(Configurable, Saveable):
         :param sim_num: index of the simulation we are building n_sims for
         :return: self
         """
-        #TODO: figure out why this is taking forever on 3d
+        # TODO: figure out why this is taking forever on 3d
         def make_inner_fiber_diam_key(my_fiberset_ind, my_potentials_directory, my_file):
             """Make the key for the inner-fiber-diameter key file.
 
@@ -432,7 +432,7 @@ class Simulation(Configurable, Saveable):
 
         print("\t\t\tnsim: ", end='')
         for t, (potentials_ind, waveform_ind) in enumerate(self.master_product_indices):
-            print(t,end='')
+            print(t, end='')
             nsim_inputs_directory, fiberset_ind, active_src_vals = self.n_sim_setup(
                 sim_dir, sim_num, potentials_ind, waveform_ind, t
             )
@@ -555,8 +555,8 @@ class Simulation(Configurable, Saveable):
             ss_weighted_bases_vec += ss_bases[src_ind] * src_weight
 
         # down-sample super_save_vec
-        neuron_fiber_coords = np.loadtxt(os.path.join(root, file),skiprows=1)[:,-1]
-        ss_fiber_coords = np.loadtxt(os.path.join(ss_fiberset_path, file),skiprows=1)[:,-1]
+        neuron_fiber_coords = np.loadtxt(os.path.join(root, file), skiprows=1)[:, -1]
+        ss_fiber_coords = np.loadtxt(os.path.join(ss_fiberset_path, file), skiprows=1)[:, -1]
 
         # create interpolation from super_coords and super_bases
         f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)

@@ -15,6 +15,7 @@ from typing import List, Union
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
+from nd_line.nd_line import nd_line
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
 from shapely.geometry import Point
@@ -22,7 +23,6 @@ from shapely.strtree import STRtree
 
 from src.core import Sample, Simulation
 from src.utils import Config, Configurable, Object, Saveable, SetupMode
-from nd_line.nd_line import nd_line
 
 
 class Query(Configurable, Saveable):

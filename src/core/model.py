@@ -12,7 +12,7 @@ import numpy as np
 from quantiphy import Quantity
 from shapely.geometry import Point
 
-from src.core import Waveform, Slide
+from src.core import Slide, Waveform
 from src.utils import (
     Config,
     Configurable,
@@ -28,7 +28,6 @@ from src.utils import (
 )
 
 
-
 class Model(Configurable, Saveable):
     """Controls parameters associated with a model."""
 
@@ -37,7 +36,7 @@ class Model(Configurable, Saveable):
         # Initializes superclass
         Configurable.__init__(self)
 
-    def compute_cuff_shift(self, slide: Slide, sample_config: dict, addl_cuff_buffer=0,ignore_uncentered=False):
+    def compute_cuff_shift(self, slide: Slide, sample_config: dict, addl_cuff_buffer=0, ignore_uncentered=False):
         """Compute the Cuff Shift for a given model.
 
         :param sample: Sample, sample object
@@ -81,7 +80,9 @@ class Model(Configurable, Saveable):
             theta_i,
             x,
             y,
-        ) = self.get_cuff_shift_parameters(cuff_config, deform_ratio, nerve_copy, sample_config, slide,ignore_uncentered)
+        ) = self.get_cuff_shift_parameters(
+            cuff_config, deform_ratio, nerve_copy, sample_config, slide, ignore_uncentered
+        )
 
         if addl_cuff_buffer != 0:
             cuff_r_buffer += addl_cuff_buffer
@@ -212,7 +213,11 @@ class Model(Configurable, Saveable):
         # if poly fasc, use centroid of all fascicle as reference, not 0, 0
         # angle of centroid of nerve to center of minimum bounding circle
         reference_x = reference_y = 0.0
-        if not ignore_uncentered and not slide.monofasc() and not (round(slide.nerve.centroid()[0]) == round(slide.nerve.centroid()[1]) == 0):
+        if (
+            not ignore_uncentered
+            and not slide.monofasc()
+            and not (round(slide.nerve.centroid()[0]) == round(slide.nerve.centroid()[1]) == 0)
+        ):
             raise MorphologyError(
                 "Slide is not centered at [0,0]"
             )  # if the slide has nerve and is not centered at the nerve throw error

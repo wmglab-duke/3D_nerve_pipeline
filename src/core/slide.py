@@ -13,9 +13,8 @@ from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.ndimage import binary_fill_holes
-
 from PIL import Image, ImageDraw, ImageFont
+from scipy.ndimage import binary_fill_holes
 
 # packages
 from shapely.ops import unary_union
@@ -96,7 +95,7 @@ class Slide:
         tolerance: float = None,
         plotpath=None,
         plot_debug=False,
-        intersection_target = 'outers'
+        intersection_target='outers',
     ) -> bool:
         """Check to make sure nerve geometry is not overlapping itself.
 
@@ -204,7 +203,7 @@ class Slide:
             check.extend([len(i.points) < 3 for i in f.inners])
         return any(check)
 
-    def fascicle_fascicle_intersection(self,target) -> bool:
+    def fascicle_fascicle_intersection(self, target) -> bool:
         """Check to see if any fascicles intersect each other.
 
         :raises MethodError: If called on a monofascicular slide
@@ -212,9 +211,9 @@ class Slide:
         """
         if self.monofasc():
             raise MethodError("Method fascicle_fascicle_intersection does not apply for monofascicle nerves")
-        if target=='outers':
+        if target == 'outers':
             iterfasc = self.fascicles
-        elif target=='inners':
+        elif target == 'inners':
             iterfasc = [i for f in self.fascicles for i in f.inners]
         pairs = itertools.combinations(iterfasc, 2)
         return any([first.intersects(second) for first, second in pairs])
@@ -382,10 +381,10 @@ class Slide:
 
         for fascicle in self.fascicles:
             fascicle.scale(factor, center)
-            
-        self.scale_from_init*=factor
 
-    def smooth_traces(self, n_distance, i_distance,as_ratios=False):
+        self.scale_from_init *= factor
+
+    def smooth_traces(self, n_distance, i_distance, as_ratios=False):
         """Smooth traces for the slide.
 
         :param n_distance: distance to inflate and deflate the nerve trace
@@ -396,9 +395,9 @@ class Slide:
             raise ValueError("Fascicle smoothing distance cannot be None")
         for trace in self.trace_list():
             if isinstance(trace, Nerve):
-                trace.smooth(n_distance,as_ratio=as_ratios)
+                trace.smooth(n_distance, as_ratio=as_ratios)
             else:
-                trace.smooth(i_distance,as_ratio=as_ratios)
+                trace.smooth(i_distance, as_ratio=as_ratios)
 
     def generate_perineurium(self, fit: dict):
         """Generate perineurium for all fascicles in the slide.
@@ -446,7 +445,9 @@ class Slide:
         if self.monofasc():
             trace_list = [f.outer for f in self.fascicles]
         else:
-            trace_list = [self.nerve] + [f.outer for f in self.fascicles] + [i for f in self.fascicles for i in f.inners]
+            trace_list = (
+                [self.nerve] + [f.outer for f in self.fascicles] + [i for f in self.fascicles for i in f.inners]
+            )
         return trace_list
 
     def write(self, mode: WriteMode, path: str):

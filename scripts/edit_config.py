@@ -56,7 +56,30 @@ import shutil
 os.chdir('..')
 
 if c == 'm':
-    samples = [250,252,2501,2521,270,272,2701,2721,370,372,3701,3721,570,572,5701,5721,650,652,670,672,6701,6721]
+    samples = [
+        250,
+        252,
+        2501,
+        2521,
+        270,
+        272,
+        2701,
+        2721,
+        370,
+        372,
+        3701,
+        3721,
+        570,
+        572,
+        5701,
+        5721,
+        650,
+        652,
+        670,
+        672,
+        6701,
+        6721,
+    ]
     models = [0]
 
     change = ['r_nerve_override']
@@ -108,21 +131,21 @@ elif c == 'r':
     print(f'Updated run {run} parameter {change} from {oldval} to {newval}.')
 #%%
 elif c == 'e':
-    samples = [250,252,370,372,570,572,650,652,670,672,2501,2521,3701,3721,5701,5721,6701,6721]
+    samples = [250, 252, 370, 372, 570, 572, 650, 652, 670, 672, 2501, 2521, 3701, 3721, 5701, 5721, 6701, 6721]
     models = [0]
 
-    change = ['modes','deform']
+    change = ['modes', 'deform']
 
     newval = "NONE"
 
     clear = False
 
     for sample in samples:
-            try:
-                oldval = configval(f'samples/{sample}/sample.json', change, newval)
-                print(f'Updated sample {sample} parameter {change} from {oldval} to {newval}.')
-            except:
-                print('oopsie')
+        try:
+            oldval = configval(f'samples/{sample}/sample.json', change, newval)
+            print(f'Updated sample {sample} parameter {change} from {oldval} to {newval}.')
+        except:
+            print('oopsie')
 
 else:
     print('Not implemented')

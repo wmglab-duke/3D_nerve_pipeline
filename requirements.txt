@@ -1,5 +1,6 @@
 ffmpeg
 matplotlib
+nd_line
 numpy
 opencv-python
 openpyxl
@@ -17,4 +18,3 @@ setuptools
 shapely
 wheel
 xlsxwriter
-nd_line

@@ -54,13 +54,7 @@ def run(args):
     """
     global EXCLUDED_FILENAMES
     if args.full_reset:
-        EXCLUDED_FILENAMES = [
-            'sample.json',
-            'model.json',
-            'explicit.txt',
-            'explicit_fibersets',
-            '3D_fiberset.txt'
-            ]
+        EXCLUDED_FILENAMES = ['sample.json', 'model.json', 'explicit.txt', 'explicit_fibersets', '3D_fiberset.txt']
     proceed = input(
         'All files EXCEPT those whose names end with the following strings:\n'
         f'\t{EXCLUDED_FILENAMES}\n'

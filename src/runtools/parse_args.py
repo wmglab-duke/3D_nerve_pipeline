@@ -48,7 +48,7 @@ pipeline_parser.add_argument(
         "pre_mesh_proximal",
         "post_mesh_proximal",
         "pre_solve",
-        "post_java"
+        "post_java",
     ],
     help='Point in pipeline to exit and continue to next run',
 )

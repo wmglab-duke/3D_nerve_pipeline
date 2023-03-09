@@ -127,7 +127,7 @@ for diam, pos, ax in zip([3, 13], (0.2, 0.8), g.axes.ravel()):
 g.axes.ravel()[0].set_ylabel('3DM Threshold (mA)')
 g.axes.ravel()[1].set_ylabel('')
 plt.legend(loc='lower right')
-plt.gcf().savefig('posterplots/unity.svg', transparent=True, bbox_inches='tight')
+# plt.gcf().savefig('posterplots/unity.svg', transparent=True, bbox_inches='tight')
 
 #%% threshold barplot
 # generate boxplot of 2DEM and 3DM thresholds

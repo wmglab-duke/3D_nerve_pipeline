@@ -5,9 +5,9 @@
 """
 # TODO: make this into a video animation
 import os
+import pickle
 
 import numpy as np
-import pickle
 from matplotlib import pyplot as plt
 
 fibers = []
