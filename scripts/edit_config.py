@@ -59,9 +59,9 @@ if c == 'm':
     samples = [250,252,2501,2521,270,272,2701,2721,370,372,3701,3721,570,572,5701,5721,650,652,670,672,6701,6721]
     models = [0]
 
-    change = ['outer_interp_tol']
+    change = ['r_nerve_override']
 
-    newval = .005
+    newval = None
 
     clear = False
 
@@ -77,7 +77,7 @@ if c == 'm':
                 oldval = configval(f'samples/{sample}/models/{model}/model.json', change, newval)
                 print(f'Updated sample {sample} model {model} parameter {change} from {oldval} to {newval}.')
             except:
-                pass
+                print(sample)
 
 #%%
 elif c == 's':
