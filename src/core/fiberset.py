@@ -39,6 +39,7 @@ from src.utils import (
     Saveable,
     SetupMode,
     WriteMode,
+    DeformationMode
 )
 
 from .sample import Sample
@@ -438,10 +439,16 @@ class FiberSet(Configurable, Saveable):
             next(f)
             reader = csv.reader(f, delimiter=" ")
             points = [(float(row[0]), -float(row[1])) for row in reader]  # TODO: TEMP negative but should not stay
+        from copy import deepcopy
+        if self.sample.deform_mode != DeformationMode.NONE:
+            checkslide = deepcopy(self.sample.undeformed)
+        else:
+            checkslide = deepcopy(self.sample.slides[0])
+        checkslide.move_center([0,0])
         # check that all fibers are within exactly one inner
         for i, fiber in enumerate(points):
             innertraces = [
-                inner.deepcopy() for fascicle in self.sample.slides[0].fascicles for inner in fascicle.inners
+                inner.deepcopy() for fascicle in checkslide.fascicles for inner in fascicle.inners
             ]
             innerbuffer = [x.deepcopy() for x in innertraces]
             [x.offset(distance=-buffer) for x in innerbuffer]
@@ -470,6 +477,30 @@ class FiberSet(Configurable, Saveable):
                         newpoint = distpoint(fiber, dest, movedist)
                         assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
                 points[i] = newpoint
+            # plt.scatter(np.array(points)[:,0],np.array(points)[:,1])
+            # checkslide.plot()
+            if self.sample.deform_mode != DeformationMode.NONE:
+                #match rotations to new deformed fascicle positions
+                #first find the fascicle index this point is inside
+                from shapely.affinity import rotate
+                for fascicle in checkslide.fascicles:
+                    if Point(fiber).within(fascicle.outer.polygon()):
+                        fascindex = checkslide.fascicles.index(fascicle)
+                #shift using the fascicle's shift
+                shift = self.sample.slides[0].fascicles[fascindex].deformation['shift']
+                angle = self.sample.slides[0].fascicles[fascindex].deformation['rotate']
+                points[i] = (points[i][0] + shift[0], points[i][1] + shift[1])
+                rotated: Point = rotate(Point(points[i][0],points[i][1]), angle, origin=self.sample.slides[0].fascicles[fascindex].centroid(), use_radians=True)
+                points[i] = (rotated.x, rotated.y)
+                innertraces = [
+                    inner.deepcopy() for fascicle in self.sample.slides[0].fascicles for inner in fascicle.inners
+                ]
+                innerbuffer = [x.deepcopy() for x in innertraces]
+                [x.offset(distance=-buffer) for x in innerbuffer]
+                innershapes = [x.polygon() for x in innerbuffer]
+                try: assert Point(points[i]).within(unary_union(innershapes))
+                except AssertionError:
+                    pass
         return points
 
     def plot_fibers_on_sample(self, sim_directory):

@@ -600,6 +600,9 @@ class Sample(Configurable, Saveable):
         :raises ValueError: if deform mode is invalid
         :return: Slide object
         """
+        from copy import deepcopy
+        self.undeformed = deepcopy(slide)
+
         if self.deform_mode != DeformationMode.PHYSICS:
             raise ValueError("Invalid DeformationMode in Sample.")
 
@@ -654,8 +657,9 @@ class Sample(Configurable, Saveable):
         ]
 
         for move, angle, fascicle in zip(movements, rotations, slide.fascicles):
-            fascicle.shift(list(move) + [0])
-            fascicle.rotate(angle)
+            fascicle.deformation={"shift":list(move) + [0],"rotate":angle}
+            fascicle.shift(fascicle.deformation['shift'])
+            fascicle.rotate(fascicle.deformation['rotate'])
 
         if deform_ratio != 1 and partially_deformed_nerve is not None:
             partially_deformed_nerve.shift(-np.asarray(list(partially_deformed_nerve.centroid()) + [0]))
@@ -671,6 +675,7 @@ class Sample(Configurable, Saveable):
 
         # shift slide about (0,0)
         slide.move_center(np.array([0, 0]))
+        from copy import deepcopy
         return slide
 
     def populate(self) -> 'Sample':
