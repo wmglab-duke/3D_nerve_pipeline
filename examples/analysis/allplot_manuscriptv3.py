@@ -60,6 +60,7 @@ threshload = pd.read_csv('thresh_unmatched_sim3.csv').query('sim==3')
 threshload['type'] = threshload['type'].replace({'2D': '2DEM', '3D': '3DM'})
 threshload = addpwfd(threshload, '3')
 threshload['fiber_diam'] = threshload['fiber_diam'].astype(int)
+threshload['deformed'] = ['def' in lab for lab in threshload['nerve_label']]
 # 3DM and 2DEM trhresholds as different col same row
 matched = datamatch(threshload.query('type=="2DEM"'), threshload.query('type=="3DM"'), 'threshold').drop(columns='type')
 # add new EMsample column to matched dataframe, which is the nerve label plus the first letter of the contact type capitalized
@@ -90,6 +91,8 @@ for i, row in drdat.iterrows():
     # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
     drdat.loc[i, 'percent_activated'] = len(thisdat.query('threshold <= @row.threshold')) / len(thisdat)
 drdat.sort_values('modeltype', inplace=True)
+threshload['nerve_label'] = [lab[:2] for lab in threshload['nerve_label']]
+matched['nerve_label'] = [lab[:2] for lab in matched['nerve_label']]
 
 sys.exit('prepdone')
 #%% sample thresholds with unity line
@@ -107,6 +110,7 @@ g = sns.relplot(
     hue='Sample',
     # s=20,
     palette='colorblind',
+    row='deformed',
     facet_kws={'sharex': False, 'sharey': False},
 )
 # g.map(sns.regplot, 'threshold', 'threshold3d', scatter=False, color='k', label='linear fit')

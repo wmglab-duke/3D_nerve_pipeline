@@ -14,7 +14,7 @@ import matplotlib
 
 from src.runtools import list_util, parse_args, welcome
 
-matplotlib.use('agg')
+# matplotlib.use('agg')
 
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
 

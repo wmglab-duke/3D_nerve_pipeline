@@ -56,33 +56,11 @@ import shutil
 os.chdir('..')
 
 if c == 'm':
-    samples = [
-        250,
-        252,
-        2501,
-        2521,
-        270,
-        272,
-        2701,
-        2721,
-        370,
-        372,
-        3701,
-        3721,
-        570,
-        572,
-        5701,
-        5721,
-        650,
-        652,
-        670,
-        672,
-        6701,
-        6721,
-    ]
+    samples = [2509, 2529, 3709, 3729, 5709, 5729, 6709, 6729]
+
     models = [0]
 
-    change = ['r_nerve_override']
+    change = ['3d_nerve_override']
 
     newval = None
 
@@ -99,8 +77,8 @@ if c == 'm':
             try:
                 oldval = configval(f'samples/{sample}/models/{model}/model.json', change, newval)
                 print(f'Updated sample {sample} model {model} parameter {change} from {oldval} to {newval}.')
-            except:
-                print(sample)
+            except Exception as e:
+                print(sample, e)
 
 #%%
 elif c == 's':
@@ -131,12 +109,11 @@ elif c == 'r':
     print(f'Updated run {run} parameter {change} from {oldval} to {newval}.')
 #%%
 elif c == 'e':
-    samples = [250, 252, 370, 372, 570, 572, 650, 652, 670, 672, 2501, 2521, 3701, 3721, 5701, 5721, 6701, 6721]
-    models = [0]
+    samples = [2509, 2529, 3709, 3729, 5709, 5729, 6709, 6729]
 
-    change = ['modes', 'deform']
+    change = ['modes', 'reshape_nerve']
 
-    newval = "NONE"
+    newval = "CIRCLE"
 
     clear = False
 
