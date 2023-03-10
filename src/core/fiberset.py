@@ -476,8 +476,8 @@ class FiberSet(Configurable, Saveable):
                         newpoint = distpoint(fiber, dest, movedist)
                         assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
                 points[i] = newpoint
-            plt.scatter(np.array(points)[:, 0], np.array(points)[:, 1])
-            checkslide.plot()
+            # plt.scatter(np.array(points)[:, 0], np.array(points)[:, 1])
+            # checkslide.plot()
             if self.sample.deform_mode != DeformationMode.NONE:
                 # match rotations to new deformed fascicle positions
                 # first find the fascicle index this point is inside
@@ -509,8 +509,8 @@ class FiberSet(Configurable, Saveable):
                     if (
                         not True or Point(fiber).distance(unary_union(innershapes)) > 2 * buffer
                     ):  # TODO add point adjust param and buffer amt, also wrap this in funciton
-                        plt.scatter(fiber[0], fiber[1])
-                        self.sample.slides[0].plot()
+                        # plt.scatter(fiber[0], fiber[1])
+                        # self.sample.slides[0].plot()
                         print(Point(fiber).distance(unary_union(innershapes)))
                         raise MorphologyError(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
                     else:
