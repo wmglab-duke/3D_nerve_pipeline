@@ -684,7 +684,7 @@ class Query(Configurable, Saveable):
         config_paths: bool = True,
         column_width: int = None,
         console_output: bool = True,
-        optional_keys = False
+        optional_keys=False,
     ):
         """Output summary of query.
 
@@ -793,7 +793,7 @@ class Query(Configurable, Saveable):
                         # fetch additional sample, model, and sim values
                         # that's one juicy list comprehension right there
                         values = [
-                            [self.search(config, *key,optional = optional_keys) for key in category]
+                            [self.search(config, *key, optional=optional_keys) for key in category]
                             for category, config in zip(
                                 [sample_keys, model_keys, sim_keys],
                                 [Config.SAMPLE, Config.MODEL, Config.SIM],
