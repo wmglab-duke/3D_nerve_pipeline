@@ -57,6 +57,7 @@ class Simulation(Configurable, Saveable):
         self.potentials_product = []
         self.master_product_indices = []  # order: potentials (active_src, fiberset), waveform
         self.ss_product = []  # order: (contact index, fiberset)
+        self.source_sim_obj = None
 
     def load(self, path: str) -> 'Simulation':
         """Load a pickled object from a file.
@@ -391,9 +392,13 @@ class Simulation(Configurable, Saveable):
 
         source_sim_obj_file = os.path.join(source_sim_obj_dir, 'sim.obj')
 
-        source_simulation: Simulation = self.load(source_sim_obj_file)
+        try:
+            if self.source_sim_obj is None:
+                self.source_sim_obj: Simulation = self.load(source_sim_obj_file)
+        except AttributeError:
+            self.source_sim_obj: Simulation = self.load(source_sim_obj_file)
 
-        source_dz = source_simulation.configs['sims']['supersampled_bases']['dz']
+        source_dz = self.source_sim_obj.configs['sims']['supersampled_bases']['dz']
 
         if 'dz' in supersampled_bases:
             if supersampled_bases.get('dz') != source_dz:
@@ -432,7 +437,7 @@ class Simulation(Configurable, Saveable):
 
         print("\t\t\tnsim: ", end='')
         for t, (potentials_ind, waveform_ind) in enumerate(self.master_product_indices):
-            print(t, end='')
+            print(t, end=' ')
             nsim_inputs_directory, fiberset_ind, active_src_vals = self.n_sim_setup(
                 sim_dir, sim_num, potentials_ind, waveform_ind, t
             )
@@ -567,7 +572,7 @@ class Simulation(Configurable, Saveable):
             raise e
         # throw error if there are any nans in the neuron_potentials_input
         if np.isnan(neuron_potentials_input).any():
-            print('WARNING: NANs in neuron_potentials_input. Using temp fix to avoid error.')
+            warnings.warn('NANs in neuron_potentials_input. Using interpolation to fix missing values.')
             # temporary fix for nans in neuron_potentials_input
             # TODO: make this better
             while np.isnan(neuron_potentials_input).any():

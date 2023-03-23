@@ -206,7 +206,7 @@ g = sns.barplot(
 )
 plt.title('intrafascicle')
 plt.ylabel('Threshold Variance (mA^2)')
-# plt.gca().set_aspect(20)
+plt.gca().set_aspect(20)
 plt.xlabel('')
 
 # now do variance between fascicle mean thresholds
@@ -1130,3 +1130,101 @@ for ax, r, letter in zip(
 g.set_titles(col_template='{col_name}', row_template='Fiber Diameter = {row_name}')
 # g.fig.set_size_inches(10, 6)
 plt.show()
+#%%
+defdr = newdefdat[newdefdat['deformed']].copy()
+defdr['percent_activated'] = 0
+defdr = defdr.rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
+for i, row in defdr.iterrows():
+    thisdat = defdr.query(
+        'modeltype == @row.modeltype and samplenum == @row.samplenum and fiber_diam == @row.fiber_diam and sim == @row.sim'
+    )
+    # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
+    defdr.loc[i, 'percent_activated'] = len(thisdat.query('threshold <= @row.threshold')) / len(thisdat)
+defdr.sort_values('modeltype', inplace=True)
+#%%
+sns.set(font_scale=1.5)
+sns.set_style('whitegrid')
+# could shade in min and max to show response range?
+
+plt.figure()
+g = sns.relplot(
+    kind='line',
+    row='fiber_diam',
+    data=defdr.query("fiber_diam in [3,13] and contact != 'anodic'"),
+    y='percent_activated',
+    x='threshold',
+    hue='nerve_label',
+    palette='colorblind',
+    estimator=None,
+    linewidth=3,
+    facet_kws={'sharex': False},
+    **{'style': 'modeltype'},
+)
+for ax in g.axes.ravel():
+    ax.set_xlabel('Threshold (mA)')
+    ax.set_ylim([0, 1])
+    ax.set_xlim([0, None])
+g.set_titles(row_template='')
+g.axes[0][0].set_xlabel('')
+g.axes[0][0].set_ylabel('Proportion of fibers activated\nFiber diameter: 3 μm')
+g.axes[1][0].set_ylabel('Proportion of fibers activated\nFiber diameter: 13 μm')
+g._legend.set_title('')
+#%%
+sns.set(font_scale=1.25)
+sns.set_style('whitegrid')
+plt.figure()
+levels = {
+    'onset': 10,
+    'saturation': 90,
+}
+grouped = newdefdat.query('sim==3 and deformed == True').groupby(
+    ['sample', 'fiber_diam', 'sim', 'type', 'nerve_label', 'model', 'nsim']
+)
+analysis = grouped.agg(
+    {
+        'threshold': [
+            lambda x: np.percentile(x, q=levels['onset']),
+            np.median,
+            lambda x: np.percentile(x, q=levels['saturation']),
+        ]
+    }
+)
+analysis.columns = ["_".join(col_name).rstrip('_') for col_name in analysis.columns]
+analysis.rename(columns={'threshold_<lambda_0>': 'onset', 'threshold_<lambda_1>': 'saturation'}, inplace=True)
+analysis = analysis.reset_index()
+# combine onset, saturation, and half into one column with identifier
+compiled_data = analysis.melt(
+    id_vars=['sample', 'fiber_diam', 'sim', 'type', 'nerve_label', 'model', 'nsim'],
+    value_vars=['onset', 'saturation'],
+    var_name='level',
+    value_name='threshold',
+)
+
+# set up facetgrid with nsim as row and level as columns
+compiled_data.reset_index(inplace=True)
+# set fiber_diam to category
+compiled_data.type = compiled_data.type.astype('category')
+# remove all rows where modulus sample with 0 is 0
+compiled_data = compiled_data.query('sample % 10 != 0')
+# add a units column with unique number for each combination of fiber_diam and level
+compiled_data['units'] = compiled_data.groupby(['fiber_diam', 'level', 'nerve_label']).ngroup()
+compiled_data['fiber_diam'] = compiled_data['fiber_diam'].astype(int)
+g = sns.FacetGrid(
+    compiled_data.query("fiber_diam in [3,13]").rename(
+        columns={'fiber_diam': "Fiber Diameter (μm)", 'threshold': "Threshold (mA)"}
+    ),
+    col="level",
+    row="Fiber Diameter (μm)",
+    sharey=False,
+    margin_titles=True,
+)
+g.map_dataframe(sns.swarmplot, x='type', y='Threshold (mA)', color='black')
+g.map_dataframe(sns.lineplot, x='type', y='Threshold (mA)', units='units', hue='nerve_label', estimator=None, color='k')
+plt.subplots_adjust(top=0.9)
+g.set_titles(col_template='{col_name}', row_template='')
+for ax in g.axes.ravel():
+    ax.set_xlabel('')
+g.axes[0][0].set_ylabel('Threshold (mA)\n3 μm fibers')
+g.axes[1][0].set_ylabel('Threshold (mA)\n13 μm fibers')
+plt.gcf().set_size_inches([5, 7])
+plt.legend(title='Sample', bbox_to_anchor=(1.8, 1.5))

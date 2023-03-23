@@ -374,7 +374,9 @@ class _HeatmapPlotter:
         except AttributeError:
             r = self.sample.slides[0].fascicles[0].outer.mean_radius()
         # get orientation angle from slide
-        theta = self.sample.slides[0].orientation_angle if self.sample.slides[0].orientation_angle is not None else 0
+        if self.sample.slides[0].orientation_angle is None:
+            raise ValueError("Cannot plot orientation if orientation angle was not defined in the slide.")
+        theta = self.sample.slides[0].orientation_angle
         # load add_ang from model.json cofiguration file
         with open(Query.build_path(Config.MODEL, [self.sample_index, self.model_index])) as f:
             model_config = json.load(f)
