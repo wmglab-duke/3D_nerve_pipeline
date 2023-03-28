@@ -416,20 +416,35 @@ class Query(Configurable, Saveable):
                                 base_dict['n_ap_sites'],
                             ) = self.get_ap_info(ignore_no_activation, base_dict, sim_dir, source_sample is not None)
 
-                            base_dict['peak_second_diff'], base_dict['peak_second_diff_node'] = self.peak_second_diff(
-                                base_dict, sim_dir
-                            )
+                            # base_dict['peak_second_diff'], base_dict['peak_second_diff_node'] = self.peak_second_diff(
+                            #     base_dict, sim_dir
+                            # )
 
                             base_dict['peri_thk'] = self.get_peri_thickness(
                                 sample_object.slides[0].fascicles[outer].inners[specific_inner]
                             )
-                            if zpos:
-                                (
-                                    base_dict['activation_xpos'],
-                                    base_dict['activation_ypos'],
-                                    base_dict['activation_zpos'],
-                                ) = self.get_actual_zpos(
-                                    base_dict, sim_dir, source_sample is not None, source_sim=source_sim
+                            threedline = None
+                            if source_sample is not None:  # 3d data
+                                if source_sim is not None:
+                                    this_nd_simdir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
+                                fiberpath = os.path.join(
+                                    this_nd_simdir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat'
+                                )
+                                threedline = nd_line(np.loadtxt(fiberpath, skiprows=1))
+
+                            (
+                                base_dict['activation_xpos'],
+                                base_dict['activation_ypos'],
+                                base_dict['activation_zpos'],
+                            ) = self.get_actual_zpos(
+                                base_dict, sim_dir, threedline, source_sample is not None, source_sim=source_sim
+                            )
+                            base_dict['tortuosity'] = self.get_tortuosity(
+                                base_dict, sim_dir, threedline, source_sample is not None, source_sim
+                            )
+                            if cuffspan is not None:
+                                base_dict['cuff_tortuosity'] = self.get_tortuosity_span(
+                                    base_dict, sim_dir, source_sample is not None, cuffspan, source_sim
                                 )
                             if peri_site:
                                 base_dict['peri_thk_act_site'] = self.get_activation_site_peri_thickness(
@@ -438,14 +453,6 @@ class Query(Configurable, Saveable):
                                 if cuffspan is not None:
                                     base_dict['smallest_thk_under_cuff'] = self.get_smallest_thk_under_cuff(
                                         base_dict, source_sample is not None, cuffspan, sim_dir, source_sim=source_sim
-                                    )
-                            if tortuosity:
-                                base_dict['tortuosity'] = self.get_tortuosity(
-                                    base_dict, sim_dir, source_sample is not None, source_sim
-                                )
-                                if cuffspan is not None:
-                                    base_dict['cuff_tortuosity'] = self.get_tortuosity_span(
-                                        base_dict, sim_dir, source_sample is not None, cuffspan, source_sim
                                     )
                             alldat.append(base_dict)
 
@@ -476,19 +483,13 @@ class Query(Configurable, Saveable):
         return fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
 
     @staticmethod
-    def get_actual_zpos(base_dict, sim_dir, threed, source_sim=None):
+    def get_actual_zpos(base_dict, sim_dir, threedline, threed, source_sim=None):
         if not threed:
             return np.nan, np.nan, base_dict['long_ap_pos']
         else:
             if source_sim is not None:
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
-            fiberpath = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
-            fiberline = nd_line(np.loadtxt(fiberpath, skiprows=1))
-            nsimfiberpath = os.path.join(
-                sim_dir, 'fibersets', f'{base_dict["fiberset_index"]}', f'{base_dict["master_fiber_index"]}.dat'
-            )
-            nsimfiber = nd_line(np.loadtxt(nsimfiberpath, skiprows=1))
-            return tuple(fiberline.interp(base_dict['long_ap_pos']))
+            return tuple(threedline.interp(base_dict['long_ap_pos']))
 
     @staticmethod
     def get_activation_site_peri_thickness(base_dict, threed, source_sim=None):
@@ -605,16 +606,14 @@ class Query(Configurable, Saveable):
         return abs(threshold)
 
     @staticmethod
-    def get_tortuosity(base_dict, sim_dir, threed, source_sim=None):
+    def get_tortuosity(base_dict, sim_dir, threedline, threed, source_sim=None):
         # directory for specific n_sim
         if not threed:
             return 1
         else:
             if source_sim is not None:
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
-            fiberfilethreed = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
-            ln = nd_line(np.loadtxt(fiberfilethreed, skiprows=1))
-            return ln.length / euclidean(ln.points[0], ln.points[-1])
+            return threedline.length / euclidean(threedline.points[0], threedline.points[-1])
 
     @staticmethod
     def get_tortuosity_span(base_dict, sim_dir, threed, cuffspan, source_sim=None):
