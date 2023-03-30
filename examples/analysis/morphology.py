@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import pandas as pd
-import pickle5 as pickle
+import pickle
 import seaborn as sns
 
 # load in slides

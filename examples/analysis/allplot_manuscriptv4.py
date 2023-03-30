@@ -53,6 +53,27 @@ def pe(correct, est):
     """
     return 100 * abs(est - correct) / correct
 
+import math
+
+
+def compute_reorder_cost(order1, order2):
+    assert set(order1) == set(order2)
+    assert len(set(order1)) == len(order1)
+    assert len(set(order2)) == len(order2)
+    sumdist = 0
+    for item in order1:
+        distance = abs(order1.index(item) - order2.index(item))
+        sumdist += distance
+    if len(order1) % 2 == 0:
+        maxlen = sum(range(len(order1))[int(math.ceil(0.5 * len(order1))) :]) * 2 / len(order1)
+    else:
+        maxlen = (
+            range(len(order1))[int(math.floor(0.5 * len(order1)))]
+            + (sum(range(len(order1))[int(math.ceil(0.5 * len(order1))) :])) * 2
+        ) / len(order1)
+    return sumdist / len(order1) / maxlen
+
+
 
 gogo = "initial"
 
@@ -133,11 +154,13 @@ for diam, pos, ax in zip([3, 13], (0.2, 0.8), g.axes.ravel()):
     ax.plot([0, rdata.threshold.max()], [0, rdata.threshold.max()], '--k', linewidth=2, label='1:1 line')
     ax.set_xlabel('2DEM Threshold (mA)')
     ax.set_yticks(ax.get_xticks())
+    ax.set_aspect('equal','box')
     ax.set_xlim([0, None])
     ax.set_ylim([0, ax.get_xlim()[1]])
 g.axes.ravel()[0].set_ylabel('3DM Threshold (mA)')
 g.axes.ravel()[1].set_ylabel('')
 plt.legend(loc='lower right')
+g.fig.set_size_inches([9.5,5])
 #%% threshold violinplot
 # generate boxplot of 2DEM and 3DM thresholds
 sns.set(font_scale=1.75)
@@ -149,12 +172,34 @@ g = sns.catplot(
     x='type',
     y='threshold',
     sharey=False,
-    errorbar='se',
     palette='colorblind',
 )
 for ax in g.axes.ravel():
     ax.set_xlabel('')
 g.fig.set_size_inches(6, 6, forward=True)
+plt.subplots_adjust(top=0.9, wspace=0.4)
+g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+# plt.suptitle('2DEM vs 3DM Thresholds for all samples')
+g.axes.ravel()[0].set_title('3 μm')
+g.axes.ravel()[1].set_title('13 μm')
+plt.show()
+#%% threshold boxplot
+# generate boxplot of 2DEM and 3DM thresholds
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+g = sns.catplot(
+    kind='box',
+    col='fiber_diam',
+    data=threshload.query("nsim in [0,5]"),
+    x='nerve_label',
+    y='threshold',
+    sharey=False,
+    palette='colorblind',
+    hue='type'
+)
+for ax in g.axes.ravel():
+    ax.set_xlabel('')
+g.fig.set_size_inches(12, 6, forward=True)
 plt.subplots_adjust(top=0.9, wspace=0.4)
 g.axes.ravel()[0].set_ylabel('Threshold (mA)')
 # plt.suptitle('2DEM vs 3DM Thresholds for all samples')
@@ -519,6 +564,24 @@ plt.xlabel('Sample')
 plt.ylabel('Percent Error')
 plt.gca().set_aspect(0.06)
 sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
+#%% Percent Error
+sns.reset_orig()
+sns.set(font_scale=1.5,style='whitegrid')
+# mpl.rcParams['figure.dpi'] = 400
+# mpl.rcParams['font.size'] = 14
+# sns.set(font_scale=1.25)
+# apply pe to all rows of dataframe matched, with threshold3d as the correct value and threshold as the estimated value
+matched['pe'] = matched.apply(lambda row: pe(row['threshold3d'], row['threshold']), axis=1)
+# calculate difference between activation_zpos and activation_zpos3d
+# multimatched['zdiff'] = multimatched['activation_zpos'] - multimatched['activation_zpos3d']
+# multimatched['zdiff_abs'] = multimatched['zdiff'].abs()
+plt.figure()
+sns.stripplot(data=matched, x='nerve_label', y='pe', hue='fiber_diam',dodge=True)
+# plt.title('Threshold Percent Error by sample and fiber diameter')
+plt.legend(title='Fiber Diameter (μm)')
+plt.xlabel('Sample')
+plt.ylabel('Percent Error')
+sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
 #%% Dose-response info all diams
 sns.set(font_scale=1.25)
 sns.set_style('whitegrid')
@@ -580,7 +643,7 @@ plt.legend(title='Sample', bbox_to_anchor=(1.8, 1.5))
 #%% organization compare type
 # remove all samples which dont end with a 2
 sns.reset_orig()
-sns.set(font_scale=1.5, style='whitegrid')
+sns.set(font_scale=1.25, style='whitegrid')
 mpl.rcParams['figure.dpi'] = 400
 threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
 # subtract 1 from sample if type is 3DM
@@ -604,16 +667,18 @@ g.map_dataframe(
     linewidth=1,
     alpha=0.25,
 )
-g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='Threshold (mA)', palette='colorblind')
+g.map_dataframe(sns.stripplot, jitter=False, linewidth=1, x='type', y='Threshold (mA)', palette='binary')
 
 plt.subplots_adjust(top=0.9)
-g.fig.set_size_inches(12, 6)
-g.set_titles(col_template='{col_name}', row_template='{row_name} μm')
+g.fig.set_size_inches(10, 6)
+g.set_titles(col_template='{col_name}', row_template='')
+g.axes.ravel()[0].set_ylabel('Threshold (mA)\nFiber Diam: 3μm')
+g.axes.ravel()[5].set_ylabel('Threshold (mA)\nFiber Diam: 13μm')
 # plt.suptitle('thresholds compared between 2DEM (cathodic) and 3DM')
 #%% organization compare nsim
 # remove all samples which dont end with a 2
 sns.reset_orig()
-sns.set(font_scale=1.5, style='whitegrid')
+sns.set(font_scale=1.25, style='whitegrid')
 mpl.rcParams['figure.dpi'] = 400
 threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
 data = threshdat.query('nsim in [0,5] and sim == 3')
@@ -635,12 +700,14 @@ g.map_dataframe(
     color='k',
     alpha=0.25,
 )
-g.map_dataframe(sns.stripplot, linewidth=1, x='Fiber Diameter', y='Threshold (mA)', palette='colorblind', jitter=False)
+g.map_dataframe(sns.stripplot, linewidth=1, x='Fiber Diameter', y='Threshold (mA)', palette='binary', jitter=False)
 # plt.subplots_adjust(top=0.9)
 # plt.suptitle('min-max normalized thresholds compared between 3 um and 13 um thresholds (cath 2DEMEM)')
-g.set_titles(col_template='{col_name}', row_template='{row_name}')
+g.set_titles(col_template='{col_name}', row_template='')
 plt.savefig('matchsim.png', dpi=400)
-plt.gcf().set_size_inches([12, 6])
+g.axes.ravel()[0].set_ylabel('Threshold (mA)\nModel: 2DEM')
+g.axes.ravel()[5].set_ylabel('Threshold (mA)\nModel: 3DM')
+plt.gcf().set_size_inches([10, 6])
 #%% stimfigs
 fig, axs = plt.subplots(2, 2)
 axs[0][0].plot([0, 1, 1, 2, 2, 3, 3, 4], [0, 0, -1, -1, 1, 1, 0, 0], 'k', linewidth=3)
@@ -685,27 +752,6 @@ for ax in g.axes.ravel():
 g.set_titles(col_template='', row_template='Fiber Diameter: {row_name} μm')
 g.axes.ravel()[1].set_xlabel('Pulse Width (ms)')
 sns.move_legend(g, "upper left", bbox_to_anchor=(0.68, 1))
-#%% RC score
-import math
-
-
-def compute_reorder_cost(order1, order2):
-    assert set(order1) == set(order2)
-    assert len(set(order1)) == len(order1)
-    assert len(set(order2)) == len(order2)
-    sumdist = 0
-    for item in order1:
-        distance = abs(order1.index(item) - order2.index(item))
-        sumdist += distance
-    if len(order1) % 2 == 0:
-        maxlen = sum(range(len(order1))[int(math.ceil(0.5 * len(order1))) :]) * 2 / len(order1)
-    else:
-        maxlen = (
-            range(len(order1))[int(math.floor(0.5 * len(order1)))]
-            + (sum(range(len(order1))[int(math.ceil(0.5 * len(order1))) :])) * 2
-        ) / len(order1)
-    return sumdist / len(order1) / maxlen
-
 
 #%% organizatino compare nsim
 sns.set(font_scale=1.5)
@@ -723,7 +769,7 @@ for nerve in pd.unique(threshdat['nerve_label']):
 plt.figure()
 scoredat = pd.DataFrame(scores)
 scoredat['fiber_diam'] = pd.Categorical(scoredat['fiber_diam'].astype(int), categories=[3, 13], ordered=True)
-ax = sns.boxplot(data=scoredat, x='score2d3d', y='fiber_diam', palette='binary')
+ax = sns.boxplot(data=scoredat, x='score2d3d', y='fiber_diam', boxprops={'facecolor':'white'})
 ax.set_ylabel('Fiber Diameter (μm)')
 plt.xlabel('RC')
 plt.gcf().set_size_inches([3, 5])
@@ -742,7 +788,7 @@ for nerve in pd.unique(threshdat['nerve_label']):
         scores.append({'sample': nerve, 'type': model, 'scoresmolbeeg': rc})
 plt.figure()
 scoredat = pd.DataFrame(scores)
-ax = sns.boxplot(data=scoredat, x='scoresmolbeeg', y='type', palette='binary')
+ax = sns.boxplot(data=scoredat, x='scoresmolbeeg', y='type', boxprops={'facecolor':'white'})
 plt.xlabel('RC')
 plt.ylabel('')
 plt.gcf().set_size_inches([3, 5])
