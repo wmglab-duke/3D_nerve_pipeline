@@ -53,6 +53,7 @@ def pe(correct, est):
     """
     return 100 * abs(est - correct) / correct
 
+
 import math
 
 
@@ -72,7 +73,6 @@ def compute_reorder_cost(order1, order2):
             + (sum(range(len(order1))[int(math.ceil(0.5 * len(order1))) :])) * 2
         ) / len(order1)
     return sumdist / len(order1) / maxlen
-
 
 
 gogo = "initial"
@@ -154,13 +154,13 @@ for diam, pos, ax in zip([3, 13], (0.2, 0.8), g.axes.ravel()):
     ax.plot([0, rdata.threshold.max()], [0, rdata.threshold.max()], '--k', linewidth=2, label='1:1 line')
     ax.set_xlabel('2DEM Threshold (mA)')
     ax.set_yticks(ax.get_xticks())
-    ax.set_aspect('equal','box')
+    ax.set_aspect('equal', 'box')
     ax.set_xlim([0, None])
     ax.set_ylim([0, ax.get_xlim()[1]])
 g.axes.ravel()[0].set_ylabel('3DM Threshold (mA)')
 g.axes.ravel()[1].set_ylabel('')
 plt.legend(loc='lower right')
-g.fig.set_size_inches([9.5,5])
+g.fig.set_size_inches([9.5, 5])
 #%% threshold violinplot
 # generate boxplot of 2DEM and 3DM thresholds
 sns.set(font_scale=1.75)
@@ -195,7 +195,7 @@ g = sns.catplot(
     y='threshold',
     sharey=False,
     palette='colorblind',
-    hue='type'
+    hue='type',
 )
 for ax in g.axes.ravel():
     ax.set_xlabel('')
@@ -566,7 +566,7 @@ plt.gca().set_aspect(0.06)
 sns.move_legend(plt.gca(), "upper left", bbox_to_anchor=(1, 1))
 #%% Percent Error
 sns.reset_orig()
-sns.set(font_scale=1.5,style='whitegrid')
+sns.set(font_scale=1.5, style='whitegrid')
 # mpl.rcParams['figure.dpi'] = 400
 # mpl.rcParams['font.size'] = 14
 # sns.set(font_scale=1.25)
@@ -576,7 +576,7 @@ matched['pe'] = matched.apply(lambda row: pe(row['threshold3d'], row['threshold'
 # multimatched['zdiff'] = multimatched['activation_zpos'] - multimatched['activation_zpos3d']
 # multimatched['zdiff_abs'] = multimatched['zdiff'].abs()
 plt.figure()
-sns.stripplot(data=matched, x='nerve_label', y='pe', hue='fiber_diam',dodge=True)
+sns.stripplot(data=matched, x='nerve_label', y='pe', hue='fiber_diam', dodge=True)
 # plt.title('Threshold Percent Error by sample and fiber diameter')
 plt.legend(title='Fiber Diameter (μm)')
 plt.xlabel('Sample')
@@ -769,7 +769,7 @@ for nerve in pd.unique(threshdat['nerve_label']):
 plt.figure()
 scoredat = pd.DataFrame(scores)
 scoredat['fiber_diam'] = pd.Categorical(scoredat['fiber_diam'].astype(int), categories=[3, 13], ordered=True)
-ax = sns.boxplot(data=scoredat, x='score2d3d', y='fiber_diam', boxprops={'facecolor':'white'})
+ax = sns.boxplot(data=scoredat, x='score2d3d', y='fiber_diam', boxprops={'facecolor': 'white'})
 ax.set_ylabel('Fiber Diameter (μm)')
 plt.xlabel('RC')
 plt.gcf().set_size_inches([3, 5])
@@ -788,7 +788,7 @@ for nerve in pd.unique(threshdat['nerve_label']):
         scores.append({'sample': nerve, 'type': model, 'scoresmolbeeg': rc})
 plt.figure()
 scoredat = pd.DataFrame(scores)
-ax = sns.boxplot(data=scoredat, x='scoresmolbeeg', y='type', boxprops={'facecolor':'white'})
+ax = sns.boxplot(data=scoredat, x='scoresmolbeeg', y='type', boxprops={'facecolor': 'white'})
 plt.xlabel('RC')
 plt.ylabel('')
 plt.gcf().set_size_inches([3, 5])

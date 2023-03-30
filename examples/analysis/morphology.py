@@ -1,8 +1,8 @@
 import os
+import pickle
 
 import numpy as np
 import pandas as pd
-import pickle
 import seaborn as sns
 
 # load in slides
