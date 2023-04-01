@@ -106,10 +106,10 @@ repeated = matched.melt(
 repeated['type'] = repeated['type'].replace({'threshold': '2DEM', 'threshold3d': '3DM'})
 repeated['type'] = pd.Categorical(repeated['type'], categories=['2DEM', '3DM'], ordered=True)
 
-##TODO: reactivate
-# multimatched = datamatchlist(
-#     threshload.query('type=="2DEM"'), threshload.query('type=="3DM"'), ['threshold', 'activation_zpos']
-# ).drop(columns='type')
+#TODO: reactivate
+multimatched = datamatchlist(
+    threshload.query('type=="2DEM"'), threshload.query('type=="3DM"'), ['threshold', 'activation_zpos']
+).drop(columns='type')
 
 # dose response
 drdat = threshload.copy()
@@ -302,30 +302,6 @@ g.axes[0][0].set_xlabel('')
 g.axes[0][0].set_ylabel('Proportion of fibers activated\nFiber diameter: 3 μm')
 g.axes[1][0].set_ylabel('Proportion of fibers activated\nFiber diameter: 13 μm')
 g._legend.set_title('')
-#%% strength-duration
-# seaborn facet scatterplot with x as pulse width, y as threshold, and column as diameter
-threshsd = addpwfd(pd.read_csv('thresh_unmatched_sim7.csv'), '7')
-sns.set(font_scale=1.5)
-sns.set_style('whitegrid')
-g = sns.catplot(
-    kind='violin',
-    data=threshsd,
-    row="fiber_diam",
-    sharey=False,
-    x='pulse_width',
-    y='threshold',
-    palette='colorblind',
-    hue='type',
-    dodge=True,
-    linewidth=1,
-)
-plt.subplots_adjust(top=0.9)
-g.axes.ravel()[0].set_xlabel('Pulse Width (ms)')
-plt.suptitle('Threshold vs. Pulse Width')
-for ax in g.axes.ravel():
-    ax.set_ylabel('Threshold (mA)')
-g.set_titles(row_template='Diameter: {row_name}')
-
 #%%final zpos
 sns.set(font_scale=1.5, style='whitegrid')
 newthreshz = threshload.copy()
@@ -718,41 +694,6 @@ axs[1][1].plot([0, 1, 1, 2, 2, 3, 3, 4], [0, 0, 0, 0, 0, 0, 0, 0], 'k', linewidt
 axs[1][1].set_ylim(axs[0][0].get_ylim())
 for ax in axs.ravel():
     ax.axis('off')
-#%% strength-duration
-# seaborn facet scatterplot with x as pulse width, y as threshold, and column as diameter
-threshsd = addpwfd(pd.read_csv('thresh_unmatched_sim7.csv'), '7')
-sns.set(font_scale=1.75)
-sns.set_style('whitegrid')
-usedata = datamatch(threshsd.query('type=="2D"'), threshsd.query('type=="3D"'), 'threshold').drop(columns='type')
-nsimdata = usedata.query('fiber_diam in [3,13]')
-
-corrdata = pd.DataFrame()
-corrs = (
-    nsimdata.groupby(['pulse_width', 'fiber_diam', 'nerve_label', 'contact'])['threshold', 'threshold3d']
-    .corr()
-    .iloc[0::2, -1]
-)
-corrs = corrs.reset_index().rename(columns={'threshold': 'correlation'})
-corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
-g = sns.relplot(
-    data=corrs,
-    row='fiber_diam',
-    kind='line',
-    x='pulse_width',
-    y='threshold3d',
-    hue='nerve_label',
-    style='contact',
-    linewidth=3,
-)
-g.map_dataframe(sns.scatterplot, x='pulse_width', y='threshold3d', hue='nerve_label', style='contact', s=100)
-g.fig.set_size_inches(10, 8)
-for ax in g.axes.ravel():
-    ax.set_ylabel('Correlation')
-    ax.set_ylim([0, None])
-g.set_titles(col_template='', row_template='Fiber Diameter: {row_name} μm')
-g.axes.ravel()[1].set_xlabel('Pulse Width (ms)')
-sns.move_legend(g, "upper left", bbox_to_anchor=(0.68, 1))
-
 #%% organizatino compare nsim
 sns.set(font_scale=1.5)
 sns.set_style('whitegrid')
@@ -830,51 +771,7 @@ for ax, r, letter in zip(
 g.set_titles(col_template='{col_name}', row_template='Fiber Diameter = {row_name}')
 # g.fig.set_size_inches(10, 6)
 plt.show()
-#%% tortuosity lineplot
-sns.set(font_scale=2)
-sns.set_style('whitegrid')
-nsimdata = threshload.query('fiber_diam in [3,13] and type=="3DM"')
-corrs = (
-    nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'type'])['threshold', 'tortuosity'].corr().iloc[0::2, -1]
-)
-corrs = corrs.reset_index().rename(columns={'threshold': 'correlation'})
-corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
-means = corrs.groupby(['type', 'fiber_diam']).agg(np.mean)
-# plot one one line out to max of 3DM
-g = sns.lmplot(
-    data=nsimdata.rename(columns={"nerve_label": "Sample"}),
-    y='threshold',
-    x='tortuosity',
-    hue='Sample',
-    palette='colorblind',
-    col='fiber_diam',
-    scatter_kws={'linewidths': 1, 'edgecolor': 'k', 's': 50},
-    facet_kws={'margin_titles': True, 'sharey': False},
-)
-for ax, r in zip(g.axes.ravel(), means['tortuosity']):
-    ax.text(0.5, 0.9, f'\nmean r={r:.2f}', transform=ax.transAxes)
-g.axes.ravel()[0].set_ylabel('Threshold (mA)')
-# plt.xlabel('3DM Threshold (mA)')
-g.set_titles(col_template='Fiber Diameter = {col_name} μm')
-plt.show()
-#%%Activation threshold by fascicle
-sns.set(font_scale=2, style='whitegrid')
-thisspecificdata = threshload.query('sample in [652,653]')
-thisspecificdata.rename(columns={'inner': 'fascicle'}, inplace=True)
-g = sns.catplot(
-    data=thisspecificdata,
-    x='type',
-    y='threshold',
-    hue='fascicle',
-    kind='swarm',
-    palette='colorblind',
-    col='fiber_diam',
-    sharey=False,
-    s=10,
-)
-g.fig.set_size_inches(24, 8)
-g.set_titles(col_template='Fiber Diameter: {col_name}')
-g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+
 #%%newcorr
 supercorr = []
 sns.reset_orig()
