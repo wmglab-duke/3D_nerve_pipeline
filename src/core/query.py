@@ -368,11 +368,11 @@ class Query(Configurable, Saveable):
         for sample_results in self._result.get('samples', []):
             sample_index = sample_results['index']
             sample_object = self.get_object(Object.SAMPLE, [sample_index if source_sample is None else source_sample])
-            
+
             if peri_site:
                 with open(f'input/slides/{label}slides.obj', 'rb') as f:
                     slidelist = pickle.load(f)
-                
+
             # loop models
             for model_results in sample_results.get('models', []):
                 model_index = model_results['index']
@@ -473,7 +473,12 @@ class Query(Configurable, Saveable):
                                 )
                                 if cuffspan is not None:
                                     base_dict['smallest_thk_under_cuff'] = self.get_smallest_thk_under_cuff(
-                                        base_dict, source_sample is not None, cuffspan, sim_dir, slidelist, source_sim=source_sim
+                                        base_dict,
+                                        source_sample is not None,
+                                        cuffspan,
+                                        sim_dir,
+                                        slidelist,
+                                        source_sim=source_sim,
                                     )
                             alldat.append(base_dict)
 
@@ -559,7 +564,7 @@ class Query(Configurable, Saveable):
                 return thk
 
     @staticmethod
-    def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, sim_dir,slidelist, source_sim=None):
+    def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, sim_dir, slidelist, source_sim=None):
         if not threed:
             return base_dict['peri_thk']
         else:

@@ -106,7 +106,7 @@ repeated = matched.melt(
 repeated['type'] = repeated['type'].replace({'threshold': '2DEM', 'threshold3d': '3DM'})
 repeated['type'] = pd.Categorical(repeated['type'], categories=['2DEM', '3DM'], ordered=True)
 
-#TODO: reactivate
+# TODO: reactivate
 multimatched = datamatchlist(
     threshload.query('type=="2DEM"'), threshload.query('type=="3DM"'), ['threshold', 'activation_zpos']
 ).drop(columns='type')
