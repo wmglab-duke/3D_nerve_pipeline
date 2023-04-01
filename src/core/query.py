@@ -526,8 +526,6 @@ class Query(Configurable, Saveable):
             slice_spacing = 20  # microns
             slice_index = int(round(zpos / slice_spacing))
             slide = slidelist[slice_index]
-            slide.scale(1.2)  # shrinkage correction
-            slide.scale(0.5)  # wrong scaling correction #TODO remove this
             point = Point(base_dict['activation_xpos'], base_dict['activation_ypos'])
             inner = None
             try:
