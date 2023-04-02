@@ -372,6 +372,7 @@ class Query(Configurable, Saveable):
             if peri_site:
                 with open(f'input/slides/{label}slides.obj', 'rb') as f:
                     slidelist = pickle.load(f)
+                [s.scale(0.5) for s in slidelist]
 
             # loop models
             for model_results in sample_results.get('models', []):
@@ -487,8 +488,6 @@ class Query(Configurable, Saveable):
     @staticmethod
     def peak_second_diff(base_dict, sim_dir):
         # directory for specific n_sim
-        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(base_dict['nsim']))
-
         potfile = os.path.join(
             sim_dir,
             'potentials',
@@ -526,13 +525,13 @@ class Query(Configurable, Saveable):
             slice_spacing = 20  # microns
             slice_index = int(round(zpos / slice_spacing))
             slide = slidelist[slice_index]
-            slide.scale(1.2)  # shrinkage correction
-            slide.scale(0.5)  # wrong scaling correction #TODO remove this
-            point = Point(base_dict['activation_xpos'], base_dict['activation_ypos'])
+            point = Point(base_dict['activation_xpos'], -base_dict['activation_ypos'])
             inner = None
             try:
                 inner = [inner for fasc in slide.fascicles for inner in fasc.inners if inner.contains(point)][0]
-            except:
+            except IndexError:
+                plt.scatter(base_dict['activation_xpos'], -base_dict['activation_ypos'])
+                slide.plot()
                 print('ope')
                 iteration = 0
                 innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
@@ -547,7 +546,9 @@ class Query(Configurable, Saveable):
                         # plt.title(
                         #     f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
                         # )
-                        print('Could not correct fiber location within 5 iterations.')
+                        import sys
+
+                        sys.exit('Could not correct within 5 iterations')
                         print(base_dict)
                         break
                     else:
@@ -556,7 +557,8 @@ class Query(Configurable, Saveable):
                     try:
                         inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
                         print('ope fixed')
-                    except Exception:
+                    except IndexError:
+                        print('stillope')
                         pass
             if inner is not None:
                 fit = {'a': 0.03702, 'b': 10.5}
@@ -578,9 +580,6 @@ class Query(Configurable, Saveable):
             fiber = np.loadtxt(fiberfilethreed, skiprows=1)
             thks = []
             for slide, zpos in zip(slides, z_positions):
-                slide.scale(1.2)  # shrinkage correction
-                slide.scale(0.5)  # wrong scaling correction #TODO remove this
-
                 idx = (np.abs(fiber[:, 2] - zpos)).argmin()
                 # get the x,y coordinates at that index
                 x = fiber[idx, 0]
