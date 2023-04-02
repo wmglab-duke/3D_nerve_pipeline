@@ -530,8 +530,8 @@ class Query(Configurable, Saveable):
             try:
                 inner = [inner for fasc in slide.fascicles for inner in fasc.inners if inner.contains(point)][0]
             except IndexError:
-                plt.scatter(base_dict['activation_xpos'], -base_dict['activation_ypos'])
-                slide.plot()
+                # plt.scatter(base_dict['activation_xpos'], -base_dict['activation_ypos'])
+                # slide.plot()
                 print('ope')
                 iteration = 0
                 innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
