@@ -13,7 +13,7 @@ import time
 from saving import Saving
 
 from wmglab_neuron import FiberBuilder, FiberModel, Stimulation
-from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
+from wmglab_neuron.enums import TerminationMode, ThresholdCondition
 
 
 def main(  # noqa: C901
@@ -104,7 +104,7 @@ def main(  # noqa: C901
     )
 
     # Determine optional saving configurations
-    end_ap_times = True if 'end_ap_times' in saving_configs else False
+    end_ap_times = 'end_ap_times' in saving_configs
     loc_min = saving_configs['end_ap_times']['loc_min'] if end_ap_times else None
     loc_max = saving_configs['end_ap_times']['loc_max'] if end_ap_times else None
     ap_end_thresh = saving_configs['end_ap_times']['threshold'] if end_ap_times else None
@@ -166,7 +166,7 @@ def main(  # noqa: C901
             bounds_search_step = protocol_configs['bounds_search']['step']
             stimamp_top = protocol_configs['bounds_search']['top']
             stimamp_bottom = protocol_configs['bounds_search']['bottom']
-            max_iterations = protocol_configs['bounds_search'].get("max_steps", None)
+            max_iterations = protocol_configs['bounds_search'].get("max_steps")
         else:
             bounds_search_mode = None
             bounds_search_step = None

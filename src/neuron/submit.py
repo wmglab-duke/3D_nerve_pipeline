@@ -39,7 +39,7 @@ class ListAction(argparse.Action):
             with open(run_path + '/' + j) as f:
                 try:
                     rundata = json.load(f)
-                except JSONDecodeError as e:
+                except JSONDecodeError as e:  # noqa: F821
                     print(f'WARNING: Could not load {j}, check for syntax errors. Original error: {e}')
                     continue
                 data.append(
@@ -434,6 +434,7 @@ def submit_fibers(submission_context, submission_data):
 
     :param submission_context: the string name of the submission_context
     :param submission_data: the dictionary of data for fiber submission
+    :raises ValueError: IF the specified cpu count is higher than the number of cores on the machine
     """
     # configuration is not empty
     ran_fibers = 0
@@ -551,6 +552,7 @@ def make_fiber_tasks(submission_list, submission_context):
     """Create all shell scripts for fiber submission tasks.
 
     :param submission_list: the list of fibers to be submitted
+    :param submission_context: the string name of the submission_context
     """
     # assign appropriate configuration data
     sim_dir = os.path.join('n_sims')

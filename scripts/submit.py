@@ -18,7 +18,7 @@ from src.utils.enums import Config, SetupMode
 from .env_setup import run as env_setup
 
 
-def run(args):
+def run(args):  # noqa: D103
     # test
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 7):
         print(f'You are running Python {sys.version_info.major}.{sys.version_info.minor}, but 3.7 or later required')
