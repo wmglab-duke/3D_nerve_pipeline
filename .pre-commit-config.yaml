@@ -1,5 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+default_language_version:
+  python: python3 # or python3
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -22,37 +24,43 @@ repos:
       - id: isort
   # format f strings
   - repo: https://github.com/ikamensh/flynt/
-    rev: "0.77"
+    rev: "0.78"
     hooks:
       - id: flynt
   # format python code
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 23.3.0
     hooks:
       - id: black
   - repo: https://github.com/PyCQA/docformatter
-    rev: v1.5.1
+    rev: v1.6.0
     hooks:
       - id: docformatter
         additional_dependencies:
           - docformatter[tomli]
         args: ["--in-place", "--config", "./pyproject.toml"]
-  - repo: https://github.com/adamchainz/blacken-docs
-    rev: 1.13.0
-    hooks:
-      - id: blacken-docs
-        additional_dependencies:
-          - black==22.12.0
-  # format yaml, json
+  # format markdown, yaml, json
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v3.0.0-alpha.6
     hooks:
       - id: prettier
         exclude_types: [python, markdown]
         args: ["--print-width", "100"]
+  # format java. Seperate from the above for different tab width
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0-alpha.6
+    hooks:
+      - id: prettier
+        name: prettier-java
+        types: [java]
+        additional_dependencies:
+          - prettier
+          - prettier-plugin-java
+        args: ["--tab-width", "4", "--print-width", "100"]
   # lint python code
   - repo: https://github.com/pycqa/flake8
     rev: 5.0.4
+    #when flake8-eradicate supports flake8 6.0 change this rev to newest ver
     hooks:
       - id: flake8
         additional_dependencies:
@@ -79,3 +87,11 @@ repos:
     hooks:
       - id: check-gitlab-ci
       - id: check-readthedocs
+  # linting for rst files
+  - repo: https://github.com/rstcheck/rstcheck
+    rev: v6.1.2
+    hooks:
+      - id: rstcheck
+        additional_dependencies:
+          - rstcheck[sphinx]
+          - rstcheck[toml]

@@ -129,7 +129,9 @@ class Runner(Configurable):
         Simulation.export_wmglab_neuron(os.environ[Env.NSIM_EXPORT_PATH.value])
         for deprecated_key in ['break_points', 'local_avail_cpus', 'submission_context', 'partial_fem']:
             if deprecated_key in self.configs[Config.RUN.value]:
-                warnings.warn(f"Specifying {deprecated_key} in run.json is deprecated, and has no effect.")
+                warnings.warn(
+                    f"Specifying {deprecated_key} in run.json is deprecated, and has no effect.", stacklevel=2
+                )
 
         return all_configs
 
@@ -235,7 +237,7 @@ class Runner(Configurable):
 
         # init fiber manager
         if smart and os.path.exists(sim_obj_file):
-            print(f'\t\tFound existing sim object for sim {sim_index} ({sim_obj_file})')
+            print(f'\t\tFound existing sim object for sim {sim_num} ({sim_obj_file})')
 
             simulation: Simulation = self.load_obj(sim_obj_file)
 
