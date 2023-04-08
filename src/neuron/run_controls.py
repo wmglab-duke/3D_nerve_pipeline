@@ -116,8 +116,6 @@ def main(  # noqa: C901
         fiber.set_save_vm()
     if saving_configs['space']['gating'] is not None or saving_configs['time']['gating'] is not None:
         fiber.set_save_gating()
-    if saving_configs['time']['istim']:
-        stimulation.record_istim()
 
     saving = Saving(
         inner_ind,

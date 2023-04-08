@@ -87,7 +87,7 @@ class Saving:
         self.ap_loctime = ap_loctime
         self.runtime = runtime
         self.output_path = os.path.join(sim_path, 'data', 'outputs')
-        os.makedirs(self.output_path)
+        os.makedirs(self.output_path, exist_ok=True)
         return
 
     def save_thresh(self, thresh: float):
@@ -170,7 +170,7 @@ class Saving:
             pd.DataFrame([list(g) for g in fiber.gating[gating_parameter] if g is not None])
             for gating_parameter in list(fiber.gating.keys())
         ]
-        istim_data = pd.DataFrame(list(stimulation.istim_vector))
+        istim_data = pd.DataFrame(list(stimulation.istim_record))
 
         if self.space_vm:
             vm_space_path = os.path.join(
