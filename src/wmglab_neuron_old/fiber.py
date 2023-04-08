@@ -8,8 +8,8 @@ import math
 import warnings
 
 import numpy as np
-from neuron import h
 
+from neuron import h
 from wmglab_neuron import FiberModel, FiberTypeParameters
 
 Section = h.Section
@@ -594,7 +594,6 @@ class SchildFiber(_HomogeneousFiber):
         :param node: NEURON section
         :param model97: True for Schild 1997 model, False for Schild 1994 model
         """
-
         node.insert('leakSchild')  # All mechanisms from Schild 1994 inserted into model
         node.insert('kd')
         node.insert('ka')
@@ -654,7 +653,6 @@ class SchildFiber(_HomogeneousFiber):
         node.nseg_caextscale = node.nseg
 
 
-
 class TigerholmFiber(_HomogeneousFiber):
     """TigerholmFiber model."""
 
@@ -667,7 +665,7 @@ class TigerholmFiber(_HomogeneousFiber):
         """
         super().__init__(fiber_model=fiber_model, *args, **kwargs)
         if self.passive_end_nodes:
-            warnings.warn('Ignoring passive_end_nodes for Tigerholm fiber')
+            warnings.warn('Ignoring passive_end_nodes for Tigerholm fiber', UserWarning, stacklevel=2)
             self.passive_end_nodes = False
 
     def generate(self, n_fiber_coords: int, length: float):  # noqa D102

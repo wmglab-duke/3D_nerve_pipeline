@@ -8,9 +8,9 @@ https://github.com/wmglab-duke/ascent
 import warnings
 
 import numpy as np
-from neuron import h
 from scipy.signal import argrelextrema
 
+from neuron import h
 from wmglab_neuron import FiberModel, _Fiber
 from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
 
@@ -328,8 +328,5 @@ class Stimulation:
             return bool(fiber.apc[node_index].n)
 
     def record_istim(self):
-        """Record applied intracellular stimulation (nA).
-
-        :param istim: instance of intracellular stimulation object
-        """
+        """Record applied intracellular stimulation (nA)."""
         self.istim_vector = h.Vector().record(self.istim._ref_i)
