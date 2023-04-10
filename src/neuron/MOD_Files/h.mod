@@ -1,4 +1,4 @@
-: h.mod is the h channel
+g;it: h.mod is the h channel
 : from Tom Andersson Sensitivity studies of voltage-dpendent conductance in neurons
 : Tom has build his model on Kouranova 2008 Hyoerpolarization -activated cyclic nuleotide-gated channel mRNA and protein expression in large versus mall diameter dorsal root ganglion neurons: correlation with hyperpolarization-activated current
 

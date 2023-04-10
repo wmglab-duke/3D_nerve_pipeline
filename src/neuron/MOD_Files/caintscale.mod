@@ -55,7 +55,7 @@
 	STATE { cai  (mM) Oc } :Oc is the fraction of Calmodulin binding sites that are occupied
 
 : This block iterates the state variable calculations and uses those calculations to calculate currents
-	BREAKPOINT { SOLVE state METHOD derivimplicit }
+	BREAKPOINT { SOLVE state METHOD cnexp }
 
 : Intializes State Variables
 	INITIAL {

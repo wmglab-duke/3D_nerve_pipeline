@@ -51,7 +51,7 @@
 	STATE { cao  (mM) }
 
 : This block iterates the state variable calculations
-	BREAKPOINT { SOLVE state METHOD derivimplicit }
+	BREAKPOINT { SOLVE state METHOD cnexp }
 
 : Variables are initialized
 	INITIAL {
