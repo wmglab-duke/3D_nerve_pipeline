@@ -235,7 +235,8 @@ electric potentials along the length of a fiber from COMSOL as a
 time-varying signal in NEURON. The stimulation waveform, saved in a
 `n_sim’s data/inputs/` directory as `waveform.dat`, is unscaled (i.e., the
 maximum current magnitude at any timestep is +/-1), and is then scaled
-by the current amplitude in `RunSim.hoc` to either simulate fiber thresholds of
+by the current amplitude in the NEURON simulation of the `wmglab-neuron` PyPI package
+(GitHub: _link_) to either simulate fiber thresholds of
 activation or block with a binary search algorithm, or response to set
 amplitudes.
 
