@@ -16,7 +16,38 @@ from wmglab_neuron import FiberBuilder, FiberModel, Stimulation
 from wmglab_neuron.enums import TerminationMode, ThresholdCondition
 
 
-def main(  # noqa: C901
+def handle_termination(protocol_configs: dict) -> (int, float):
+    """Handle termination mode and tolerance.
+
+    :param protocol_configs: dictionary containing protocol configs
+    :return: returns termination mode and tolerance required for NEURON simulation
+    """
+    if protocol_configs['termination_criteria']['mode'] == 'PERCENT_DIFFERENCE':
+        termination_mode = TerminationMode.PERCENT_DIFFERENCE
+        termination_tolerance = protocol_configs['termination_criteria']['percent']
+    elif protocol_configs['termination_criteria']['mode'] == 'ABSOLUTE_DIFFERENCE':
+        termination_mode = TerminationMode.ABSOLUTE_DIFFERENCE
+        termination_tolerance = protocol_configs['termination_criteria']['tolerance']
+    else:
+        return None
+    return termination_mode, termination_tolerance
+
+
+def handle_bounds_search(bounds_search_configs: dict) -> (str, float, float, float, int):
+    """Handle bounds search configs for simulation.
+
+    :param bounds_search_configs: dictionary containing information about bounds search for simulation
+    :return: returns the values required for bounds searching during NEURON simulation
+    """
+    bounds_search_mode = bounds_search_configs['mode']
+    bounds_search_step = bounds_search_configs['step']
+    stimamp_top = bounds_search_configs['top']
+    stimamp_bottom = bounds_search_configs['bottom']
+    max_iterations = bounds_search_configs.get("max_steps")
+    return bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations
+
+
+def main(
     inner_ind: int,
     fiber_ind: int,
     potentials_path: str,
@@ -35,13 +66,14 @@ def main(  # noqa: C901
     """
     start_time = time.time()  # Starting time of simulation
 
+    # Read in <sim_index>.json file as dictionary
     with open(f'{sim_path}/{n_sim}.json') as file:
         sim_configs = json.load(file)
 
+    # Read in <model_index>.json file to get temperature
     with open(f'{sim_path}/model.json') as file:
         model_configs = json.load(file)
-
-    temperature = model_configs['temperature']
+        temperature = model_configs['temperature']
 
     # Read in waveform array, time step, and stop time
     with open(waveform_path, 'r') as waveform_file:
@@ -56,44 +88,34 @@ def main(  # noqa: C901
         file_lines = potentials_file.read().splitlines()
         potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
 
+    # Determine fiber model
     fiber_model = sim_configs['fibers']['mode']
-    if fiber_model == 'MRG_DISCRETE':
-        model = FiberModel.MRG_DISCRETE
-    elif fiber_model == 'MRG_INTERPOLATION':
-        model = FiberModel.MRG_INTERPOLATION
-    elif fiber_model == 'RATTAY':
-        model = FiberModel.RATTAY
-    elif fiber_model == 'TIGERHOLM':
-        model = FiberModel.TIGERHOLM
-    elif fiber_model == 'SUNDT':
-        model = FiberModel.SUNDT
-    elif fiber_model == 'SCHILD94':
-        model = FiberModel.SCHILD94
-    elif fiber_model == 'SCHILD97':
-        model = FiberModel.SCHILD97
-    else:
+    models = {
+        'MRG_DISCRETE': FiberModel.MRG_DISCRETE,
+        'MRG_INTERPOLATION': FiberModel.MRG_INTERPOLATION,
+        'RATTAY': FiberModel.RATTAY,
+        'TIGERHOLM': FiberModel.TIGERHOLM,
+        'SUNDT': FiberModel.SUNDT,
+        'SCHILD94': FiberModel.SCHILD94,
+        'SCHILD97': FiberModel.SCHILD97,
+    }
+    if fiber_model not in models:
         exit()
+    model = models[fiber_model]
 
     # create fiber
     fiber = FiberBuilder.generate(
         diameter=sim_configs['fibers']['z_parameters']['diameter'],
         fiber_model=model,
         temperature=float(temperature),
-        n_fiber_coords=axontotal,
+        n_sections=axontotal,
     )
 
-    protocol_configs = sim_configs['protocol']
-    saving_configs = sim_configs['saving']
-    istim_configs = sim_configs['intracellular_stim']
-
+    # create stimulation
     stimulation = Stimulation(fiber, waveform=waveform, potentials=potentials, dt=dt, tstop=tstop)
 
-    if saving_configs['space']['vm'] or saving_configs['time']['vm']:
-        fiber.set_save_vm()
-    if saving_configs['space']['gating'] or saving_configs['time']['gating']:
-        fiber.set_save_gating()
-
     # attach intracellular stimulation
+    istim_configs = sim_configs['intracellular_stim']
     stimulation.add_intracellular_stim(
         delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
         pw=istim_configs['times']['pw'],
@@ -103,7 +125,15 @@ def main(  # noqa: C901
         ind=istim_configs['ind'],
     )
 
+    # Determine saving protocols
+    saving_configs = sim_configs['saving']
+
     # Determine optional saving configurations
+    if saving_configs['space']['vm'] or saving_configs['time']['vm']:
+        fiber.set_save_vm()
+    if saving_configs['space']['gating'] or saving_configs['time']['gating']:
+        fiber.set_save_gating()
+
     end_ap_times = 'end_ap_times' in saving_configs
     loc_min = saving_configs['end_ap_times']['loc_min'] if end_ap_times else None
     loc_max = saving_configs['end_ap_times']['loc_max'] if end_ap_times else None
@@ -111,12 +141,7 @@ def main(  # noqa: C901
     ap_loctime = bool('aploctime' in saving_configs and saving_configs['aploctime'])
     runtimes = bool('runtimes' in saving_configs and saving_configs['runtimes'])
 
-    # create saving object instance
-    if saving_configs['space']['vm'] is not None or saving_configs['time']['vm'] is not None:
-        fiber.set_save_vm()
-    if saving_configs['space']['gating'] is not None or saving_configs['time']['gating'] is not None:
-        fiber.set_save_gating()
-
+    # create Saving instance
     saving = Saving(
         inner_ind,
         fiber_ind,
@@ -138,7 +163,8 @@ def main(  # noqa: C901
         runtime=runtimes,
     )
 
-    # submit fiber for simulation
+    # determine protocol
+    protocol_configs = sim_configs['protocol']
     amps = protocol_configs['amplitudes'] if protocol_configs['mode'] == 'FINITE_AMPLITUDES' else False
 
     ap_detect_location = protocol_configs['threshold']['ap_detect_location']
@@ -147,31 +173,28 @@ def main(  # noqa: C901
         'ap_detect_location': ap_detect_location,
         'istim_delay': istim_delay,
     }
-    kwargs = {k: v for k, v in run_kwargs.items() if v is not None}
+    kwargs = {k: v for k, v in run_kwargs.items() if v is not None}  # create kwargs for optional parameters
 
-    if not amps:
+    if not amps:  # enter binary search modes
         if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
             condition = ThresholdCondition.ACTIVATION
         elif protocol_configs['mode'] == 'BLOCK_THRESHOLD':
             condition = ThresholdCondition.BLOCK
-        if protocol_configs['termination_criteria']['mode'] == 'PERCENT_DIFFERENCE':
-            termination_mode = TerminationMode.PERCENT_DIFFERENCE
-            termination_tolerance = protocol_configs['termination_criteria']['percent']
-        elif protocol_configs['termination_criteria']['mode'] == 'ABSOLUTE_DIFFERENCE':
-            termination_mode = TerminationMode.ABSOLUTE_DIFFERENCE
-            termination_tolerance = protocol_configs['termination_criteria']['tolerance']
 
-        if 'bounds_search' in protocol_configs:
-            bounds_search_mode = protocol_configs['bounds_search']['mode']
-            bounds_search_step = protocol_configs['bounds_search']['step']
-            stimamp_top = protocol_configs['bounds_search']['top']
-            stimamp_bottom = protocol_configs['bounds_search']['bottom']
-            max_iterations = protocol_configs['bounds_search'].get("max_steps")
+        # determine termination protocols for binary search
+        termination_mode, termination_tolerance = handle_termination(protocol_configs)
+        if 'bounds_search' not in protocol_configs:
+            bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations = (
+                None,
+                None,
+                None,
+                None,
+                None,
+            )
         else:
-            bounds_search_mode = None
-            bounds_search_step = None
-            stimamp_top = None
-            stimamp_bottom = None
+            bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations = handle_bounds_search(
+                protocol_configs['bounds_search']
+            )
 
         # todo: implement check_threshold_interval
 
@@ -186,8 +209,9 @@ def main(  # noqa: C901
             max_iterations,
         ]
 
-        args = [arg for arg in threshold_args if arg is not None]
+        args = [arg for arg in threshold_args if arg is not None]  # create args for optional parameters
 
+        # submit fiber for simulation
         amp, ap = stimulation.find_threshold(
             *args,
             **kwargs,
@@ -198,7 +222,7 @@ def main(  # noqa: C901
         saving.save_variables(fiber, stimulation)  # Save user-specified variables
         saving.save_runtime(time_individual)  # Save runtime of simulation
 
-    else:
+    else:  # finite amplitudes protocol
         time_total = 0
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
