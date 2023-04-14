@@ -183,7 +183,6 @@ following syntax:
     "end_ap_times": {
       "loc_min": Double,
       "loc_max": Double,
-      "threshold": Double
     }
     "runtimes": Boolean
   },
@@ -742,10 +741,6 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     value for `“loc_min”`. Be certain not to record from the end section (i.e., 1)
     if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
     z=length of proximal domain. Required if this JSON object (which is optional) is included.
-
-  - `“threshold”`: The value (Double, units: mV) is the threshold value for V<sub>m</sub> to pass
-    for an action potential to be detected. Required if this JSON object (which is optional)
-    is included.
 
 - `“runtimes”`: The value (Boolean), if true, tells the program to save
   the NEURON runtime for either the finite amplitude or bisection search for

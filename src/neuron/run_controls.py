@@ -134,12 +134,11 @@ def main(
     if saving_configs['space']['gating'] or saving_configs['time']['gating']:
         fiber.set_save_gating()
 
-    end_ap_times = 'end_ap_times' in saving_configs
+    end_ap_times = 'end_ap_times' in saving_configs  # end_ap_times in <sim_index>.json
     loc_min = saving_configs['end_ap_times']['loc_min'] if end_ap_times else None
     loc_max = saving_configs['end_ap_times']['loc_max'] if end_ap_times else None
-    ap_end_thresh = saving_configs['end_ap_times']['threshold'] if end_ap_times else None
-    ap_loctime = bool('aploctime' in saving_configs and saving_configs['aploctime'])
-    runtimes = bool('runtimes' in saving_configs and saving_configs['runtimes'])
+    ap_loctime = bool('aploctime' in saving_configs and saving_configs['aploctime'])  # ap_loc_time in <sim_ind>.json
+    runtimes = bool('runtimes' in saving_configs and saving_configs['runtimes'])  # save runtimes
 
     # create Saving instance
     saving = Saving(
@@ -158,7 +157,6 @@ def main(
         end_ap_times=end_ap_times,
         loc_min=loc_min,
         loc_max=loc_max,
-        ap_end_thresh=ap_end_thresh,
         ap_loctime=ap_loctime,
         runtime=runtimes,
     )

@@ -33,7 +33,6 @@ class Saving:
         end_ap_times: bool = False,
         loc_min: float = 0.1,
         loc_max: float = 0.9,
-        ap_end_thresh: float = -30,
         ap_loctime: bool = False,
         runtime: bool = False,
     ):
@@ -54,13 +53,10 @@ class Saving:
         :param end_ap_times: record when action potential occurs at specified indices
         :param loc_min: if end_ap_times, decimal % of fiber length at which to save times when AP is triggered
         :param loc_max: if end_ap_times, decimal % of fiber length at which to save times when Vm returns to threshold
-        :param ap_end_thresh: if end_ap_times, the threshold value for Vm to pass for an AP to be detected [mV]
         :param ap_loctime: save, for each fiber node, the last time an AP passed over that node
         :param runtime: save the simulation runtime
         :return: Saving object
         """
-        # TODO: switch output_path to be some directory,
-        #  add feature to check if exists/create, then in ASCENT, pass in data/outputs path
         nodecount = len(fiber.nodes)
         self.inner_ind = inner_ind
         self.fiber_ind = fiber_ind
@@ -83,7 +79,6 @@ class Saving:
             node_ind_min = int((nodecount - 1) * loc_min)
             node_ind_max = int((nodecount - 1) * loc_max)
             self.ap_end_inds = [node_ind_min, node_ind_max]
-            self.ap_end_thresh = ap_end_thresh
         else:
             self.ap_end_times = None
         self.ap_loctime = ap_loctime
@@ -149,7 +144,7 @@ class Saving:
         self.save_time_vm(amp_ind, stimulation, vm_data)
         self.save_time_gating(all_gating_data, amp_ind, stimulation)
         self.save_istim(amp_ind, istim_data, stimulation)
-
+        self.save_aploctime()
         # todo: ap_loctime, ap_end_times
 
     def space_header(self, header: list[str], var_type: str, dt: float, units: str = None):
@@ -290,3 +285,31 @@ class Saving:
                 vm_space_data.insert(0, 'Node#', [*range(1, len(fiber.nodes) + 1)])
             vm_space_header = self.handle_header('space', 'vm', 'mV')
             vm_space_data.to_csv(vm_space_path, header=vm_space_header, sep='\t', float_format='%.6f', index=False)
+
+    def save_aploctime(self, amp_ind: int, fiber: _Fiber):
+        """Save time when last NoR AP was detected for each node to file.
+
+        :param amp_ind: index of amplitude in finite amplitudes protocol
+        :param fiber: instance of _Fiber class
+        """
+        if self.ap_loctime:
+            aploctime_path = os.path.join(
+                self.output_path, f'ap_loctime_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
+            )
+            with open(aploctime_path, 'w') as file:
+                for node in fiber.n_sections:
+                    file.write(f"{fiber.apc[node].time}")
+
+    def save_apendtimes(self, amp_ind: int, fiber: _Fiber):
+        """Save time that AP last propagated at two specified indices to file.
+
+        :param amp_ind: index of amplitude in finite amplitudes protocol
+        :param fiber: instance of _Fiber class
+        """
+        if self.ap_end_times:
+            ap_end_times_path = os.path.join(
+                self.output_path, f'Aptimes_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
+            )
+            with open(ap_end_times_path, 'w') as file:
+                #
+                file.write(f"{fiber.apc[self.ap_end_inds[0]].time} \t {fiber.apc[self.ap_end_inds[1]].time}")
