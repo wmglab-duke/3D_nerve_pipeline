@@ -97,7 +97,7 @@ class Stimulation:
         for x, section in enumerate(self.fiber.sections):
             section(0.5).e_extracellular = e_stims[x]
 
-    def find_threshold(  # noqa: C901
+    def find_threshold(
         self,
         condition: str = ThresholdCondition.ACTIVATION,
         bounds_search_mode: str = BoundsSearchMode.PERCENT_INCREMENT,
@@ -126,7 +126,6 @@ class Stimulation:
         :param max_iterations: the maximum number of iterations for finding search bounds
         :param exit_t_scale: multiplier for detected action potential time to exit subthreshold stimulation
         :param kwargs: additional keyword arguments to pass to the run_sim method
-        :raises RuntimeError: If stimamp bottom is supra-threshold and stimamp top is sub-threshold
         :raises ValueError: If stimamp bottom and stimamp top have different signs
         :raises ValueError: If stimamp top does not exceed stimamp bottom
         :return: the threshold amplitude for the given condition, and the number of detected aps
@@ -147,6 +146,81 @@ class Stimulation:
         supra_top, t = self.threshsim(stimamp_top, check_threshold=condition, **kwargs)
         supra_bot, _ = self.threshsim(stimamp_bottom, check_threshold=condition, **kwargs)
         # Determine upper- and lower-bounds for simulation
+        stimamp_bottom, stimamp_top = self.get_bounds(
+            abs_increment,
+            bounds_search_mode,
+            condition,
+            exit_t_scale,
+            kwargs,
+            max_iterations,
+            rel_increment,
+            stimamp_bottom,
+            stimamp_top,
+            supra_bot,
+            supra_top,
+            t,
+        )
+        # Enter binary search
+        while True:
+            stimamp_prev = stimamp_top
+
+            stimamp = (stimamp_bottom + stimamp_top) / 2
+
+            suprathreshold, _ = self.threshsim(stimamp, check_threshold=condition, **kwargs)
+
+            if termination_mode == TerminationMode.PERCENT_DIFFERENCE:
+                thresh_resoln = abs(rel_thresh_resoln)
+                tolerance = abs((stimamp_bottom - stimamp_top) / stimamp_top)
+            elif termination_mode == TerminationMode.ABSOLUTE_DIFFERENCE:
+                thresh_resoln = abs(abs_thresh_resoln)
+                tolerance = abs(stimamp_bottom - stimamp_top)
+
+            # Check to see if stimamp is at threshold
+            if tolerance < thresh_resoln:
+                if not suprathreshold:
+                    stimamp = stimamp_prev
+                # Run one more time at threshold to save user-specified variables
+                n_aps, _ = self.threshsim(stimamp, **kwargs)
+                break
+            elif suprathreshold:
+                stimamp_top = stimamp
+            elif not suprathreshold:
+                stimamp_bottom = stimamp
+
+        return stimamp, n_aps
+
+    def get_bounds(
+        self,
+        abs_increment: float,
+        rel_increment: float,
+        bounds_search_mode: str,
+        condition: str,
+        exit_t_scale: float,
+        max_iterations: int,
+        stimamp_bottom: float,
+        stimamp_top: float,
+        supra_bot: float,
+        supra_top: float,
+        t: float,
+        **kwargs,
+    ):
+        """Get subthreshold and suprathreshold values for bounds search protocols.
+
+        :param abs_increment: absolute difference for bounds search if termination mode is ABSOLUTE_DIFFERENCE
+        :param rel_increment: percent difference for bounds search if termination mode is PERCENT_DIFFERENCE
+        :param bounds_search_mode: indicates how to change upper and lower bounds for the binary search
+        :param condition: condition to search for threshold (activation or block)
+        :param exit_t_scale: multiplier for detected action potential time to exit subthreshold stimulation
+        :param max_iterations: the maximum number of iterations for finding search bounds
+        :param stimamp_bottom: the lower-bound stimulation amplitude first tested in a binary search for thresholds
+        :param stimamp_top: the upper-bound stimulation amplitude first tested in a binary search for thresholds
+        :param supra_bot: subthreshold value from initial stimamp check [nA]
+        :param supra_top: suprathreshold value from initial stimamp check [nA]
+        :param t: time [ms]
+        :param kwargs: additional keyword arguments to pass to the get_bounds method
+        :raises RuntimeError: If stimamp bottom is supra-threshold and stimamp top is sub-threshold
+        :return: returns subthreshold [nA] and suprathreshold [nA] values for bounds search
+        """
         iterations = 0
         while iterations < max_iterations:
             iterations += 1
@@ -177,34 +251,7 @@ class Stimulation:
                     supra_bot, _ = self.threshsim(stimamp_bottom, check_threshold=condition, **kwargs)
         else:
             raise RuntimeError(f"Reached maximum number of iterations ({max_iterations}) without finding threshold.")
-        # Enter binary search
-        while True:
-            stimamp_prev = stimamp_top
-
-            stimamp = (stimamp_bottom + stimamp_top) / 2
-
-            suprathreshold, _ = self.threshsim(stimamp, check_threshold=condition, **kwargs)
-
-            if termination_mode == TerminationMode.PERCENT_DIFFERENCE:
-                thresh_resoln = abs(rel_thresh_resoln)
-                tolerance = abs((stimamp_bottom - stimamp_top) / stimamp_top)
-            elif termination_mode == TerminationMode.ABSOLUTE_DIFFERENCE:
-                thresh_resoln = abs(abs_thresh_resoln)
-                tolerance = abs(stimamp_bottom - stimamp_top)
-
-            # Check to see if stimamp is at threshold
-            if tolerance < thresh_resoln:
-                if not suprathreshold:
-                    stimamp = stimamp_prev
-                # Run one more time at threshold to save user-specified variables
-                n_aps, _ = self.threshsim(stimamp, **kwargs)
-                break
-            elif suprathreshold:
-                stimamp_top = stimamp
-            elif not suprathreshold:
-                stimamp_bottom = stimamp
-
-        return stimamp, n_aps
+        return stimamp_bottom, stimamp_top
 
     def supra_exit(self):
         """Exit simulation if threshold is reached, activation searches only.
