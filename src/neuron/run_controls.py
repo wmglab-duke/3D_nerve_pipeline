@@ -194,7 +194,12 @@ def main(
                 protocol_configs['bounds_search']
             )
 
-        # todo: implement check_threshold_interval
+        if 'exit_interval' not in protocol_configs:
+            exit_func_interval = None
+            exit_func = False
+        else:
+            exit_func_interval = protocol_configs['exit_func_interval']
+            exit_func = False
 
         threshold_args = [
             condition,
@@ -205,6 +210,8 @@ def main(
             stimamp_top,
             stimamp_bottom,
             max_iterations,
+            exit_func_interval,
+            exit_func,
         ]
 
         args = [arg for arg in threshold_args if arg is not None]  # create args for optional parameters

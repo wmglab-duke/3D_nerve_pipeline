@@ -868,6 +868,9 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
 
     - `"sim"`: The value (Integer) indicates which sim index to use fo the scout Sim (can be the current Sim's index). Required if `"scout"` is used.
 
+- `“exit_interval”`: The value (Double, units: milliseconds) is the time interval how often NEURON should check
+simulation for an AP and exit the simulation. Optional.
+
 <!-- end list -->
 
 - `“termination_criteria”`: Required for threshold finding protocols

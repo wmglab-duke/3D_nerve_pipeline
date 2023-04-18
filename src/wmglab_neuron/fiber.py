@@ -39,7 +39,6 @@ class FiberBuilder:
         """
         assert (length is not None) or (n_sections is not None), "Must specify either length or n_sections"
         assert (length is None) or (n_sections is None), "Can't specify both length and n_sections"
-        # todo: maybe stop passing model, find a cleaner way to implement this factory
         if fiber_model in [FiberModel.MRG_DISCRETE, FiberModel.MRG_INTERPOLATION]:
             fiberclass = MRGFiber(fiber_model, *args, **kwargs)
         elif fiber_model == FiberModel.RATTAY:

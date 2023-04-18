@@ -144,8 +144,8 @@ class Saving:
         self.save_time_vm(amp_ind, stimulation, vm_data)
         self.save_time_gating(all_gating_data, amp_ind, stimulation)
         self.save_istim(amp_ind, istim_data, stimulation)
-        self.save_aploctime()
-        # todo: ap_loctime, ap_end_times
+        self.save_aploctime(amp_ind, fiber)
+        self.save_apendtimes(amp_ind, fiber)
 
     def space_header(self, header: list[str], var_type: str, dt: float, units: str = None):
         """Create header for F(x) files.
