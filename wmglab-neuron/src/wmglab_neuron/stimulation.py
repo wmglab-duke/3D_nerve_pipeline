@@ -8,9 +8,9 @@ https://github.com/wmglab-duke/ascent
 import warnings
 
 import numpy as np
+from neuron import h
 from scipy.signal import argrelextrema
 
-from neuron import h
 from wmglab_neuron import FiberModel, _Fiber
 from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
 

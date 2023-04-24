@@ -759,7 +759,7 @@ class Simulation(Configurable, Saveable):
 
         # neuron files
         du.copy_tree(
-            os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'wmglab_neuron'),
+            os.path.join(os.environ[Env.PROJECT_PATH.value], 'wmglab-neuron', 'src', 'wmglab_neuron'),
             wmglab_neuron_path,
         )
 

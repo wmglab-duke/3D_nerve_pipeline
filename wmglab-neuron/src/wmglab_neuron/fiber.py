@@ -8,8 +8,8 @@ import math
 import warnings
 
 import numpy as np
-
 from neuron import h
+
 from wmglab_neuron import FiberModel, FiberTypeParameters
 
 Section = h.Section

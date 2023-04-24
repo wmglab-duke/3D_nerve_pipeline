@@ -17,4 +17,5 @@ seaborn
 setuptools
 shapely
 wheel
+wmglab-neuron/
 xlsxwriter
