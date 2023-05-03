@@ -186,7 +186,7 @@ class _HeatmapPlotter:
         if np.any([bool(x) for x in self.fiber_colors]):
             if not self.mode == 'fibermeshgrid':
                 self.scatter_kws['c'] = self.fiber_colors
-                self.sim.fibersets[0].plot(ax=ax, meshgridcolors=self.fiber_colors, scatter_kws=self.scatter_kws)
+                self.sim.fibersets[0].plot(ax=ax, scatter_kws=self.scatter_kws)
             else:
                 points = self.sim.fibersets[0].xy_points()
                 # set up meshgrid from x and y points, where values comes from meshgridcolor
@@ -243,9 +243,20 @@ class _HeatmapPlotter:
         xi = np.linspace(min(x), max(x), 1000)
         yi = np.linspace(min(y), max(y), 1000)
         zi = griddata((x, y), z, (xi[None, :], yi[:, None]), method='linear')
-        # plt.pcolormesh(xi, yi, zi, cmap=self.cmap, vmin=self.min_thresh, vmax=self.max_thresh) # TODO: figure out how to pass mappable in
+        import matplotlib
+
+        clip = matplotlib.path.Path(inner.points[:, :2])
+        plt.pcolormesh(
+            xi,
+            yi,
+            zi,
+            cmap=self.cmap,
+            vmin=self.min_thresh,
+            vmax=self.max_thresh,
+            clip_path=(clip, plt.gca().transData),
+        )  # TODO: figure out how to pass mappable in
         # plt.contour(xi, yi, zi, cmap=self.cmap, levels=15)
-        plt.scatter(x, y, c=z, cmap=self.cmap, vmin=self.min_thresh, vmax=self.max_thresh)
+        # plt.scatter(x, y, c=z, cmap=self.cmap, vmin=self.min_thresh, vmax=self.max_thresh)
 
     def create_cmap(self):
         """Create color map and mappable for assigning colorbar and ticks."""

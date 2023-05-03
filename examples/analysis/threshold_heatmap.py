@@ -9,7 +9,9 @@ The source code can be found on the following GitHub repository: https://github.
 Note: if more than one heatmap is desired, you must use a Seaborn FacetGrid.
 RUN THIS FROM REPOSITORY ROOT
 """
+import os
 
+os.chdir('../..')
 import matplotlib.pyplot as plt
 
 from src.core.plotter import heatmaps
@@ -24,6 +26,13 @@ q = Query(
     }
 ).run()
 
+#%%
 # Build heatmap
-heatmaps(data=q.data().query('nsim==5'), cuff_orientation=True, mode='fibermeshgrid')
+data = q.data().query('nsim==0')
+# data.sort_values(by='threshold',inplace=True)
+# data.reset_index(inplace=True)
+# data['oldthresh']=data['threshold'].copy()
+# data['threshold']=data.index.copy()
+# data.sort_values(by='master_fiber_index',inplace=True)
+heatmaps(data=data, mode='fibermeshgrid')
 plt.title('Activation threshold heatmap')

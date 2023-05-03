@@ -100,7 +100,7 @@ for sample, samp3d, nerve_label in zip([252], [253], ['2L']):
         zspacing = np.diff(z_coords)[0]
 
         # plot with transparency
-        axs[0].plot(der2, z_coords, alpha=0.1, color='r')
+        axs[0].plot(der2, z_coords / 10000, alpha=0.1, color='r')
 
         # run again for 3d
         inner3d = 0
@@ -124,7 +124,7 @@ for sample, samp3d, nerve_label in zip([252], [253], ['2L']):
         fiber = nd_line(np.loadtxt(fiberpath, skiprows=1))
         z_coords3d = np.array([fiber.interp(d) for d in z_coords_arc])[:, 2]
 
-        axs[1].plot(der3, z_coords3d, alpha=0.1, color='r')
+        axs[1].plot(der3, z_coords3d / 10000, alpha=0.1, color='r')
 
         # plot 3D second differential for supersamples
         # load in fiber coordinates from ascent fiber
@@ -167,15 +167,15 @@ for sample, samp3d, nerve_label in zip([252], [253], ['2L']):
         der2 = np.diff(np.diff(v))
         der2 = der2 / np.max(np.abs(der2))
         # plot with transparency
-        axs[2].plot(der2, zs[2:], alpha=0.1, color='r')
+        axs[2].plot(der2, np.array(zs[2:]) / 10000, alpha=0.1, color='r')
         # find maximum z coordinate
     # verical lines to each axis at z coords of point sources
-    axs[0].axhline(y=source_point1[2], color='k', linestyle='--')
-    axs[0].axhline(y=source_point2[2], color='k', linestyle='--')
-    axs[1].axhline(y=source_point1[2], color='k', linestyle='--')
-    axs[1].axhline(y=source_point2[2], color='k', linestyle='--')
-    axs[2].axhline(y=source_point1[2], color='k', linestyle='--')
-    axs[2].axhline(y=source_point2[2], color='k', linestyle='--', label='source position')
+    axs[0].axhline(y=source_point1[2] / 10000, color='k', linestyle='--')
+    axs[0].axhline(y=source_point2[2] / 10000, color='k', linestyle='--')
+    axs[1].axhline(y=source_point1[2] / 10000, color='k', linestyle='--')
+    axs[1].axhline(y=source_point2[2] / 10000, color='k', linestyle='--')
+    axs[2].axhline(y=source_point1[2] / 10000, color='k', linestyle='--')
+    axs[2].axhline(y=source_point2[2] / 10000, color='k', linestyle='--', label='source position')
     zmax = np.max(fiber.points[:, 2])
     # find and plot voltage along a fiber at [0,0,0] to [0,0,zmax]
     for j, z in enumerate(np.arange(0, zmax, zspacing)):
@@ -186,15 +186,15 @@ for sample, samp3d, nerve_label in zip([252], [253], ['2L']):
     der2 = np.diff(np.diff(v))
     der2 = der2 / np.max(np.abs(der2))
     # plot with transparency
-    axs[2].plot(der2, np.arange(0, zmax, zspacing)[2:], alpha=1, color='b', linestyle='--', label='2D-path')
+    axs[2].plot(der2, np.arange(0, zmax, zspacing)[2:] / 10000, alpha=1, color='b', linestyle='--', label='2D-path')
     # label axes
-    axs[0].set_ylabel('z-coordinate (μm)')
+    axs[0].set_ylabel('z-coordinate (cm)')
     axs[1].set_xlabel('Normalized Second Differential')
     plt.suptitle(f'2nd Differential of Ve for all {nerve_label} fibers')
     # label each axis
     axs[0].set_title('2D')
     axs[1].set_title('3D')
-    axs[2].set_title('3D (point source, \nhomogeneous \nanisotropic medium)')
+    axs[2].set_title('3D (point sources)')
     plt.subplots_adjust(top=0.8)
     plt.legend()
     plt.savefig(f'{nerve_label}_2diff.png', dpi=400)
