@@ -419,8 +419,8 @@ class Query(Configurable, Saveable):
                                 'model': model_results['index'],
                                 'sim': sim_index,
                                 'nsim': nsim_index,
-                                'inner': inner_index,
-                                'outer': outer,
+                                'inner': inner_index if source_sample is None else 0,
+                                'outer': outer if source_sample is None else 0,
                                 'fiber': fiber_index,
                                 'master_fiber_index': master_index,
                                 'fiberset_index': fiberset_index,
@@ -449,6 +449,8 @@ class Query(Configurable, Saveable):
                             if source_sample is not None:  # 3d data
                                 if source_sim is not None:
                                     this_nd_simdir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
+                                else:
+                                    this_nd_simdir = sim_dir
                                 fiberpath = os.path.join(
                                     this_nd_simdir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat'
                                 )
