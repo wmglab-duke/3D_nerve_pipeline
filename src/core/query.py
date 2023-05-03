@@ -405,7 +405,7 @@ class Query(Configurable, Saveable):
                             [sample_index, model_index, sim_index],
                             just_directory=True,
                         )
-
+                        print(len(sim_object.fibersets[0].fibers))
                         for master_index in range(len(sim_object.fibersets[0].fibers)):
                             inner_index, fiber_index = sim_object.indices_fib_to_n(0, master_index)
                             outer = [index for index, inners in enumerate(out_in) if inner_index in inners][0]
@@ -487,11 +487,13 @@ class Query(Configurable, Saveable):
 
     @staticmethod
     def peak_second_diff(base_dict, sim_dir):
+        return np.nan,np.nan #TODO make this work
         # directory for specific n_sim
         potfile = os.path.join(
-            sim_dir,
-            'potentials',
-            f'{base_dict["master_fiber_index"]}.dat',
+            n_sim_dir,
+            'data',
+            'inputs',
+            f'inner{base_dict["inner"]}_fiber{base_dict["fiber"]}.dat',
         )
 
         potentials = np.loadtxt(potfile, skiprows=0)
