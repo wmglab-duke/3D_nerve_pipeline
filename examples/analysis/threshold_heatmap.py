@@ -17,22 +17,36 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-# Initialize and run Querys
+samp2d = 252
+model = 0
+simint = 3
+samp3d = 253
+import pandas as pd
+import seaborn as sns
+
+from src.utils import Object
+
 q = Query(
     {
         'partial_matches': True,
         'include_downstream': True,
-        'indices': {'sample': [250], 'model': [0], 'sim': [3]},
+        'indices': {'sample': [samp2d], 'model': [model], 'sim': [simint]},
     }
 ).run()
-
+dat2d = q.data()
+dat2d['threed'] = False
+q3 = Query(
+    {
+        'partial_matches': True,
+        'include_downstream': True,
+        'indices': {'sample': [samp3d], 'model': [model], 'sim': [simint]},
+    }
+).run()
+dat3d = q3.data(source_sample=samp2d)
+dat3d['threed'] = True
+sample_obj = q.get_object(Object.SAMPLE, [samp2d])
+sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
+threshdat = pd.concat([dat2d, dat3d])
 #%%
-# Build heatmap
-data = q.data().query('nsim==0')
-# data.sort_values(by='threshold',inplace=True)
-# data.reset_index(inplace=True)
-# data['oldthresh']=data['threshold'].copy()
-# data['threshold']=data.index.copy()
-# data.sort_values(by='master_fiber_index',inplace=True)
-heatmaps(data=data, mode='fibermeshgrid')
-plt.title('Activation threshold heatmap')
+g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
+g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, scatter_kws={'s': 25})

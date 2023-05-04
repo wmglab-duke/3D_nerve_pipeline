@@ -1,0 +1,259 @@
+{
+  "source_sim": 3,
+  "sample_data": [
+    {
+      "name": "2Ldef",
+      "index3d": 2531,
+      "exsamples": [
+        {
+          "index": 2501,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 2521,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "3Rdef",
+      "index3d": 3731,
+      "exsamples": [
+        {
+          "index": 3701,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 3721,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "5Rdef",
+      "index3d": 5731,
+      "exsamples": [
+        {
+          "index": 5701,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 5721,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "6Rdef",
+      "index3d": 6731,
+      "exsamples": [
+        {
+          "index": 6701,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 6721,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "2Lasc",
+      "index3d": 253,
+      "exsamples": [
+        {
+          "index": 2509,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 2529,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "3Rasc",
+      "index3d": 373,
+      "exsamples": [
+        {
+          "index": 3709,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 3729,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "5Rasc",
+      "index3d": 573,
+      "exsamples": [
+        {
+          "index": 5709,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 5729,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "6Rasc",
+      "index3d": 673,
+      "exsamples": [
+        {
+          "index": 6709,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 6729,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "2L",
+      "index3d": 253,
+      "exsamples": [
+        {
+          "index": 250,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 252,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "2R",
+      "index3d": 273,
+      "exsamples": [
+        {
+          "index": 270,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 272,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "3R",
+      "index3d": 373,
+      "exsamples": [
+        {
+          "index": 370,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 372,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "5R",
+      "index3d": 573,
+      "exsamples": [
+        {
+          "index": 570,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 572,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "6L",
+      "index3d": 653,
+      "exsamples": [
+        {
+          "index": 650,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 652,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    },
+    {
+      "name": "6R",
+      "index3d": 673,
+      "exsamples": [
+        {
+          "index": 670,
+          "name": "rostral",
+          "pulse": "cathodic"
+        },
+        {
+          "index": 672,
+          "name": "caudal",
+          "pulse": "anodic"
+        }
+      ]
+    }
+  ],
+  "sim_data": {
+    "3": {
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.25,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.25,
+          "fiber_diam": 5
+        },
+        "2": {
+          "pulse_width": 0.25,
+          "fiber_diam": 7
+        },
+        "3": {
+          "pulse_width": 0.25,
+          "fiber_diam": 9
+        },
+        "4": {
+          "pulse_width": 0.25,
+          "fiber_diam": 11
+        },
+        "5": {
+          "pulse_width": 0.25,
+          "fiber_diam": 13
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,11 @@
 
 # built upon https://github.com/github/gitignore/blob/master/Python.gitignore
 
+
+*.png
+thresh_unmatched*
+*.sh
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
