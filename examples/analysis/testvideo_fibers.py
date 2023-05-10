@@ -22,7 +22,6 @@ for sample, samplenum in zip(["2L", "2R", "3R", "5R", "6L", "6R"], [253, 273, 37
 
     for slide in slidelist:
         slide.scale(0.5)
-        slide.scale(1.2)
 
     # load each fiber file and append to list
     for file in os.listdir(fiberpath):
@@ -66,7 +65,7 @@ for sample, samplenum in zip(["2L", "2R", "3R", "5R", "6L", "6R"], [253, 273, 37
             y = fiber[idx, 1]
             # append to slide list
             xs.append(x)
-            ys.append(y)
+            ys.append(-y)
         # plot the slide and all fiber points
         ax.plot(xs, ys, '.', color='red')
         ax.set_title(f'Slide {i}-zpos{zpos}')

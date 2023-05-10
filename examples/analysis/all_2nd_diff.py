@@ -11,6 +11,7 @@ samp3d = 253
 nerve_label = '2L'
 model = 0
 sim = 3
+nsim = 5
 for sample, samp3d, nerve_label in zip(
     [252, 372, 572, 652, 672], [253, 373, 573, 653, 673], ['2L', '3R', '5R', '6L', '6R']
 ):
@@ -31,8 +32,8 @@ for sample, samp3d, nerve_label in zip(
         fiber = int(row['fiber'])
         inner3d = 0
         fiber3d = int(row['master_fiber_index'])
-        pve2 = os.path.join(base_n_sim, str(0), 'data', 'inputs', f'inner{inner}_fiber{fiber}.dat')
-        pve3 = os.path.join(base_n_sim3d, str(0), 'data', 'inputs', f'inner{inner3d}_fiber{fiber3d}.dat')
+        pve2 = os.path.join(base_n_sim, str(nsim), 'data', 'inputs', f'inner{inner}_fiber{fiber}.dat')
+        pve3 = os.path.join(base_n_sim3d, str(nsim), 'data', 'inputs', f'inner{inner3d}_fiber{fiber3d}.dat')
         v2 = np.loadtxt(pve2)
         v3 = np.loadtxt(pve3)
         # remove first value and take every 11th value for myelinated fibers

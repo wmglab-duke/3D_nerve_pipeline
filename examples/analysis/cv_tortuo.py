@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 
 import matplotlib
@@ -6,9 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-matplotlib.use('agg')
-
-sys.path.append('.')
+os.chdir('../..')
 
 from src.core.query import Query
 
@@ -33,7 +32,6 @@ effdat = (
 )
 
 sns.lineplot(data=effdat, x='diam', y='cv', hue='tortuosity')
-plt.gcf().savefig('out/analysis/tort.png', dpi=400, bbox_inches='tight')
 
 dats = []
 for sample in [253, 273, 373, 573, 653, 673]:
@@ -49,7 +47,7 @@ for sample in [253, 273, 373, 573, 653, 673]:
 dat3d = pd.concat(dats).reset_index(drop=True)
 plt.figure()
 sns.histplot(data=dat3d, x='tortuosity')
-plt.gcf().savefig('out/analysis/histtort.png', dpi=400, bbox_inches='tight')
+
 plt.figure()
 sns.lmplot(
     data=dat3d.query('nsim in [0,5]'),
@@ -59,4 +57,3 @@ sns.lmplot(
     y='threshold',
     x='tortuosity',
 )
-plt.gcf().savefig('out/analysis/linetort.png', dpi=400, bbox_inches='tight')

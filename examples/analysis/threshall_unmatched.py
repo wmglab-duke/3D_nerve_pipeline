@@ -10,7 +10,7 @@ from src.core.query import Query
 
 model = 0
 source_sim = 3
-with open('examples/analysis/plotconfig.json') as f:
+with open('examples/analysis/plotconfig3.json') as f:
     config = json.load(f)
 for simdex in config['sim_data'].keys():
     simint = int(simdex)
@@ -19,7 +19,7 @@ for simdex in config['sim_data'].keys():
         samp3d = sample_data['index3d']
         print(sample_data)
         nerve_label = sample_data['name']
-        samples2d = [x['index'] for x in sample_data['exsamples']]
+        samples2d = sample_data['exsamples']
         q = Query(
             {
                 'partial_matches': False,
@@ -30,9 +30,9 @@ for simdex in config['sim_data'].keys():
         dat2d = q.data(tortuosity=True, peri_site=True, zpos=True, cuffspan=[28000, 30000], label=nerve_label)
         dat2d['type'] = '2D'
         dat2d['contact'] = ''
-        anodic = dat2d['sample'].astype(str).str.endswith('0')
+        anodic = dat2d['sample'].astype(str).str[2] == '0'
         dat2d.loc[anodic, 'contact'] = 'anodic'
-        cathodic = dat2d['sample'].astype(str).str.endswith('2')
+        cathodic = dat2d['sample'].astype(str).str[2] == '2'
         dat2d.loc[cathodic, 'contact'] = 'cathodic'
         q3 = Query(
             {
@@ -41,8 +41,10 @@ for simdex in config['sim_data'].keys():
                 'indices': {'sample': [samp3d], 'model': [model], 'sim': [simint]},
             }
         ).run()
+        source_samples = [x for x in samples2d if str(x)[2] == '2']  # use cathodic sample as source
+        assert len(source_samples) == 1
         dat3d = q3.data(
-            source_sample=samples2d[0],
+            source_sample=source_samples[0],
             tortuosity=True,
             peri_site=True,
             zpos=True,

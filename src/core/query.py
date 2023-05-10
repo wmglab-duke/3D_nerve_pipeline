@@ -369,10 +369,11 @@ class Query(Configurable, Saveable):
             sample_index = sample_results['index']
             sample_object = self.get_object(Object.SAMPLE, [sample_index if source_sample is None else source_sample])
 
-            if peri_site:
+            if peri_site and source_sample is not None:
                 with open(f'input/slides/{label}slides.obj', 'rb') as f:
                     slidelist = pickle.load(f)
                 [s.scale(0.5) for s in slidelist]
+                print("Warning: Temporary fix for wrong slide scaling applied")
 
             # loop models
             for model_results in sample_results.get('models', []):
@@ -408,12 +409,16 @@ class Query(Configurable, Saveable):
 
                         for master_index in range(len(sim_object.fibersets[0].fibers)):
                             inner_index, fiber_index = sim_object.indices_fib_to_n(0, master_index)
-                            outer = [index for index, inners in enumerate(out_in) if inner_index in inners][0]
-                            specific_inner = [
+                            outerall = [index for index, inners in enumerate(out_in) if inner_index in inners]
+                            assert len(outerall) == 1
+                            outer = outerall[0]
+                            specific_innerall = [
                                 inners.index(inner_index)
                                 for index, inners in enumerate(out_in)
                                 if inner_index in inners
-                            ][0]
+                            ]
+                            assert len(specific_innerall) == 1
+                            specific_inner = specific_innerall[0]
                             base_dict = {
                                 'sample': sample_results['index'],
                                 'model': model_results['index'],
@@ -421,7 +426,7 @@ class Query(Configurable, Saveable):
                                 'nsim': nsim_index,
                                 'inner': inner_index if source_sample is None else 0,
                                 'outer': outer if source_sample is None else 0,
-                                'fiber': fiber_index,
+                                'fiber': fiber_index if source_sample is None else 0,
                                 'master_fiber_index': master_index,
                                 'fiberset_index': fiberset_index,
                                 'waveform_index': waveform_index,
@@ -471,18 +476,24 @@ class Query(Configurable, Saveable):
                                     base_dict, sim_dir, source_sample is not None, cuffspan, source_sim
                                 )
                             if peri_site:
-                                base_dict['peri_thk_act_site'] = self.get_activation_site_peri_thickness(
-                                    base_dict, source_sample is not None, slidelist, source_sim=source_sim
-                                )
-                                if cuffspan is not None:
-                                    base_dict['smallest_thk_under_cuff'] = self.get_smallest_thk_under_cuff(
-                                        base_dict,
-                                        source_sample is not None,
-                                        cuffspan,
-                                        sim_dir,
-                                        slidelist,
-                                        source_sim=source_sim,
+                                if source_sample is not None:
+                                    base_dict['peri_thk_act_site'] = self.get_activation_site_peri_thickness(
+                                        base_dict, source_sample is not None, slidelist, source_sim=source_sim
                                     )
+                                else:
+                                    base_dict['peri_thk_act_site'] = base_dict['peri_thk']
+                                if cuffspan is not None:
+                                    if source_sample is not None:
+                                        base_dict['smallest_thk_under_cuff'] = self.get_smallest_thk_under_cuff(
+                                            base_dict,
+                                            source_sample is not None,
+                                            cuffspan,
+                                            sim_dir,
+                                            slidelist,
+                                            source_sim=source_sim,
+                                        )
+                                    else:
+                                        base_dict['smallest_thk_under_cuff'] = base_dict['peri_thk']
                             alldat.append(base_dict)
 
         return pd.DataFrame(alldat)
@@ -566,6 +577,8 @@ class Query(Configurable, Saveable):
                 fit = {'a': 0.03702, 'b': 10.5}
                 thk = fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
                 return thk
+            else:
+                raise RuntimeError("Could not identify an inner for this 3D fiber")
 
     @staticmethod
     def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, sim_dir, slidelist, source_sim=None):
@@ -587,18 +600,46 @@ class Query(Configurable, Saveable):
                 x = fiber[idx, 0]
                 y = fiber[idx, 1]
                 point = Point(x, y)
-                # create strtree of inners
-                inners = [inner for fasc in slide.fascicles for inner in fasc.inners]
-                innerpoly = [inner.polygon() for inner in inners]
-                inners_tree = STRtree(innerpoly)
-                # find nearest inner
-                nearest_inner = inners_tree.nearest(point)
-                # get the index of the nearest inner
-                area = inners[innerpoly.index(nearest_inner)].area()
-                # calculate peri thickness
-                fit = {'a': 0.03702, 'b': 10.5}
-                thk = fit.get("a") * 2 * np.sqrt(area / np.pi) + fit.get("b")
-                thks.append(thk)
+                inner = None
+                try:
+                    inner = [inner for fasc in slide.fascicles for inner in fasc.inners if inner.contains(point)][0]
+                except IndexError:
+                    # plt.scatter(base_dict['activation_xpos'], -base_dict['activation_ypos'])
+                    # slide.plot()
+                    print('ope')
+                    iteration = 0
+                    innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
+                    innerlist = [x.deepcopy() for x in innersave]
+                    while inner is None:
+                        if iteration > 5:
+                            # plt.figure()
+                            # plt.scatter(base_dict['activation_xpos'], base_dict['activation_ypos'])
+                            # [inner.plot() for inner in innerlist]
+                            # # slide.plot()
+                            # plt.show()
+                            # plt.title(
+                            #     f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
+                            # )
+                            import sys
+
+                            sys.exit('Could not correct within 5 iterations')
+                            print(base_dict)
+                            break
+                        else:
+                            iteration += 1
+                        [x.offset(distance=10) for x in innerlist]
+                        try:
+                            inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
+                            print('ope fixed')
+                        except IndexError:
+                            print('stillope')
+                            pass
+                if inner is not None:
+                    fit = {'a': 0.03702, 'b': 10.5}
+                    thk = fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
+                    thks.append(thk)
+                else:
+                    raise RuntimeError("Could not identify an inner for this 3D fiber")
             return np.min(thks)
 
     @staticmethod
