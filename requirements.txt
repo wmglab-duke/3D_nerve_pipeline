@@ -18,3 +18,4 @@ setuptools
 shapely
 wheel
 xlsxwriter
+# wmglab_neuron TODO: uncomment when package is live on PyPi
