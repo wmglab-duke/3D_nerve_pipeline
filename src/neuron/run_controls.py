@@ -212,7 +212,7 @@ def main(
 
             n_aps = stimulation.run_sim(stimamp=amp)
             time_individual = time.time() - start_time - time_total
-            saving.save_variables(fiber, stimulation)  # Save user-specified variables
+            saving.save_variables(fiber, stimulation, amp_ind)  # Save user-specified variables
             saving.save_activation(n_aps, amp_ind)  # Save number of APs triggered
             saving.save_runtime(time_individual, amp_ind)  # Save runtime of inidividual run
 
