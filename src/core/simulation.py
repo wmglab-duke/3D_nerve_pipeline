@@ -723,47 +723,6 @@ class Simulation(Configurable, Saveable):
         shutil.copy2(submit_source, submit_target)
 
     @staticmethod
-    def export_system_config_files(target: str):
-        """Export the system config files to the target directory.
-
-        :param target: Target directory
-        """
-        # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
-        os.makedirs(target, exist_ok=True)
-
-        # fiber_z.json files
-        shutil.copy2(
-            os.path.join(os.environ[Env.PROJECT_PATH.value], 'config', 'system', 'fiber_z.json'),
-            target,
-        )
-        shutil.copy2(
-            os.path.join(
-                os.environ[Env.PROJECT_PATH.value],
-                'config',
-                'system',
-                'slurm_params.json',
-            ),
-            target,
-        )
-
-    @staticmethod
-    def export_wmglab_neuron(target: str):
-        """Export the wmglab_neuron files to the target directory.
-
-        :param target: Target directory
-        """
-        # define path to the directory (ascent/submit/wmglab_neuron)
-        wmglab_neuron_path = os.path.join(target, 'wmglab_neuron')
-        # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
-        os.makedirs(wmglab_neuron_path, exist_ok=True)
-
-        # neuron files
-        du.copy_tree(
-            os.path.join(os.environ[Env.PROJECT_PATH.value], 'wmglab-neuron', 'src', 'wmglab_neuron'),
-            wmglab_neuron_path,
-        )
-
-    @staticmethod
     def import_n_sims(
         sample: int,
         model: int,

@@ -17,5 +17,5 @@ seaborn
 setuptools
 shapely
 wheel
-wmglab-neuron/
+# wmglab-neuron # todo: uncomment when PyPI package is available
 xlsxwriter

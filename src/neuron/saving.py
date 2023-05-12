@@ -9,7 +9,6 @@ https://github.com/wmglab-duke/ascent
 import os
 
 import pandas as pd
-
 from wmglab_neuron import Stimulation, _Fiber
 
 
@@ -122,7 +121,7 @@ class Saving:
             self.output_path, f'activation_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
         )
         with open(output_file_path, 'w') as activation_file:
-            activation_file.write(f'{n_aps:.3f}')
+            activation_file.write(f'{n_aps}')
 
     def save_variables(self, fiber: object, stimulation: Stimulation, amp_ind: int = 0):
         """Write user-specified variables to file.
@@ -147,7 +146,7 @@ class Saving:
         self.save_aploctime(amp_ind, fiber)
         self.save_apendtimes(amp_ind, fiber)
 
-    def space_header(self, header: list[str], var_type: str, dt: float, units: str = None):
+    def space_header(self, header: list, var_type: str, dt: float, units: str = None):
         """Create header for F(x) files.
 
         :param header: list of string values to put at the header
@@ -160,7 +159,7 @@ class Saving:
         for time in self.time_inds:
             header.append(f'{var_type}_time{int(time * dt)}ms{suffix}')
 
-    def time_header(self, header: list[str], var_type: str, units: str = None):
+    def time_header(self, header: list, var_type: str, units: str = None):
         """Create header for F(t) files.
 
         :param header: list of string values to put at the header
@@ -175,7 +174,7 @@ class Saving:
         elif var_type == 'istim':
             header.append(f'Istim({units})')
 
-    def handle_header(self, save_type: str, var_type: str, dt: float, units: str = None):
+    def handle_header(self, save_type: str, var_type: str, dt: float = None, units: str = None):
         """Create a header for text file.
 
         :param save_type: function of variable to be saved, can be function of time ('time') or space ('space')
@@ -191,7 +190,7 @@ class Saving:
             self.time_header(header, var_type, units)
         return header
 
-    def save_istim(self, amp_ind: int, istim_data: list[float], stimulation: Stimulation):
+    def save_istim(self, amp_ind: int, istim_data: list, stimulation: Stimulation):
         """Save istim data to file.
 
         :param amp_ind: index of the amplitude in the finite amplitude protocol
@@ -206,7 +205,7 @@ class Saving:
             istim_header = self.handle_header('time', 'istim', 'nA')
             istim_data.to_csv(istim_path, header=istim_header, sep='\t', float_format='%.6f', index=False)
 
-    def save_time_gating(self, all_gating_data: list[list[float]], amp_ind: int, stimulation: Stimulation):
+    def save_time_gating(self, all_gating_data: list, amp_ind: int, stimulation: Stimulation):
         """Save gating data as function of time to file.
 
         :param all_gating_data: list of lists containing float values for h, m, mp, and s gating parameters
@@ -227,7 +226,7 @@ class Saving:
                     gating_time_path, header=gating_time_header, sep='\t', float_format='%.6f', index=False
                 )
 
-    def save_time_vm(self, amp_ind: int, stimulation: Stimulation, vm_data: list[float]):
+    def save_time_vm(self, amp_ind: int, stimulation: Stimulation, vm_data: list):
         """Save membrane potential as a function of time to file.
 
         :param amp_ind: index of amplitude in finite amplitudes protocol
@@ -243,7 +242,7 @@ class Saving:
             vm_time_header = self.handle_header('time', 'vm', 'mV')
             vm_time_data.to_csv(vm_time_path, header=vm_time_header, sep='\t', float_format='%.6f', index=False)
 
-    def save_space_gating(self, all_gating_data: list[list[float]], amp_ind: int, fiber: _Fiber):
+    def save_space_gating(self, all_gating_data: list, amp_ind: int, fiber: _Fiber):
         """Save gating data as function of space to file.
 
         :param all_gating_data: list of lists containing float values for h, m, mp, and s gating parameters
@@ -297,8 +296,12 @@ class Saving:
                 self.output_path, f'ap_loctime_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
             )
             with open(aploctime_path, 'w') as file:
-                for node in fiber.n_sections:
-                    file.write(f"{fiber.apc[node].time}")
+                for node_ind, _ in enumerate(fiber.nodes):
+                    # todo: fix this
+                    if fiber.myelinated:
+                        file.write(f"{fiber.apc[node_ind].time}")
+                    else:
+                        file.write(f"{fiber.apc[node_ind].time}")
 
     def save_apendtimes(self, amp_ind: int, fiber: _Fiber):
         """Save time that AP last propagated at two specified indices to file.

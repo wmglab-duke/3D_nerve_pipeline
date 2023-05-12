@@ -30,6 +30,8 @@ def run(args):
         print(f'You are running Python {sys.version_info.major}.{sys.version_info.minor}, but 3.7 or later required')
         sys.exit()
 
+    # todo: check that wmglab-neuron version is installed at least 0.0.1
+
     # create bin/ directory for storing compiled Java files if it does not yet exist
     if not (os.path.exists('bin')):
         os.mkdir('bin')

@@ -61,7 +61,7 @@ class FiberSet(Configurable, Saveable):
             SetupMode.NEW,
             Config.FIBER_Z,
             os.path.join('config', 'system', 'fiber_z.json'),
-        )
+        )  # todo: remove fiber_z.json and replace completely with fiber_z.py in wmglab_neuron
 
     def init_post_config(self):
         """Make sure Model and Simulation are configured.
@@ -69,7 +69,7 @@ class FiberSet(Configurable, Saveable):
         :raises KeyError: If Model or Simulation are not configured.
         :return: self
         """
-        if any([config.value not in self.configs.keys() for config in (Config.MODEL, Config.SIM)]):
+        if any([config.value not in self.configs.keys() for config in (Config.MODEL, Config.SIM)]):  # noqa: C419.
             raise KeyError("Missing Model or Simulation configuration.")
         return self
 
@@ -387,7 +387,7 @@ class FiberSet(Configurable, Saveable):
             points = [(float(row[0]), float(row[1])) for row in reader]
         # check that all fibers are within exactly one inner
         for fiber in points:
-            if not any(
+            if not any(  # noqa: C419
                 [
                     Point(fiber).within(inner.polygon())
                     for fascicle in self.sample.slides[0].fascicles

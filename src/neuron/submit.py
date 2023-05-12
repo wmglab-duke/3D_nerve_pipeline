@@ -134,7 +134,7 @@ submit_context_group.add_argument(
 
 parser.add_argument('-v', '--verbose', action='store_true', help='Print detailed submission info')
 
-OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else 'WINDOWS'
+OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else 'WINDOWS'  # noqa: C419.
 
 
 # %% Set up utility functions
@@ -198,36 +198,6 @@ def ensure_dir(directory):
     :param directory: the string path to the directory
     """
     os.makedirs(directory, exist_ok=True)
-
-
-def auto_compile(override: bool = False):
-    """Compile NEURON files if they have not been compiled yet.
-
-    :param override: if True, compile regardless of whether the files have already been compiled
-    :return: True if ran compilation, False if not
-    """
-    if (
-        (not os.path.exists(os.path.join('MOD_Files', 'x86_64', 'special')) and OS == 'UNIX-LIKE')
-        or (not os.path.exists(os.path.join('MOD_Files', 'nrnmech.dll')) and OS == 'WINDOWS')
-        or override
-    ):
-        print('compiling NEURON files...')
-        os.chdir(os.path.join('MOD_Files'))
-        exit_data = subprocess.run(['nrnivmodl'], shell=True, capture_output=True, text=True)
-        if exit_data.returncode != 0:
-            print(exit_data.stderr)
-            sys.exit("Error in compiling of NEURON files. Exiting...")
-        os.chdir('..')
-        shutil.copytree(os.path.join(os.getcwd(), 'MOD_Files', 'x86_64'), os.path.join(os.getcwd(), 'x86_64'))
-        compiled = True
-    elif (not os.path.exists('x86_64') and OS == 'UNIX-LIKE') or (
-        not os.path.exists('nrnmech.dll') and OS == 'WINDOWS'
-    ):
-        shutil.copytree(os.path.join(os.getcwd(), 'MOD_Files', 'x86_64'), os.path.join(os.getcwd(), 'x86_64'))
-    else:
-        print('skipped compile')
-        compiled = False
-    return compiled
 
 
 def get_diameter(my_inner_fiber_diam_key, my_inner_ind, my_fiber_ind):
@@ -718,7 +688,7 @@ def get_submission_list(run_inds):
         # get list of fibers to run
         submission_addition = make_run_sub_list(run_number)
         # check for duplicate nsims
-        if any([x in submission_list for x in submission_addition.keys()]):
+        if any([x in submission_list for x in submission_addition.keys()]):  # noqa: C419.
             warnings.warn(f'Duplicate nsims found in run {run_number}. Continuing', stacklevel=2)
         submission_list.update(submission_addition)
         rundata.append(
@@ -747,8 +717,7 @@ def pre_submit_setup():
     if len(args.run_indices) == 0:
         sys.exit("Error: No run indices to use.")
     run_inds = args.run_indices
-    # compile MOD files if they have not yet been compiled
-    auto_compile(args.force_recompile)
+
     # check for submission context
     if args.cluster_submit:
         submission_context = 'cluster'
@@ -763,6 +732,7 @@ def pre_submit_setup():
 # main
 def main():
     """Prepare fiber submissions and run NEURON sims."""
+    # todo: check that wmglab-neuron is installed and version >= 0.0.1
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()
     # get list of simulations to be submitted

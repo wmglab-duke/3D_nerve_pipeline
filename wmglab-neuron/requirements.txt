@@ -1,8 +1,0 @@
-matplotlib
-
-mock
-neuron
-numpy
-pandas
-scipy
-seaborn

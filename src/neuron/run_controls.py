@@ -11,9 +11,8 @@ import sys
 import time
 
 from saving import Saving
-
 from wmglab_neuron import FiberBuilder, FiberModel, Stimulation
-from wmglab_neuron.enums import TerminationMode, ThresholdCondition
+from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
 
 
 def handle_termination(protocol_configs: dict) -> (int, float):
@@ -90,18 +89,7 @@ def main(
 
     # Determine fiber model
     fiber_model = sim_configs['fibers']['mode']
-    models = {
-        'MRG_DISCRETE': FiberModel.MRG_DISCRETE,
-        'MRG_INTERPOLATION': FiberModel.MRG_INTERPOLATION,
-        'RATTAY': FiberModel.RATTAY,
-        'TIGERHOLM': FiberModel.TIGERHOLM,
-        'SUNDT': FiberModel.SUNDT,
-        'SCHILD94': FiberModel.SCHILD94,
-        'SCHILD97': FiberModel.SCHILD97,
-    }
-    if fiber_model not in models:
-        exit()
-    model = models[fiber_model]
+    model = getattr(FiberModel, fiber_model)
 
     # create fiber
     fiber = FiberBuilder.generate(
@@ -165,15 +153,10 @@ def main(
     protocol_configs = sim_configs['protocol']
     amps = protocol_configs['amplitudes'] if protocol_configs['mode'] == 'FINITE_AMPLITUDES' else False
 
-    ap_detect_location = protocol_configs['threshold']['ap_detect_location']
-    istim_delay = istim_configs['times']['IntraStim_PulseTrain_delay']
-    run_kwargs = {
-        'ap_detect_location': ap_detect_location,
-        'istim_delay': istim_delay,
-    }
-    kwargs = {k: v for k, v in run_kwargs.items() if v is not None}  # create kwargs for optional parameters
-
     if not amps:  # enter binary search modes
+        ap_detect_location = protocol_configs['threshold']['ap_detect_location']
+        istim_delay = istim_configs['times']['IntraStim_PulseTrain_delay']
+
         if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
             condition = ThresholdCondition.ACTIVATION
         elif protocol_configs['mode'] == 'BLOCK_THRESHOLD':
@@ -183,11 +166,11 @@ def main(
         termination_mode, termination_tolerance = handle_termination(protocol_configs)
         if 'bounds_search' not in protocol_configs:
             bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations = (
-                None,
-                None,
-                None,
-                None,
-                None,
+                BoundsSearchMode.PERCENT_INCREMENT,
+                10,
+                -1,
+                -0.01,
+                100,
             )
         else:
             bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations = handle_bounds_search(
@@ -199,27 +182,26 @@ def main(
             exit_func = False
         else:
             exit_func_interval = protocol_configs['exit_func_interval']
-            exit_func = False
+            exit_func = False  # todo: check this
 
-        threshold_args = [
-            condition,
-            bounds_search_mode,
-            bounds_search_step,
-            termination_mode,
-            termination_tolerance,
-            stimamp_top,
-            stimamp_bottom,
-            max_iterations,
-            exit_func_interval,
-            exit_func,
-        ]
-
-        args = [arg for arg in threshold_args if arg is not None]  # create args for optional parameters
-
+        run_args = {
+            "ap_detect_location": ap_detect_location,
+            "istim_delay": istim_delay,
+            "exit_func_interval": exit_func_interval,
+            "exit_func": exit_func,
+        }
+        print(condition, bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations, run_args)
         # submit fiber for simulation
         amp, ap = stimulation.find_threshold(
-            *args,
-            **kwargs,
+            condition=condition,
+            bounds_search_mode=bounds_search_mode,
+            bounds_search_step=bounds_search_step,
+            termination_mode=termination_mode,
+            termination_tolerance=termination_tolerance,
+            stimamp_top=stimamp_top,
+            stimamp_bottom=stimamp_bottom,
+            max_iterations=max_iterations,  # todo: check exit_t_scale
+            run_args=run_args,  # todo: check the way run_args is being handled
         )
         print(f'Threshold found! {amp}nA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
         saving.save_thresh(amp)  # Save threshold value to file
@@ -232,10 +214,7 @@ def main(
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
-            n_aps = stimulation.run_sim(
-                stimamp=amp,
-                **kwargs,
-            )
+            n_aps = stimulation.run_sim(stimamp=amp)
             time_individual = time.time() - start_time - time_total
             saving.save_variables(fiber, stimulation)  # Save user-specified variables
             saving.save_activation(n_aps, amp_ind)  # Save number of APs triggered
