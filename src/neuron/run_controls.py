@@ -42,7 +42,7 @@ def handle_bounds_search(bounds_search_configs: dict) -> (str, float, float, flo
     bounds_search_step = bounds_search_configs['step']
     stimamp_top = bounds_search_configs['top']
     stimamp_bottom = bounds_search_configs['bottom']
-    max_iterations = bounds_search_configs.get("max_steps")
+    max_iterations = bounds_search_configs.get("max_steps", 100)
     return bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations
 
 
@@ -177,20 +177,15 @@ def main(
                 protocol_configs['bounds_search']
             )
 
-        if 'exit_interval' not in protocol_configs:
-            exit_func_interval = None
-            exit_func = False
-        else:
-            exit_func_interval = protocol_configs['exit_func_interval']
-            exit_func = False  # todo: check this
+        exit_t_scale = protocol_configs.get('exit_t_scale', 2)
+        exit_func_interval = protocol_configs.get('exit_interval')
 
-        run_args = {
+        kwargs = {
             "ap_detect_location": ap_detect_location,
             "istim_delay": istim_delay,
             "exit_func_interval": exit_func_interval,
-            "exit_func": exit_func,
         }
-        print(condition, bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations, run_args)
+
         # submit fiber for simulation
         amp, ap = stimulation.find_threshold(
             condition=condition,
@@ -200,8 +195,9 @@ def main(
             termination_tolerance=termination_tolerance,
             stimamp_top=stimamp_top,
             stimamp_bottom=stimamp_bottom,
-            max_iterations=max_iterations,  # todo: check exit_t_scale
-            run_args=run_args,  # todo: check the way run_args is being handled
+            max_iterations=max_iterations,
+            exit_t_scale=exit_t_scale,
+            **kwargs,
         )
         print(f'Threshold found! {amp}nA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
         saving.save_thresh(amp)  # Save threshold value to file

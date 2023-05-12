@@ -297,7 +297,6 @@ class Saving:
             )
             with open(aploctime_path, 'w') as file:
                 for node_ind, _ in enumerate(fiber.nodes):
-                    # todo: fix this
                     if fiber.myelinated:
                         file.write(f"{fiber.apc[node_ind].time}")
                     else:
