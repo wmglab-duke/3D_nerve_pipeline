@@ -206,7 +206,6 @@ following syntax:
     "dt_initSS": Double,
     "threshold": {
       "value": Double,
-      "n_min_aps": Integer,
       "ap_detect_location": Double
     },
     "bounds_search": {
@@ -228,7 +227,6 @@ following syntax:
     "dt_initSS": Double,
     "threshold": {
       "value": Double,
-      "n_min_aps": Integer,
       "ap_detect_location": Double
     },
     "bounds_search": {
@@ -336,7 +334,7 @@ length of the fiber). Required.
 
   - `“diameter”` The value can take multiple forms to define the fiber diameter that the user is simulating in NEURON ([NEURON Fiber Models](../../Running_ASCENT/Info.md#implementation-of-neuron-fiber-models)). The value can control simulation of either fixed diameter fibers or fibers chosen from a distribution of diameters (note simulating a distribution of fiber diameters is only compatible with `“MRG_INTERPOLATION”`myelinated or unmyelinated fiber types, not `“MRG_DISCRETE”`). In **_Sim_**, only one mode of defining fiber diameters can be used. Required.
 
-    - Fixed diameter: the value (Double or List[Double], units: micrometer) is the diameter of the fiber models. If using with `“MRG_DISCRETE”`, the diameters must be members of the set of published diameters.
+    - Fixed diameter: the value (Double or List[Double], units: micrometer) is the diameter of all fibers within the model. If using with `“MRG_DISCRETE”`, the diameters must be members of the set of published diameters.
     - Distribution of diameters: the value is a dictionary of key-value pairs to define the distribution of diameters based on the `“mode”` parameter, which can be either `“TRUNCNORM”` or `“UNIFORM”`.
       - `“TRUNCNORM”`
         - `“mode”`: “TRUNCNORM” (String). Required.
@@ -783,12 +781,6 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     code to count an action potential. Required for threshold
     finding protocols (i.e., `“ACTIVATION_THRESHOLDS”` and
     `“BLOCK_THRESHOLDS”`) only. Optional for `"FINITE_AMPLITUDES"` protocol.
-
-  - `“n_min_aps”`: The value (Integer) is the number of action
-    potentials that must be detected for the amplitude to be
-    considered above threshold. Required for threshold finding
-    protocols (i.e., `“ACTIVATION_THRESHOLDS”` and
-    `“BLOCK_THRESHOLDS”`) only. Ignored for `"FINITE_AMPLITUDES"` protocol
 
   - `“ap_detect_location”`: The value (Double) is the location
     (range 0 to 1, i.e., 0.9 is 90% of the fiber length in the

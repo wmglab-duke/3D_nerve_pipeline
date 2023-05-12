@@ -71,7 +71,7 @@ class Query(Configurable, Saveable):
 
         # check that all sets of indices contain only integers
         for indices in (sample_indices, model_indices, sim_indices):
-            if indices is not None and not all([isinstance(i, int) for i in indices]):  # noqa: C419.
+            if indices is not None and not all(isinstance(i, int) for i in indices):
                 raise TypeError('Encountered a non-integer index. Check your search criteria.')
 
         # criteria for each layer
@@ -283,7 +283,7 @@ class Query(Configurable, Saveable):
                     return False
 
             # neither c_val nor d_val are list
-            elif not any([type(v) is list for v in (c_val, d_val)]):  # noqa: C419.
+            elif not any(type(v) is list for v in (c_val, d_val)):
                 if c_val != d_val:
                     return False
 
@@ -301,9 +301,7 @@ class Query(Configurable, Saveable):
             # both c_val and d_val are list
             else:  # all([type(v) is list for v in (c_val, d_val)]):
                 # "partial matches" indicates that other values may be present in d_val
-                if not self.search(Config.CRITERIA, 'partial_matches') or not all(  # noqa: C419.
-                    [c_i in d_val for c_i in c_val]
-                ):
+                if not self.search(Config.CRITERIA, 'partial_matches') or not all(c_i in d_val for c_i in c_val):
                     return False
 
         return True
@@ -315,6 +313,8 @@ class Query(Configurable, Saveable):
         meanify=False,
     ):
         """Obtain threshold data as a pandas DataFrame.
+
+        Waveform, fiberset, and active_src indices are per your sim configuration file.
 
         :param sim_indices: list of simulation indices to include in the threshold data.
         :param ignore_missing: if True, missing threshold data will not cause an error.

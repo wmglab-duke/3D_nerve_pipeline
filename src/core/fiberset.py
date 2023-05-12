@@ -69,7 +69,7 @@ class FiberSet(Configurable, Saveable):
         :raises KeyError: If Model or Simulation are not configured.
         :return: self
         """
-        if any([config.value not in self.configs.keys() for config in (Config.MODEL, Config.SIM)]):  # noqa: C419.
+        if any(config.value not in self.configs.keys() for config in (Config.MODEL, Config.SIM)):
             raise KeyError("Missing Model or Simulation configuration.")
         return self
 
@@ -387,12 +387,10 @@ class FiberSet(Configurable, Saveable):
             points = [(float(row[0]), float(row[1])) for row in reader]
         # check that all fibers are within exactly one inner
         for fiber in points:
-            if not any(  # noqa: C419
-                [
-                    Point(fiber).within(inner.polygon())
-                    for fascicle in self.sample.slides[0].fascicles
-                    for inner in fascicle.inners
-                ]
+            if not any(
+                Point(fiber).within(inner.polygon())
+                for fascicle in self.sample.slides[0].fascicles
+                for inner in fascicle.inners
             ):
                 raise MorphologyError(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
         return points
@@ -477,6 +475,7 @@ class FiberSet(Configurable, Saveable):
             """Generate the z coordinates of the fibers for a myelinated nerve.
 
             :param diameter: The diameter of the myelinated nerve.
+            :raises ValueError: If diameter is not within the valid range
             :return: The z coordinates of the fibers.
             """
 
@@ -541,9 +540,30 @@ class FiberSet(Configurable, Saveable):
                 inter_length = eval(inter_length_str)
 
             elif sampling_mode == MyelinatedSamplingType.INTERPOLATION.value:
-                delta_z, inter_length, paranodal_length_2 = self.handle_interpolation(
-                    delta_z, inter_length, paranodal_length_2
+                paranodal_length_2_str, delta_z_str, inter_length_str = (
+                    self.search(
+                        Config.FIBER_Z,
+                        MyelinationMode.parameters.value,
+                        fiber_geometry_mode_name,
+                        key,
+                    )
+                    for key in ('paranodal_length_2', 'delta_z', 'inter_length')
                 )
+                paranodal_length_2 = eval(paranodal_length_2_str)
+
+                if fiber_geometry_mode_name == FiberGeometry.B_FIBER.value:
+                    inter_length = eval(inter_length_str)
+                    delta_z = eval(delta_z_str)
+                elif fiber_geometry_mode_name == FiberGeometry.MRG_INTERPOLATION.value:
+                    if diameter > 16.0 or diameter < 2.0:
+                        raise ValueError(
+                            "Diameter entered for MRG_INTERPOLATION must be between 2.0 and 16.0 (inclusive)."
+                        )
+                    if diameter >= 5.643:
+                        delta_z = eval(delta_z_str["diameter_greater_or_equal_5.643um"])
+                    else:
+                        delta_z = eval(delta_z_str["diameter_less_5.643um"])
+                    inter_length = eval(inter_length_str)
 
             my_z_shift_to_center_in_fiber_range, my_zs = _build_z(
                 inter_length, node_length, paranodal_length_1, paranodal_length_2, delta_z
@@ -907,51 +927,3 @@ class FiberSet(Configurable, Saveable):
             return list(zip(*points))[0], list(zip(*points))[1]
         else:
             return points
-
-    def handle_internodal_interpolation(
-        self, diameter: float, delta_z_str: str, inter_length_str: str
-    ) -> Tuple[float, float]:
-        """Handle interpolation of internodal spacing and internodal length for MRG_INTERPOLATION.
-
-        :param diameter: float value representing fiber diameter [um].
-        :param delta_z_str: string value representing equation to calculate internodal spacing.
-        :param inter_length_str: string value representing equation to calculate indernodal length.
-        :raises ValueError: If diameter is not within the valid range
-        :return: returns float values for delta_z [um] and inter_length [um]
-        """
-        if diameter > 16.0 or diameter < 2.0:
-            raise ValueError("Diameter entered for MRG_INTERPOLATION must be between 2.0 and 16.0 (inclusive).")
-        if diameter >= 5.643:
-            delta_z = eval(delta_z_str["diameter_greater_or_equal_5.643um"])
-        else:
-            delta_z = eval(delta_z_str["diameter_less_5.643um"])
-        inter_length = eval(inter_length_str)
-        return delta_z, inter_length
-
-    def handle_interpolation(
-        self, diameter: float, delta_z: float, inter_length: float, fiber_geometry_mode_name: str
-    ) -> Tuple[float, float, float]:
-        """Handle fiber geometries for interpolation methods.
-
-        :param diameter: fiber diameter [um]
-        :param delta_z: internodal spacing [um]
-        :param inter_length: internodal length [um]
-        :param fiber_geometry_mode_name: Enum value representing fiber geometry mode (e.g., 'MRG_INTERPOLATION')
-        :return: returns tuple of floats for interpolation geometries
-        """
-        paranodal_length_2_str, delta_z_str, inter_length_str = (
-            self.search(
-                Config.FIBER_Z,
-                MyelinationMode.parameters.value,
-                fiber_geometry_mode_name,
-                key,
-            )
-            for key in ('paranodal_length_2', 'delta_z', 'inter_length')
-        )
-        paranodal_length_2 = eval(paranodal_length_2_str)
-        if fiber_geometry_mode_name == FiberGeometry.B_FIBER.value:
-            inter_length = eval(inter_length_str)
-            delta_z = eval(delta_z_str)
-        elif fiber_geometry_mode_name == FiberGeometry.MRG_INTERPOLATION.value:
-            delta_z, inter_length = self.handle_internodal_interpolation(diameter, delta_z_str, inter_length_str)
-        return delta_z, inter_length, paranodal_length_2
