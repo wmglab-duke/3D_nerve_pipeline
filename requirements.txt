@@ -19,3 +19,4 @@ shapely
 wheel
 # wmglab-neuron # todo: uncomment when PyPI package is available
 xlsxwriter
+# wmglab_neuron TODO: uncomment when package is live on PyPi
