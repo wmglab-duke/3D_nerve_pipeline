@@ -729,10 +729,29 @@ def pre_submit_setup():
     return run_inds, submission_context
 
 
+def get_installed_packages():
+    """Return a dictionary of all installed packages.
+
+    :return: dictionary (key: string pkg name; value: string version (e.g., "0.0.1"))
+    """
+    command = ["conda", "list"]
+    output = subprocess.check_output(command).decode("utf-8")
+    conda_data = output.splitlines()
+    packages = {}
+    for line in conda_data:
+        data = line.split()
+        if '#' not in data[0]:
+            packages[data[0]] = data[1]
+    return packages
+
+
 # main
 def main():
     """Prepare fiber submissions and run NEURON sims."""
-    # todo: check that wmglab-neuron is installed and version >= 0.0.1
+    packages = get_installed_packages()
+    if 'wmglab-neuron' in packages and packages['wmglab-neuron'] > "0.0.1":
+        print('You do not have the wmglab-neuron package installed, or it is not at least version 0.0.1.')
+        sys.exit()
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()
     # get list of simulations to be submitted

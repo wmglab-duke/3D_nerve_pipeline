@@ -20,6 +20,22 @@ from src.utils.enums import Config, Env, SetupMode
 from .env_setup import run as env_setup
 
 
+def get_installed_packages():
+    """Return a dictionary of all installed packages.
+
+    :return: dictionary (key: string pkg name; value: string version (e.g., "0.0.1"))
+    """
+    command = ["conda", "list"]
+    output = subprocess.check_output(command).decode("utf-8")
+    conda_data = output.splitlines()
+    packages = {}
+    for line in conda_data:
+        data = line.split()
+        if '#' not in data[0]:
+            packages[data[0]] = data[1]
+    return packages
+
+
 def run(args):
     """Run the pipeline.
 
@@ -30,7 +46,10 @@ def run(args):
         print(f'You are running Python {sys.version_info.major}.{sys.version_info.minor}, but 3.7 or later required')
         sys.exit()
 
-    # todo: check that wmglab-neuron version is installed at least 0.0.1
+    packages = get_installed_packages()
+    if 'wmglab-neuron' in packages and packages['wmglab-neuron'] > "0.0.1":
+        print('You do not have the wmglab-neuron package installed, or it is not at least version 0.0.1.')
+        sys.exit()
 
     # create bin/ directory for storing compiled Java files if it does not yet exist
     if not (os.path.exists('bin')):
