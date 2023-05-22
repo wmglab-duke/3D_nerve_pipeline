@@ -157,7 +157,9 @@ class Saving:
         header.append('Node#')
         suffix = f'({units})' if units else ''
         for time in self.time_inds:
-            header.append(f'{var_type}_time{int(time * dt)}ms{suffix}')
+            print(time, type(time))
+            print(dt, type(dt))
+            header.append(f'{var_type}_time{(float(time) * float(dt))}ms{suffix}')
 
     def time_header(self, header: list, var_type: str, units: str = None):
         """Create header for F(t) files.
@@ -185,9 +187,10 @@ class Saving:
         """
         header = []
         if save_type == 'space':  # F(x) - function of space
-            self.space_header(header, var_type, dt, units)
+            print(header, var_type, dt, units)
+            self.space_header(header, var_type=var_type, dt=dt, units=units)
         elif save_type == 'time':  # F(t) - function of time
-            self.time_header(header, var_type, units)
+            self.time_header(header, var_type=var_type, units=units)
         return header
 
     def save_istim(self, amp_ind: int, istim_data: list, stimulation: Stimulation):

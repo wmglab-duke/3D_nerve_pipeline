@@ -178,7 +178,7 @@ def main(
             )
 
         exit_t_scale = protocol_configs.get('exit_t_scale', 2)
-        exit_func_interval = protocol_configs.get('exit_interval')
+        exit_func_interval = protocol_configs.get('exit_interval', 100)
 
         kwargs = {
             "ap_detect_location": ap_detect_location,
