@@ -8,15 +8,11 @@ The source code can be found on the following GitHub repository: https://github.
 """
 
 import base64
-import cProfile
-import functools
 import json
 import os
 import pickle
-import pstats
 import subprocess
 import sys
-import tempfile
 import time
 import warnings
 from typing import List
@@ -34,19 +30,6 @@ from src.utils import (
     SetupMode,
     WriteMode,
 )
-
-
-def profile_me(func):
-    @functools.wraps(func)
-    def wraps(*args, **kwargs):
-        file = tempfile.mktemp()
-        profiler = cProfile.Profile()
-        profiler.runcall(func, *args, **kwargs)
-        profiler.dump_stats(file)
-        metrics = pstats.Stats(file)
-        metrics.strip_dirs().sort_stats('time').print_stats(100)
-
-    return wraps
 
 
 class Runner(Configurable):
@@ -368,7 +351,6 @@ class Runner(Configurable):
         # ensure run configuration is present
         Simulation.export_run(self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value])
 
-    @profile_me
     def run(self, smart: bool = True):
         """Run the pipeline.
 

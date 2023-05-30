@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samp2d = 252
+samp2d = 272
 model = 0
 simint = 3
-samp3d = 253
+samp3d = 273
 import pandas as pd
 import seaborn as sns
 

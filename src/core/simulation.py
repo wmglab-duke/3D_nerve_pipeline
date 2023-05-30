@@ -564,8 +564,8 @@ class Simulation(Configurable, Saveable):
         ss_fiber_coords = np.loadtxt(os.path.join(ss_fiberset_path, file), skiprows=1)[:, -1]
 
         # create interpolation from super_coords and super_bases
-        f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
         try:
+            f = sci.interp1d(ss_fiber_coords, ss_weighted_bases_vec)
             neuron_potentials_input = f(neuron_fiber_coords)
         except Exception as e:
             print(f"Error on interpolation for fiber {os.path.join(root, file)}")
