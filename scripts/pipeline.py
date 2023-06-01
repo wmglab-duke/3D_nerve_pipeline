@@ -20,36 +20,22 @@ from src.utils.enums import Config, Env, SetupMode
 from .env_setup import run as env_setup
 
 
-def get_installed_packages():
-    """Return a dictionary of all installed packages.
-
-    :return: dictionary (key: string pkg name; value: string version (e.g., "0.0.1"))
-    """
-    command = ["conda", "list"]
-    output = subprocess.check_output(command).decode("utf-8")
-    conda_data = output.splitlines()
-    packages = {}
-    for line in conda_data:
-        data = line.split()
-        if '#' not in data[0]:
-            packages[data[0]] = data[1]
-    return packages
-
-
 def run(args):
     """Run the pipeline.
 
     :param args: The command line arguments.
+    :raises ImportError: If wmglab_neuron is not installed.
     """
     # test
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 7):
         print(f'You are running Python {sys.version_info.major}.{sys.version_info.minor}, but 3.7 or later required')
         sys.exit()
 
-    packages = get_installed_packages()
-    if 'wmglab-neuron' in packages and packages['wmglab-neuron'] > "0.0.1":
-        print('You do not have the wmglab-neuron package installed, or it is not at least version 0.0.1.')
-        sys.exit()
+    try:
+        import wmglab_neuron
+    except ImportError:
+        raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
+    assert wmglab_neuron.__version__ == '0.0.1', 'wmglab_neuron version 0.0.1 required'
 
     # create bin/ directory for storing compiled Java files if it does not yet exist
     if not (os.path.exists('bin')):

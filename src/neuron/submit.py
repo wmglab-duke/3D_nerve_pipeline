@@ -359,24 +359,22 @@ def make_task(
     :param n_sim: the index of the n_sim
     """
     with open(start_p, 'w+') as handle:
+        lines = [
+            'cd ../../\n',
+            f'python run_controls.py '
+            f'\"{inner_ind}\" '
+            f'\"{fiber_ind}\" '
+            f'\"{potentials_path}\" '
+            f'\"{waveform_path}\" '
+            f'\"{sim_p}\" ',
+            f'\"{n_sim}\" ',
+        ]
+
         if my_os == 'UNIX-LIKE':
-            lines = [
-                '#!/bin/bash\n',
-                'cd ../../\n',
-                f'python run_controls.py '
-                f'\"{inner_ind}\" '
-                f'\"{fiber_ind}\" '
-                f'\"{potentials_path}\" '
-                f'\"{waveform_path}\" '
-                f'\"{sim_p}\" ',
-                f'\"{n_sim}\" ',
-            ]
+            lines.insert('#!/bin/bash\n', 0)
 
             if sub_con == 'cluster':
                 lines.remove('cd ../../\n')
-
-        else:  # OS is 'WINDOWS'
-            pass
 
         handle.writelines(lines)
         handle.close()
@@ -747,11 +745,17 @@ def get_installed_packages():
 
 # main
 def main():
-    """Prepare fiber submissions and run NEURON sims."""
-    packages = get_installed_packages()
-    if 'wmglab-neuron' in packages and packages['wmglab-neuron'] > "0.0.1":
-        print('You do not have the wmglab-neuron package installed, or it is not at least version 0.0.1.')
-        sys.exit()
+    """Prepare fiber submissions and run NEURON sims.
+
+    :raises ImportError: if wmglab_neuron is not installed
+    """
+    # check for wmglab_neuron
+    try:
+        import wmglab_neuron
+    except ImportError:
+        raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
+    assert wmglab_neuron.__version__ == '0.0.1', 'wmglab_neuron version 0.0.1 required'
+
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()
     # get list of simulations to be submitted
