@@ -3,7 +3,7 @@
 The copyrights of this software are owned by Duke University. Please
 refer to the LICENSE and README.md files for licensing instructions. The
 source code can be found on the following GitHub repository:
-https://github.com/wmglab-duke/ascent
+https://github.com/wmglab-duke/asc ent
 """
 
 import json
@@ -11,7 +11,7 @@ import sys
 import time
 
 from saving import Saving
-from wmglab_neuron import FiberBuilder, FiberModel, Stimulation
+from wmglab_neuron import FiberModel, ScaledStim, build_fiber
 from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
 
 
@@ -92,19 +92,21 @@ def main(
     model = getattr(FiberModel, fiber_model)
 
     # create fiber
-    fiber = FiberBuilder.generate(
+    fiber = build_fiber(
         diameter=sim_configs['fibers']['z_parameters']['diameter'],
         fiber_model=model,
         temperature=float(temperature),
         n_sections=axontotal,
     )
 
+    fiber.potentials = potentials
+
     # create stimulation
-    stimulation = Stimulation(fiber, waveform=waveform, potentials=potentials, dt=dt, tstop=tstop)
+    stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop)
 
     # attach intracellular stimulation
     istim_configs = sim_configs['intracellular_stim']
-    stimulation.add_intracellular_stim(
+    stimulation.set_intracellular_stim(
         delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
         pw=istim_configs['times']['pw'],
         dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
@@ -177,17 +179,16 @@ def main(
                 protocol_configs['bounds_search']
             )
 
-        exit_t_scale = protocol_configs.get('exit_t_scale', 2)
-        exit_func_interval = protocol_configs.get('exit_interval')
+        exit_t_shift = protocol_configs.get('exit_t_shift', 5)
 
         kwargs = {
             "ap_detect_location": ap_detect_location,
             "istim_delay": istim_delay,
-            "exit_func_interval": exit_func_interval,
         }
 
         # submit fiber for simulation
         amp, ap = stimulation.find_threshold(
+            fiber,
             condition=condition,
             bounds_search_mode=bounds_search_mode,
             bounds_search_step=bounds_search_step,
@@ -196,7 +197,7 @@ def main(
             stimamp_top=stimamp_top,
             stimamp_bottom=stimamp_bottom,
             max_iterations=max_iterations,
-            exit_t_scale=exit_t_scale,
+            exit_t_shift=exit_t_shift,
             **kwargs,
         )
         print(f'Threshold found! {amp}nA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
@@ -210,7 +211,7 @@ def main(
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
-            n_aps = stimulation.run_sim(stimamp=amp)
+            n_aps = stimulation.run_sim(amp, fiber)
             time_individual = time.time() - start_time - time_total
             saving.save_variables(fiber, stimulation, amp_ind)  # Save user-specified variables
             saving.save_activation(n_aps, amp_ind)  # Save number of APs triggered

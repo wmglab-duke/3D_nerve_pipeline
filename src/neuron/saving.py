@@ -9,7 +9,7 @@ https://github.com/wmglab-duke/ascent
 import os
 
 import pandas as pd
-from wmglab_neuron import Stimulation, _Fiber
+from wmglab_neuron import ScaledStim, _Fiber
 
 
 class Saving:
@@ -123,11 +123,11 @@ class Saving:
         with open(output_file_path, 'w') as activation_file:
             activation_file.write(f'{n_aps}')
 
-    def save_variables(self, fiber: object, stimulation: Stimulation, amp_ind: int = 0):
+    def save_variables(self, fiber: object, stimulation: ScaledStim, amp_ind: int = 0):
         """Write user-specified variables to file.
 
         :param fiber: instance of Fiber class
-        :param stimulation: instance of Stimulation class
+        :param stimulation: instance of ScaledStim class
         :param amp_ind: index of amplitude if protocol is FINITE_AMPLITUDES
         """
         # Put all recorded data into pandas DataFrame
@@ -190,12 +190,12 @@ class Saving:
             self.time_header(header, var_type, units)
         return header
 
-    def save_istim(self, amp_ind: int, istim_data: list, stimulation: Stimulation):
+    def save_istim(self, amp_ind: int, istim_data: list, stimulation: ScaledStim):
         """Save istim data to file.
 
         :param amp_ind: index of the amplitude in the finite amplitude protocol
         :param istim_data: list of istim data recorded during NEURON simulation list[nA]
-        :param stimulation: instance of Stimulation class
+        :param stimulation: instance of ScaledStim class
         """
         if self.istim:
             istim_path = os.path.join(
@@ -205,12 +205,12 @@ class Saving:
             istim_header = self.handle_header('time', 'istim', 'nA')
             istim_data.to_csv(istim_path, header=istim_header, sep='\t', float_format='%.6f', index=False)
 
-    def save_time_gating(self, all_gating_data: list, amp_ind: int, stimulation: Stimulation):
+    def save_time_gating(self, all_gating_data: list, amp_ind: int, stimulation: ScaledStim):
         """Save gating data as function of time to file.
 
         :param all_gating_data: list of lists containing float values for h, m, mp, and s gating parameters
         :param amp_ind: index of amplitude in finite amplitudes protocol
-        :param stimulation: instance of Stimulation class
+        :param stimulation: instance of ScaledStim class
         """
         if self.time_gating:
             gating_params = ['h', 'm', 'mp', 's']
@@ -226,11 +226,11 @@ class Saving:
                     gating_time_path, header=gating_time_header, sep='\t', float_format='%.6f', index=False
                 )
 
-    def save_time_vm(self, amp_ind: int, stimulation: Stimulation, vm_data: list):
+    def save_time_vm(self, amp_ind: int, stimulation: ScaledStim, vm_data: list):
         """Save membrane potential as a function of time to file.
 
         :param amp_ind: index of amplitude in finite amplitudes protocol
-        :param stimulation: instance of Stimulation class
+        :param stimulation: instance of ScaledStim class
         :param vm_data: list of float values for membrane potential as a function of time (mV)
         """
         if self.time_vm:
