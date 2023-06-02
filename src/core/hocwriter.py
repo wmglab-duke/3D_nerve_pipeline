@@ -240,6 +240,13 @@ class HocWriter(Configurable, Saveable):
                     f"ap_detect_location  = "
                     f"{self.search(Config.SIM, 'protocol', 'threshold', 'ap_detect_location'):.2f}\n"
                 )
+            if 'percent_thresh_amp' not in threshold:
+                file_object.write("percent_thresh_amp  = 0\n")
+            else:
+                file_object.write(
+                    f"percent_thresh_amp  = "
+                    f"{self.search(Config.SIM, 'protocol', 'threshold', 'percent_thresh_amp'):.2f}\n"
+                )
 
             bounds_search_mode_name: str = self.search(Config.SIM, "protocol", "bounds_search", "mode")
             bounds_search_mode: SearchAmplitudeIncrementMode = [

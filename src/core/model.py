@@ -227,6 +227,8 @@ class Model(Configurable, Saveable):
                 theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
             except ZeroDivisionError:
                 theta_c = 0
+        else:
+            theta_c = 0
         # calculate final necessary radius by adding buffer
         r_f = r_bound + cuff_r_buffer
         # fetch initial cuff rotation (convert to rads)

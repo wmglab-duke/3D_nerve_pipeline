@@ -103,6 +103,12 @@ parser.add_argument(
     help='Submit all runs in the present export folder. If supplying this argument, do not pass any run indices',
 )
 parser.add_argument(
+    '-f',
+    '--force-rerun',
+    action='store_true',
+    help='Rerun fibers even if the outputs already exist',
+)
+parser.add_argument(
     '-s',
     '--skip-summary',
     action='store_true',
@@ -719,11 +725,16 @@ def make_run_sub_list(run_number: int):
                                 f"thresh_inner{inner_ind}_fiber{fiber_ind}.dat",
                             )
 
-                        if os.path.exists(search_path):
+                        if os.path.exists(search_path) and not args.force_rerun:
                             if args.verbose:
                                 print(f'Found {search_path} -->\t\tskipping inner ({inner_ind}) fiber ({fiber_ind})')
                                 time.sleep(1)
                             continue
+                        else:
+                            warnings.warn("Re-running existing fibers. Use -v flag to see which ones.")
+                            if args.verbose:
+                                print(f'Found {search_path} -->\t\tre-running inner ({inner_ind}) fiber ({fiber_ind})')
+
 
                         submit_list[sim_name].append({"job_number": i, "inner": inner_ind, "fiber": fiber_ind})
                     # save_submit list as csv
