@@ -735,7 +735,6 @@ def make_run_sub_list(run_number: int):
                             if args.verbose:
                                 print(f'Found {search_path} -->\t\tre-running inner ({inner_ind}) fiber ({fiber_ind})')
 
-
                         submit_list[sim_name].append({"job_number": i, "inner": inner_ind, "fiber": fiber_ind})
                     # save_submit list as csv
                     pd.DataFrame(submit_list[sim_name]).to_csv(os.path.join(sim_path, 'out_err_key.csv'), index=False)
