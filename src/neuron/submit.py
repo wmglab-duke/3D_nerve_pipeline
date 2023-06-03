@@ -371,7 +371,7 @@ def make_task(
         ]
 
         if my_os == 'UNIX-LIKE':
-            lines.insert('#!/bin/bash\n', 0)
+            lines.insert(0, '#!/bin/bash\n')
 
             if sub_con == 'cluster':
                 lines.remove('cd ../../\n')

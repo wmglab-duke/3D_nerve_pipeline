@@ -1,22 +1,20 @@
 ffmpeg
-matplotlib==3.2.*
-neuron==8.2
-numpy==1.16.*
-opencv-python==4.5.*
-openpyxl==3.0.*
-pandas==0.25.*
-pillow==5.2
+matplotlib
+numpy
+opencv-python<=4.5.*
+openpyxl
+pandas
+pillow
 pip
-pyclipper==1.1.*
-pygame==2.1.*
-pymunk==5.6.*
+pyclipper
+pygame
+pymunk
 quantiphy
 scikit-image
-scipy==1.1.*
+scipy
 seaborn
 setuptools
-shapely
+shapely==1.8.*
 wheel
 # wmglab-neuron # todo: uncomment when PyPI package is available
 xlsxwriter
-# wmglab_neuron TODO: uncomment when package is live on PyPi

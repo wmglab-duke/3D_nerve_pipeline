@@ -131,17 +131,18 @@ class Saving:
         :param amp_ind: index of amplitude if protocol is FINITE_AMPLITUDES
         """
         # Put all recorded data into pandas DataFrame
-        vm_data = pd.DataFrame([list(vm) for vm in fiber.vm if vm is not None])
-        all_gating_data = [
-            pd.DataFrame([list(g) for g in fiber.gating[gating_parameter] if g is not None])
-            for gating_parameter in list(fiber.gating.keys())
-        ]
+        if hasattr(fiber, 'vm'):
+            vm_data = pd.DataFrame([list(vm) for vm in fiber.vm if vm is not None])
+            self.save_space_vm(amp_ind, fiber, vm_data)
+            self.save_time_vm(amp_ind, stimulation, vm_data)
+        if hasattr(fiber, 'gating'):
+            all_gating_data = [
+                pd.DataFrame([list(g) for g in fiber.gating[gating_parameter] if g is not None])
+                for gating_parameter in list(fiber.gating.keys())
+            ]
+            self.save_space_gating(all_gating_data, amp_ind, fiber)
+            self.save_time_gating(all_gating_data, amp_ind, stimulation)
         istim_data = pd.DataFrame(list(stimulation.istim_record))
-
-        self.save_space_vm(amp_ind, fiber, vm_data)
-        self.save_space_gating(all_gating_data, amp_ind, fiber)
-        self.save_time_vm(amp_ind, stimulation, vm_data)
-        self.save_time_gating(all_gating_data, amp_ind, stimulation)
         self.save_istim(amp_ind, istim_data, stimulation)
         self.save_aploctime(amp_ind, fiber)
         self.save_apendtimes(amp_ind, fiber)
