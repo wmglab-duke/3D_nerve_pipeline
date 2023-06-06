@@ -407,16 +407,16 @@ class Runner(Configurable):
 
             # handoff (to Java) -  Build/Mesh/Solve/Save bases; Extract/Save potentials if necessary
             if 'models' in all_configs and 'sims' in all_configs:
+                if all(self.potentials_exist) and all(self.ss_bases_exist):
+                    print('\nSKIPPING JAVA - all required extracted potentials already exist\n')
                 # only transition to java if necessary (there are potentials that do not exist)
-                if not all(self.potentials_exist) or not all(self.ss_bases_exist):
+                else:
                     print('\nTO JAVA\n')
                     run_config = os.path.join(
                         os.environ[Env.PROJECT_PATH.value], 'config', 'user', 'runs', f'{self.number}.json'
                     )
                     self.handoff(run_config)
                     print('\nTO PYTHON\n')
-                else:
-                    print('\nSKIPPING JAVA - all required extracted potentials already exist\n')
 
                 if self.configs[Config.CLI_ARGS.value].get('break_point') == 'post_java':
                     print('KILLING POST JAVA')
@@ -428,6 +428,9 @@ class Runner(Configurable):
 
                 #  continue by using simulation objects
                 models_exit_status = self.search(Config.RUN, "models_exit_status")
+
+                if all(self.potentials_exist) and all(self.ss_bases_exist):
+                    models_exit_status = [True for _ in models_exit_status]
 
                 for model_index, _model_config in enumerate(all_configs[Config.MODEL.value]):
                     model_num = self.configs[Config.RUN.value]['models'][model_index]
