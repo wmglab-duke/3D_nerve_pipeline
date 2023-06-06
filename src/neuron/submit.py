@@ -730,7 +730,7 @@ def make_run_sub_list(run_number: int):
                                 print(f'Found {search_path} -->\t\tskipping inner ({inner_ind}) fiber ({fiber_ind})')
                                 time.sleep(1)
                             continue
-                        else:
+                        elif args.force_rerun:
                             warnings.warn("Re-running existing fibers. Use -v flag to see which ones.")
                             if args.verbose:
                                 print(f'Found {search_path} -->\t\tre-running inner ({inner_ind}) fiber ({fiber_ind})')

@@ -471,6 +471,9 @@ class Query(Configurable, Saveable):
                             base_dict['tortuosity'] = self.get_tortuosity(
                                 base_dict, sim_dir, threedline, source_sample is not None, source_sim
                             )
+                            base_dict['nodal_tortuosity'] = self.get_nodal_tortuosity(
+                                base_dict, sim_dir, threedline, source_sample is not None, source_sim
+                            )
                             if cuffspan is not None:
                                 base_dict['cuff_tortuosity'] = self.get_tortuosity_span(
                                     base_dict, sim_dir, source_sample is not None, cuffspan, source_sim
@@ -500,7 +503,7 @@ class Query(Configurable, Saveable):
 
     @staticmethod
     def peak_second_diff(base_dict, sim_dir):
-        return np.nan,np.nan #TODO make this work
+        return np.nan, np.nan  # TODO make this work
         # directory for specific n_sim
         potfile = os.path.join(
             n_sim_dir,
@@ -633,7 +636,7 @@ class Query(Configurable, Saveable):
                         try:
                             inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
                             print('ope fixed')
-                        except IndexError:
+                        except (IndexError, TypeError):
                             print('stillope')
                             pass
                 if inner is not None:
@@ -680,6 +683,24 @@ class Query(Configurable, Saveable):
             if source_sim is not None:
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
             return threedline.length / euclidean(threedline.points[0], threedline.points[-1])
+
+    @staticmethod
+    def get_nodal_tortuosity(base_dict, sim_dir, threedline, threed, source_sim=None):
+        def mrg_pts_2_node_pts(points):
+            return points[::11]
+
+        # directory for specific n_sim
+        if not threed:
+            return 1
+        else:
+            if source_sim is not None:
+                sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
+            fibersetfile = os.path.join(
+                sim_dir, 'fibersets', str(base_dict["fiberset_index"]), f'{base_dict["master_fiber_index"]}.dat'
+            )
+            fibersetcoords = np.loadtxt(fibersetfile, skiprows=1)[:, 2]
+            nodal_line = nd_line(mrg_pts_2_node_pts([threedline.interp(z) for z in fibersetcoords]))
+            return nodal_line.length / euclidean(nodal_line.points[0], nodal_line.points[-1])
 
     @staticmethod
     def get_tortuosity_span(base_dict, sim_dir, threed, cuffspan, source_sim=None):
