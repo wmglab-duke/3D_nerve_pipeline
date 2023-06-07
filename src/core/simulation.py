@@ -766,7 +766,7 @@ class Simulation(Configurable, Saveable):
         sim: int,
         sim_dir: str,
         source: str,
-        delete: bool = False,
+        delete: bool = False
     ):
         """Import the n_sims from the submit directory.
 
@@ -791,7 +791,8 @@ class Simulation(Configurable, Saveable):
                     shutil.rmtree(os.path.join(source, dirname))
 
     @staticmethod
-    def thresholds_exist(sample: int, model: int, sim: int, source: str):
+    def thresholds_exist(sample: int, model: int, sim: int, source: str,
+        verbose: bool = True):
         """Check if the thresholds exist in the source directory.
 
         :param sample: Sample index
@@ -809,12 +810,13 @@ class Simulation(Configurable, Saveable):
                 indir = os.path.join(nsim_dir, 'data', 'inputs')
                 for file in [f for f in os.listdir(indir) if f.startswith('inner') and f.endswith('.dat')]:
                     if not os.path.exists(os.path.join(outdir, 'thresh_' + file)):
-                        print(f"Missing threshold {os.path.join(outdir, 'thresh_' + file)}")
+                        if verbose: print(f"Missing threshold {os.path.join(outdir, 'thresh_' + file)}")
                         allthresh = False
         return allthresh
 
     @staticmethod
-    def activations_exist(sample: int, model: int, sim: int, source: str, n_amps: int):
+    def activations_exist(sample: int, model: int, sim: int, source: str, n_amps: int,
+        verbose: bool = True):
         """Check if the activations (Ap times) exist in the source directory.
 
         :param sample: Sample index
@@ -835,7 +837,7 @@ class Simulation(Configurable, Saveable):
                     for amp in range(n_amps):
                         target = os.path.join(outdir, 'activation_' + file.replace('.dat', f'_amp{amp}.dat'))
                         if not os.path.exists(target):
-                            print(f'Missing finite amp {target}')
+                            if verbose: print(f'Missing finite amp {target}')
                             allamp = False
         return allamp
 
