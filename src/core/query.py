@@ -119,8 +119,8 @@ class Query(Configurable, Saveable):
 
             # if applicable, check against sample criteria
             if sample_criteria is not None and not self._match(
-                sample_criteria,
-                self.load(os.path.join(samples_dir, sample, 'sample.json')),
+                    sample_criteria,
+                    self.load(os.path.join(samples_dir, sample, 'sample.json')),
             ):
                 continue
 
@@ -135,11 +135,11 @@ class Query(Configurable, Saveable):
             # if no downstream criteria and NOT including downstream, skip lower loops
             # note also that the post loop removal of samples will be skipped (as we desire in this case)
             if (
-                (model_criteria is None)
-                and (model_indices is None)
-                and (sim_criteria is None)
-                and (sim_indices is None)
-                and (not include_downstream)
+                    (model_criteria is None)
+                    and (model_indices is None)
+                    and (sim_criteria is None)
+                    and (sim_indices is None)
+                    and (not include_downstream)
             ):
                 continue
 
@@ -151,8 +151,8 @@ class Query(Configurable, Saveable):
 
                 # if applicable, check against model criteria
                 if model_criteria is not None and not self._match(
-                    model_criteria,
-                    self.load(os.path.join(models_dir, model, 'model.json')),
+                        model_criteria,
+                        self.load(os.path.join(models_dir, model, 'model.json')),
                 ):
                     continue
 
@@ -176,8 +176,8 @@ class Query(Configurable, Saveable):
 
                     # if applicable, check against model criteria
                     if sim_criteria is not None and not self._match(
-                        sim_criteria,
-                        self.load(os.path.join('config', 'user', 'sims', sim + '.json')),
+                            sim_criteria,
+                            self.load(os.path.join('config', 'user', 'sims', sim + '.json')),
                     ):
                         continue
 
@@ -238,9 +238,9 @@ class Query(Configurable, Saveable):
 
     @staticmethod
     def build_path(
-        mode: Union[Config, Object],
-        indices: List[int] = None,
-        just_directory: bool = False,
+            mode: Union[Config, Object],
+            indices: List[int] = None,
+            just_directory: bool = False,
     ) -> str:
         """Build path to config or object file for given mode and indices.
 
@@ -331,17 +331,19 @@ class Query(Configurable, Saveable):
 
     # TODO: map the threshold and ap functions onto a base looping function
     def data(
-        self,
-        ignore_missing=False,
-        source_sample=None,
-        ignore_no_activation=False,
-        tortuosity=False,
-        source_sim=None,
-        tonly=False,
-        cuffspan=None,
-        zpos=False,
-        peri_site=False,
-        label=None,
+            self,
+            ignore_missing=False,
+            source_sample=None,
+            ignore_no_activation=False,
+            tortuosity=False,
+            source_sim=None,
+            tonly=False,
+            cuffspan=None,
+            zpos=False,
+            peri_site=False,
+            label=None,
+            thresh_only=False,
+            efib_distance=False,
     ):
         # TODO: make this also get fiber diam and waveform info
         """Obtain threshold data as a pandas DataFrame.
@@ -389,8 +391,8 @@ class Query(Configurable, Saveable):
                     # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
                     # indices as if they were the nsim indices
                     for nsim_index, (
-                        potentials_product_index,
-                        waveform_index,
+                            potentials_product_index,
+                            waveform_index,
                     ) in enumerate(sim_object.master_product_indices):
                         (
                             active_src_index,
@@ -436,16 +438,15 @@ class Query(Configurable, Saveable):
                             base_dict['threshold'] = self.get_threshold(
                                 ignore_missing, base_dict, sim_dir, source_sample is not None
                             )
+                            if thresh_only:
+                                alldat.append(base_dict)
+                                continue
                             (
                                 base_dict['apnode'],
                                 base_dict['aptime'],
                                 base_dict['long_ap_pos'],
                                 base_dict['n_ap_sites'],
                             ) = self.get_ap_info(ignore_no_activation, base_dict, sim_dir, source_sample is not None)
-
-                            # base_dict['peak_second_diff'], base_dict['peak_second_diff_node'] = self.peak_second_diff(
-                            #     base_dict, sim_dir
-                            # )
 
                             base_dict['peri_thk'] = self.get_peri_thickness(
                                 sample_object.slides[0].fascicles[outer].inners[specific_inner]
@@ -460,6 +461,15 @@ class Query(Configurable, Saveable):
                                     this_nd_simdir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat'
                                 )
                                 threedline = nd_line(np.loadtxt(fiberpath, skiprows=1))
+
+                            base_dict['peak_second_diff'], base_dict['peak_second_diff_node'], base_dict[
+                                'peak_second_long_pos'], base_dict['peak_second_x'], base_dict['peak_second_y'], \
+                            base_dict['peak_second_z'] = self.peak_second_diff(
+                                base_dict, sim_dir, threedline, source_sample is not None
+                            )
+
+                            if efib_distance:
+                                base_dict['minimum_efib_distance'] = self.get_min_efib_distance(base_dict, sim_dir, threedline, source_sample is not None)
 
                             (
                                 base_dict['activation_xpos'],
@@ -502,24 +512,66 @@ class Query(Configurable, Saveable):
         return pd.DataFrame(alldat)
 
     @staticmethod
-    def peak_second_diff(base_dict, sim_dir):
-        return np.nan, np.nan  # TODO make this work
-        # directory for specific n_sim
-        potfile = os.path.join(
-            n_sim_dir,
-            'data',
-            'inputs',
-            f'inner{base_dict["inner"]}_fiber{base_dict["fiber"]}.dat',
-        )
+    def get_min_efib_distance(base_dict, sim_dir, threedline, threed):
+        # load the contact coords
+        contact_coords1 = np.loadtxt(
+            os.path.join('input', 'contact_coords',f'{base_dict["nerve_label"]}DS5', 'pcs1.dat'))  # TODO fix for COMSOL's coordinate output
+        contact_coords2 = np.loadtxt(os.path.join('input', 'contact_coords',f'{base_dict["nerve_label"]}DS5', 'pcs2.dat'))
+        if not threed:
+            # remove z coordinate
+            allcontact_coords = np.vstack((contact_coords1, contact_coords2))
+            fiberset_path = os.path.join(sim_dir, 'fibersets', str(base_dict['fiberset_index']),str(base_dict['master_fiber_index']) + '.dat')
+            fiberpath = np.loadtxt(fiberset_path, skiprows=1)[::11]
+            # find the closest point on the fiber to the contacts and return the distance between the two
+            from scipy.spatial import cKDTree
+            tree = cKDTree(fiberpath)
+            dist, ind = tree.query(allcontact_coords)
+            return dist.min()
+        else:
+            contact_height = 1 # mm #TODO check if this is correct
+            coordslist = []
+            #take the contact path and duplicate all the way down the contact
+            for distance in np.arange(0,contact_height+0.1,0.1):
+                newcoords1 = contact_coords1.copy()
+                newcoords1[:,2] = newcoords1[:,2] - distance
+                newcoords2 = contact_coords2.copy()
+                newcoords2[:,2] = newcoords2[:,2] - distance
+                coordslist.append(newcoords1)
+                coordslist.append(newcoords2)
+            allcontact_coords = np.vstack(coordslist)
+            # find the closest point on the fiber to the contacts and return the distance between the two
+            from scipy.spatial import cKDTree
+            tree = cKDTree(threedline.points)
+            dist, ind = tree.query(allcontact_coords)
+            return dist.min()
 
-        potentials = np.loadtxt(potfile, skiprows=0)
+    @staticmethod
+    def peak_second_diff(base_dict, sim_dir, threedline, threed):
+        # directory for specific n_sim
+        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(base_dict['nsim']), 'data', 'inputs')
+        if not threed:
+            potfile = f'inner{base_dict["inner"]}_fiber{base_dict["fiber"]}.dat'
+        else:
+            potfile = f'inner0_fiber{base_dict["master_fiber_index"]}.dat'
+
+        potentials = np.loadtxt(os.path.join(n_sim_dir, potfile), skiprows=1)[::11]
         # calculate second derivative
         second_diff = np.diff(potentials, n=2)
         # find peak
-        peak_second_diff = np.max(second_diff)
-        peak_second_diff_node = np.argmax(second_diff) + 2
-        # added 2 because the first two nodes are not included in the second derivative
-        return peak_second_diff, peak_second_diff_node
+        peak = np.max(second_diff)
+        node = np.argmax(second_diff) + 1
+        # added 1 because the outer nodes are not included in the second derivative
+        fiberset_dir = os.path.join(sim_dir, 'fibersets', str(base_dict['fiberset_index']))
+
+        fiber = np.loadtxt(os.path.join(fiberset_dir, f"{base_dict['master_fiber_index']}.dat"), skiprows=1)
+
+        longpos = fiber[:, 2][::11][node]
+        if not threed:
+            x, y, z = np.nan, np.nan, longpos
+        else:
+            x, y, z = threedline.interp(longpos)
+
+        return peak, node, longpos, x, y, z
 
     def get_peri_thickness(self, inner):
         fit = {'a': 0.03702, 'b': 10.5}
@@ -595,7 +647,7 @@ class Query(Configurable, Saveable):
             slice_spacing = 20  # microns
             slice_indices = [int(round(z / slice_spacing)) for z in cuffspan]
             z_positions = np.arange(cuffspan[0], cuffspan[1], slice_spacing)
-            slides = slidelist[slice_indices[0] : slice_indices[1]]
+            slides = slidelist[slice_indices[0]: slice_indices[1]]
             fiberfilethreed = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
             fiber = np.loadtxt(fiberfilethreed, skiprows=1)
             thks = []
@@ -627,8 +679,9 @@ class Query(Configurable, Saveable):
                             # )
                             import sys
 
-                            sys.exit('Could not correct within 5 iterations')
                             print(base_dict)
+                            sys.exit('Could not correct within 5 iterations')
+
                             break
                         else:
                             iteration += 1
@@ -761,16 +814,16 @@ class Query(Configurable, Saveable):
                 raise ValueError(f'No AP found in {aploctime_path}')
 
     def excel_output(  # noqa: C901
-        self,
-        filepath: str,
-        sample_keys=None,
-        model_keys=None,
-        sim_keys=None,
-        individual_indices: bool = True,
-        config_paths: bool = True,
-        column_width: int = None,
-        console_output: bool = True,
-        optional_keys=False,
+            self,
+            filepath: str,
+            sample_keys=None,
+            model_keys=None,
+            sim_keys=None,
+            individual_indices: bool = True,
+            config_paths: bool = True,
+            column_width: int = None,
+            console_output: bool = True,
+            optional_keys=False,
     ):
         """Output summary of query.
 
@@ -868,8 +921,8 @@ class Query(Configurable, Saveable):
 
                     # NSIM
                     for nsim_index, (
-                        potentials_product_index,
-                        waveform_index,
+                            potentials_product_index,
+                            waveform_index,
                     ) in enumerate(sim_object.master_product_indices):
                         nsim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
                         (
