@@ -19,8 +19,6 @@ EXCLUDED_FILENAMES = [
     'sample.json',
     'model.json',
     'explicit.txt',
-    'explicit_fibersets',
-    '3D_fiberset.txt',
 ]
 
 
@@ -52,9 +50,10 @@ def run(args):
 
     :param args: command line arguments
     """
+    n_removed_files = 0
     global EXCLUDED_FILENAMES
     if args.full_reset:
-        EXCLUDED_FILENAMES = ['sample.json', 'model.json', 'explicit.txt', 'explicit_fibersets', '3D_fiberset.txt']
+        EXCLUDED_FILENAMES = ['sample.json', 'model.json']
     proceed = input(
         'All files EXCEPT those whose names end with the following strings:\n'
         f'\t{EXCLUDED_FILENAMES}\n'
@@ -70,7 +69,6 @@ def run(args):
         print('Proceeding...')
 
     for sample in args.sample_indices:
-
         if args.verbose:
             print(f'Sample: {sample}')
             print('\n\t- - - - - - FILES - - - - - -\n')
@@ -79,16 +77,16 @@ def run(args):
 
         # remove files
         for filepath in [str(path.absolute()) for path in sample_path.glob('**/*')]:
-
             # skip over directories for now
             if os.path.isdir(filepath):
                 continue
 
-            if not any([filepath.endswith(excluded_filename) for excluded_filename in EXCLUDED_FILENAMES]):
+            if not any(filepath.endswith(excluded_filename) for excluded_filename in EXCLUDED_FILENAMES):
                 try:
                     if args.verbose:
                         print(f'\tREMOVE FILE: {filepath}')
                     os.remove(filepath)
+                    n_removed_files += 1
                 except (FileNotFoundError, IsADirectoryError) as e:
                     print(f'Could not remove {filepath}, {e}')
             else:
@@ -103,3 +101,4 @@ def run(args):
 
         if args.verbose:
             print('\n\n')
+    print(f'Removed {n_removed_files} file(s).')

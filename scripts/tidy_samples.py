@@ -45,6 +45,7 @@ def run(args):
 
     :param args: The command line arguments.
     """
+    n_removed_files = 0
     global INCLUDED_FILENAMES
     if args.filename:
         INCLUDED_FILENAMES = [args.filename]
@@ -75,7 +76,6 @@ def run(args):
             print('Proceeding...')
 
     for sample in args.sample_indices:
-
         if args.verbose:
             print(f'Sample: {sample}')
             print('\n\t- - - - - - FILES - - - - - -\n')
@@ -83,16 +83,16 @@ def run(args):
 
         # remove files
         for filepath in [str(path.absolute()) for path in sample_path.glob('**/*')]:
-
             # skip over directories for now
             if os.path.isdir(filepath):
                 continue
 
-            if any([included_filename in filepath for included_filename in INCLUDED_FILENAMES]):
+            if any(included_filename in filepath for included_filename in INCLUDED_FILENAMES):
                 try:
                     if args.verbose:
                         print(f'\tREMOVE FILE: {filepath}')
                     os.remove(filepath)
+                    n_removed_files += 1
                 except (FileNotFoundError, IsADirectoryError) as e:
                     print(f'Could not remove {filepath}, {e}')
             else:
@@ -107,3 +107,5 @@ def run(args):
 
         if args.verbose:
             print('\n\n')
+
+    print(f'Removed {n_removed_files} file(s).')
