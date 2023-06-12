@@ -156,7 +156,7 @@ if (find_thresh == 1){
 	load_file("Saving_Thresh.hoc")
 }
 
-if (saveflag_ap_loctime == 1){
+if (1 == 1){
 	load_file("Saving_APLocTime.hoc")
 }
 
@@ -246,17 +246,19 @@ proc run_all(){local myinner, myfiber, myamp, amp_ind
         Saving_Runtime()
 	}
 
-	if (saveflag_ap_loctime == 1) {
+	if (1 == 1) {
 		Saving_APLocTime()
 	}
 
 	if (saveflag_end_ap_times==1) {
 		Saving_Ap_end_times()
 	}
+        
+        percthreshtemp=1.1
 
-	if (percent_thresh_amp != 0) {
-		print "Running percent of threshold: ", percent_thresh_amp
-		RunSim(stimamp*percent_thresh_amp)
+	if (percthreshtemp != 0) {
+		print "Running percent of threshold: ", percthreshtemp
+		RunSim(stimamp*percthreshtemp)
 		sprint(activation_fname_output, "../%s/data/outputs/activation_percthresh_inner%d_fiber%d_amp%d.dat", sim_path, myinner, myfiber, amp_ind)
 		Saving_Activation()
         Saving_APLocTime_percthresh()
