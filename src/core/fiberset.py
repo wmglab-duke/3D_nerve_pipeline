@@ -438,7 +438,9 @@ class FiberSet(Configurable, Saveable):
             # advance header
             next(f)
             reader = csv.reader(f, delimiter=" ")
-            points = [(float(row[0]), -float(row[1])) for row in reader]  # TODO: TEMP negative but should not stay
+            points = [
+                (float(row[0]), -float(row[1])) for row in reader
+            ]  # flips coordinates from image space to cartesian space
         from copy import deepcopy
 
         if self.sample.deform_mode != DeformationMode.NONE:

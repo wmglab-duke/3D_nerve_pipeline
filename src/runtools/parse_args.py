@@ -103,8 +103,9 @@ prog_group.add_argument(
 )
 # add parser for tidy samples
 ts_parser = subparsers.add_parser('tidy_samples', help='Remove specified files from Sample directories')
-ts_parser.add_argument('sample_indices', nargs='+', type=int, help='Space separated sample indices to tidy')
+ts_parser.add_argument('sample_indices', nargs='*', type=int, help='Space separated sample indices to tidy')
 ts_parser.add_argument('-f', '--filename', type=str, help='Filename to clear')
+ts_parser.add_argument('-A', '--all', action='store_true', help='Run on all samples')
 
 # add parser for import n sims
 nsims_parser = subparsers.add_parser('import_n_sims', help='Move NEURON outputs into ASCENT directories for analysis')

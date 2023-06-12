@@ -374,8 +374,8 @@ class Query(Configurable, Saveable):
             if peri_site and source_sample is not None:
                 with open(f'input/slides/{label}slides.obj', 'rb') as f:
                     slidelist = pickle.load(f)
-                [s.scale(0.5) for s in slidelist]
-                print("Warning: Temporary fix for wrong slide scaling applied")
+                # [s.scale(0.5) for s in slidelist]
+                # print("Warning: Temporary fix for wrong slide scaling applied")
 
             # loop models
             for model_results in sample_results.get('models', []):
@@ -435,6 +435,7 @@ class Query(Configurable, Saveable):
                                 'active_src_index': active_src_index,
                                 'nerve_label': label,
                             }
+
                             base_dict['threshold'] = self.get_threshold(
                                 ignore_missing, base_dict, sim_dir, source_sample is not None
                             )
@@ -513,21 +514,21 @@ class Query(Configurable, Saveable):
                                     else:
                                         base_dict['smallest_thk_under_cuff'] = base_dict['peri_thk']
                             alldat.append(base_dict)
-
         return pd.DataFrame(alldat)
 
     @staticmethod
     def get_min_efib_distance(base_dict, sim_dir, threedline, threed, source_sim):
         from scipy.spatial import cKDTree
+
         if source_sim is not None:
             sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
         # load the contact coords
         contact_coords1 = np.loadtxt(
-            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs1.txt'),skiprows=8
-        )[:,:-1]
+            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs1.txt'), skiprows=8
+        )[:, :-1]
         contact_coords2 = np.loadtxt(
-            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs2.txt'),skiprows=8
-        )[:,:-1]
+            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs2.txt'), skiprows=8
+        )[:, :-1]
         if not threed:
             allcontact_coords = contact_coords1 if str(base_dict['sample']).endswith('0') else contact_coords2
             fiberset_path = os.path.join(
@@ -537,8 +538,8 @@ class Query(Configurable, Saveable):
             # find the closest point on the fiber to the contacts and return the distance between the two
 
             tree = cKDTree(allcontact_coords)
-            dist, ind = tree.query(fiberpath) #distances of each fiber node to the nearest point in the contact
-        
+            dist, ind = tree.query(fiberpath)  # distances of each fiber node to the nearest point in the contact
+
         else:
             # find the closest point on the fiber to the contacts and return the distance between the two
             fibersetfile = os.path.join(
@@ -546,7 +547,7 @@ class Query(Configurable, Saveable):
             )
             fibersetcoords = np.loadtxt(fibersetfile, skiprows=1)[:, 2]
             nodal_line = nd_line([threedline.interp(z) for z in fibersetcoords[::11]])
-            allcontact_coords = np.vstack([contact_coords1,contact_coords2])
+            allcontact_coords = np.vstack([contact_coords1, contact_coords2])
             tree = cKDTree(allcontact_coords)
             dist, ind = tree.query(nodal_line.points)
         return dist.min()
