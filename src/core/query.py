@@ -473,7 +473,7 @@ class Query(Configurable, Saveable):
 
                             if efib_distance:
                                 base_dict['minimum_efib_distance'] = self.get_min_efib_distance(
-                                    base_dict, sim_dir, threedline, source_sample is not None
+                                    base_dict, sim_dir, threedline, source_sample is not None, source_sim
                                 )
 
                             (
@@ -517,45 +517,39 @@ class Query(Configurable, Saveable):
         return pd.DataFrame(alldat)
 
     @staticmethod
-    def get_min_efib_distance(base_dict, sim_dir, threedline, threed):
+    def get_min_efib_distance(base_dict, sim_dir, threedline, threed, source_sim):
+        from scipy.spatial import cKDTree
+        if source_sim is not None:
+            sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
         # load the contact coords
         contact_coords1 = np.loadtxt(
-            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs1.dat')
-        )  # TODO fix for COMSOL's coordinate output
+            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs1.txt'),skiprows=8
+        )[:,:-1]
         contact_coords2 = np.loadtxt(
-            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs2.dat')
-        )
+            os.path.join('input', 'contact_coords', f'{base_dict["nerve_label"]}DS5', 'pcs2.txt'),skiprows=8
+        )[:,:-1]
         if not threed:
-            # remove z coordinate
-            allcontact_coords = np.vstack((contact_coords1, contact_coords2))
+            allcontact_coords = contact_coords1 if str(base_dict['sample']).endswith('0') else contact_coords2
             fiberset_path = os.path.join(
                 sim_dir, 'fibersets', str(base_dict['fiberset_index']), str(base_dict['master_fiber_index']) + '.dat'
             )
             fiberpath = np.loadtxt(fiberset_path, skiprows=1)[::11]
             # find the closest point on the fiber to the contacts and return the distance between the two
-            from scipy.spatial import cKDTree
 
-            tree = cKDTree(fiberpath)
-            dist, ind = tree.query(allcontact_coords)
-            return dist.min()
+            tree = cKDTree(allcontact_coords)
+            dist, ind = tree.query(fiberpath) #distances of each fiber node to the nearest point in the contact
+        
         else:
-            contact_height = 1  # mm #TODO check if this is correct
-            coordslist = []
-            # take the contact path and duplicate all the way down the contact
-            for distance in np.arange(0, contact_height + 0.1, 0.1):
-                newcoords1 = contact_coords1.copy()
-                newcoords1[:, 2] = newcoords1[:, 2] - distance
-                newcoords2 = contact_coords2.copy()
-                newcoords2[:, 2] = newcoords2[:, 2] - distance
-                coordslist.append(newcoords1)
-                coordslist.append(newcoords2)
-            allcontact_coords = np.vstack(coordslist)
             # find the closest point on the fiber to the contacts and return the distance between the two
-            from scipy.spatial import cKDTree
-
-            tree = cKDTree(threedline.points)
-            dist, ind = tree.query(allcontact_coords)
-            return dist.min()
+            fibersetfile = os.path.join(
+                sim_dir, 'fibersets', str(base_dict["fiberset_index"]), f'{base_dict["master_fiber_index"]}.dat'
+            )
+            fibersetcoords = np.loadtxt(fibersetfile, skiprows=1)[:, 2]
+            nodal_line = nd_line([threedline.interp(z) for z in fibersetcoords[::11]])
+            allcontact_coords = np.vstack([contact_coords1,contact_coords2])
+            tree = cKDTree(allcontact_coords)
+            dist, ind = tree.query(nodal_line.points)
+        return dist.min()
 
     @staticmethod
     def peak_second_diff(base_dict, sim_dir, threedline, threed):
