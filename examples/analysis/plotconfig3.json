@@ -2,6 +2,11 @@
   "source_sim": 3,
   "sample_data": [
     {
+      "name": "2Lim",
+      "index3d": 2535,
+      "exsamples": [2515]
+    },
+    {
       "name": "2Lup",
       "index3d": 2536,
       "exsamples": [2526]
@@ -15,11 +20,6 @@
       "name": "2Lfine",
       "index3d": 2530,
       "exsamples": [2520]
-    },
-    {
-      "name": "2Lim",
-      "index3d": 2535,
-      "exsamples": [2515]
     },
     {
       "name": "2L",
