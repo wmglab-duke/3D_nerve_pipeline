@@ -27,8 +27,9 @@ for simdex in config['sim_data'].keys():
                 'indices': {'sample': samples2d, 'model': [model], 'sim': [simint]},
             }
         ).run()
-        dat2d = q.data(tortuosity=True, peri_site=True, zpos=True, cuffspan=[28000, 30000], label=nerve_label,
-                       efib_distance=True)
+        dat2d = q.data(
+            tortuosity=True, peri_site=True, zpos=True, cuffspan=[28000, 30000], label=nerve_label, efib_distance=True
+        )
         dat2d['type'] = '2D'
         dat2d['contact'] = ''
         anodic = dat2d['sample'].astype(str).str[2] == '0'
@@ -52,7 +53,7 @@ for simdex in config['sim_data'].keys():
             cuffspan=[28000, 30000],
             source_sim=source_sim,
             label=nerve_label,
-            efib_distance=True
+            efib_distance=True,
         )
         dat3d['type'] = '3D'
         # for each nsim within the sim, use the fiber_diam and pulse_width from the nsim key
