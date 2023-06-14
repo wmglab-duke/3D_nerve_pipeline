@@ -382,10 +382,15 @@ class Query(Configurable, Saveable):
                 model_index = model_results['index']
 
                 for sim_index in model_results.get('sims', []):
-                    sim_object = self.get_object(
-                        Object.SIMULATION,
-                        [sample_index if source_sample is None else source_sample, model_index, sim_index],
-                    )
+                    try:
+                        sim_object = self.get_object(
+                            Object.SIMULATION,
+                            [sample_index if source_sample is None else source_sample, model_index, sim_index],
+                        )
+                        # sim_object.sample.slides[0].plot()
+                    except EOFError:
+                        print(f'Error loading sample {sample_index}, model {model_index}, sim {sim_index} object')
+                        raise EOFError
 
                     # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
                     # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
@@ -497,7 +502,11 @@ class Query(Configurable, Saveable):
                             if peri_site:
                                 if source_sample is not None:
                                     base_dict['peri_thk_act_site'] = self.get_activation_site_peri_thickness(
-                                        base_dict, source_sample is not None, slidelist, source_sim=source_sim
+                                        base_dict,
+                                        source_sample is not None,
+                                        slidelist,
+                                        sim_object,
+                                        source_sim=source_sim,
                                     )
                                 else:
                                     base_dict['peri_thk_act_site'] = base_dict['peri_thk']
@@ -509,6 +518,7 @@ class Query(Configurable, Saveable):
                                             cuffspan,
                                             sim_dir,
                                             slidelist,
+                                            sim_object,
                                             source_sim=source_sim,
                                         )
                                     else:
@@ -594,7 +604,13 @@ class Query(Configurable, Saveable):
             return tuple(threedline.interp(base_dict['long_ap_pos']))
 
     @staticmethod
-    def get_activation_site_peri_thickness(base_dict, threed, slidelist, source_sim=None):
+    def get_activation_site_peri_thickness(
+        base_dict,
+        threed,
+        slidelist,
+        sim_object,
+        source_sim=None,
+    ):
         if not threed:
             return base_dict['peri_thk']
         else:
@@ -609,7 +625,7 @@ class Query(Configurable, Saveable):
             except IndexError:
                 # plt.scatter(base_dict['activation_xpos'], -base_dict['activation_ypos'])
                 # slide.plot()
-                print('ope')
+                # print('ope')
                 iteration = 0
                 innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
                 innerlist = [x.deepcopy() for x in innersave]
@@ -625,15 +641,20 @@ class Query(Configurable, Saveable):
                         # )
                         import sys
 
-                        sys.exit('Could not correct within 5 iterations')
                         print(base_dict)
+                        sim_object.fibersets[base_dict['fiberset_index']].plot()
+                        slidelist[int(round(29000 / slice_spacing))].plot()
+                        plt.show()
+                        sys.exit('Could not correct within 5 iterations')
+
                         break
                     else:
                         iteration += 1
                     [x.offset(distance=10) for x in innerlist]
                     try:
                         inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
-                        print('ope fixed')
+                        if iteration > 1:
+                            print('ope fixed')
                     except IndexError:
                         print('stillope')
                         pass
@@ -645,7 +666,7 @@ class Query(Configurable, Saveable):
                 raise RuntimeError("Could not identify an inner for this 3D fiber")
 
     @staticmethod
-    def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, sim_dir, slidelist, source_sim=None):
+    def get_smallest_thk_under_cuff(base_dict, threed, cuffspan, sim_dir, slidelist, sim_object, source_sim=None):
         if not threed:
             return base_dict['peri_thk']
         else:
@@ -653,7 +674,7 @@ class Query(Configurable, Saveable):
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
             slice_spacing = 20  # microns
             slice_indices = [int(round(z / slice_spacing)) for z in cuffspan]
-            z_positions = np.arange(cuffspan[0], cuffspan[1], slice_spacing)
+            z_positions = np.arange(slice_indices[0], slice_indices[1] + 1, 1) * slice_spacing
             slides = slidelist[slice_indices[0] : slice_indices[1]]
             fiberfilethreed = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
             fiber = np.loadtxt(fiberfilethreed, skiprows=1)
@@ -662,7 +683,7 @@ class Query(Configurable, Saveable):
                 idx = (np.abs(fiber[:, 2] - zpos)).argmin()
                 # get the x,y coordinates at that index
                 x = fiber[idx, 0]
-                y = fiber[idx, 1]
+                y = -fiber[idx, 1]  # change from image space to cartesian space
                 point = Point(x, y)
                 inner = None
                 try:
@@ -670,23 +691,32 @@ class Query(Configurable, Saveable):
                 except IndexError:
                     # plt.scatter(base_dict['activation_xpos'], -base_dict['activation_ypos'])
                     # slide.plot()
-                    print('ope')
+                    # print('ope')
                     iteration = 0
                     innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
                     innerlist = [x.deepcopy() for x in innersave]
                     while inner is None:
                         if iteration > 5:
-                            # plt.figure()
-                            # plt.scatter(base_dict['activation_xpos'], base_dict['activation_ypos'])
+                            plt.figure()
+                            plt.scatter(x, y, marker='x')
                             # [inner.plot() for inner in innerlist]
-                            # # slide.plot()
-                            # plt.show()
-                            # plt.title(
-                            #     f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
-                            # )
+                            import seaborn as sns
+
+                            sns.set_style('whitegrid')
+                            plt.title(
+                                f'slide_index: {slides.index(slide)}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
+                            )
+                            slide.plot(final=False)
+                            plt.xlim(-400, -250)
+                            plt.ylim(400, 500)
+
+                            plt.show()
                             import sys
 
                             print(base_dict)
+                            sim_object.fibersets[base_dict['fiberset_index']].plot()
+                            slidelist[int(round(29000 / slice_spacing))].plot()
+                            plt.show()
                             sys.exit('Could not correct within 5 iterations')
 
                             break
@@ -695,7 +725,8 @@ class Query(Configurable, Saveable):
                         [x.offset(distance=10) for x in innerlist]
                         try:
                             inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
-                            print('ope fixed')
+                            if iteration > 1:
+                                print('ope fixed')
                         except (IndexError, TypeError):
                             print('stillope')
                             pass

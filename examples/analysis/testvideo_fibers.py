@@ -20,8 +20,8 @@ for sample, samplenum in zip(["2L", "2R", "3R", "5R", "6L", "6R"], [253, 273, 37
     with open(slidespath, 'rb') as f:
         slidelist = pickle.load(f)
 
-    for slide in slidelist:
-        slide.scale(0.5)
+    # for slide in slidelist: #this was a fix for incorrect scaling
+    #     slide.scale(0.5)
 
     # load each fiber file and append to list
     for file in os.listdir(fiberpath):
@@ -67,7 +67,7 @@ for sample, samplenum in zip(["2L", "2R", "3R", "5R", "6L", "6R"], [253, 273, 37
             xs.append(x)
             ys.append(-y)
         # plot the slide and all fiber points
-        ax.plot(xs, ys, '.', color='red')
+        ax.scatter(xs, ys, s=3, color='red')
         ax.set_title(f'Slide {i}-zpos{zpos}')
         slide.plot(ax=ax)
 

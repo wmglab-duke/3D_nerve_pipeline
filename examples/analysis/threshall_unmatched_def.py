@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import json
-import os
 import sys
 
 import pandas as pd
@@ -11,7 +10,7 @@ from src.core.query import Query
 
 model = 0
 source_sim = 3
-with open('examples/analysis/plotconfig_og.json') as f:
+with open('examples/analysis/plotconfig_def.json') as f:
     config = json.load(f)
 for simdex in config['sim_data'].keys():
     simint = int(simdex)
@@ -29,7 +28,7 @@ for simdex in config['sim_data'].keys():
             }
         ).run()
         dat2d = q.data(
-            tortuosity=True, peri_site=True, zpos=True, cuffspan=[28000, 30000], label=nerve_label, efib_distance=True
+            tortuosity=True, peri_site=False, zpos=True, cuffspan=[28000, 30000], label=nerve_label, efib_distance=False
         )
         dat2d['type'] = '2D'
         dat2d['contact'] = ''
@@ -45,16 +44,20 @@ for simdex in config['sim_data'].keys():
             }
         ).run()
         source_samples = [x for x in samples2d if str(x)[2] == '2']  # use cathodic sample as source
-        assert len(source_samples) == 1
+        try:
+            assert len(source_samples) == 1
+        except AssertionError:
+            source_samples = [x for x in samples2d if str(x)[2] == '1']  # then try using center (for imthera)
+            assert len(source_samples) == 1
         dat3d = q3.data(
             source_sample=source_samples[0],
             tortuosity=True,
-            peri_site=True,
+            peri_site=False,
             zpos=True,
             cuffspan=[28000, 30000],
             source_sim=source_sim,
             label=nerve_label,
-            efib_distance=True,
+            efib_distance=False,
         )
         dat3d['type'] = '3D'
         # for each nsim within the sim, use the fiber_diam and pulse_width from the nsim key
@@ -72,4 +75,4 @@ for simdex in config['sim_data'].keys():
         datas.append(dat2d)
         datas.append(dat3d)
     data = pd.concat(datas)
-    data.to_csv(f'thresh_unmatched_sim{simint}_og.csv', index=False)
+    data.to_csv(f'thresh_unmatched_sim{simint}_def.csv', index=False)

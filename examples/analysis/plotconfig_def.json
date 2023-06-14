@@ -2,56 +2,6 @@
   "source_sim": 3,
   "sample_data": [
     {
-      "name": "2Lim",
-      "index3d": 2535,
-      "exsamples": [2515]
-    },
-    {
-      "name": "2Lup",
-      "index3d": 2536,
-      "exsamples": [2526]
-    },
-    {
-      "name": "2Ldown",
-      "index3d": 2534,
-      "exsamples": [2524]
-    },
-    {
-      "name": "2Lfine",
-      "index3d": 2530,
-      "exsamples": [2520]
-    },
-    {
-      "name": "2L",
-      "index3d": 253,
-      "exsamples": [250, 251, 252]
-    },
-    {
-      "name": "2R",
-      "index3d": 273,
-      "exsamples": [270, 271, 272]
-    },
-    {
-      "name": "3R",
-      "index3d": 373,
-      "exsamples": [370, 371, 372]
-    },
-    {
-      "name": "5R",
-      "index3d": 573,
-      "exsamples": [570, 571, 572]
-    },
-    {
-      "name": "6L",
-      "index3d": 653,
-      "exsamples": [650, 651, 652]
-    },
-    {
-      "name": "6R",
-      "index3d": 673,
-      "exsamples": [670, 671, 672]
-    },
-    {
       "name": "2Ldef",
       "index3d": 2531,
       "exsamples": [2501, 2521]
