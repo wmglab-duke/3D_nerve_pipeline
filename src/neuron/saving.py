@@ -130,52 +130,55 @@ class Saving:
         :param stimulation: instance of Stimulation class
         :param amp_ind: index of amplitude if protocol is FINITE_AMPLITUDES
         """
+        self.time_inds = [
+            t for t in self.time_inds if t < len(fiber.vm[1])
+        ]  # only include times before simulation ends
         # Put all recorded data into pandas DataFrame
         if hasattr(fiber, 'vm'):
             vm_data = pd.DataFrame([list(vm) for vm in fiber.vm if vm is not None])
-            self.save_space_vm(amp_ind, fiber, vm_data)
+            self.save_space_vm(amp_ind, fiber, vm_data, stimulation.dt)
             self.save_time_vm(amp_ind, stimulation, vm_data)
         if hasattr(fiber, 'gating'):
             all_gating_data = [
                 pd.DataFrame([list(g) for g in fiber.gating[gating_parameter] if g is not None])
                 for gating_parameter in list(fiber.gating.keys())
             ]
-            self.save_space_gating(all_gating_data, amp_ind, fiber)
+            self.save_space_gating(all_gating_data, amp_ind, fiber, stimulation.dt)
             self.save_time_gating(all_gating_data, amp_ind, stimulation)
         istim_data = pd.DataFrame(list(stimulation.istim_record))
         self.save_istim(amp_ind, istim_data, stimulation)
         self.save_aploctime(amp_ind, fiber)
         self.save_apendtimes(amp_ind, fiber)
 
-    def space_header(self, header: list, var_type: str, dt: float, units: str = None):
+    def space_header(self, var_type: str, dt: float, units: str = None) -> list[str]:
         """Create header for F(x) files.
 
-        :param header: list of string values to put at the header
         :param var_type: type of variable to be saved (Vm, h, mp, m, s)
         :param dt: float value of stimulation time step (ms)
         :param units: units of variable (mV, nA)
+        :return: returns list of strings to be used in file header
         """
-        header.append('Node#')
+        header = ['Node#']
         suffix = f'({units})' if units else ''
         for time in self.time_inds:
-            print(time, type(time))
-            print(dt, type(dt))
             header.append(f'{var_type}_time{(float(time) * float(dt))}ms{suffix}')
+        return header
 
-    def time_header(self, header: list, var_type: str, units: str = None):
+    def time_header(self, var_type: str, units: str = None) -> list[str]:
         """Create header for F(t) files.
 
-        :param header: list of string values to put at the header
         :param var_type: type of variable to be saved (Vm, h, mp, m, s)
         :param units: units of variable (mV, nA)
+        :return: returns list of strings to be used as file header
         """
-        header.append('Time(ms)')
+        header = ['Time(ms)']
         suffix = f'({units})' if units else ''
         if var_type != 'istim':
             for node in self.node_inds:
                 header.append(f'{var_type}_node{node + 1}{suffix}')
         elif var_type == 'istim':
             header.append(f'Istim({units})')
+        return header
 
     def handle_header(self, save_type: str, var_type: str, dt: float = None, units: str = None):
         """Create a header for text file.
@@ -186,13 +189,11 @@ class Saving:
         :param dt: float value for stimulation time step (ms)
         :return: list of column headers
         """
-        header = []
         if save_type == 'space':  # F(x) - function of space
-            print(header, var_type, dt, units)
-            self.space_header(header, var_type=var_type, dt=dt, units=units)
+            return self.space_header(var_type=var_type, dt=dt, units=units)
         elif save_type == 'time':  # F(t) - function of time
-            self.time_header(header, var_type=var_type, units=units)
-        return header
+            return self.time_header(var_type=var_type, units=units)
+        return []
 
     def save_istim(self, amp_ind: int, istim_data: list, stimulation: Stimulation):
         """Save istim data to file.
@@ -206,7 +207,7 @@ class Saving:
                 self.output_path, f'Istim_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
             )
             istim_data.insert(0, 'Time', stimulation.time)
-            istim_header = self.handle_header('time', 'istim', 'nA')
+            istim_header = self.handle_header(save_type='time', var_type='istim', dt=stimulation.dt, units='nA')
             istim_data.to_csv(istim_path, header=istim_header, sep='\t', float_format='%.6f', index=False)
 
     def save_time_gating(self, all_gating_data: list, amp_ind: int, stimulation: Stimulation):
@@ -225,7 +226,9 @@ class Saving:
                 )
                 gating_time_data = gating_data.T[self.node_inds]  # save data only at user-specified locations
                 gating_time_data.insert(0, 'Time', stimulation.time)
-                gating_time_header = self.handle_header('time', gating_param)
+                gating_time_header = self.handle_header(
+                    save_type='time', var_type=gating_param, dt=stimulation.dt, units=''
+                )
                 gating_time_data.to_csv(
                     gating_time_path, header=gating_time_header, sep='\t', float_format='%.6f', index=False
                 )
@@ -243,15 +246,16 @@ class Saving:
             )
             vm_time_data = vm_data.T[self.node_inds]  # save data only at user-specified locations
             vm_time_data.insert(0, 'Time', stimulation.time)
-            vm_time_header = self.handle_header('time', 'vm', 'mV')
+            vm_time_header = self.handle_header(save_type='time', var_type='vm', dt=stimulation.dt, units='mV')
             vm_time_data.to_csv(vm_time_path, header=vm_time_header, sep='\t', float_format='%.6f', index=False)
 
-    def save_space_gating(self, all_gating_data: list, amp_ind: int, fiber: _Fiber):
+    def save_space_gating(self, all_gating_data: list, amp_ind: int, fiber: _Fiber, dt: float):
         """Save gating data as function of space to file.
 
         :param all_gating_data: list of lists containing float values for h, m, mp, and s gating parameters
         :param amp_ind: index of amplitude in finite amplitudes protocol
         :param fiber: instance of _Fiber class
+        :param dt: time step of simulation (ms)
         """
         if self.space_gating:
             gating_params = ['h', 'm', 'mp', 's']
@@ -265,17 +269,18 @@ class Saving:
                     gating_space_data.insert(0, 'Node#', [*range(2, len(fiber.nodes))])
                 else:
                     gating_space_data.insert(0, 'Node#', [*range(1, len(fiber.nodes) + 1)])
-                gating_space_header = self.handle_header('space', gating_param)
+                gating_space_header = self.handle_header(save_type='space', var_type=gating_param, dt=dt, units='')
                 gating_space_data.to_csv(
                     gating_space_path, header=gating_space_header, sep='\t', float_format='%.6f', index=False
                 )
 
-    def save_space_vm(self, amp_ind, fiber, vm_data):
+    def save_space_vm(self, amp_ind, fiber, vm_data, dt):
         """Save membrane potential data as function of space to file.
 
         :param amp_ind: index of amplitude in finite amplitudes protocol
         :param fiber: instance of _Fiber class
         :param vm_data: list of float values for membrane potential as a function of time (mV)
+        :param dt: time step of stimulation (ms)
         """
         if self.space_vm:
             vm_space_path = os.path.join(
@@ -286,7 +291,8 @@ class Saving:
                 vm_space_data.insert(0, 'Node#', [*range(2, len(fiber.nodes))])
             else:
                 vm_space_data.insert(0, 'Node#', [*range(1, len(fiber.nodes) + 1)])
-            vm_space_header = self.handle_header('space', 'vm', 'mV')
+            vm_space_header = self.handle_header(save_type='space', var_type='vm', dt=dt, units='mV')
+
             vm_space_data.to_csv(vm_space_path, header=vm_space_header, sep='\t', float_format='%.6f', index=False)
 
     def save_aploctime(self, amp_ind: int, fiber: _Fiber):

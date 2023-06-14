@@ -726,6 +726,22 @@ class Simulation(Configurable, Saveable):
         shutil.copy2(submit_source, submit_target)
 
     @staticmethod
+    def export_slurm_files(target: str):
+        """Export required slurm files to the target directory.
+
+        :param target: Target directory
+        """
+        # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
+        os.makedirs(target, exist_ok=True)
+
+        slurm_target = os.path.join(target, 'slurm_params.json')
+        if os.path.isfile(slurm_target):
+            os.remove(slurm_target)
+
+        slurm_source = os.path.join('config', 'system', 'slurm_params.json')
+        shutil.copy2(slurm_source, slurm_target)
+
+    @staticmethod
     def import_n_sims(
         sample: int,
         model: int,

@@ -38,7 +38,7 @@ def handle_bounds_search(bounds_search_configs: dict) -> (str, float, float, flo
     :param bounds_search_configs: dictionary containing information about bounds search for simulation
     :return: returns the values required for bounds searching during NEURON simulation
     """
-    bounds_search_mode = bounds_search_configs['mode']
+    bounds_search_mode = getattr(BoundsSearchMode, bounds_search_configs['mode'])
     bounds_search_step = bounds_search_configs['step']
     stimamp_top = bounds_search_configs['top']
     stimamp_bottom = bounds_search_configs['bottom']
@@ -115,7 +115,7 @@ def main(
     amps = protocol_configs['amplitudes'] if protocol_configs['mode'] == 'FINITE_AMPLITUDES' else False
 
     if not amps:  # enter binary search modes
-        amp = threshold_protocol(istim_configs, protocol_configs, sim_configs, stimulation)
+        amp = threshold_protocol(protocol_configs, sim_configs, stimulation)
         saving.save_thresh(amp)  # Save threshold value to file
         saving.save_variables(fiber, stimulation)  # Save user-specified variables
         saving.save_runtime(time.time() - start_time)  # Save runtime of simulation
@@ -134,17 +134,14 @@ def main(
             time_total += time_individual
 
 
-def threshold_protocol(istim_configs: dict, protocol_configs: dict, sim_configs: dict, stimulation: Stimulation):
+def threshold_protocol(protocol_configs: dict, sim_configs: dict, stimulation: Stimulation):
     """Prepare for bisection threshold search.
 
-    :param istim_configs: dictionary containing intracellular stimulation configs from <sim_index>.json
     :param protocol_configs: dictionary containing protocol configs from <sim_index>.json
     :param sim_configs: dictionary containing simulation configs from <sim_index>.json
     :param stimulation: instance of Stimulation class
     :return: returns threshold amplitude (nA)
     """
-    ap_detect_location = protocol_configs['threshold']['ap_detect_location']
-    istim_delay = istim_configs['times']['IntraStim_PulseTrain_delay']
     if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
         condition = ThresholdCondition.ACTIVATION
     elif protocol_configs['mode'] == 'BLOCK_THRESHOLD':
@@ -163,13 +160,8 @@ def threshold_protocol(istim_configs: dict, protocol_configs: dict, sim_configs:
         bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations = handle_bounds_search(
             protocol_configs['bounds_search']
         )
-    exit_t_scale = protocol_configs.get('exit_t_scale', 2)
-    exit_func_interval = protocol_configs.get('exit_interval', 100)
-    kwargs = {
-        "ap_detect_location": ap_detect_location,
-        "istim_delay": istim_delay,
-        "exit_func_interval": exit_func_interval,
-    }
+    exit_t_shift = protocol_configs.get('exit_t_shift', 5)
+
     # submit fiber for simulation
     amp, _ = stimulation.find_threshold(
         condition=condition,
@@ -180,8 +172,7 @@ def threshold_protocol(istim_configs: dict, protocol_configs: dict, sim_configs:
         stimamp_top=stimamp_top,
         stimamp_bottom=stimamp_bottom,
         max_iterations=max_iterations,
-        exit_t_scale=exit_t_scale,
-        **kwargs,
+        exit_t_shift=exit_t_shift,
     )
     print(f'Threshold found! {amp}nA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
     return amp
