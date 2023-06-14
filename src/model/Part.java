@@ -8,6 +8,7 @@ package model;
 
 import com.comsol.model.*;
 import com.comsol.model.physics.PhysicsFeature;
+import java.io.IOException;
 import java.util.HashMap;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -3357,7 +3358,7 @@ class Part {
                 model.geom(id).run();
 
                 break;
-            case "LivaNova_Primitive":
+            case "LivaNova_Primitive": // TODO will need to update this to match master
                 mp.set("Center", "0 [mm]");
                 mp.set("Corr", "0 [mm]");
 
@@ -5197,7 +5198,7 @@ class Part {
                 pf.label(ac_pcsLabel);
 
                 break;
-            case "LivaNova_Primitive":
+            case "LivaNova_Primitive": //TODO will need to update this to match master
                 // set instantiation parameters
                 String[] LivaNovaParameters = { "Center", "Corr" };
 

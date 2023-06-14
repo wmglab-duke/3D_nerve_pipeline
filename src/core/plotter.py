@@ -19,7 +19,6 @@ import pandas as pd
 import seaborn as sns
 from nd_line.nd_line import nd_line
 from scipy.interpolate import griddata
-from scipy.ndimage import gaussian_filter
 from scipy.stats import pearsonr
 from shapely.geometry import Point
 
@@ -184,14 +183,14 @@ class _HeatmapPlotter:
             line_kws=self.line_kws,
         )
         if np.any([bool(x) for x in self.fiber_colors]):
-            if not self.mode == 'fibermeshgrid':
+            if self.mode != 'fibermeshgrid':
                 self.scatter_kws['c'] = self.fiber_colors
                 self.sim.fibersets[0].plot(ax=ax, scatter_kws=self.scatter_kws)
             else:
                 points = self.sim.fibersets[0].xy_points()
                 # set up meshgrid from x and y points, where values comes from meshgridcolor
                 inner_index = 0
-                for i, fascicle in enumerate(self.sample.slides[0].fascicles):
+                for fascicle in self.sample.slides[0].fascicles:
                     for inner in fascicle.inners:
                         # find indices of points that are in this inner
                         inds = np.where([inner.contains(Point(x, y)) for x, y in points])[0]
@@ -295,7 +294,7 @@ class _HeatmapPlotter:
             return tuple(self.cmap((thresh - self.min_thresh) / (self.max_thresh - self.min_thresh)))
 
         inner_count = 0
-        for i, fascicle in enumerate(self.sample.slides[0].fascicles):
+        for fascicle in self.sample.slides[0].fascicles:
             for _inner in fascicle.inners:
                 inner_count += 1
 
@@ -307,7 +306,8 @@ class _HeatmapPlotter:
             if innerthresh is np.nan and self.mode in ['inners', 'inners_on_off']:
                 inner_color_list.append(self.missing_color)
                 warnings.warn(
-                    'Missing at least one fiber threshold, color will appear as missing color (defaults to red).'
+                    'Missing at least one fiber threshold, color will appear as missing color (defaults to red).',
+                    stacklevel=2,
                 )
             elif self.mode == 'inners':
                 inner_color_list.append(_mapthresh(innerthresh))
@@ -321,7 +321,9 @@ class _HeatmapPlotter:
             # get fiber threshold and add the appropriate color to the list
             fiberthresh = np.mean(threshdf.query(f'master_fiber_index=={fiber_index}').threshold)
             if fiberthresh is np.nan and self.mode in ['fibers', 'fibers_on_off', 'fibermeshgrid']:
-                warnings.warn('Missing fiber threshold, color will appear as missing color (defaults to red).')
+                warnings.warn(
+                    'Missing fiber threshold, color will appear as missing color (defaults to red).', stacklevel=2
+                )
                 fiber_color_list.append(self.missing_color)
             elif self.mode == 'fibers':
                 fiber_color_list.append(_mapthresh(fiberthresh))
@@ -825,7 +827,7 @@ def get_peri_site(samp3d, samp2d, model, simdex, nerve_label, source_sim=3):
         inner = None
         try:
             inner = [inner for fasc in slide.fascicles for inner in fasc.inners if inner.contains(point)][0]
-        except:
+        except IndexError:
             print('ope')
             iteration = 0
             innersave = [inner for fasc in slide.fascicles for inner in fasc.inners]
@@ -838,7 +840,7 @@ def get_peri_site(samp3d, samp2d, model, simdex, nerve_label, source_sim=3):
                     # slide.plot()
                     plt.show()
                     plt.title(
-                        f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{dat3z.loc[i,"master_fiber_index"]}'
+                        f'slide_index: {slice_index}\nzpos-{zpos}\nmaster_fiber{dat3z.loc[i, "master_fiber_index"]}'
                     )
                     break
                 else:
@@ -847,7 +849,7 @@ def get_peri_site(samp3d, samp2d, model, simdex, nerve_label, source_sim=3):
                 try:
                     inner = innersave[int(np.where([inner.contains(point) for inner in innerlist])[0])]
                     print('ope fixed')
-                except Exception:
+                except IndexError:
                     pass
         if inner is not None:
             fit = {'a': 0.03702, 'b': 10.5}
@@ -914,7 +916,6 @@ def plot_correlation(samples2d, samp3d, model, simdex, nerve_label):
     dat3d = q.data(source_sample=samples2d[0])
     dat2d = datamatch(dat2d, dat3d, 'threshold')
     # %%
-    sample_labels = ['rostral contact', 'caudal contact']
     import seaborn as sns
     from scipy.stats import pearsonr
 
@@ -1075,7 +1076,6 @@ def plot_dose_response(samples2d, samp3d, model, simdex, nerve_label):
         plt.ylabel('Proportion of Fibers Activated')
         plt.xlabel('Activation Threshold (mA, log scale)')
         plt.title(f'Threshold eCDF for {nerve_label}')
-        # plt.text(0.05, -0.25, 'Note: fiber diameters (\u03bcm) from left to right: [13, 11, 8, 5, 2]', fontstyle='italic')
         plt.savefig(f'out/analysis/{simdex}/{nerve_label}_{i}_ecdf.png', dpi=400, bbox_inches='tight')
 
 

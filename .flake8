@@ -1,6 +1,8 @@
 [flake8]
 ignore = E203, W503, # Black compatibility
     #place additional ignores here
+    #TODO Remove this ignore once this branch is to be merged into master
+    E800
 per-file-ignores =
     __init__.py: F401, F403
     enums.py: D

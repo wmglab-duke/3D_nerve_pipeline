@@ -225,7 +225,7 @@ proc run_all(){local myinner, myfiber, myamp, amp_ind
         Saving_Activation()
 
 	}   else if (find_thresh == 1){
-		// Run binary search for thresholds
+		// Run bisection search for thresholds
 		FindThresh()
 		// Run sim once more with final thresh from FindThresh()
 		print "Running stimamp in final check for AP."
@@ -253,7 +253,7 @@ proc run_all(){local myinner, myfiber, myamp, amp_ind
 	if (saveflag_end_ap_times==1) {
 		Saving_Ap_end_times()
 	}
-        
+
         percthreshtemp=1.1
 
 	if (percthreshtemp != 0) {

@@ -2,7 +2,7 @@ ffmpeg
 matplotlib
 nd_line
 numpy
-opencv-python
+opencv-python<=4.5.*
 openpyxl
 pandas
 pillow
@@ -15,6 +15,6 @@ scikit-image
 scipy
 seaborn
 setuptools
-shapely
+shapely==1.8.*
 wheel
 xlsxwriter

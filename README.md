@@ -10,8 +10,6 @@
 
 **ASCENT** is an open source platform for simulating peripheral nerve stimulation. For more information, see the ASCENT documentation: [https://wmglab-duke-ascent.readthedocs.io/en/latest/](https://wmglab-duke-ascent.readthedocs.io/en/latest/)
 
----
-
 **Cite both the paper and the DOI for the release of the repository used for your work. We encourage you to clone the most recent commit of the repository.**
 
 - **Cite the paper:**
@@ -20,18 +18,26 @@
 
 - **Cite the code (use the DOI for the version of code used):**
 
-  > **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2022). wmglab-duke/ascent: ASCENT v1.1.2 (v1.1.2) [Computer software]. Zenodo. <https://doi.org/10.5281/ZENODO.6537277>
+  > **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2023). wmglab-duke/ascent: ASCENT v1.2.1 (v1.2.1) [Computer software]. Zenodo. <https://doi.org/10.5281/ZENODO.7627427>
 
 ---
 
-The copyrights of this software are owned by Duke University. As such, two licenses to this software are offered:
+The copyrights of this software are owned by Duke University. As such, two licenses for this software are offered:
 
-1. An open-source license under the MIT license for non-commercial use (See [LICENSE](LICENSE)).
+1. An open-source license under the GPLv2 license for non-commercial use  (See [LICENSE](LICENSE)).
 
-2. A custom license with Duke University, for commercial use or for use without the MIT license restrictions.
+2. A custom license with Duke University, for commercial use or for use without the GPLv2 license restrictions.
 
-As a recipient of this software, you may choose which license to receive the code under. Outside contributions to the Duke owned code base cannot be accepted unless the contributor transfers the copyright to those changes over to Duke University.
+As a recipient of this software, you may choose which license to receive the code under. Outside contributions to the Duke-owned code base cannot be accepted unless the contributor transfers the copyright to those changes over to Duke University.
 
-To enter a custom license agreement without the MIT license restrictions, please contact the Digital Innovations department at Duke Office for Translation & Commercialization (<https://olv.duke.edu/software/>) at olvquestions@duke.edu with reference to "OTC File No. 7483" in your email.
+To enter a custom license agreement without the GPLv2 license restrictions, please contact the Digital Innovations department at Duke Office for Translation & Commercialization (https://olv.duke.edu/software/) at olvquestions@duke.edu with reference to "OTC File No. 7483" in your email.
 
 Please note that this software is distributed AS IS, WITHOUT ANY WARRANTY; and without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+## Check out the ASCENT promo video:
+
+[![Watch the video](https://img.youtube.com/vi/rG-KU7wWcXY/maxresdefault.jpg)](https://youtu.be/rG-KU7wWcXY)
+
+## Click below for our video tutorial:
+
+[![Watch the video](https://img.youtube.com/vi/C41nHvMXyEo/maxresdefault.jpg)](https://youtu.be/C41nHvMXyEo)

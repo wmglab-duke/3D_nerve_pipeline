@@ -69,7 +69,6 @@ class Map(Configurable):
         self.data_root = None
 
     def init_post_config(self, mode: SetupMode = SetupMode.NEW):
-
         # "root" of data within SAMPLE config
         # stored as list because will be "splatted" later when using self.search and self.path
         self.data_root = 'slide_map'
@@ -105,8 +104,12 @@ class Map(Configurable):
         elif self.mode == SetupMode.SYNTHETIC:
             # must create a "synthetic" map
 
+            inputpath = os.path.join('input', self.sample)
+            if not os.path.exists(inputpath):
+                raise FileNotFoundError(f'Input folder specified in sample.json does not exist ({inputpath})')
+
             # assume path to synthetic map is input/<SAMPLE>/map.json
-            self.source_path = os.path.join('input', self.sample, 'map.json')
+            self.source_path = os.path.join(inputpath, 'map.json')
 
             # load/edit map template
             mapper = self.load(os.path.join('config', 'templates', 'map.json'))
@@ -180,7 +183,7 @@ class Map(Configurable):
         this is required for core functionality, I will rewrite the
         method.
         """
-        warnings.warn('METHOD clean_file_names IS NOT SYSTEM-INDEPENDENT!')
+        warnings.warn('METHOD clean_file_names IS NOT SYSTEM-INDEPENDENT!', stacklevel=2)
 
         dir_to_parse = '/Users/jakecariello/Box/SPARCpy/data/input/samples/Pig11-3'
 

@@ -42,30 +42,30 @@ Welcome to ASCENT's documentation!
   .. details:: APA
      :open:
 
-     **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2022). wmglab-duke/ascent: ASCENT v1.1.2 (v1.1.2) [Computer software]. Zenodo. https://doi.org/10.5281/ZENODO.6537277
+     **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2023). wmglab-duke/ascent: ASCENT v1.2.1 (v1.2.1) [Computer software]. Zenodo. https://doi.org/10.5281/ZENODO.7627427
 
   .. details:: MLA
 
-      Musselman, Eric D., et al. Wmglab-Duke/Ascent: ASCENT v1.1.2. v1.1.2, Zenodo, 2022, doi:10.5281/ZENODO.6537277.
+      Musselman, Eric D., et al. Wmglab-Duke/Ascent: ASCENT v1.2.1. v1.2.1, Zenodo, 2023, doi:10.5281/ZENODO.7627427.
+
 
   .. details:: BibTeX
 
     .. code-block:: BibTeX
 
-        @misc{https://doi.org/10.5281/zenodo.6537277,
-          doi = {10.5281/ZENODO.6537277},
-          url = {https://zenodo.org/record/6537277},
+        @misc{https://doi.org/10.5281/zenodo.7627427,
+          doi = {10.5281/ZENODO.7627427},
+          url = {https://zenodo.org/record/7627427},
           author = {Musselman,  Eric D and Cariello,  Jake E and Grill,  Warren M and Pelot,  Nicole A},
-          title = {wmglab-duke/ascent: ASCENT v1.1.2},
+          title = {wmglab-duke/ascent: ASCENT v1.2.1},
           publisher = {Zenodo},
-          year = {2022},
+          year = {2023},
           copyright = {MIT License}
         }
 
 **ASCENT** is an open source platform for simulating peripheral nerve stimulation. To download the software, visit the `ASCENT GitHub repository <https://github.com/wmglab-duke/ascent>`_.
 
-.. image:: uploads/ascent_media_release_v2.png
-
+..  youtube:: rG-KU7wWcXY
 
 .. toctree::
    :maxdepth: 2
@@ -74,7 +74,7 @@ Welcome to ASCENT's documentation!
    Getting_Started
    Running_ASCENT/index
    JSON/index
-   Methods_Template
+   Publishing_with_ASCENT/index
 
 .. toctree::
    :maxdepth: 2

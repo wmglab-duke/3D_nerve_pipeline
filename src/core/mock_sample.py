@@ -115,7 +115,7 @@ class MockSample(Configurable):
         :param dest: The destination file.
         :param dpi: The resolution of the binary mask.
         """
-        # https://inneka.com/ml/opencv/how-to-read-image-from-in-memory-buffer-stringio-or-from-url-with-opencv-python-library/
+
         def create_opencv_image_from_stringio(img_stream, cv2_img_flag=0):
             img_stream.seek(0)
             img_array = np.asarray(bytearray(img_stream.read()), dtype=np.uint8)
@@ -184,11 +184,9 @@ class MockSample(Configurable):
             self.make_explicit_fascicles(min_fascicle_separation)
 
         elif populate_mode == PopulateMode.TRUNCNORM:
-
             self.make_truncnorm_fascicles(min_fascicle_separation)
 
         elif populate_mode == PopulateMode.UNIFORM:
-
             self.make_uniform_fascicles(min_fascicle_separation)
 
         return self
@@ -250,13 +248,13 @@ class MockSample(Configurable):
             upper_fasc_ecc_warning = (
                 f"Eccentricity only defined in range (0,1], overwrote upper_fasc_ecc, now = {upper_fasc_ecc}"
             )
-            warnings.warn(upper_fasc_ecc_warning)
+            warnings.warn(upper_fasc_ecc_warning, stacklevel=2)
         if lower_fasc_ecc < 0:
             lower_fasc_ecc = 0
             lower_fasc_ecc_warning = (
                 f"Eccentricity only defined in range (0,1], overwrote lower_fasc_ecc, now = {lower_fasc_ecc}"
             )
-            warnings.warn(lower_fasc_ecc_warning)
+            warnings.warn(lower_fasc_ecc_warning, stacklevel=2)
         fasc_ecc_dist = stats.truncnorm(
             (lower_fasc_ecc - mu_fasc_ecc) / std_fasc_ecc,
             (upper_fasc_ecc - mu_fasc_ecc) / std_fasc_ecc,
@@ -353,7 +351,7 @@ class MockSample(Configurable):
                 if fascicle_attempt.buffer(min_fascicle_separation).boundary.intersects(self.nerve.boundary):
                     chk = 1
 
-                if any([fasc.buffer(min_fascicle_separation).intersects(fascicle_attempt) for fasc in self.fascicles]):
+                if any(fasc.buffer(min_fascicle_separation).intersects(fascicle_attempt) for fasc in self.fascicles):
                     chk = 1
 
                 if chk == 0:
@@ -429,7 +427,7 @@ class MockSample(Configurable):
                 chk = 1
 
             # check for fascicle:fascicle intersection with addition of next fascicle
-            if any([fasc.buffer(min_fascicle_separation).intersects(fascicle_attempt) for fasc in self.fascicles]):
+            if any(fasc.buffer(min_fascicle_separation).intersects(fascicle_attempt) for fasc in self.fascicles):
                 chk = 1
 
             # if all checks passed, add the fascicle to the list

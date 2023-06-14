@@ -139,7 +139,7 @@ class Deformable:
         render: bool = True,
         minimum_distance: float = 0.0,
         ratio: float = None,
-        progress_bar=True,
+        progress_bar: bool = True,
     ) -> Tuple[List[tuple], List[float]]:
         """Run the main deformation algorithm.
 
@@ -149,6 +149,7 @@ class Deformable:
         :param render: True if you care to see it happen... makes this method WAY slower
         :param minimum_distance: separation between original inputs
         :param ratio: deform ratio
+        :param progress_bar: whether to print a progress bar during deformation
         :return: tuple of a list of total movement vectors and total angle rotated for each fascicle
         """
         # copy the "contents" so multiple deformations are possible
@@ -318,6 +319,7 @@ class Deformable:
         # return new object
         return Deformable(boundary_start, boundary_end, contents)
 
+    # copied from https://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     @staticmethod
     def print_progress_bar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█'):
         """Create and update a terminal progress bar.

@@ -114,7 +114,7 @@ simulation configuration files are stored in the `config/user/sims/`
 directory. **_Sim_** defines fiber types, fiber locations in the FEM,
 fiber length, extracellular (e.g., pulse repetition frequency) and
 intracellular stimulation, and input parameters to NEURON (e.g.,
-parameters to be saved in the output, binary search algorithm bounds and
+parameters to be saved in the output, bisection search algorithm bounds and
 resolution). Since users may want to sweep parameters at the **_Sim_**
 configuration level (e.g., fiber types, fiber locations, waveforms), a
 pared down copy of **_Sim_** that contains a single value for each
@@ -236,6 +236,8 @@ The `env.json` file stores the file paths for:
   the directory from which the user calls NEURON, or an intermediate
   directory from which the user will move the files to a computer
   cluster)
+
+- Destination directory for exported datasets created with scripts/build_dataset.py
 
 When the pipeline is run, the key-value pairs are stored as environment
 variables so that they are globally accessible.

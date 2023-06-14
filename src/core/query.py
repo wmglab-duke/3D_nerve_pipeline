@@ -23,7 +23,6 @@ from nd_line.nd_line import nd_line
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
 from shapely.geometry import Point
-from shapely.strtree import STRtree
 
 from src.core import Sample, Simulation
 from src.utils import Config, Configurable, Object, Saveable, SetupMode
@@ -92,7 +91,7 @@ class Query(Configurable, Saveable):
 
         # check that all sets of indices contain only integers
         for indices in (sample_indices, model_indices, sim_indices):
-            if indices is not None and not all([isinstance(i, int) for i in indices]):
+            if indices is not None and not all(isinstance(i, int) for i in indices):
                 raise TypeError('Encountered a non-integer index. Check your search criteria.')
 
         # criteria for each layer
@@ -112,7 +111,6 @@ class Query(Configurable, Saveable):
 
         # loop samples
         for sample in os.listdir(samples_dir):
-
             # skip this sample if applicable
             if sample.startswith('.') or (sample_indices is not None and int(sample) not in sample_indices):
                 continue
@@ -287,9 +285,7 @@ class Query(Configurable, Saveable):
         return result
 
     def _match(self, criteria: dict, data: dict) -> bool:
-
         for key in criteria.keys():
-
             # ensure key is valid in data
             if key not in data:
                 raise KeyError(f"Criterion key {key} not found in data")
@@ -306,7 +302,7 @@ class Query(Configurable, Saveable):
                     return False
 
             # neither c_val nor d_val are list
-            elif not any([type(v) is list for v in (c_val, d_val)]):
+            elif not any(type(v) is list for v in (c_val, d_val)):
                 if c_val != d_val:
                     return False
 
@@ -324,7 +320,7 @@ class Query(Configurable, Saveable):
             # both c_val and d_val are list
             else:  # all([type(v) is list for v in (c_val, d_val)]):
                 # "partial matches" indicates that other values may be present in d_val
-                if not self.search(Config.CRITERIA, 'partial_matches') or not all([c_i in d_val for c_i in c_val]):
+                if not self.search(Config.CRITERIA, 'partial_matches') or not all(c_i in d_val for c_i in c_val):
                     return False
 
         return True
@@ -347,6 +343,8 @@ class Query(Configurable, Saveable):
     ):
         # TODO: make this also get fiber diam and waveform info
         """Obtain threshold data as a pandas DataFrame.
+
+        Waveform, fiberset, and active_src indices are per your sim configuration file.
 
         :param ignore_missing: if True, missing threshold data will not cause an error.
         :param source_sample: If 3d, use this sample as the source for morphological data.
@@ -704,7 +702,8 @@ class Query(Configurable, Saveable):
 
                             sns.set_style('whitegrid')
                             plt.title(
-                                f'slide_index: {slides.index(slide)}\nzpos-{zpos}\nmaster_fiber{base_dict["master_fiber_index"]}'
+                                f'slide_index: {slides.index(slide)}\nzpos-{zpos}\n'
+                                f'master_fiber{base_dict["master_fiber_index"]}'
                             )
                             slide.plot(final=False)
                             plt.xlim(-400, -250)
@@ -740,7 +739,6 @@ class Query(Configurable, Saveable):
 
     @staticmethod
     def get_threshold(ignore_missing, base_dict, sim_dir, threed):
-
         n_sim_dir = os.path.join(sim_dir, 'n_sims', str(base_dict['nsim']))
         if not threed:
             threshfile = f'thresh_inner{base_dict["inner"]}_fiber{base_dict["fiber"]}.dat'
@@ -758,7 +756,7 @@ class Query(Configurable, Saveable):
         except IOError:
             if ignore_missing:
                 threshold = np.nan
-                warnings.warn('Missing threshold, but continuing.')
+                warnings.warn('Missing threshold, but continuing.', stacklevel=2)
             else:  # raise error
                 raise IOError(f'Missing threshold file {thresh_path}')
         if threshold.size > 1:
@@ -801,8 +799,8 @@ class Query(Configurable, Saveable):
         else:
             if source_sim is not None:
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
-            fiberfile3D = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
-            coords = np.loadtxt(fiberfile3D, skiprows=1)
+            fiberfile3d = os.path.join(sim_dir, '3D_fiberset', f'{base_dict["master_fiber_index"]}.dat')
+            coords = np.loadtxt(fiberfile3d, skiprows=1)
             # get line only in the cuffspan z range
             ln = nd_line(coords[(coords[:, 2] > cuffspan[0]) & (coords[:, 2] < cuffspan[1])])
             return ln.length / euclidean(ln.points[0], ln.points[-1])
@@ -835,7 +833,7 @@ class Query(Configurable, Saveable):
         n_local_minima = len(argrelextrema(aploc_data, np.less)[0])
 
         if n_local_minima > 1:
-            print(f'Found multiple activation sites.')
+            print('Found multiple activation sites.')
             print(base_dict)
 
         fiberset_dir = os.path.join(sim_dir, 'fibersets', str(base_dict['fiberset_index']))

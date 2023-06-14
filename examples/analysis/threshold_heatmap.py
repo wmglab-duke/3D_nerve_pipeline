@@ -11,20 +11,19 @@ RUN THIS FROM REPOSITORY ROOT
 """
 import os
 
-os.chdir('../..')
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 from src.core.plotter import heatmaps
 from src.core.query import Query
+from src.utils import Object
 
 samp2d = 272
 model = 0
 simint = 3
 samp3d = 273
-import pandas as pd
-import seaborn as sns
 
-from src.utils import Object
 
 q = Query(
     {
@@ -47,6 +46,10 @@ dat3d['threed'] = True
 sample_obj = q.get_object(Object.SAMPLE, [samp2d])
 sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
 threshdat = pd.concat([dat2d, dat3d])
-#%%
+# %%
 g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
 g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, scatter_kws={'s': 25})
+
+save_directory = os.path.join('output', 'analysis')
+os.makedirs(save_directory, exist_ok=True)
+plt.savefig(os.path.join(save_directory, 'threshold_heatmap.png'), dpi=400, bbox_inches='tight')

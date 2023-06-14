@@ -29,7 +29,7 @@ import pandas as pd
 class ListAction(argparse.Action):
     """Custom action for argparse to list run info."""
 
-    def __call__(self, parser, values, option_string=None, **kwargs):
+    def __call__(self, parser, values, *args, option_string=None, **kwargs):
         """Print run info and exit. # noqa: DAR101.
 
         This function is called when the --list option is used and should not be called directly.
@@ -142,7 +142,7 @@ submit_context_group.add_argument(
 
 parser.add_argument('-v', '--verbose', action='store_true', help='Print detailed submission info')
 
-OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else 'WINDOWS'
+OS = 'UNIX-LIKE' if any(s in sys.platform for s in ['darwin', 'linux']) else 'WINDOWS'
 
 
 # %% Set up utility functions
@@ -205,8 +205,7 @@ def ensure_dir(directory):
 
     :param directory: the string path to the directory
     """
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    os.makedirs(directory, exist_ok=True)
 
 
 def auto_compile(override: bool = False):
@@ -220,7 +219,7 @@ def auto_compile(override: bool = False):
         or (not os.path.exists(os.path.join('MOD_Files', 'nrnmech.dll')) and OS == 'WINDOWS')
         or override
     ):
-        print('compiling')
+        print('compiling NEURON files...')
         os.chdir(os.path.join('MOD_Files'))
         exit_data = subprocess.run(['nrnivmodl'], shell=True, capture_output=True, text=True)
         if exit_data.returncode != 0:
@@ -333,7 +332,8 @@ def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
                     if args.verbose:
                         warnings.warn(
                             'WARNING: scout_sim is defined in Sim, so not using "top" or "bottom" '
-                            'which you also defined \n'
+                            'which you also defined \n',
+                            stacklevel=2,
                         )
                     else:
                         WarnOnlyOnce.warn(
@@ -345,7 +345,8 @@ def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
                 if args.verbose:
                     warnings.warn(
                         f"No fiber threshold exists for scout sim: "
-                        f"inner{inner_ind} fiber0, using standard top and bottom"
+                        f"inner{inner_ind} fiber0, using standard top and bottom",
+                        stacklevel=2,
                     )
                 else:
                     WarnOnlyOnce.warn(
@@ -484,13 +485,11 @@ def submit_fibers(submission_context, submission_data):
         start_path_base = os.path.join(start_dir, 'start_')
 
         if submission_context == 'cluster':
-
             cluster_submit(runfibers, sim_name, sim_path, start_path_base)
             ran_fibers += len(runfibers)
             if not args.verbose:
                 print_progress_bar(ran_fibers, n_fibers, length=40, prefix=f'Fibers submitted: {ran_fibers}/{n_fibers}')
         else:
-
             if args.num_cpu is not None:
                 cpus = args.num_cpu
 
@@ -502,7 +501,8 @@ def submit_fibers(submission_context, submission_data):
             else:
                 cpus = multiprocessing.cpu_count() - 1
                 warnings.warn(
-                    f"You did not define number of cores to use (-n), so proceeding with cpu_core_count-1={cpus}"
+                    f"You did not define number of cores to use (-n), so proceeding with cpu_core_count-1={cpus}",
+                    stacklevel=2,
                 )
             os.chdir(sim_path)
             with multiprocessing.Pool(cpus) as p:
@@ -544,7 +544,6 @@ def cluster_submit(runfibers, sim_name, sim_path, start_path_base):
     mem = slurm_params['memory_per_fiber'] if args.job_mem is None else args.job_mem
     array_fibertasks = [runfibers[x : x + njobs] for x in range(0, len(runfibers), njobs)]
     for tasklist in array_fibertasks:
-
         array_indices = [task['job_number'] for task in tasklist]
 
         # print fiber submission
@@ -591,7 +590,6 @@ def make_fiber_tasks(submission_list, submission_context):
     # assign appropriate configuration data
     sim_dir = os.path.join('n_sims')
     for sim_name, runfibers in submission_list.items():
-
         sim_path = os.path.join(sim_dir, sim_name)
         fibers_path = os.path.abspath(os.path.join(sim_path, 'data', 'inputs'))
         output_path = os.path.abspath(os.path.join(sim_path, 'data', 'outputs'))
@@ -616,7 +614,7 @@ def make_fiber_tasks(submission_list, submission_context):
             with open(blank_path, 'w'):
                 pass
 
-        # load JSON file with binary search amplitudes
+        # load JSON file with bisection search amplitudes
         n_sim = sim_name.split('_')[-1]
         sim_config = load(os.path.join(sim_path, f'{n_sim}.json'))
         fiber_model = sim_config['fibers']['mode']
@@ -731,7 +729,7 @@ def make_run_sub_list(run_number: int):
                                 time.sleep(1)
                             continue
                         elif args.force_rerun:
-                            warnings.warn("Re-running existing fibers. Use -v flag to see which ones.")
+                            warnings.warn("Re-running existing fibers. Use -v flag to see which ones.", stacklevel=2)
                             if args.verbose:
                                 print(f'Found {search_path} -->\t\tre-running inner ({inner_ind}) fiber ({fiber_ind})')
 
@@ -778,7 +776,6 @@ def get_submission_list(run_inds):
     rundata = []
     submission_list = {}
     for run_number in run_inds:
-
         # build configuration filename
         filename = os.path.join('runs', f'{run_number}.json')
 
@@ -797,8 +794,8 @@ def get_submission_list(run_inds):
         # get list of fibers to run
         submission_addition = make_run_sub_list(run_number)
         # check for duplicate nsims
-        if any([x in submission_list for x in submission_addition.keys()]):
-            warnings.warn(f'Duplicate nsims found in run {run_number}. Continuing')
+        if any(x in submission_list for x in submission_addition.keys()):
+            warnings.warn(f'Duplicate nsims found in run {run_number}. Continuing', stacklevel=2)
         submission_list.update(submission_addition)
         rundata.append(
             {
