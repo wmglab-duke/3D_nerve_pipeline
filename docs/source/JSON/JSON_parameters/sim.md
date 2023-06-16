@@ -183,7 +183,6 @@ following syntax:
     "end_ap_times": {
       "loc_min": Double,
       "loc_max": Double,
-      "threshold": Double
     }
     "runtimes": Boolean
   },
@@ -741,10 +740,6 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
     z=length of proximal domain. Required if this JSON object (which is optional) is included.
 
-  - `“threshold”`: The value (Double, units: mV) is the threshold value for V<sub>m</sub> to pass
-    for an action potential to be detected. Required if this JSON object (which is optional)
-    is included.
-
 - `“runtimes”`: The value (Boolean), if true, tells the program to save
   the NEURON runtime for either the finite amplitude or bisection search for
   threshold simulation. If this key-value pair is omitted, the default
@@ -864,6 +859,9 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     - `"model"`: The value (Integer) indicates which model index to use for the scout Sim. Required if `"scout"` is used.
 
     - `"sim"`: The value (Integer) indicates which sim index to use fo the scout Sim (can be the current Sim's index). Required if `"scout"` is used.
+
+- `“exit_interval”`: The value (Double, units: milliseconds) is the time interval how often NEURON should check
+simulation for an AP and exit the simulation. Optional.
 
 <!-- end list -->
 

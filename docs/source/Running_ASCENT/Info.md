@@ -235,8 +235,9 @@ electric potentials along the length of a fiber from COMSOL as a
 time-varying signal in NEURON. The stimulation waveform, saved in a
 `n_sim’s data/inputs/` directory as `waveform.dat`, is unscaled (i.e., the
 maximum current magnitude at any timestep is +/-1), and is then scaled
-by the current amplitude in `RunSim.hoc` to either simulate fiber thresholds of
-activation or block with a bisection search algorithm, or response to set
+by the current amplitude in the NEURON simulation of the `wmglab-neuron` PyPI package
+(GitHub: _link_) to either simulate fiber thresholds of
+activation or block with a binary search algorithm, or response to set
 amplitudes.
 
 ### Binary search
@@ -319,7 +320,7 @@ of amplitudes that the user would like to simulate ([Sim Parameters](../JSON/JSO
 
 ### Myelinated fiber models
 
-The `CreateAxon_Myel.hoc` file is loaded in `Wrapper.hoc` if the user
+The `Fiber.create_myelinated_fiber()` method in `fiber.py` is called by `Fiber.generate()` if the user
 chooses either `"MRG_DISCRETE"` or `"MRG_INTERPOLATION"`. The length of
 each section in NEURON varies depending on both the diameter and the
 "FiberGeometry" mode chosen in **_Sim_**.
@@ -385,6 +386,7 @@ The pipeline includes several unmyelinated (i.e., C-fiber) models
 {cite:p}`Sundt2015,Tigerholm2014,Rattay1993`. Users should be aware of the `"delta_zs"` parameter that
 they are using in `config/system/fiber_z.json`, which controls the
 spatial discretization of the fiber (i.e., the length of each section).
+Note: ASCENT's current functionality only supports the use of Tigerholm fiber model types.
 
 ## Defining and assigning materials in COMSOL
 

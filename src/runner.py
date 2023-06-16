@@ -11,6 +11,7 @@ import base64
 import json
 import os
 import pickle
+import shutil
 import subprocess
 import sys
 import time
@@ -124,8 +125,9 @@ class Runner(Configurable):
 
         # ensure NEURON files exist in export location
         Simulation.export_neuron_files(os.environ[Env.NSIM_EXPORT_PATH.value])
-        Simulation.export_system_config_files(os.path.join(os.environ[Env.NSIM_EXPORT_PATH.value], 'config', 'system'))
 
+        # ensure config/system/slurm_params.json exists, required for cluster submissions
+        Simulation.export_slurm_files(os.path.join(os.environ[Env.NSIM_EXPORT_PATH.value], 'config', 'system'))
         for deprecated_key in ['break_points', 'local_avail_cpus', 'submission_context', 'partial_fem']:
             if deprecated_key in self.configs[Config.RUN.value]:
                 warnings.warn(
@@ -323,6 +325,10 @@ class Runner(Configurable):
         # load up correct simulation and build required sims
         simulation: Simulation = self.load_obj(sim_obj_path)
         simulation.build_n_sims(sim_dir, sim_num, threed=threed)
+
+        # delete folder containing fiberset .txt files
+        if self.configs[Config.RUN.value].get('delete_fibersets'):
+            shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
 
         # get export behavior
         if self.configs[Config.CLI_ARGS.value].get('export_behavior') is not None:
