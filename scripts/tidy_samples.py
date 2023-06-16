@@ -14,7 +14,8 @@ from pathlib import Path
 
 # these are the parts of files we want removed
 # NOTE: be careful with "out" -- added warning!
-INCLUDED_FILENAMES = ['runtime', 'blank', 'special', 'logs', 'start_']
+#INCLUDED_FILENAMES = ['runtime', 'blank', 'special', 'logs', 'start_']
+INCLUDED_FILENAMES = ['sims', '.obj']
 
 
 def remove_empty_directories(directory: str, verbose):
