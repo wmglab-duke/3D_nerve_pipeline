@@ -503,6 +503,8 @@ class Sample(Configurable, Saveable):
         # shrinkage correction
         s_mode = self.search_mode(ShrinkageMode, Config.SAMPLE, optional=True)
         s_pre = self.search(Config.SAMPLE, "scale", "shrinkage")
+        if s_pre == 0:
+            return slide
         if s_mode is None:
             print(
                 'WARNING: ShrinkageMode in Config.Sample is not defined or mode provided is not a known option. '

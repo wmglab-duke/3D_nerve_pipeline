@@ -464,6 +464,10 @@ class FiberSet(Configurable, Saveable):
                     movedist = (
                         Point(fiber).distance(correct_fascicle) + buffer
                     )  # TODO add some leeway instead of doing +5 micron
+                    try:
+                        assert movedist <= 10 + buffer, "Correction too far!!!"  # maximum 10 micron +buffer correction
+                    except:
+                        warnings.warn(f"Corrected by {movedist} microns", stacklevel=2)
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
                     try:

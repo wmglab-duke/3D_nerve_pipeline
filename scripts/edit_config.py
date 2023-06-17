@@ -98,22 +98,128 @@ elif c == 's':
 elif c == 'r':
     path = 'config/user/runs'
 
-    runlist = [os.path.splitext(x)[0] for x in os.listdir(path) if x.endswith('.json')]
+    # runlist = [os.path.splitext(x)[0] for x in os.listdir(path) if x.endswith('.json')]
 
-    run = input(f'Pick from the available runs:\n{runlist}')
+    # run = input(f'Pick from the available runs:\n{runlist}')
 
-    change, newval = param_picker(path + f'/{run}.json')
+    runlist = [
+        '250',
+        '2501',
+        '2509',
+        '251',
+        '252',
+        '2521',
+        '2529',
+        '253',
+        '2531',
+        '270',
+        '271',
+        '272',
+        '273',
+        '2731',
+        '370',
+        '3701',
+        '3709',
+        '371',
+        '372',
+        '3721',
+        '3729',
+        '373',
+        '3731',
+        '570',
+        '5701',
+        '5709',
+        '571',
+        '572',
+        '5721',
+        '5729',
+        '573',
+        '5731',
+        '650',
+        '651',
+        '652',
+        '653',
+        '6531',
+        '670',
+        '6701',
+        '6709',
+        '671',
+        '672',
+        '6721',
+        '6729',
+        '673',
+        '6731',
+    ]
+    runlist.remove('2731')
+    runlist.remove('6531')
 
-    oldval = configval(f'config/user/runs/{run}.json', change, newval)
+    change = ['keep']
 
-    print(f'Updated run {run} parameter {change} from {oldval} to {newval}.')
+    newval = {"bases": False, "debug_geom": True, "mesh": False}
+
+    for run in runlist:
+        # change, newval = param_picker(path + f'/{run}.json')
+
+        oldval = configval(f'config/user/runs/{run}.json', change, newval)
+
+        print(f'Updated run {run} parameter {change} from {oldval} to {newval}.')
 #%%
 elif c == 'e':
-    samples = [2509, 2529, 3709, 3729, 5709, 5729, 6709, 6729]
+    samples = [
+        int(x)
+        for x in [
+            '250',
+            '2501',
+            '2509',
+            '251',
+            '252',
+            '2521',
+            '2529',
+            '253',
+            '2531',
+            '270',
+            '271',
+            '272',
+            '273',
+            '2731',
+            '370',
+            '3701',
+            '3709',
+            '371',
+            '372',
+            '3721',
+            '3729',
+            '373',
+            '3731',
+            '570',
+            '5701',
+            '5709',
+            '571',
+            '572',
+            '5721',
+            '5729',
+            '573',
+            '5731',
+            '650',
+            '651',
+            '652',
+            '653',
+            '6531',
+            '670',
+            '6701',
+            '6709',
+            '671',
+            '672',
+            '6721',
+            '6729',
+            '673',
+            '6731',
+        ]
+    ]
 
-    change = ['modes', 'reshape_nerve']
+    change = ['scale', 'shrinkage']
 
-    newval = "CIRCLE"
+    newval = 0
 
     clear = False
 

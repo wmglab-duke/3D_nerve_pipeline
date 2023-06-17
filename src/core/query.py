@@ -344,6 +344,7 @@ class Query(Configurable, Saveable):
         label=None,
         thresh_only=False,
         efib_distance=False,
+        oneten=False,
     ):
         # TODO: make this also get fiber diam and waveform info
         """Obtain threshold data as a pandas DataFrame.
@@ -472,8 +473,8 @@ class Query(Configurable, Saveable):
                                 base_dict['peak_second_diff'],
                                 base_dict['peak_second_diff_node'],
                                 base_dict['peak_second_long_pos'],
-                                base_dict['peak_second_x'],
-                                base_dict['peak_second_y'],
+                                _,
+                                _,
                                 base_dict['peak_second_z'],
                             ) = self.peak_second_diff(base_dict, sim_dir, threedline, source_sample is not None)
 
@@ -489,6 +490,27 @@ class Query(Configurable, Saveable):
                             ) = self.get_actual_zpos(
                                 base_dict, sim_dir, threedline, source_sample is not None, source_sim=source_sim
                             )
+                            if oneten:
+                                try:
+                                    (
+                                        base_dict['apnode_oneten'],
+                                        base_dict['aptime_oneten'],
+                                        base_dict['long_ap_pos_oneten'],
+                                        base_dict['n_ap_sites_oneten'],
+                                    ) = self.get_ap_info(
+                                        ignore_no_activation, base_dict, sim_dir, source_sample is not None, oneten=True
+                                    )
+                                    _, _, base_dict['activation_zpos_oneten'] = self.get_actual_zpos(
+                                        base_dict,
+                                        sim_dir,
+                                        threedline,
+                                        source_sample is not None,
+                                        source_sim=source_sim,
+                                        oneten=True,
+                                    )
+                                except (FileNotFoundError, KeyError):
+                                    warnings.warn("No 110% threshold data found, skipping")
+
                             base_dict['tortuosity'] = self.get_tortuosity(
                                 base_dict, sim_dir, threedline, source_sample is not None, source_sim
                             )
@@ -595,13 +617,14 @@ class Query(Configurable, Saveable):
         return fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")
 
     @staticmethod
-    def get_actual_zpos(base_dict, sim_dir, threedline, threed, source_sim=None):
+    def get_actual_zpos(base_dict, sim_dir, threedline, threed, source_sim=None, oneten=False):
+        key = 'long_ap_pos' if not oneten else 'long_ap_pos_oneten'
         if not threed:
-            return np.nan, np.nan, base_dict['long_ap_pos']
+            return np.nan, np.nan, base_dict[key]
         else:
             if source_sim is not None:
                 sim_dir = os.path.join(os.path.split(sim_dir)[0], str(source_sim))
-            return tuple(threedline.interp(base_dict['long_ap_pos']))
+            return tuple(threedline.interp(base_dict[key]))
 
     @staticmethod
     def get_activation_site_peri_thickness(
@@ -755,14 +778,14 @@ class Query(Configurable, Saveable):
         )
         try:
             threshold = np.loadtxt(thresh_path)
+            if threshold.size > 1:
+                threshold = threshold[-1]
         except IOError:
             if ignore_missing:
                 threshold = np.nan
                 warnings.warn('Missing threshold, but continuing.')
             else:  # raise error
                 raise IOError(f'Missing threshold file {thresh_path}')
-        if threshold.size > 1:
-            threshold = threshold[-1]
         return abs(threshold)
 
     @staticmethod
@@ -808,13 +831,14 @@ class Query(Configurable, Saveable):
             return ln.length / euclidean(ln.points[0], ln.points[-1])
 
     @staticmethod
-    def get_ap_info(ignore_no_activation, base_dict, sim_dir, threed):
+    def get_ap_info(ignore_no_activation, base_dict, sim_dir, threed, oneten=False):
         # directory for specific n_sim
+        f_prefix = 'ap_loctime_' if not oneten else 'ap_lt_perc_thresh_'
         n_sim_dir = os.path.join(sim_dir, 'n_sims', str(base_dict['nsim']))
         if not threed:
-            loctimefile = f'ap_loctime_inner{base_dict["inner"]}_fiber{base_dict["fiber"]}_amp0.dat'
+            loctimefile = f'{f_prefix}inner{base_dict["inner"]}_fiber{base_dict["fiber"]}_amp0.dat'
         else:
-            loctimefile = f'ap_loctime_inner0_fiber{base_dict["master_fiber_index"]}_amp0.dat'
+            loctimefile = f'{f_prefix}inner0_fiber{base_dict["master_fiber_index"]}_amp0.dat'
 
         aploctime_path = os.path.join(
             n_sim_dir,

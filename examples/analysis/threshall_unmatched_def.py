@@ -28,7 +28,7 @@ for simdex in config['sim_data'].keys():
             }
         ).run()
         dat2d = q.data(
-            tortuosity=True, peri_site=False, zpos=True, cuffspan=[28000, 30000], label=nerve_label, efib_distance=False
+            tortuosity=True, peri_site=True, zpos=True, cuffspan=[28000, 30000], label=nerve_label, efib_distance=False
         )
         dat2d['type'] = '2D'
         dat2d['contact'] = ''
@@ -52,7 +52,7 @@ for simdex in config['sim_data'].keys():
         dat3d = q3.data(
             source_sample=source_samples[0],
             tortuosity=True,
-            peri_site=False,
+            peri_site=True,
             zpos=True,
             cuffspan=[28000, 30000],
             source_sim=source_sim,

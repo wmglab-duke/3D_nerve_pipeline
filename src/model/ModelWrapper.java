@@ -2075,11 +2075,11 @@ public class ModelWrapper {
                     }
 
                     if (!keep_mesh) {
-                        File mesh_path = new File(meshPath);
-                        boolean delSuccess = deleteDir(mesh_path);
-                        if (delSuccess) {
+                        //delete meshFile
+                        File meshDel = new File(meshFile);
+                        if (meshDel.delete()) {
                             System.out.println(
-                                "\tSuccessfully solved for /bases, therefore deleted /mesh directory."
+                                "\tSuccessfully solved for /bases, therefore deleted mesh.mph."
                             );
                         } else {
                             System.out.println(
