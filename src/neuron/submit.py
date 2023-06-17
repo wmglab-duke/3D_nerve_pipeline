@@ -764,7 +764,9 @@ def main():
         import wmglab_neuron
     except ImportError:
         raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
-    assert wmglab_neuron.__version__ == '0.0.1', 'wmglab_neuron version 0.0.1 required'
+    assert wmglab_neuron.__version__ == '0.0.2', (
+        'wmglab_neuron version 0.0.2 required, your version is ' + wmglab_neuron.__version__
+    )
 
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()
