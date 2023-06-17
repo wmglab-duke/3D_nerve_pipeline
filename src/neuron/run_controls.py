@@ -11,7 +11,7 @@ import sys
 import time
 
 from saving import Saving
-from wmglab_neuron import FiberBuilder, FiberModel, Stimulation, _Fiber
+from wmglab_neuron import FiberModel, ScaledStim, _Fiber, build_fiber
 from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
 
 
@@ -90,14 +90,15 @@ def main(
     # create fiber object
     model = getattr(FiberModel, sim_configs['fibers']['mode'])
     diameter = sim_configs['fibers']['z_parameters']['diameter']
-    fiber = FiberBuilder.generate(diameter=diameter, fiber_model=model, temperature=temperature, n_sections=axontotal)
+    fiber = build_fiber(diameter=diameter, fiber_model=model, temperature=temperature, n_sections=axontotal)
+    fiber.potentials = potentials
 
     # create stimulation object
-    stimulation = Stimulation(fiber, waveform=waveform, potentials=potentials, dt=dt, tstop=tstop)
+    stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop)
 
     # attach intracellular stimulation
     istim_configs = sim_configs['intracellular_stim']
-    stimulation.add_intracellular_stim(
+    stimulation.set_intracellular_stim(
         delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
         pw=istim_configs['times']['pw'],
         dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
@@ -115,7 +116,7 @@ def main(
     amps = protocol_configs['amplitudes'] if protocol_configs['mode'] == 'FINITE_AMPLITUDES' else False
 
     if not amps:  # enter binary search modes
-        amp = threshold_protocol(protocol_configs, sim_configs, stimulation)
+        amp = threshold_protocol(fiber, protocol_configs, sim_configs, stimulation)
         saving.save_thresh(amp)  # Save threshold value to file
         saving.save_variables(fiber, stimulation)  # Save user-specified variables
         saving.save_runtime(time.time() - start_time)  # Save runtime of simulation
@@ -125,7 +126,7 @@ def main(
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
-            n_aps = stimulation.run_sim(stimamp=amp)
+            n_aps = stimulation.run_sim(stimamp=amp, fiber=fiber)
             time_individual = time.time() - start_time - time_total
             saving.save_variables(fiber, stimulation, amp_ind)  # Save user-specified variables
             saving.save_activation(n_aps, amp_ind)  # Save number of APs triggered
@@ -134,12 +135,13 @@ def main(
             time_total += time_individual
 
 
-def threshold_protocol(protocol_configs: dict, sim_configs: dict, stimulation: Stimulation):
+def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimulation: ScaledStim):
     """Prepare for bisection threshold search.
 
+    :param fiber: fiber object
     :param protocol_configs: dictionary containing protocol configs from <sim_index>.json
     :param sim_configs: dictionary containing simulation configs from <sim_index>.json
-    :param stimulation: instance of Stimulation class
+    :param stimulation: instance of ScaledStim class
     :return: returns threshold amplitude (nA)
     """
     if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
@@ -164,6 +166,7 @@ def threshold_protocol(protocol_configs: dict, sim_configs: dict, stimulation: S
 
     # submit fiber for simulation
     amp, _ = stimulation.find_threshold(
+        fiber=fiber,
         condition=condition,
         bounds_search_mode=bounds_search_mode,
         bounds_search_step=bounds_search_step,
