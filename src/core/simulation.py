@@ -165,7 +165,7 @@ class Simulation(Configurable, Saveable):
             else:
                 source_sim = self.search(Config.SIM, 'supersampled_bases', 'source_sim')
                 source_sim_dir = os.path.join(os.path.split(sim_directory)[0], str(source_sim))
-                fiberset.generate_3d(source_sim_dir, super_sample=False).write(WriteMode.DATA, fiberset_directory)
+                fiberset.generate_3d(source_sim_dir).write(WriteMode.DATA, fiberset_directory)
 
             self.fiberset_map_pairs.append((fiberset.out_to_fib, fiberset.out_to_in))
             self.fibersets.append(fiberset)
