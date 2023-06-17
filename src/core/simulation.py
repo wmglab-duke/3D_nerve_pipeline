@@ -463,7 +463,12 @@ class Simulation(Configurable, Saveable):
                 potentials_ind, sim_dir, sim_num, t, waveform_ind
             )
 
-            src_bases_indices = self.srcs_mapping(sim_dir)
+            if not threed:
+                src_bases_indices = self.srcs_mapping(sim_dir)
+            else:
+                src_bases_indices = np.sort(
+                    [int(x) for x in os.listdir(os.path.join(sim_dir, str(sim_num), 'ss_bases'))]
+                )
 
             fiberset_directory = os.path.join(sim_dir, str(sim_num), 'fibersets', str(fiberset_ind))
 
