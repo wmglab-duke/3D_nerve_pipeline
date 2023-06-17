@@ -475,6 +475,8 @@ class FiberSet(Configurable, Saveable):
                     movedist = (
                         Point(fiber).distance(correct_fascicle) + buffer
                     )  # TODO add some leeway instead of doing +5 micron
+                    if movedist > 10 + buffer:
+                        warnings.warn(f"Moved a fiber by {movedist} microns.", stacklevel=2)
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
                     try:
