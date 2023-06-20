@@ -131,7 +131,7 @@ class Saving:
         :param amp_ind: index of amplitude if protocol is FINITE_AMPLITUDES
         """
         self.time_inds = [
-            t for t in self.time_inds if t < len(fiber.vm[1])
+            t for t in self.time_inds if t < len(stimulation.time)
         ]  # only include times before simulation ends
         # Put all recorded data into pandas DataFrame
         if hasattr(fiber, 'vm'):
