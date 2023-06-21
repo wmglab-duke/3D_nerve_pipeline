@@ -177,7 +177,7 @@ def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimula
         max_iterations=max_iterations,
         exit_t_shift=exit_t_shift,
     )
-    print(f'Threshold found! {amp}nA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
+    print(f'Threshold found! {amp} mA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
     return amp
 
 
