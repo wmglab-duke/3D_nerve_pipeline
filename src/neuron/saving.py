@@ -308,9 +308,9 @@ class Saving:
             with open(aploctime_path, 'w') as file:
                 for node_ind, _ in enumerate(fiber.nodes):
                     if fiber.myelinated:
-                        file.write(f"{fiber.apc[node_ind].time}")
+                        file.write(f"{fiber.apc[node_ind].time}\n")
                     else:
-                        file.write(f"{fiber.apc[node_ind].time}")
+                        file.write(f"{fiber.apc[node_ind].time}\n")
 
     def save_apendtimes(self, amp_ind: int, fiber: _Fiber):
         """Save time that AP last propagated at two specified indices to file.
