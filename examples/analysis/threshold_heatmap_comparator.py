@@ -19,19 +19,20 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samp2ds = [572, 5721, 5729]
+samp2ds = [572, 5729, 5721]
 model = 0
 simint = 3
-samp3ds = [573, 5731, 573]
+samp3ds = [573, 573, 5731]
 import matplotlib.colors as mplcolors
 import pandas as pd
 import seaborn as sns
+from matplotlib import colormaps
 
 from src.utils import Object
 
 
 def add_act_colorbar(ax):
-    cmap = plt.cm.get_cmap('plasma')
+    cmap = colormaps['plasma']
     cmap.set_bad(color='w')
     cmap = cmap.reversed()
     mappable = plt.cm.ScalarMappable(
@@ -55,7 +56,7 @@ def addpwfd(data, sim):
     return data
 
 
-plasmap = plt.cm.get_cmap('plasma')
+plasmap = colormaps['plasma']
 plasmap.set_bad(color='w')
 plasmap = plasmap.reversed()
 # %%

@@ -1792,6 +1792,7 @@ public class ModelWrapper {
                     }
 
                     if (!keep_mesh) {
+                        //delete meshFile
                         File meshDel = new File(meshFile);
                         if (meshDel.delete()) {
                             System.out.println(
