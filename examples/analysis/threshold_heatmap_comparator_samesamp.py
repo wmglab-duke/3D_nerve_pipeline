@@ -19,11 +19,11 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samplenames = ['2L', '2Ldef', '5R', '5Rdef']
-samp2ds = [252, 572, 5721]
+samplenames = ['2L', '2Lasc', '2Ldef', '3R', '3Rdef', '5R', '5Rdef', '6R', '6Rdef']
+samp2ds = [252, 2521, 2529, 372, 3721, 572, 5721, 672, 6721]
 model = 0
 simint = 10
-samp3ds = [253, 573, 5731]
+samp3ds = [253, 2531, 253, 373, 3731, 573, 5731, 673, 6731]
 import pickle
 
 import matplotlib.colors as mplcolors
@@ -92,7 +92,6 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
     threshdat.query('fiber_diam in [3,13]', inplace=True)
 
     # %%
-    samplenum = samp3d
     # calculate activation order
     drdat = threshdat.copy().reset_index()  # change this to repeated?
     drdat['percent_activated'] = 0
@@ -165,7 +164,7 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
                 thisdat['threshold_error'] = [(np.diff(thisdat['threshsave'])), (np.diff(thisdat['threshsave']))]
                 drdat.loc[thisdat.index, 'activation_error'] = thisdat['activation_error']
                 drdat.loc[thisdat.index, 'threshold_error'] = thisdat['threshold_error']
-        fiberpath = os.path.join(os.getcwd(), r'samples\{}\models\0\sims\3\3D_fiberset'.format(samplenum))
+        fiberpath = os.path.join(os.getcwd(), r'samples\{}\models\0\sims\3\3D_fiberset'.format(samp3d))
         slidespath = os.path.join(os.getcwd(), r'input\slides\{}slides.obj'.format(samplename))
 
         # load pickled slidelist
@@ -208,27 +207,27 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
                 # append to slide list
                 xs.append(x)
                 ys.append(-y)
-                zposact = drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samplenum')[
+                zposact = drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samp3d')[
                     'activation_zpos'
                 ].values[0]
                 if np.abs(zpos - zposact) <= 50:
                     xsact.append(x)
                     ysact.append(-y)
                 # color according to threshold value, using plasmap
-                # color = plasmap(drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samplenum')['threshold'].values[0])
+                # color = plasmap(drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samp3d')['threshold'].values[0])
                 # colors.append(color)
                 # now color according to error, but use a colormap with 0 as white
                 # # newcolormap = colormaps['binary']
                 # newcolormap = colormaps['PiYG']
-                # color = newcolormap(drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samplenum')['error'].values[0])
+                # color = newcolormap(drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samp3d')['error'].values[0])
                 # colors.append(color)
                 colors.append(
-                    drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samplenum')[
+                    drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samp3d')[
                         'activation_error'
                     ].values[0]
                 )
                 colorsthresh.append(
-                    drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samplenum')[
+                    drdat.query('master_fiber_index==@mfi and fiber_diam==@plotdiam and sample==@samp3d')[
                         'threshold_error'
                     ].values[0]
                 )

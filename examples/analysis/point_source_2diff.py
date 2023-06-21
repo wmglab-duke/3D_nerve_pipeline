@@ -11,11 +11,9 @@ os.chdir('../../')
 from src.core import Query
 from src.utils import Object
 
-sample = 272
-samp3d = 273
-nerve_label = '2R'
 model = 0
-sim = 3
+sim = 10
+n_sim = 1
 
 
 def pt_src(sourcepoint, nodepoint, current=1, rho=[1, 1, 1]):
@@ -64,7 +62,6 @@ def loadcoord(sim_object, sample, model, sim, n_sim):
 
 
 # TODO get peak 2diffs for each sample and compare their location and value. start with 2L, will need to get contact centers for the rest of them
-n_sim = 0
 rho = [1, 1, 5]
 for sample, samp3d, nerve_label in zip(
     [252, 372, 572, 652, 672], [253, 373, 573, 653, 673], ['2L', '3R', '5R', '6L', '6R']
@@ -72,7 +69,7 @@ for sample, samp3d, nerve_label in zip(
     sim_object = Query.get_object(Object.SIMULATION, [sample, model, sim])
 
     # todo: make loop samples and save to disk
-    threshdat = pd.read_csv('thresh_unmatched_sim3.csv')
+    threshdat = pd.read_csv(f'thresh_unmatched_sim{sim}_og.csv')
     threshdat = threshdat.query(f'sample=={sample} & nsim=={n_sim} & model=={model} & sim=={sim}')
     threshdat.reset_index(drop=True, inplace=True)
     sns.set_style('whitegrid')
@@ -130,7 +127,7 @@ for sample, samp3d, nerve_label in zip(
         z_coords_arc = (z_coords_arc[1:] + z_coords_arc[:-1]) / 2
 
         fiberpath = os.path.join(
-            'samples', str(samp3d), 'models', str(model), 'sims', str(sim), '3D_fiberset', f'{fiber3d}.dat'
+            'samples', str(samp3d), 'models', str(model), 'sims', '3', '3D_fiberset', f'{fiber3d}.dat'
         )
         fiber = nd_line(np.loadtxt(fiberpath, skiprows=1))
         z_coords3d = np.array([fiber.interp(d) for d in z_coords_arc])[:, 2]
@@ -218,4 +215,4 @@ for sample, samp3d, nerve_label in zip(
     axs[2].set_title('3D (point sources)')
     plt.subplots_adjust(top=0.8)
     plt.legend()
-    plt.savefig(f'{nerve_label}_{n_sim}_2diff.png', dpi=400)
+    plt.savefig(f'plots/2diff/{nerve_label}_{n_sim}_{sim}2diff.png', dpi=400)
