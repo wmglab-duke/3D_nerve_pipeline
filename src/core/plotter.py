@@ -623,7 +623,7 @@ def datamatch(dest, dat3d, importval, merge=False):
         ][importval]
         val = list(val)
         if len(val) != 1:
-            sys.exit('issue here')
+            raise RuntimeError('Found more than one match for master fiber index.')
         dest.iloc[i, -1] = val[0]
     if np.any(dest[importval] == np.nan):
         sys.exit('issue here too')

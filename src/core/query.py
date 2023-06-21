@@ -681,6 +681,8 @@ class Query(Configurable, Saveable):
                     except IndexError:
                         print('stillope')
                         pass
+                    except TypeError:
+                        print('hereee')
             if inner is not None:
                 fit = {'a': 0.03702, 'b': 10.5}
                 thk = fit.get("a") * 2 * np.sqrt(inner.area() / np.pi) + fit.get("b")

@@ -14,7 +14,7 @@
     {
       "name": "3R",
       "index3d": 373,
-      "exsamples": [370, 372]
+      "exsamples": [370, 371, 372]
     },
     {
       "name": "5R",
@@ -34,6 +34,34 @@
   ],
   "sim_data": {
     "3": {
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.25,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.25,
+          "fiber_diam": 5
+        },
+        "2": {
+          "pulse_width": 0.25,
+          "fiber_diam": 7
+        },
+        "3": {
+          "pulse_width": 0.25,
+          "fiber_diam": 9
+        },
+        "4": {
+          "pulse_width": 0.25,
+          "fiber_diam": 11
+        },
+        "5": {
+          "pulse_width": 0.25,
+          "fiber_diam": 13
+        }
+      }
+    },
+    "10": {
       "nsim_key": {
         "0": {
           "pulse_width": 0.25,

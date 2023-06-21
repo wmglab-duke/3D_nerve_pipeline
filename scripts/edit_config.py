@@ -153,9 +153,9 @@ elif c == 'r':
     runlist.remove('2731')
     runlist.remove('6531')
 
-    change = ['keep']
+    change = ['sims']
 
-    newval = {"bases": False, "debug_geom": True, "mesh": False}
+    newval = [7, 11]
 
     for run in runlist:
         # change, newval = param_picker(path + f'/{run}.json')
