@@ -31,13 +31,13 @@ def run(args):
         print(f'You are running Python {sys.version_info.major}.{sys.version_info.minor}, but 3.7 or later required')
         sys.exit()
 
-    try:
-        import wmglab_neuron
-    except ImportError:
-        raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
-    assert wmglab_neuron.__version__ == '0.0.2', (
-        'wmglab_neuron version 0.0.2 required, your version is ' + wmglab_neuron.__version__
-    )
+    # try: #TODO re-enable
+    #     import wmglab_neuron
+    # except ImportError: #TODO Change this to not check importerror but just check presence of package
+    #     raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
+    # assert wmglab_neuron.__version__ == '0.0.2', (
+    #     'wmglab_neuron version 0.0.2 required, your version is ' + wmglab_neuron.__version__
+    # )
 
     # create bin/ directory for storing compiled Java files if it does not yet exist
     if not (os.path.exists('bin')):

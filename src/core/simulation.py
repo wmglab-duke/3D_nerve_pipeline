@@ -42,7 +42,7 @@ def get_z_coords(root, file):
         for coords_file_line in coords_file_lines:
             coords = np.append(
                 coords,
-                float(coords_file_line.split(' ')[-2]),  # this is the z coord
+                float(coords_file_line.split(' ')[2]),  # this is the z coord #TODO Check if this is broken in master
             )
     return coords
 

@@ -117,16 +117,20 @@ class FiberSet(Configurable, Saveable):
                 shiftloc = longit[np.argmin(np.abs(longit[:, 2] - shiftdist)), 2]
                 override_shift = shiftloc - length / 2
                 fib = self._generate_z([(0, 0)], override_length=length - 5, override_shift=override_shift)
-                fib[0] = [(x[0], x[1], x[2] + 2.5) for x in fib[0]]
+                fiberpoints = fib[0]['fiber'] if type(fib[0]) is dict else fib[0]
+                fiberpoints = [(x[0], x[1], x[2] + 2.5) for x in fiberpoints]
                 # validation
-                fibarr = np.array(fib)
-                nodes = fibarr[0][::11][:, 2]
+                fibarr = np.array(fiberpoints)
+                nodes = fibarr[::11][:, 2]
                 test3d = nd_line(np.loadtxt(f'{sim_directory}/3D_fiberset/{fiber}.dat', skiprows=1))
                 valid = [test3d.interp(node)[-1] - ztarget for node in nodes]
                 assert min(np.abs(valid)) < 5, "point was not shifted correctly"
             else:
                 fib = self._generate_z([(0, 0)], override_length=length - 5)
-                fib[0] = [(x[0], x[1], x[2] + 2.5) for x in fib[0]]
+                fiberpoints = fib[0]['fiber'] if type(fib[0]) is dict else fib[0]
+                fibarr = np.array(fiberpoints)
+                fiberpoints = [(x[0], x[1], x[2] + 2.5) for x in fiberpoints]
+            fib[0]['fiber'] = fiberpoints
             fibers.extend(fib)
             # TODO: modulus by INL
         self.fibers = fibers
