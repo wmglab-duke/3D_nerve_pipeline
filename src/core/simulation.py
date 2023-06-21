@@ -442,7 +442,10 @@ class Simulation(Configurable, Saveable):
             for fiber_ind in range(diams.size):
                 diam = diams[fiber_ind]
 
-                inner, fiber = self.indices_fib_to_n(my_fiberset_ind, fiber_ind)
+                if not threed:
+                    inner, fiber = self.indices_fib_to_n(my_fiberset_ind, fiber_ind)
+                else:
+                    inner, fiber = 0, fiber_ind
 
                 inner_fiber_diam_key.append((inner, fiber, diam))
 
@@ -466,8 +469,9 @@ class Simulation(Configurable, Saveable):
             if not threed:
                 src_bases_indices = self.srcs_mapping(sim_dir)
             else:
+                source_sim = supersampled_bases.get('source_sim')
                 src_bases_indices = np.sort(
-                    [int(x) for x in os.listdir(os.path.join(sim_dir, str(sim_num), 'ss_bases'))]
+                    [int(x) for x in os.listdir(os.path.join(sim_dir, str(source_sim), 'ss_bases'))]
                 )
 
             fiberset_directory = os.path.join(sim_dir, str(sim_num), 'fibersets', str(fiberset_ind))
