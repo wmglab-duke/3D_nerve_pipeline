@@ -155,7 +155,11 @@ elif c == 'r':
 
     change = ['sims']
 
-    newval = [7, 11]
+    # newval = [7, 11]
+
+    print(str([int(x) for x in runlist]).replace(',', ''))
+
+    newval = [3, 10]
 
     for run in runlist:
         # change, newval = param_picker(path + f'/{run}.json')

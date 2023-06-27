@@ -595,3 +595,8 @@ class Slide:
                         iddraw.text(location, str(int(row['id'])), font=fnt, fill=0)
                 imgi = factor_resize(imgi, resize_factor)
                 imgi.save(path['i'])
+
+    def inners(self, polygon=False):
+        if polygon:
+            return [inner.polygon() for f in self.fascicles for inner in f.inners]
+        return [inner for f in self.fascicles for inner in f.inners]

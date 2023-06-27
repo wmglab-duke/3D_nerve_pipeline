@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samp2d = 272
+samp2d = 2520
 model = 0
 simint = 3
-samp3d = 273
+samp3d = 2530
 import pandas as pd
 import seaborn as sns
 
@@ -33,7 +33,7 @@ q = Query(
         'indices': {'sample': [samp2d], 'model': [model], 'sim': [simint]},
     }
 ).run()
-dat2d = q.data()
+dat2d = q.data(thresh_only=True)
 dat2d['threed'] = False
 q3 = Query(
     {
@@ -42,7 +42,7 @@ q3 = Query(
         'indices': {'sample': [samp3d], 'model': [model], 'sim': [simint]},
     }
 ).run()
-dat3d = q3.data(source_sample=samp2d)
+dat3d = q3.data(source_sample=samp2d, thresh_only=True)
 dat3d['threed'] = True
 sample_obj = q.get_object(Object.SAMPLE, [samp2d])
 sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])

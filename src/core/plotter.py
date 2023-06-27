@@ -610,6 +610,29 @@ def datamatch_agg(dest, dat3d, importval, merge=False):
     return dest
 
 
+# def datamatch(dest, dat3d, importval, merge=False):
+#     dest[importval + '3d'] = np.nan
+
+#     # Create a multi-column key for merging
+#     dest['key'] = dest['model'] + dest['sim'] + dest['nerve_label'] + dest['nsim'] + dest['master_fiber_index']
+#     dat3d['key'] = dat3d['model'] + dat3d['sim'] + dat3d['nerve_label'] + dat3d['nsim'] + dat3d['master_fiber_index']
+
+#     # Merge the dataframes based on the multi-column key
+#     merged_df = pd.merge(dest, dat3d[[importval, 'key']], on='key', how='left')
+
+#     # Update the values in the destination dataframe
+#     dest[importval + '3d'] = merged_df[importval].values
+
+#     # Check for NaN values
+#     if dest[importval + '3d'].isna().any():
+#         sys.exit('Issue with NaN values.')
+
+#     # Clean up by removing the extra columns
+#     dest.drop(columns=['key'], inplace=True)
+
+#     return dest
+
+
 def datamatch(dest, dat3d, importval, merge=False):
     dest[importval + '3d'] = np.nan
     for i in range(len(dest)):
@@ -622,7 +645,9 @@ def datamatch(dest, dat3d, importval, merge=False):
             & (dat3d["master_fiber_index"] == row['master_fiber_index'])
         ][importval]
         val = list(val)
-        if len(val) != 1:
+        if len(val) == 0:
+            raise RuntimeError('No match for master fiber index.')
+        elif len(val) > 1:
             raise RuntimeError('Found more than one match for master fiber index.')
         dest.iloc[i, -1] = val[0]
     if np.any(dest[importval] == np.nan):

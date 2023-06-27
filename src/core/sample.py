@@ -10,6 +10,7 @@ https://github.com/wmglab-duke/ascent
 import math
 import os
 import shutil
+import sys
 import warnings
 from typing import List
 
@@ -505,6 +506,8 @@ class Sample(Configurable, Saveable):
         s_pre = self.search(Config.SAMPLE, "scale", "shrinkage")
         if s_pre == 0:
             return slide
+        else:
+            sys.exit('Temporarily disallowing shrinkage correction')
         if s_mode is None:
             print(
                 'WARNING: ShrinkageMode in Config.Sample is not defined or mode provided is not a known option. '

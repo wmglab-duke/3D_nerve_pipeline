@@ -7,9 +7,10 @@ import pandas as pd
 sys.path.append('.')
 import os
 
-os.chdir('../..')
-
 from src.core.query import Query
+
+# os.chdir('../..')
+
 
 model = 0
 source_sim = 3

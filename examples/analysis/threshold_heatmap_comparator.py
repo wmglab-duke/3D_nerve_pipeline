@@ -109,9 +109,11 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     )
     g.set_xlabels('')
     g.set_ylabels('')
+    g.set_titles(col_template="", row_template='')
     for ax, diam in zip(g.axes[:, 0], [3, 13]):
         ax.set_ylabel(f'D: {diam} um')
-    g.set_titles(col_template="col_name", row_template='')
+    for ax, name in zip(g.axes[0, :], ['2DEM', '3DM']):
+        ax.set_title(name)
 
     # plot activation order
     drdat['threshold'] = drdat['percent_activated']
@@ -128,8 +130,8 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     add_act_colorbar(g.axes)
     g.set_xlabels('')
     g.set_ylabels('')
+    g.set_titles(col_template="", row_template='')
     for ax, diam in zip(g.axes[:, 0], [3, 13]):
         ax.set_ylabel(f'D: {diam} um')
-    for ax, diam in zip(g.axes[:, 0], [3, 13]):
-        ax.set_ylabel(f'D: {diam} um')
-    g.set_titles(col_template="col_name", row_template='')
+    for ax, name in zip(g.axes[0, :], ['2DEM', '3DM']):
+        ax.set_title(name)

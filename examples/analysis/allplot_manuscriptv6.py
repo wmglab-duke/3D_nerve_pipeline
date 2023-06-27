@@ -87,8 +87,12 @@ main_comparison = center_comparison
 simNUM = input('Gimme simNUM')
 if simNUM == 10:
     main_comparison = cath_comparison
+
+pal2d3d = ['#d95f02', '#7570b3']
+
 # code whole file to optionally run on 3 or 10 so that I can run all monpolar data
 # %% set which comparison to run
+print('threshload')
 # base data
 threshload = pd.read_csv(f'thresh_unmatched_sim{simNUM}_og.csv')
 # TEMPORARY: remove 3R
@@ -102,21 +106,21 @@ threshload.loc[threedcontact, 'contact'] = '3D'
 # set all inners and outers where 'type' is 3D to 0
 threshload.loc[(threshload['type'] == '3D'), 'inner'] = 0
 threshload.loc[(threshload['type'] == '3D'), 'outer'] = 0
+#%% inners need to match the cathodic leading contact
+# Query the rows with type '3D'
+df_3d = threshload.query("type == '3D'")
 
-# inners need to match the cathodic leading contact
-for i, row in threshload.iterrows():
-    if row['type'] == '3D':
-        # quickinner is only where the sample ends in a "2", must convert int to string
-        quickinner = threshload[threshload['sample'].astype(str).str[-1] == '2']
-        nerver = row.nerve_label[:2]
-        data = quickinner.query(
-            f"nerve_label == '{nerver}' and master_fiber_index == @row.master_fiber_index and type == '2D' and nsim==0"
-        )
-        assert len(data) == 1
-        threshload.loc[i, 'inner'] = data['inner'].values[0]
-        threshload.loc[i, 'outer'] = data['outer'].values[0]
-        threshload.loc[i, 'fiber'] = data['fiber'].values[0]
+# Query the rows with type '2D' and sample ending in '1'
+df_2d = threshload.query(f"type == '2D' and contact in {main_comparison}")
 
+# Merge the 3D and 2D data, keeping track of original row indices
+merged_df = pd.merge(df_3d, df_2d, on=['nerve_label', 'master_fiber_index', 'nsim'], suffixes=('_3d', '_2d'))
+
+# Update the 'inner', 'outer', and 'fiber' columns in the original DataFrame
+threshload.loc[df_3d.index, 'inner'] = merged_df['inner_2d'].values
+threshload.loc[df_3d.index, 'outer'] = merged_df['outer_2d'].values
+threshload.loc[df_3d.index, 'fiber'] = merged_df['fiber_2d'].values
+#%%
 if gogo == "initial":  # remove all where nerve_label length is >2
     threshload = threshload[threshload['nerve_label'].str.len() < 3]
 threshload['type'] = threshload['type'].replace({'2D': '2DEM', '3D': '3DM'})
@@ -128,7 +132,10 @@ threshload['fiber_diam'] = threshload['fiber_diam'].astype(int)
 threshload['contact'] = (
     threshload['sample'].astype(str).str[2].replace({'0': 'anodic', '2': 'cathodic', '3': '3D', '1': 'center'})
 )
+threshload.sort_values(by='sample')
+
 # %%Setup
+print('matched')
 # 3DM and 2DEM trhresholds as different col same row
 matched = datamatch(threshload.query('type=="2DEM"'), threshload.query('type=="3DM"'), 'threshold').drop(columns='type')
 # add new EMsample column to matched dataframe, which is the nerve label plus the first letter of the contact type capitalized
@@ -148,7 +155,8 @@ repeated['type'] = pd.Categorical(repeated['type'], categories=['2DEM', '3DM'], 
 multimatched = datamatchlist(
     threshload.query('type=="2DEM"'), threshload.query('type=="3DM"'), ['threshold', 'activation_zpos']
 ).drop(columns='type')
-
+#%%
+print('dose-response')
 # dose response
 drdat = threshload.copy()  # change this to repeated?
 drdat['percent_activated'] = 0
@@ -164,8 +172,6 @@ drdat.sort_values('modeltype', inplace=True)
 drmatch = datamatch(drdat.query('modeltype=="2DEM"'), drdat.query('modeltype=="3DM"'), 'percent_activated').drop(
     columns='modeltype'
 )
-
-pal2d3d = ['#d95f02', '#7570b3']
 
 sys.exit('prepdone')
 # %% threshold violinplot
@@ -234,6 +240,36 @@ for i, non_directness in enumerate(non_directness_values):
     plot_tortuosity(non_directness, axs[i])
 plt.subplots_adjust(wspace=0)
 plt.tight_layout()
+plt.show()
+#%% tortuosity lineplot
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+nsimdata = threshload.query('fiber_diam in [3,13] and type=="3DM"')
+corrs = (
+    nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'type'])['threshold', 'tortuosity'].corr().iloc[0::2, -1]
+)
+corrs = corrs.reset_index().rename(columns={'threshold': 'correlation'})
+corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+corrs['tortuosity'] = corrs['tortuosity'] ** 2
+means = corrs.groupby(['type', 'fiber_diam']).agg(np.mean)
+# plot one one line out to max of 3DM
+g = sns.lmplot(
+    data=nsimdata.rename(columns={"nerve_label": "Sample"}),
+    y='threshold',
+    x='tortuosity',
+    hue='Sample',
+    palette='colorblind',
+    col='fiber_diam',
+    scatter_kws={'linewidths': 1, 'edgecolor': 'k', 's': 50},
+    facet_kws={'margin_titles': True, 'sharey': False},
+)
+for ax, r in zip(g.axes.ravel(), means['tortuosity']):
+    # ax.text(0.5, 0.9, f'\nmean r={r:.2f}', transform=ax.transAxes)
+    print(r"$R^2$ = " + f"{r:.2f}")
+g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+# plt.xlabel('3DM Threshold (mA)')
+g.set_titles(col_template='{col_name} μm')
+g.fig.set_size_inches([10, 5])
 plt.show()
 # %% dose-response
 # generate a median line across all samples
@@ -365,20 +401,23 @@ outdata['median_diff'] = (outdata.threshold_median - outdata.threshold3d_median)
 sns.set(font_scale=1.75)
 sns.set_style('whitegrid')
 sns.lineplot(data=outdata, x='fiber_diam', y='mean_diff', hue='nerve_label', palette='colorblind', marker='o')
+plt.xticks(outdata.fiber_diam.unique())
 plt.ylabel('Percent Difference')
-plt.xlabel('Fiber Diam')
+plt.xlabel('Fiber Diameter (μm)')
 plt.title('Mean Threshold Percent Difference')
 plt.legend(loc='lower right', bbox_to_anchor=(1.4, 0))
 plt.show()
 sns.lineplot(data=outdata, x='fiber_diam', y='std_diff', hue='nerve_label', palette='colorblind', marker='o')
+plt.xticks(outdata.fiber_diam.unique())
 plt.ylabel('Percent Difference')
-plt.xlabel('Fiber Diam')
+plt.xlabel('Fiber Diameter (μm)')
 plt.title('Standard Deviation Percent Difference')
 plt.legend(loc='lower right', bbox_to_anchor=(1.4, 0))
 plt.show()
 sns.lineplot(data=outdata, x='fiber_diam', y='median_diff', hue='nerve_label', palette='colorblind', marker='o')
+plt.xticks(outdata.fiber_diam.unique())
 plt.ylabel('Percent Difference')
-plt.xlabel('Fiber Diam')
+plt.xlabel('Fiber Diameter (μm)')
 plt.title('Median Threshold Percent Difference')
 plt.legend(loc='lower right', bbox_to_anchor=(1.4, 0))
 plt.show()
@@ -449,13 +488,14 @@ for i, row in newdr.iterrows():
     val = thisdat.percent_activated.values[0]
     assert not val is np.nan
     newdr.loc[i, 'percent_activated2d'] = val
+newdr.sort_values(by='samplenum')
 # %%
-sns.set(font_scale=2, style='whitegrid')
+sns.set(font_scale=1.75, style='whitegrid')
 plt.figure()
 g = sns.catplot(
     kind='swarm',
     row='fiber_diam',
-    data=newdr.query(f"fiber_diam in [3,13] and contact in {main_comparison}"),
+    data=newdr.query(f"fiber_diam in [3,13] and contact in {main_comparison} and nerve_label=='5R'"),
     y='percent_activated',
     x='modeltype',
     units='nerve_label',
@@ -466,6 +506,7 @@ g = sns.catplot(
     estimator=None,
     linewidth=0,
     facet_kws={'margin_titles': True},
+    legend=False,
 )
 
 g.set_titles(row_template='', col_template='{col_name}')
@@ -473,7 +514,16 @@ g.axes[0][0].set_xlabel('')
 g.axes[0][0].set_ylabel('Proportion of fibers activated\nFiber diameter: 3 μm')
 g.axes[1][0].set_ylabel('Proportion of fibers activated\nFiber diameter: 13 μm')
 g.set_xlabels('')
-g._legend.set_title('Percentage of\n2D fibers activated')
+# g._legend.set_title('Percentage of\n2D fibers activated')
+# Remove the legend and add a colorbar
+norm = plt.Normalize(0, 1)
+sm = plt.cm.ScalarMappable(cmap="plasma", norm=norm)
+sm.set_array([])
+g.figure.colorbar(
+    sm, ax=g.axes.ravel().tolist(), aspect=14, shrink=0.6, label='Proportion 2DEM fibers activated', pad=0.15
+).ax.yaxis.set_ticks_position('left')
+g.fig.set_size_inches([10, 10])
+
 # %% organization compare type with recruitment order
 # remove all samples which dont end with a 2
 sns.reset_orig()
@@ -482,87 +532,95 @@ mpl.rcParams['figure.dpi'] = 400
 # threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')]
 # # subtract 1 from sample if type is 3DM
 # threshdat['sample'] = threshdat.apply(lambda x: x['sample'] - 1 if x.type == "3DM" else x['sample'], axis=1)
-data = newdr.query(f"fiber_diam in [3,13] and contact in {cath_comparison} and nerve_label=='5R'")
+data = newdr.query(f"fiber_diam in [3,13] and contact in {main_comparison} and nerve_label=='5R'")
+
+sns.reset_orig()
+sns.set(font_scale=1.25, style='whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+# plt.suptitle('thresholds compared between 2DEM (cathodic) and 3DM')
+g = sns.FacetGrid(
+    data,
+    row="nerve_label",
+    col='fiber_diam',
+    sharey=False,
+    margin_titles=True,
+)
+g.map_dataframe(
+    sns.lineplot,
+    x='modeltype',
+    y='threshold',
+    units='master_fiber_index',
+    estimator=None,
+    palette='rainbow',
+    hue='inner',
+    linewidth=1,
+    alpha=0.25,
+)
+g.map_dataframe(
+    sns.stripplot,
+    jitter=False,
+    linewidth=1,
+    x='modeltype',
+    y='threshold',
+    palette='rainbow',
+    hue='inner',
+)
+
+plt.subplots_adjust(top=0.9)
+g.fig.set_size_inches(5, 5)
+g.set_titles(col_template='{col_name}', row_template='')
+g.set_xlabels('')
+
+# handles, labs = plt.gca().get_legend_handles_labels()
+# plt.legend(title='inner', handles=handles[14:], labels=labs[14:], bbox_to_anchor=[1, 2])
+
+g.set_ylabels('Threshold (mA)')
+# plt.suptitle('thresholds compared between 2DEM (cathodic) and 3DM')
+#%% organization compare nsim
+# remove all samples which dont end with a 2
+sns.reset_orig()
+sns.set(font_scale=1.25, style='whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+threshdat = threshload[~threshload['sample'].astype(str).str.endswith('0')].query('nerve_label=="5R"')
+data = threshdat.query('fiber_diam in [3,13] and sim == 3')
 # apply minmax normalization within sample and nsim
-g = sns.FacetGrid(
-    data,
-    col="nerve_label",
-    row='fiber_diam',
-    sharey=False,
-    margin_titles=True,
+data['Threshold (mA)'] = data.groupby(['sample', 'nsim', 'type'])['threshold'].transform(
+    lambda x: (x - x.min()) / (x.max() - x.min())
 )
+data.query(f'contact in {main_comparison}', inplace=True)
+# set nsim as categorical
+data['Fiber Diameter'] = data['nsim'].astype('category')
+# nsim 0 is three and nsim 5 is thirteen
+data['Fiber Diameter'].cat.rename_categories({0: '3', 5: '13'}, inplace=True)
+g = sns.FacetGrid(data, col='type', sharey=False, margin_titles=True)
 g.map_dataframe(
     sns.lineplot,
-    x='modeltype',
-    y='percent_activated',
+    x='Fiber Diameter',
+    y='Threshold (mA)',
     units='master_fiber_index',
     estimator=None,
+    color='k',
+    alpha=0.25,
     palette='rainbow',
     hue='inner',
-    linewidth=1,
-    alpha=0.25,
 )
 g.map_dataframe(
     sns.stripplot,
+    linewidth=1,
+    x='Fiber Diameter',
+    y='Threshold (mA)',
     jitter=False,
-    linewidth=1,
-    x='modeltype',
-    y='percent_activated',
     palette='rainbow',
     hue='inner',
 )
-
-plt.subplots_adjust(top=0.9)
-g.fig.set_size_inches(4, 6)
+# plt.subplots_adjust(top=0.9)
+# plt.suptitle('min-max normalized thresholds compared between 3 um and 13 um thresholds (cath 2DEMEM)')
 g.set_titles(col_template='{col_name}', row_template='')
-g.set_xlabels('')
-g.axes[0, 0].set_ylabel('Percent\nFiber Diam: 3μm')
-g.axes[1, 0].set_ylabel('Percent\nFiber Diam: 13μm')
-
-# handles, labs = plt.gca().get_legend_handles_labels()
-# plt.legend(title='inner', handles=handles[14:], labels=labs[14:], bbox_to_anchor=[1, 2])
-
-
-# plt.suptitle('thresholds compared between 2DEM (cathodic) and 3DM')
-g = sns.FacetGrid(
-    data,
-    col="nerve_label",
-    row='fiber_diam',
-    sharey=False,
-    margin_titles=True,
-)
-g.map_dataframe(
-    sns.lineplot,
-    x='modeltype',
-    y='threshold',
-    units='master_fiber_index',
-    estimator=None,
-    palette='rainbow',
-    hue='inner',
-    linewidth=1,
-    alpha=0.25,
-)
-g.map_dataframe(
-    sns.stripplot,
-    jitter=False,
-    linewidth=1,
-    x='modeltype',
-    y='threshold',
-    palette='rainbow',
-    hue='inner',
-)
-
-plt.subplots_adjust(top=0.9)
-g.fig.set_size_inches(3, 6)
-g.set_titles(col_template='{col_name}', row_template='')
-g.set_xlabels('')
-
-# handles, labs = plt.gca().get_legend_handles_labels()
-# plt.legend(title='inner', handles=handles[14:], labels=labs[14:], bbox_to_anchor=[1, 2])
-
-g.axes[0, 0].set_ylabel('Threshold (mA)\nD: 3μm')
-g.axes[1, 0].set_ylabel('Threshold (mA)\nD: 13μm')
-# plt.suptitle('thresholds compared between 2DEM (cathodic) and 3DM')
+g.set_ylabels('Normalized Threshold')
+# plt.savefig('matchsim.png', dpi=400)
+# g.axes.ravel()[0].set_ylabel('Threshold (mA)\nModel: 2DEM')
+# g.axes.ravel()[6].set_ylabel('Threshold (mA)\nModel: 3DM')
+g.fig.set_size_inches(5, 5)
 # %% remake the above with individual calls of histplot
 sns.set(font_scale=1.75, style='whitegrid')
 newthreshz = threshload.copy()
@@ -572,7 +630,7 @@ for nerve_label in pd.unique(newthreshz.nerve_label):
     for ax, modeltype in zip(axs, ["2DEM", "3DM"]):
         g = sns.histplot(
             data=newthreshz.query(
-                f"nsim in [0,5] and contact in {main_comparison} and nerve_label=='{nerve_label}' and type=='{modeltype}'"
+                f"fiber_diam in [3,13] and contact in {main_comparison} and nerve_label=='{nerve_label}' and type=='{modeltype}'"
             ).rename(columns={'nerve_label': 'Sample'}),
             y='activation_zpos',
             hue='fiber_diam',
@@ -598,8 +656,45 @@ axs[0].plot([], [], color=sns.color_palette('binary')[2], label='13 μm', linewi
 axs[0].legend(loc='center left', bbox_to_anchor=(2.2, 0.5))
 axs[0].set_xlim(reversed(axs[0].get_xlim()))
 axs[0].set_ylabel("Activation Location (cm)")
-axs[0].set_title("2DEM")
-axs[1].set_title("3DM")
+axs[0].set_title("2DEM-100%")
+axs[1].set_title("3DM-100%")
+# %% remake the above with individual calls of histplot
+sns.set(font_scale=1.75, style='whitegrid')
+newthreshz = threshload.copy()
+newthreshz['activation_zpos_oneten'] = newthreshz['activation_zpos_oneten'] / 10000
+fig, axs = plt.subplots(1, 2, sharex=False, sharey=True)
+for nerve_label in pd.unique(newthreshz.nerve_label):
+    for ax, modeltype in zip(axs, ["2DEM", "3DM"]):
+        g = sns.histplot(
+            data=newthreshz.query(
+                f"fiber_diam in [3,13] and contact in {main_comparison} and nerve_label=='{nerve_label}' and type=='{modeltype}'"
+            ).rename(columns={'nerve_label': 'Sample'}),
+            y='activation_zpos_oneten',
+            hue='fiber_diam',
+            # hue='Sample',
+            # facet_kws={'sharex': False},
+            # kind='kde',
+            palette=[sns.color_palette('binary')[5], sns.color_palette('binary')[2]],
+            common_norm=False,
+            # legend=False,
+            # multiple="fill",
+            element='poly',
+            fill=False,
+            bins=np.arange(1.5, 3.6, 0.1),
+            ax=ax,
+        )
+# delete both legends and remake my own
+for ax in axs:
+    ax.get_legend().remove()
+# make my own legend
+axs[0].plot([], [], color=sns.color_palette('binary')[5], label='3 μm', linewidth=2)
+axs[0].plot([], [], color=sns.color_palette('binary')[2], label='13 μm', linewidth=2)
+# put legenbd to right of figure
+axs[0].legend(loc='center left', bbox_to_anchor=(2.2, 0.5))
+axs[0].set_xlim(reversed(axs[0].get_xlim()))
+axs[0].set_ylabel("Activation Location (cm)")
+axs[0].set_title("2DEM-110%")
+axs[1].set_title("3DM-110%")
 # %% Correlation2DEM3DM
 sns.reset_orig()
 sns.set(font_scale=1.75)
@@ -659,10 +754,10 @@ for comparison in [
     # ['threshold', 'tortuosity'],
     # ['threshold', 'nodal_tortuosity'],
     # ['threshold', 'cuff_tortuosity'],
-    # ['threshold', 'peri_thk_act_site'],
-    # ['threshold', 'smallest_thk_under_cuff'],
+    ['threshold', 'peri_thk_act_site'],
+    ['threshold', 'smallest_thk_under_cuff'],
     # ['threshold','peri_thk_act_site'],
-    ['smallest_thk_under_cuff', 'peri_thk_act_site'],
+    # ['smallest_thk_under_cuff', 'peri_thk_act_site'],
     # # TODO try smallest thk over whole cuffspan as well as over both cuff spans
     # ['threshold', 'minimum_efib_distance'],
     # ['threshold', 'peak_second_diff'],
@@ -736,24 +831,6 @@ tort = np.median(threshload.query('type=="3DM"').tortuosity)
 plt.gca().set_aspect(0.00012)
 print(f'Median tortuosity: {tort}')
 # plt.title('Histogram of tortuosity values')
-# %% tortuosity lineplot
-sns.set(font_scale=1.75)
-sns.set_style('whitegrid')
-nsimdata = threshload.query('type=="3DM"')
-for fiber_diam in pd.unique(nsimdata['fiber_diam']):
-    for nerve in pd.unique(nsimdata['nerve_label']):
-        # calculate slope of linear regression of threshold vs tortuosity
-        this_data = nsimdata.query(f'fiber_diam=={fiber_diam} and nerve_label=="{nerve}"')
-        this_data['threshold'] = this_data['threshold'] / np.amax(this_data['threshold'])
-        slope, intercept, r_value, p_value, std_err = stats.linregress(this_data['tortuosity'], this_data['threshold'])
-        # add slope to corrs where fiber_diam and nerve_label match
-        corrs.loc[(corrs['fiber_diam'] == fiber_diam) & (corrs['nerve_label'] == nerve), 'slope'] = slope
-plt.gcf().set_size_inches(4, 4)
-sns.swarmplot(data=corrs, y='slope', x='nerve_label', hue='fiber_diam', palette='RdPu')
-plt.legend(bbox_to_anchor=[1, 1], title='D (μm)')
-# plt.yscale('log')
-plt.ylabel(r'slope $(\frac{mA/mA}{μm/μm})$')
-plt.xlabel('')
 #%%
 corrs = (
     nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'type'])['threshold', 'tortuosity'].corr().iloc[0::2, -1]
@@ -816,6 +893,7 @@ corrs['R2'] = corrs['minimum_efib_distance'] ** 2
 means = (
     corrs.query('fiber_diam in [3,13]').groupby(['type', 'fiber_diam'])["minimum_efib_distance"].agg(np.mean).dropna()
 )
+print(means)
 # plot one one line out to max of 3DM
 g = sns.lmplot(
     data=nsimdata.rename(columns={"nerve_label": "Sample"}).query('fiber_diam in [3,13]'),
@@ -834,6 +912,119 @@ for ax, r in zip(g.axes.ravel(), means):
 g.axes.ravel()[0].set_ylabel('Threshold (mA)')
 # plt.xlabel('3DM Threshold (mA)')
 g.set_titles(col_template='{col_name} μm')
+g.set_xlabels("Minimum Electrode-Fiber\nDistance (μm)")
+g.set_ylabels('Threshold (mA)')
+g.fig.set_size_inches([10, 10])
+plt.show()
+# %% peri_thk lineplot
+val = 'peri_thk'
+# val = 'peri_thk'
+xlabel = "Activation Site Perineurium\nThickness(μm)"
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+nsimdata = threshload.query(f'contact in {main_comparison}')
+# nsimdata = newdefdat.query(f'contact in {main_comparison} and deformation=="3D-3D"')
+corrs = nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'type'])[['threshold', val]].corr().iloc[0::2, -1]
+corrs = corrs.reset_index().rename(columns={'threshold': 'correlation'})
+corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+# print(corrs)
+for fiber_diam in pd.unique(corrs['fiber_diam']):
+    for nerve in pd.unique(nsimdata['nerve_label']):
+        for typ in pd.unique(nsimdata['type']):
+            # calculate slope of linear regression of threshold vs peri_thk_act_site
+            this_data = nsimdata.query(f'fiber_diam=={fiber_diam} and nerve_label=="{nerve}" and type =="{typ}"')
+            this_data['threshold'] = this_data['threshold'] / np.amax(this_data['threshold'])
+            slope, intercept, r_value, p_value, std_err = stats.linregress(
+                this_data[val] / 1000, this_data['threshold']
+            )
+            # add slope to corrs where fiber_diam and nerve_label match
+            corrs.loc[
+                (corrs['fiber_diam'] == fiber_diam) & (corrs['nerve_label'] == nerve) & (corrs['type'] == typ), 'slope'
+            ] = slope
+plt.gcf().set_size_inches(4, 4)
+sns.swarmplot(data=corrs, y='slope', x='type', hue='fiber_diam', palette='RdPu', dodge=True)
+plt.legend(bbox_to_anchor=[1, 1], title='D (μm)')
+# plt.yscale('log')
+plt.ylabel(r'slope $(\frac{mA/mA}{mm})$')
+plt.xlabel('')
+corrs['R2'] = corrs[val] ** 2
+means = corrs.query('fiber_diam in [3,13]').groupby(['type', 'fiber_diam'])[val].agg(np.mean).dropna()
+print(means)
+# plot one one line out to max of 3DM
+g = sns.lmplot(
+    data=nsimdata.rename(columns={"nerve_label": "Sample"}).query('fiber_diam in [3,13]'),
+    y='threshold',
+    x='peri_thk_act_site',
+    hue='Sample',
+    palette='colorblind',
+    col='fiber_diam',
+    row='type',
+    scatter_kws={'linewidths': 1, 'edgecolor': 'k', 's': 50},
+    facet_kws={'margin_titles': True, 'sharey': False},
+)
+for ax, r in zip(g.axes.ravel(), means):
+    # ax.text(0.5, 0.9, f'\nmean r={r:.2f}', transform=ax.transAxes)
+    print(r"$R^2$ = " + f"{r:.2f}")
+g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+# plt.xlabel('3DM Threshold (mA)')
+g.set_titles(col_template='{col_name} μm')
+g.set_xlabels(xlabel)
+g.set_ylabels('Threshold (mA)')
+g.fig.set_size_inches([10, 10])
+plt.show()
+# %% second diff
+val = 'peak_second_diff'
+xlabel = "Second Difference Ve"
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+nsimdata = threshload.query(f'contact in {main_comparison}')
+# nsimdata = newdefdat.query(f'contact in {main_comparison} and deformation=="3D-3D"')
+corrs = nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'type'])[['threshold', val]].corr().iloc[0::2, -1]
+corrs = corrs.reset_index().rename(columns={'threshold': 'correlation'})
+corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+# print(corrs)
+for fiber_diam in pd.unique(corrs['fiber_diam']):
+    for nerve in pd.unique(nsimdata['nerve_label']):
+        for typ in pd.unique(nsimdata['type']):
+            # calculate slope of linear regression of threshold vs peri_thk_act_site
+            this_data = nsimdata.query(f'fiber_diam=={fiber_diam} and nerve_label=="{nerve}" and type =="{typ}"')
+            this_data['threshold'] = this_data['threshold'] / np.amax(this_data['threshold'])
+            slope, intercept, r_value, p_value, std_err = stats.linregress(
+                this_data[val] / 1000, this_data['threshold']
+            )
+            # add slope to corrs where fiber_diam and nerve_label match
+            corrs.loc[
+                (corrs['fiber_diam'] == fiber_diam) & (corrs['nerve_label'] == nerve) & (corrs['type'] == typ), 'slope'
+            ] = slope
+plt.gcf().set_size_inches(4, 4)
+sns.swarmplot(data=corrs, y='slope', x='type', hue='fiber_diam', palette='RdPu', dodge=True)
+plt.legend(bbox_to_anchor=[1, 1], title='D (μm)')
+# plt.yscale('log')
+plt.ylabel(r'slope $(\frac{mA/mA}{mm})$')
+plt.xlabel('')
+corrs['R2'] = corrs[val] ** 2
+means = corrs.query('fiber_diam in [3,13]').groupby(['type', 'fiber_diam'])[val].agg(np.mean).dropna()
+print(means)
+# plot one one line out to max of 3DM
+g = sns.lmplot(
+    data=nsimdata.rename(columns={"nerve_label": "Sample"}).query('fiber_diam in [3,13]'),
+    y='threshold',
+    x='peri_thk_act_site',
+    hue='Sample',
+    palette='colorblind',
+    col='fiber_diam',
+    row='type',
+    scatter_kws={'linewidths': 1, 'edgecolor': 'k', 's': 50},
+    facet_kws={'margin_titles': True, 'sharey': False},
+)
+for ax, r in zip(g.axes.ravel(), means):
+    # ax.text(0.5, 0.9, f'\nmean r={r:.2f}', transform=ax.transAxes)
+    print(r"$R^2$ = " + f"{r:.2f}")
+g.axes.ravel()[0].set_ylabel('Threshold (mA)')
+# plt.xlabel('3DM Threshold (mA)')
+g.set_titles(col_template='{col_name} μm')
+g.set_xlabels(xlabel)
+g.set_ylabels('Threshold (mA)')
 g.fig.set_size_inches([10, 10])
 plt.show()
 # %% Percent Error
@@ -907,7 +1098,7 @@ scoredat['fiber_diam'] = pd.Categorical(scoredat['fiber_diam'].astype(int), cate
 ax = sns.boxplot(data=scoredat, y='score2d3d', x='fiber_diam', boxprops={'facecolor': 'white'})
 ax = sns.stripplot(data=scoredat, y='score2d3d', x='fiber_diam', color='black', size=5, jitter=0.25)
 ax.set_xlabel('Fiber Diameter (μm)')
-plt.ylabel('RC')
+plt.ylabel('AR')
 # plt.gcf().set_size_inches([3, 5])
 # %% organizatino compare type
 sns.set(font_scale=1.75)
@@ -926,7 +1117,7 @@ plt.figure()
 scoredat = pd.DataFrame(scores)
 ax = sns.boxplot(data=scoredat, y='scoresmolbeeg', x='type', boxprops={'facecolor': 'white'})
 ax = sns.stripplot(data=scoredat, y='scoresmolbeeg', x='type', color='black', size=5, jitter=0.25)
-plt.ylabel('RC')
+plt.ylabel('AR')
 plt.xlabel('')
 # plt.gcf().set_size_inches([3, 5])
 # %% peri-thk with 2DEM3DM
@@ -1083,7 +1274,6 @@ plt.ylabel('Percent Difference')
 plt.xticks(pd.unique(compiled_data['fiber_diam']))
 plt.ylim(errorlim)
 plt.legend(title='', ncols=2, bbox_to_anchor=[0.9, 1.2])
-
 # %% BEGIN DEFORMATION ANALYSIS
 # match fascicle thresholds
 sns.set(font_scale=1.75)
@@ -1092,9 +1282,9 @@ threshes = pd.concat(
     [pd.read_csv(f'thresh_unmatched_sim{simNUM}_og.csv'), pd.read_csv(f'thresh_unmatched_sim{simNUM}_def.csv')]
 )
 # remove all rows where nerve label contains "asc" and "sample" contains "3"
-threshes = threshes[~(threshes['nerve_label'].str.contains('asc') & threshes['sample'].astype(str).str.contains('3'))]
+threshes = threshes[~((threshes['nerve_label'].str.contains('asc')) & (threshes['sample'].astype(str).str[2] == '3'))]
 # duplicate all samples where nerve label contains "def" and "sample" contains "3"
-defdat = threshes[threshes['nerve_label'].str.contains('def') & threshes['sample'].astype(str).str.contains('3')]
+defdat = threshes[(threshes['nerve_label'].str.contains('def')) & (threshes['sample'].astype(str).str[2] == '3')]
 # replacee all "1" with "9" in sample column
 defdat['sample'] = defdat['sample'].astype(str).str.replace('1', '9').astype(int)
 # replace all "def" with "asc" in nerve label column
@@ -1121,24 +1311,62 @@ newdefdat['type'] = newdefdat['type'].replace({'2D': '2DEM', '3D': '3DM'})
 newdefdat = addpwfd(newdefdat, '3')
 newdefdat['fiber_diam'] = newdefdat['fiber_diam'].astype(int)
 # contact is cathodic if the third digit of sample int is 2, anodic if 0
-newdefdat['contact'] = newdefdat['sample'].astype(str).str[2].replace({'2': 'cathodic', '0': 'anodic', '3': '3D'})
-# remove all aodic
-newdefdat = newdefdat.query(f'contact in {cath_comparison}')
+newdefdat['contact'] = (
+    newdefdat['sample'].astype(str).str[2].replace({'2': 'cathodic', '1': 'center', '0': 'anodic', '3': '3D'})
+)
+
 # set deformation as ordered categorical
 newdefdat['deformation'] = pd.Categorical(
     newdefdat['deformation'], categories=['Undeformed', '2D-3D', '3D-3D'], ordered=True
 )
 newdefdat['nerve_label'] = pd.Categorical(newdefdat['nerve_label'], categories=['2L', '3R', '5R', '6R'], ordered=True)
+deftomatch = newdefdat.copy()
+
+# remove all aodic
+newdefdat = newdefdat.query(f'contact in {main_comparison}')
 # remove unused colors from palette
 defpal = [sns.color_palette('colorblind')[ind] for ind in [0, 2, 3, 5]]
 defdefcomp = newdefdat.query('type=="3DM" and deformation != "2D-3D"')
 defdefcomp['deformed'] = defdefcomp['deformation'] != "Undeformed"
+#%% tortuosities
+sns.set(font_scale=1.75)
+sns.set_style('white')
+plt.figure()
+sns.histplot(data=threshload.query('type=="3DM"'), x='cuff_tortuosity', element='step')
+xl = plt.xlim()
+plt.figure()
+sns.histplot(data=newdefdat.query('type=="3DM" and deformation =="3D-3D"'), x='cuff_tortuosity', element='step')
+plt.xlim(xl)
+
+for nerve_label in pd.unique(threshload.nerve_label):
+    print(nerve_label, np.median(threshload.query('nerve_label==@nerve_label and type=="3DM"')['cuff_tortuosity']))
+for nerve_label in pd.unique(newdefdat.query('deformation=="Undeformed"').nerve_label):
+    print(
+        nerve_label,
+        np.median(
+            newdefdat.query('nerve_label==@nerve_label and type=="3DM" and deformation=="Undeformed"')[
+                'cuff_tortuosity'
+            ]
+        ),
+    )
+for nerve_label in pd.unique(newdefdat.query('deformation=="3D-3D"').nerve_label):
+    print(
+        nerve_label,
+        np.median(
+            newdefdat.query('nerve_label==@nerve_label and type=="3DM" and deformation=="3D-3D"')['cuff_tortuosity']
+        ),
+    )
+tort = np.median(newdefdat.query('type=="3DM" and deformation=="Undeformed"').cuff_tortuosity)
+print(f'Median tortuosity: {tort}')
+tort = np.median(newdefdat.query('type=="3DM" and deformation=="3D-3D"').cuff_tortuosity)
+print(f'Median tortuosity: {tort}')
+# plt.title('Histogram of tortuosity values')
 # %%
 sns.set(font_scale=2, style='whitegrid')
 g = sns.catplot(
     kind='violin',
     col='deformation',
-    data=newdefdat.query("nsim in [0,5]"),
+    data=newdefdat.query("fiber_diam in [3,13]"),
     x='nerve_label',
     y='threshold',
     sharey=False,
@@ -1165,7 +1393,7 @@ plt.show()
 g = sns.catplot(
     kind='violin',
     col='deformation',
-    data=newdefdat.query("nsim in [0,5]"),
+    data=newdefdat.query("fiber_diam in [3,13]"),
     x='type',
     y='threshold',
     sharey=False,
@@ -1186,69 +1414,25 @@ g.set_titles(col_template="Deformation: {col_name}", row_template="Fiber Diamete
 # g.axes.ravel()[0].set_title('3 μm')
 # g.axes.ravel()[1].set_title('13 μm')
 # plt.show()
-# %%
-defdr = newdefdat.copy()
-defdr['percent_activated'] = 0
-defdr = defdr.rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
-for i, row in defdr.iterrows():
-    thisdat = defdr.query(
-        'modeltype == @row.modeltype and samplenum == @row.samplenum and fiber_diam == @row.fiber_diam and sim == @row.sim and deformation == @row.deformation'
-    )
-    # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
-    defdr.loc[i, 'percent_activated'] = len(thisdat.query('threshold <= @row.threshold')) / len(thisdat)
-# defdr.sort_values('modeltype', inplace=True)
-# %% activation order
-for stringdat in ['Undeformed', '3D-3D']:
-    newdefdr = defdr.copy().query(f"deformation=='{stringdat}'")
-    sns.set(font_scale=2)
-    sns.set_style('whitegrid')
-    newdefdr['percent_activated2d'] = np.nan
-    # go through every row and for each fiber find the 2D activation percent
-    for i, row in newdefdr.iterrows():
-        # find the 2D threshold for this fiber (same nerve, fiber diameter, and master fiber index)
-        thisdat = newdefdr.query(
-            'modeltype == "2DEM" and nerve_label == @row.nerve_label and fiber_diam == @row.fiber_diam and sim == @row.sim and master_fiber_index == @row.master_fiber_index and contact == "cathodic"'
-        )
-        assert len(thisdat) == 1
-        val = thisdat.percent_activated.values[0]
-        assert not val is np.nan
-        newdefdr.loc[i, 'percent_activated2d'] = val
-    sns.set(font_scale=2.25, style='whitegrid')
-    plt.figure()
-    g = sns.catplot(
-        kind='swarm',
-        row='fiber_diam',
-        data=newdefdr.query(f"fiber_diam in [3,13] and contact in {cath_comparison}"),
-        y='percent_activated',
-        x='modeltype',
-        units='nerve_label',
-        col='nerve_label',
-        palette='plasma',
-        hue='percent_activated2d',
-        # hue='inner',
-        estimator=None,
-        linewidth=0,
-        facet_kws={'margin_titles': True},
-        s=25,
-    )
-    plt.subplots_adjust(top=0.87)
-    plt.suptitle(stringdat, x=0.37)
-    g.set_titles(row_template='', col_template='{col_name}')
-    g.axes[0][0].set_xlabel('')
-    g.axes[0][0].set_ylabel('Proportion fibers\nactivated (3 μm)')
-    g.axes[1][0].set_ylabel('Proportion fibers\nactivated (13 μm)')
-    g.set_xlabels('')
-    g.legend.remove()
-    norm = plt.Normalize(0, 1)
-    sm = plt.cm.ScalarMappable(cmap="plasma", norm=norm)
-    sm.set_array([])
+#%% dose-response
+def calculate_dose_response(df, threshold_column, outcolumn, grouping_columns):
+    def calculate_dose_response_per_sample(group):
+        threshold_values = group[threshold_column].values
+        activated_fibers = group[threshold_column].values[:, None] <= threshold_values
+        dose_response = activated_fibers.sum(axis=0) / len(group)
+        group[outcolumn] = dose_response
+        return group
 
-    # Remove the legend and add a colorbar
-    g.figure.colorbar(
-        sm, ax=g.axes.ravel().tolist(), aspect=10, shrink=0.8, label='Proportion 2DEM fibers activated'
-    ).ax.yaxis.set_ticks_position('left')
+    return df.groupby(grouping_columns).apply(calculate_dose_response_per_sample)
 
-    # g._legend.set_title('')
+
+defdr = newdefdat.copy().rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
+defdr = calculate_dose_response(
+    defdr,
+    'threshold',
+    'percent_activated',
+    grouping_columns=['modeltype', 'samplenum', 'fiber_diam', 'sim', 'deformation'],
+)
 # %% dose-response deformed
 sns.set(font_scale=2)
 sns.set_style('whitegrid')
@@ -1258,7 +1442,7 @@ plt.figure()
 g = sns.relplot(
     kind='line',
     row='fiber_diam',
-    data=defdr.query(f"fiber_diam in [3,13] and contact in {cath_comparison}"),
+    data=defdr.query(f"fiber_diam in [3,13] and contact in {main_comparison}"),
     y='percent_activated',
     x='threshold',
     col='deformation',
@@ -1290,7 +1474,87 @@ g.set_xlabels('Threshold (mA)')
 g.set_titles(col_template="Deformation: {col_name}", row_template='')
 g._legend.texts[0].set_text('')
 g._legend.texts[5].set_text('')
-# %%
+# %% activation order
+for stringdat in ['Undeformed', '3D-3D']:
+    newdefdr = defdr.copy().query(f"deformation=='{stringdat}'")
+    sns.set(font_scale=2)
+    sns.set_style('whitegrid')
+    newdefdr['percent_activated2d'] = np.nan
+    # go through every row and for each fiber find the 2D activation percent
+    for i, row in newdefdr.iterrows():
+        # find the 2D threshold for this fiber (same nerve, fiber diameter, and master fiber index)
+        thisdat = newdefdr.query(
+            f'modeltype == "2DEM" and nerve_label == @row.nerve_label and fiber_diam == @row.fiber_diam and sim == @row.sim and master_fiber_index == @row.master_fiber_index and contact in {main_comparison}'
+        )
+        assert len(thisdat) == 1
+        val = thisdat.percent_activated.values[0]
+        assert not val is np.nan
+        newdefdr.loc[i, 'percent_activated2d'] = val
+    sns.set(font_scale=2.25, style='whitegrid')
+    plt.figure()
+    g = sns.catplot(
+        kind='swarm',
+        row='fiber_diam',
+        data=newdefdr.query(f"fiber_diam in [3,13] and contact in {main_comparison}"),
+        y='percent_activated',
+        x='modeltype',
+        units='nerve_label',
+        col='nerve_label',
+        palette='plasma',
+        hue='percent_activated2d',
+        # hue='inner',
+        estimator=None,
+        linewidth=0,
+        facet_kws={'margin_titles': True},
+        s=25,
+    )
+    plt.subplots_adjust(top=0.87)
+    plt.suptitle(stringdat, x=0.37)
+    g.set_titles(row_template='', col_template='{col_name}')
+    g.axes[0][0].set_xlabel('')
+    g.axes[0][0].set_ylabel('Proportion fibers\nactivated (3 μm)')
+    g.axes[1][0].set_ylabel('Proportion fibers\nactivated (13 μm)')
+    g.set_xlabels('')
+    g.legend.remove()
+    norm = plt.Normalize(0, 1)
+    sm = plt.cm.ScalarMappable(cmap="plasma", norm=norm)
+    sm.set_array([])
+
+    # Remove the legend and add a colorbar
+    g.figure.colorbar(
+        sm, ax=g.axes.ravel().tolist(), aspect=10, shrink=0.8, label='Proportion 2DEM fibers activated'
+    ).ax.yaxis.set_ticks_position('left')
+
+    # g._legend.set_title('')
+#%% recruitment cost:
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+scores = []
+datahere = deftomatch.query('deformation in ["3D-3D","Undeformed"]')
+for deformation in datahere.deformation.unique():
+    for comp in [main_comparison, cath_comparison]:
+        threshdat = datahere.query(f'contact in {comp} and deformation==@deformation')
+        for nerve in pd.unique(threshdat['nerve_label']):
+            for n in [3, 13]:
+                shortdat = threshdat.query(f'nerve_label=="{nerve}" and fiber_diam=={n}')
+                data2d = shortdat.query('type=="2DEM"').sort_values('threshold').master_fiber_index
+                data3d = shortdat.query('type=="3DM"').sort_values('threshold').master_fiber_index
+                rc = compute_reorder_cost(list(data2d), list(data3d))
+                scores.append(
+                    {'sample': nerve, 'fiber_diam': n, 'score2d3d': rc, 'deformation': deformation, 'slice': comp[0]}
+                )
+scoredat = pd.DataFrame(scores)
+scoredat['fiber_diam'] = pd.Categorical(scoredat['fiber_diam'].astype(int), categories=[3, 13], ordered=True)
+g = sns.FacetGrid(data=scoredat, col='deformation', row='slice', margin_titles=True)
+g.map_dataframe(sns.boxplot, y='score2d3d', x='fiber_diam', boxprops={'facecolor': 'white'})
+g.map_dataframe(sns.stripplot, y='score2d3d', x='fiber_diam', color='black', size=5, jitter=0.25)
+ax.set_xlabel('Fiber Diameter (μm)')
+plt.ylabel('AR')
+g.set_titles(col_template='{col_name}')
+g.set_ylabels('AR')
+g.set_xlabels('D (μm)')
+# plt.title(f'{deformation} - {comp[0]}')
+# %% dose-response onset sat deformed
 peses = []
 pemeans = []
 for stringdat in ['Undeformed', '2D-3D', '3D-3D']:
@@ -1442,6 +1706,8 @@ g.set_titles(col_template='Deformation: {col_name}')
 g.set_ylabels("Percent Difference")
 plt.xticks([3, 5, 7, 9, 11, 13])
 plt.ylim(ylimpe)
+sns.move_legend(g, 'lower center', bbox_to_anchor=(0.75, 0.5), ncol=1)
+
 # %% dose-response deformed vs undeformed 3D only
 sns.set(font_scale=2)
 sns.set_style('whitegrid')
@@ -1452,32 +1718,65 @@ defdefdr['deformed'] = defdefdr['deformation'] == "2D-3D"
 plt.figure()
 g = sns.relplot(
     kind='line',
-    row='fiber_diam',
+    col='fiber_diam',
     data=defdefdr.query("fiber_diam in [3,13]"),
     y='percent_activated',
     x='threshold',
     hue='nerve_label',
-    col="nerve_label",
+    row="nerve_label",
     palette=defpal,
     estimator=None,
     linewidth=3,
     facet_kws={'sharex': False, 'margin_titles': True},
     **{'style': 'deformed'},
 )
-handles, labs = plt.gca().get_legend_handles_labels()
-plt.legend(title='', handles=handles[1:], labels=labs[1:], bbox_to_anchor=[1, 1])
 
+# Accessing the underlying matplotlib axes
+axes = g.axes.flatten()
+
+# Fill the space between the lines for each facet
+for ax in axes:
+    line1 = ax.lines[0]
+    line2 = ax.lines[1]
+
+    x1 = line1.get_xdata()
+    y1 = line1.get_ydata()
+
+    x2 = line2.get_xdata()
+    y2 = line2.get_ydata()
+
+    # Interpolate the lines to create smooth curves
+    x_interp = np.linspace(min(min(x1), min(x2)), max(max(x1), max(x2)), 1000)
+    y1_interp = np.interp(x_interp, x1, y1)
+    y2_interp = np.interp(x_interp, x2, y2)
+
+    # Take the color of the fill from one of the lines
+    fill_color = line1.get_color()
+
+    # Hide the lines
+    line1.set_visible(False)
+    line2.set_visible(False)
+
+    # Fill the space between the interpolated curves with the chosen color
+    ax.fill_between(x_interp, y1_interp, y2_interp, color=fill_color, alpha=0.3)
+
+# sns.move_legend(g, 'lower center', bbox_to_anchor=(0.9, 0.4), ncol=1)
+g.legend.remove()
 g.axes[0][0].set_xlabel('')
-g.axes[0][0].set_ylabel('Proportion fibers\nactivated (3 μm)')
-g.axes[1][0].set_ylabel('Proportion fibers\nactivated (13 μm)')
+g.set_ylabels('Proportion Activated')
 g._legend.set_title('')
 g.set_xlabels('Threshold (mA)')
-g.set_titles(col_template="Deformation: {col_name}", row_template='')
+g.set_titles(col_template="D: {col_name} μm", row_template='{row_name}')
 g._legend.texts[0].set_text('')
 g._legend.texts[5].set_text('')
-# %% TODO with deformed
+g._legend.texts[6].set_text('Undeformed')
+g._legend.texts[7].set_text('Deformed')
+# %% deformation mean error threshold
 tomatch = newdefdat.query('deformation=="3D-3D"')
 defmatched = datamatch(tomatch.query('type=="2DEM"'), tomatch.query('type=="3DM"'), 'threshold').drop(columns='type')
+tomatch = newdefdat.query('deformation=="Undeformed"')
+ogmatched = datamatch(tomatch.query('type=="2DEM"'), tomatch.query('type=="3DM"'), 'threshold').drop(columns='type')
+defsupermatch = pd.concat([defmatched, ogmatched])
 # calculate mean, std, and median for each sample
 outdata = defmatched.groupby(['nerve_label', 'fiber_diam']).agg(
     {'threshold': ['mean', 'std', 'median'], 'threshold3d': ['mean', 'std', 'median']}
@@ -1498,8 +1797,300 @@ plt.xlabel('Fiber Diam')
 plt.title('Mean Threshold Percent Difference\nDeformation=3D-3D')
 plt.legend(loc='lower right', bbox_to_anchor=(1.4, 0))
 plt.show()
+#%% new idea analysis
+concats = []
+for deftype in ["Undeformed", "3D-3D"]:
+    thismatch = deftomatch.query('deformation==@deftype')
+    matchednow = datamatch(thismatch.query('type=="2DEM"'), thismatch.query('type=="3DM"'), 'threshold').drop(
+        columns='type'
+    )
+    matchednow['deformation'] = deftype
+    concats.append(matchednow)
+concats = pd.concat(concats)
+concats['deformation'] = pd.Categorical(concats['deformation'], categories=['Undeformed', '3D-3D'], ordered=True)
+#%%
+def concordance_correlation_coefficient(y_true, y_pred):
+    """Concordance correlation coefficient."""
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    # Raw data
+    dct = {'y_true': y_true, 'y_pred': y_pred}
+    df = pd.DataFrame(dct)
+    # Remove NaNs
+    df = df.dropna()
+    # Pearson product-moment correlation coefficients
+    y_true = df['y_true']
+    y_pred = df['y_pred']
+    cor = np.corrcoef(y_true, y_pred)[0][1]
+    # Means
+    mean_true = np.mean(y_true)
+    mean_pred = np.mean(y_pred)
+    # Population variances
+    var_true = np.var(y_true)
+    var_pred = np.var(y_pred)
+    # Population standard deviations
+    sd_true = np.std(y_true)
+    sd_pred = np.std(y_pred)
+    # Calculate CCC
+    numerator = 2 * cor * sd_true * sd_pred
+    denominator = var_true + var_pred + (mean_true - mean_pred) ** 2
 
-# %%
+    return numerator / denominator
+
+
+#%%
+grouped = concats.query('contact != "center"').groupby(
+    ['nerve_label', 'fiber_diam', 'master_fiber_index', 'deformation']
+)
+# take min threshold and threshold3d for each group
+minthresh = grouped['threshold'].min().reset_index()
+minthresh3d = grouped['threshold3d'].min().reset_index()
+# merge minthresh and minthresh3d
+minthresh.dropna(inplace=True)
+minthresh = minthresh.merge(
+    minthresh3d, on=['nerve_label', 'fiber_diam', 'master_fiber_index', 'deformation'], suffixes=['_2d', '_3d']
+)
+# plot minthresh vs minthresh3d
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+
+nsimdata = minthresh.query('fiber_diam in [3,13]')  # TODO replace all cath comparison with non
+g = sns.relplot(
+    data=nsimdata.rename(columns={'nerve_label': 'Sample'}),
+    kind='scatter',
+    col='fiber_diam',
+    x='threshold',
+    y='threshold3d',
+    # hue='Sample',
+    color='white',
+    row='deformation',
+    # s=20,
+    palette='colorblind',
+    facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+    edgecolor='black',
+    linewidth=1,
+    alpha=1,
+)
+# TODO Clean up this calc
+for diam, pos, ax, deformation in zip(
+    [3, 13, 3, 13], (0.2, 0.8, 0.2, 0.8), g.axes.ravel(), ["Undeformed", "Undeformed", "3D-3D", "3D-3D"]
+):
+    rdata = nsimdata.query(f'fiber_diam=={diam} and deformation=="{deformation}"')
+    r = concordance_correlation_coefficient(rdata.threshold3d, rdata.threshold)
+    perc = sum(rdata.threshold > rdata.threshold3d) / len(rdata.threshold)
+    lim = ax.get_xlim()[1]
+    # add correlation to plot
+    # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
+    print(f'{diam} {deformation} μm: {r ** 2:.2f}')
+    # ax.set_title(f'{diam} μm')
+    ax.plot([0, lim], [0, lim], '--k', linewidth=2, label='1:1 line')
+    # ax.set_aspect('equal', 'box')
+    # ax.apply_aspect()
+    ax.set_xlim([0, lim])
+    ax.set_ylim([0, lim])
+
+    # ax.set_yticks(ax.get_xticks())
+g.set_titles('D: {col_name} μm')
+g.set_xlabels('2DEM Threshold (mA)')
+g.set_ylabels('3DM Threshold (mA)')
+#%% LCCC comparison maincath
+
+nsimdata = concats.query(
+    f'fiber_diam in [3,13] and contact in {main_comparison}'
+)  # TODO replace all cath comparison with non
+g = sns.relplot(
+    data=nsimdata.rename(columns={'nerve_label': 'Sample'}),
+    kind='scatter',
+    col='fiber_diam',
+    x='threshold',
+    y='threshold3d',
+    # hue='Sample',
+    color='white',
+    row='deformation',
+    # s=20,
+    palette='colorblind',
+    facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+    edgecolor='black',
+    linewidth=1,
+    alpha=1,
+)
+# TODO Clean up this calc
+for diam, pos, ax, deformation in zip(
+    [3, 13, 3, 13], (0.2, 0.8, 0.2, 0.8), g.axes.ravel(), ["Undeformed", "Undeformed", "3D-3D", "3D-3D"]
+):
+    rdata = nsimdata.query(f'fiber_diam=={diam} and deformation=="{deformation}"')
+    r = concordance_correlation_coefficient(rdata.threshold3d, rdata.threshold)
+    perc = sum(rdata.threshold > rdata.threshold3d) / len(rdata.threshold)
+    lim = ax.get_xlim()[1]
+    # add correlation to plot
+    # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
+    print(f'{diam} {deformation} μm: {r ** 2:.2f}')
+    # ax.set_title(f'{diam} μm')
+    ax.plot([0, lim], [0, lim], '--k', linewidth=2, label='1:1 line')
+    # ax.set_aspect('equal', 'box')
+    # ax.apply_aspect()
+    ax.set_xlim([0, lim])
+    ax.set_ylim([0, lim])
+
+    # ax.set_yticks(ax.get_xticks())
+g.set_titles(col_template='D: {col_name} μm')
+g.set_xlabels('2DEM Threshold (mA)')
+g.set_ylabels('3DM Threshold (mA)')
+#%% Deformation thresholds unity line
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+# usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10')
+usedata = defsupermatch
+usedata['deformation'] = usedata.deformation.astype(str)
+nsimdata = usedata.query(
+    f'fiber_diam in [3,13] and contact in {main_comparison}'
+)  # TODO replace all cath comparison with non
+g = sns.relplot(
+    data=nsimdata.rename(columns={'nerve_label': 'Sample'}),
+    kind='scatter',
+    col='fiber_diam',
+    x='threshold',
+    y='threshold3d',
+    # hue='Sample',
+    color='white',
+    row='deformation',
+    # s=20,
+    palette='colorblind',
+    facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+    edgecolor='black',
+    linewidth=1,
+    alpha=1,
+)
+# TODO Clean up this calc
+for diam, pos, ax, deformation in zip(
+    [3, 13, 3, 13], (0.2, 0.8, 0.2, 0.8), g.axes.ravel(), ["Undeformed", "Undeformed", "3D-3D", "3D-3D"]
+):
+    rdata = nsimdata.query(f'fiber_diam=={diam} and deformation=="{deformation}"')
+    r, p = pearsonr(rdata.threshold, rdata.threshold3d)
+    perc = sum(rdata.threshold > rdata.threshold3d) / len(rdata.threshold)
+    lim = ax.get_xlim()[1]
+    # add correlation to plot
+    # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
+    print(f'{diam} {deformation} μm: {r ** 2:.2f}')
+    ax.set_title(f'{diam} μm')
+    ax.plot([0, lim], [0, lim], '--k', linewidth=2, label='1:1 line')
+    # ax.set_aspect('equal', 'box')
+    # ax.apply_aspect()
+    ax.set_xlim([0, lim])
+    ax.set_ylim([0, lim])
+
+    # ax.set_yticks(ax.get_xticks())
+
+g.set_xlabels('2DEM Threshold (mA)')
+g.set_ylabels('3DM Threshold (mA)')
+# %% matching
+threeddefmatch = deftomatch.query('deformation=="3D-3D"')
+deffinalmatch = datamatch(threeddefmatch.query('type=="2DEM"'), threeddefmatch.query('type=="3DM"'), 'threshold').drop(
+    columns='type'
+)
+#%% Correlation2DEM3DM deformed
+sns.reset_orig()
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+usedata = deffinalmatch.rename(columns={'threshold': 'threshold2DEM'})
+for comparison in [
+    ['threshold2DEM', 'threshold3d'],
+    ['threshold2DEM', 'peri_thk'],
+    ['threshold3d', 'peri_thk'],
+    # # ['threshold2DEM', 'minimum_efib_distance'],
+    ['threshold2DEM', 'peak_second_diff'],
+    ['peak_second_diff', 'peri_thk'],
+    # # ['peak_second_diff', 'minimum_efib_distance'],
+    ['peak_second_z', 'activation_zpos'],
+    ['peak_second_diff_node', 'apnode'],
+]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
+    corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], categories=['cathodic', 'center', 'anodic'], ordered=True)
+    plt.figure()
+    # g = sns.FacetGrid(data=corrs,col='contact')
+    # g.map_dataframe(sns.stripplot, hue='Sample', y='correlation',dodge=True, palette='colorblind')
+    # g.map_dataframe(sns.boxplot,y='correlation', boxprops={'facecolor':'None'},whis=100)
+    sns.swarmplot(data=corrs, palette='RdPu', y='contact', hue='fiber_diam', x='correlation', dodge=True, s=6)
+    sns.boxplot(data=corrs, y='contact', x='correlation', boxprops={'facecolor': 'None'}, whis=100)
+    # plt.subplots_adjust(top=0.8)
+    plt.title(f'Correlation between \n{comparison[0]} and {comparison[1]}', pad=25)
+    plt.gca().set_xlim([-1, 1])
+    plt.legend(title="D (μm)", bbox_to_anchor=(1, 1))
+    plt.ylabel('')
+    plt.gca().set_yticklabels('')
+    plt.gcf().set_size_inches([6, 5])
+
+    # make lmplot to accompany
+    sns.lmplot(
+        data=usedata.query('fiber_diam in [3,13]'),
+        x=comparison[0],
+        y=comparison[1],
+        hue='nerve_label',
+        col='contact',
+        col_order=['cathodic', 'center', 'anodic'],
+        palette='colorblind',
+        row='fiber_diam',
+        row_order=[3, 13],
+        facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+        scatter_kws={'linewidth': 1, 'edgecolor': 'k'},
+    )
+# %% Correlation 3Donly deformed
+sns.reset_orig()
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+usedata = newdefdat.query('contact=="3D" and deformation=="3D-3D"')
+for comparison in [
+    # ['threshold', 'tortuosity'],
+    # ['threshold', 'nodal_tortuosity'],
+    ['threshold', 'cuff_tortuosity'],
+    # ['threshold', 'peri_thk_act_site'],
+    ['threshold', 'smallest_thk_under_cuff'],
+    ['threshold', 'peri_thk_act_site'],
+    # ['smallest_thk_under_cuff', 'peri_thk_act_site'],
+    # TODO try smallest thk over whole cuffspan as well as over both cuff spans
+    # ['threshold', 'minimum_efib_distance'],
+    # ['threshold', 'peak_second_diff'],
+    # ['peak_second_diff', 'peri_thk_act_site'],
+    # ['peak_second_diff', 'tortuosity'],
+    # ['peak_second_diff', 'nodal_tortuosity'],
+    # ['peak_second_z', 'activation_zpos'],
+    # ['peak_second_long_pos', 'long_ap_pos'],
+    # ['peak_second_diff_node', 'apnode'],
+    # ['peak_second_diff', 'minimum_efib_distance'],
+]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
+    corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], ordered=True)
+    plt.figure()
+    # g = sns.FacetGrid(data=corrs,col='contact')
+    # g.map_dataframe(sns.stripplot, hue='Sample', y='correlation',dodge=True, palette='colorblind')
+    # g.map_dataframe(sns.boxplot,y='correlation', boxprops={'facecolor':'None'},whis=100)
+    sns.swarmplot(data=corrs, palette='RdPu', y='contact', hue='fiber_diam', x='correlation', dodge=True, s=6)
+    sns.boxplot(data=corrs, y='contact', x='correlation', boxprops={'facecolor': 'None'}, whis=100)
+    # plt.subplots_adjust(top=0.8)
+    plt.title(f'Correlation between \n{comparison[0]} and {comparison[1]}', pad=25)
+    plt.gca().set_xlim([-1, 1])
+    plt.legend(title="D (μm)", bbox_to_anchor=(1, 1))
+    plt.ylabel('')
+    plt.gca().set_yticklabels('')
+    plt.gcf().set_size_inches([6, 5])
+    # make lmplot to accompany
+    sns.lmplot(
+        data=usedata.query('fiber_diam in [3,13]'),
+        x=comparison[0],
+        y=comparison[1],
+        hue='nerve_label',
+        row='fiber_diam',
+        row_order=[3, 13],
+        palette='colorblind',
+        facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+        scatter_kws={'linewidth': 1, 'edgecolor': 'k'},
+    )
+# %% BEGIN NEW ANALYSIS
 newdata = pd.read_csv("thresh_unmatched_sim3_new.csv")
 newdata = addpwfd(newdata, '3')
 newdata['contact'] = newdata['sample'].astype(str).str[2].replace({'2': 'cathodic', '0': 'anodic', '1': 'center'})
@@ -1521,22 +2112,23 @@ def fixed_boxplot(*args, label=None, **kwargs):
 
 # hue_kws = dict(boxprops=dict(edgecolor=color),whiskerprops=dict(color=color),medianprops=dict(color=color),capprops=dict(color=color))
 g = sns.catplot(
-    data=shiftdata.query('nsim in [0,5]'),
+    data=shiftdata.query('fiber_diam in [3,13]'),
     y='nerve_label',
     x='threshold',
     kind='strip',
-    row='type',
+    # row='type',
     col='fiber_diam',
-    facet_kws=dict(margin_titles=True, hue='type', palette=pal2d3d),
+    facet_kws=dict(margin_titles=True),
     sharex=False,
     hue='type',
     palette=pal2d3d,
     linewidth=1,
     edgecolor='black',
     jitter=True,
+    dodge=True,
     s=50,
 )
-g.map_dataframe(fixed_boxplot, y='nerve_label', x='threshold', linewidth=3)
+g.map_dataframe(fixed_boxplot, y='nerve_label', x='threshold', linewidth=3, hue='type', palette=pal2d3d)
 # g.map_dataframe(sns.boxplot,data=shiftdata.query(f'type == "{type}"'),y='nerve_label', x='threshold', boxprops=dict(facecolor='None',edgecolor=color),whiskerprops=dict(color=color),medianprops=dict(color=color),capprops=dict(color=color),linewidth=3)
 g.set_titles(col_template='D: {col_name} μm', row_template='{row_name}')
 g.set_ylabels('')
@@ -1597,7 +2189,7 @@ unfine_data = threshload[(threshload['nerve_label'] == '2L') & (threshload['cont
 fuf = pd.concat([finedata, unfine_data])
 fuf['type'] = fuf['type'].replace({'2D': '2DEM', '3D': '3DM'})
 g = sns.catplot(
-    data=fuf.query('nsim in [0,5] and type=="2DEM" and contact=="cathodic"'),
+    data=fuf.query('fiber_diam in [3,13] and type=="2DEM" and contact=="cathodic"'),
     x='nerve_label',
     y='threshold',
     kind='strip',
@@ -1624,20 +2216,30 @@ for inner in pd.unique(imdata.inner):
     innerid[inner] = pd.unique(imdata.query(f'inner == {inner} and type=="2D"')['master_fiber_index'])
     # get all rows where 3D and master fiber index is in the innerid
     imdata.loc[(imdata['type'] == '3D') & (imdata['master_fiber_index'].isin(innerid[inner])), 'inner'] = inner
+imdata['type'] = imdata['type'].replace({'2D': '2DEM', '3D': '3DM'})
+contact_dict = {'0': 'M1', '1': 'M2', '2': 'C1', '3': 'C2', '4': 'C3', '5': 'C4', '6': 'C5', '7': 'C6'}
+imdata['active_src_index'] = imdata['active_src_index'].astype(str).replace(contact_dict)
 # %% imthera contact config
-sns.catplot(
+sns.set(font_scale=1.75, style='whitegrid')
+g = sns.catplot(
     data=imdata.query('fiber_diam in [3,13]'),
     x='active_src_index',
     y='threshold',
     kind='strip',
     row='fiber_diam',
     facet_kws=dict(margin_titles=True),
-    sharey=False,
+    sharey='row',
     hue='inner',
-    palette='colorblind',
+    palette='Set1',
     col='type',
+    linewidth=0.75,
+    s=30,
 )
+g.set_ylabels('Threshold (mA)')
+g.set_xlabels('Contact Configuration')
+g.set_titles(col_template='{col_name}', row_template='D: {row_name} μm')
 # %%
+sns.set(font_scale=1, style='whitegrid')
 # contact configurations
 ccs = [
     [0, -1, 0, 0, 0, 0],
@@ -1653,8 +2255,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def draw_grid(numbers, ax):
-    grid = np.array(numbers).reshape(2, 3).T
+def draw_grid(numbers, ax, color=None):
+    grid = np.flip(np.array(numbers).reshape(2, 3).T, axis=0)
 
     cmap = plt.get_cmap("coolwarm", np.max(grid) - np.min(grid) + 2)
     bounds = np.arange(np.min(grid) - 0.5, np.max(grid) + 1.5, 1)
@@ -1662,6 +2264,8 @@ def draw_grid(numbers, ax):
 
     for i in range(grid.shape[0]):
         for j in range(grid.shape[1]):
+            # if color:
+            #     color=color
             if grid[i, j] == 0:
                 color = "black"
             else:
@@ -1684,8 +2288,12 @@ def draw_grid(numbers, ax):
 fig, axs = plt.subplots(1, len(ccs))
 for i, cc in enumerate(ccs):
     draw_grid(cc, axs[i])
-    axs[i].set_title(i)
+    axs[i].set_title(contact_dict[str(i)])
 
+# make one lone grid with numbers 0,1,2,3,4,5 and no colors
+fig, ax = plt.subplots(1, 1)
+draw_grid([0, 1, 2, 3, 4, 5], ax, color='black')
+ax.set_title('All Contacts')
 
 # %% for each contact configuration, and fiber diameter, calculate the fascicle selectivity ratio for each inner
 imdata.reset_index(inplace=True, drop=True)
@@ -1725,22 +2333,63 @@ for contact_config in pd.unique(imdata['active_src_index']):
     for fiber_diam in pd.unique(imdata['fiber_diam']):
         for t in pd.unique(imdata['type']):
             imdatain = imdata.query(
-                f'active_src_index == {contact_config} and fiber_diam == {fiber_diam} and type == "{t}"'
+                f'active_src_index == "{contact_config}" and fiber_diam == {fiber_diam} and type == "{t}"'
             )
             imdatfasr.extend(recruitment_cost(imdatain))
 
 imdatfasr = pd.DataFrame(imdatfasr)
 # %% plot FASR
-sns.relplot(
+sns.set(font_scale=1.75, style='white')
+g = sns.relplot(
     data=imdatfasr.query('fiber_diam in [3,13]'),
     x='active_src_index',
     y='FASR',
     kind='line',
-    col='fiber_diam',
+    row='fiber_diam',
     facet_kws=dict(margin_titles=True),
     # sharey=False,
     hue='inner',
     style='type',
-    palette='colorblind',
+    palette='Set1',
+    linewidth=3,
 )
 plt.ylim(0, 1)
+g.set_xlabels('Contact Configuration')
+g.set_titles(col_template='D: {col_name} μm')
+plt.xticks(range(7))
+g.fig.set_size_inches([8, 10])
+g.set_titles(row_template='D: {row_name} μm')
+#%%
+thisdef = deftomatch.query('deformation!="2D-3D" and fiber_diam in [3,13]')
+thisdef['deformed'] = thisdef['deformation'] == "3D-3D"
+
+comparecols = ['peak_second_diff', 'peri_thk', 'peri_thk_act_site', 'tortuosity', 'minimum_efib_distance']
+# comparecols = ['peak_second_diff','peri_thk']
+
+alldf = []
+
+for name in comparecols:
+    # Calculate correlation for each column with the "threshold" column based on the grouping variables
+    correlation_df = (
+        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[[name, "threshold"]].corr().reset_index()
+    )
+    correlation_df['name'] = name
+    alldf.append(correlation_df.query('threshold!=1'))
+alldf = pd.concat(alldf)
+alldf.threshold = alldf.threshold**2
+# Plot each column as a separate line in the line plot
+g = sns.FacetGrid(data=alldf, col='type', row='fiber_diam', margin_titles=True)
+g.map_dataframe(sns.pointplot, dodge=0.3, y='threshold', x='deformed', hue='name', palette='Set2')
+leg = plt.legend(bbox_to_anchor=(1.4, -0.4))
+new_labs = [
+    'Peak Second Differential',
+    'Perineurium Thickness (Center)',
+    'Perineurium Thickness (Activation Site)',
+    'Tortuosity',
+    'Minimum Electrode-Fiber Distance',
+]
+for t, l in zip(leg.get_texts(), new_labs):
+    t.set_text(l)
+plt.ylim(0, 1)
+g.set_ylabels('R2')
+g.set_titles(col_template="{col_name}", row_template="D: {row_name} μm")
