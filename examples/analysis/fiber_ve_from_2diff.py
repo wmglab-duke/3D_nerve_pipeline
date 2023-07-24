@@ -66,14 +66,19 @@ def loadcoord(sim_object, sample, model, sim, n_sim):
 rho = [1, 1, 5]
 for sample, samp3d, nerve_label in zip(
     # [252, 372, 572, 652, 672], [253, 373, 573, 653, 673], ['2L', '3R', '5R', '6L', '6R']
-    [5721],
-    [5731],
-    ['5Rdef'],
+    [251, 371, 571, 671, 2511, 3711, 5711, 6711],
+    [253, 373, 573, 673, 2531, 3731, 5731, 6731],
+    ['2L', '3R', '5R', '6R', '2Ldef', '3Rdef', '5Rdef', '6Rdef'],
 ):
     sim_object = Query.get_object(Object.SIMULATION, [sample, model, sim])
 
     # todo: make loop samples and save to disk
-    threshdat = pd.read_csv(f'thresh_unmatched_sim{sim}_{threshtarget}.csv')
+    threshdat = pd.concat(
+        [
+            pd.read_csv(f'thresh_unmatched_sim{sim}_def.csv'),
+            pd.read_csv(f'thresh_unmatched_sim{sim}_og.csv'),
+        ]
+    )
     threshdat = threshdat.query(f'sample=={sample} & nsim=={n_sim} & model=={model} & sim=={sim}')
     threshdat.reset_index(drop=True, inplace=True)
     sns.set_style('whitegrid')
@@ -81,7 +86,7 @@ for sample, samp3d, nerve_label in zip(
     base_n_sim = os.path.join('samples', str(sample), 'models', str(model), 'sims', str(sim), 'n_sims')
     base_n_sim3d = os.path.join('samples', str(samp3d), 'models', str(model), 'sims', str(sim), 'n_sims')
     # make figure with 2 subplots, share y axis
-    fig, axs = plt.subplots(1, 3, sharey=True, sharex=True)
+    # fig, axs = plt.subplots(1, 3, sharey=True, sharex=True)
 
     figve, axve = plt.subplots()
 

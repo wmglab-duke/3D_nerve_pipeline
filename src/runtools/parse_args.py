@@ -31,7 +31,7 @@ pipeline_parser = subparsers.add_parser('pipeline', help='main ASCENT pipeline')
 pipeline_parser.add_argument(
     'run_indices',
     type=int,
-    nargs='+',
+    nargs='*',
     help='Space separated indices to run the pipeline over',
 )
 pipeline_parser.add_argument(
@@ -57,6 +57,12 @@ pipeline_parser.add_argument(
     '--wait-for-license',
     type=float,
     help="Wait the specified number of hours for a comsol license to become available.",
+)
+pipeline_parser.add_argument(
+    '-R',
+    '--run-group',
+    type=str,
+    help="Use a list of runs from rungroups.json. Any additional run indices passed will be appended.",
 )
 pipeline_parser.add_argument(
     '-P',

@@ -4,6 +4,9 @@ import numpy as np
 from shapely.geometry import Point
 
 sys.path.append(r'C:\nrn\lib\python')  # noqa: E800
+import os
+
+os.chdir('../..')
 
 from moviepy.video.io.bindings import mplfig_to_npimage
 from moviepy.video.VideoClip import VideoClip
@@ -16,15 +19,13 @@ n_sims = [0, 5]
 
 sample = 57
 
-inner, fiber, mfi = 11, 1, 26
+innernum, fibernum, mfi = 11, 1, 26
 
 samplename = '5R'
 
 for d, n in zip(diams, n_sims):
 
-    twood = (
-        rf'D:\threed_ascent\samples\{sample}2\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner{inner}_fiber{fiber}.dat'
-    )
+    twood = rf'D:\threed_ascent\samples\{sample}2\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner{innernum}_fiber{fibernum}.dat'
     threed = rf'D:\threed_ascent\samples\{sample}3\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner0_fiber{mfi}.dat'
 
     # plot both fibers ve
@@ -91,7 +92,7 @@ for d, n in zip(diams, n_sims):
     ve2 = ve2
 
     # downsample to every nth point
-    ds = 300
+    ds = 1300
     ve2 = ve2[::ds]
     ve3 = ve3[::ds]
     ve3_1diff = (np.diff(ve3))[::-1]
@@ -120,7 +121,8 @@ for d, n in zip(diams, n_sims):
     # load each fiber file and append to list
     for file in os.listdir(fiberpath):
         # print(file)
-        # if file != f'{mfi}.dat':continue
+        if file != f'{mfi}.dat':
+            continue
         if file.endswith('.dat'):
             fibers[int(file.replace('.dat', ''))] = np.loadtxt(os.path.join(fiberpath, file), skiprows=1)
     # %%
@@ -210,18 +212,22 @@ for d, n in zip(diams, n_sims):
             plt.savefig(os.path.join(diamdir, f'slide{i}_zpos{zpos}.png'), bbox_inches='tight')
     plt.figure()
     ax = plt.gca()
-    plt.plot(inner_coords, inner_2diffs, 'k', label='3D')
-    plt.plot(inner_coords, diff2ds, 'r--', label='2D')
-    plt.axvspan(29000, 31000, color='k', alpha=0.2, label='contact')
+    inner_coords = np.array(inner_coords)
+    plt.plot(inner_coords - ds / 2, inner_2diffs, 'k', label='3D')
+    plt.plot(inner_coords + ds / 2, diff2ds, 'r--', label='2D')
+    plt.axvspan(28000, 30000, color='r', alpha=0.2, label='contact')
+    plt.axvspan(26800, 31200, color='k', alpha=0.2, label='insulation')
+
     plt.legend(loc='lower right')
-    plt.xlabel('Distance along nerve (μm)')
     ax2 = plt.gca().twinx()
+    plt.gcf().set_size_inches(12, 4)
     ax2.plot(inner_coords[1:], np.diff(inner_areas), 'b', label='area', alpha=0.65)
     ax2.set_ylabel('First difference of fascicle area', color='b')
     ax2.tick_params(axis='y', labelcolor='b')
     ax.set_ylabel('Second difference of Ve', color='k')
     plt.title(f'Fiber {mfi}')
 #%%
+sys.exit('temp')
 # now simulate the 3 micron fiber 2D
 from wmglab_neuron import FiberModel, ScaledStim, build_fiber  # noqa: E402
 
@@ -232,7 +238,7 @@ for diam in [3, 13]:
         nsim = 1
     for typ in ['twood', 'threed']:
         if typ == 'twood':
-            potfile = rf'D:\threed_ascent\samples\{sample}2\models\0\sims\{sim}\n_sims\{nsim}\data\inputs\inner{inner}_fiber{fiber}.dat'
+            potfile = rf'D:\threed_ascent\samples\{sample}2\models\0\sims\{sim}\n_sims\{nsim}\data\inputs\inner{innernum}_fiber{fibernum}.dat'
         else:
             potfile = rf'D:\threed_ascent\samples\{sample}3\models\0\sims\{sim}\n_sims\{nsim}\data\inputs\inner0_fiber{mfi}.dat'
 

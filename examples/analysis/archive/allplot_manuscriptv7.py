@@ -1328,6 +1328,26 @@ newdefdat = newdefdat.query(f'contact in {main_comparison}')
 defpal = [sns.color_palette('colorblind')[ind] for ind in [0, 2, 3, 5]]
 defdefcomp = newdefdat.query('type=="3DM" and deformation != "2D-3D"')
 defdefcomp['deformed'] = defdefcomp['deformation'] != "Undeformed"
+
+#%% dose-response
+def calculate_dose_response(df, threshold_column, outcolumn, grouping_columns):
+    def calculate_dose_response_per_sample(group):
+        threshold_values = group[threshold_column].values
+        activated_fibers = group[threshold_column].values[:, None] <= threshold_values
+        dose_response = activated_fibers.sum(axis=0) / len(group)
+        group[outcolumn] = dose_response
+        return group
+
+    return df.groupby(grouping_columns).apply(calculate_dose_response_per_sample)
+
+
+defdr = newdefdat.copy().rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
+defdr = calculate_dose_response(
+    defdr,
+    'threshold',
+    'percent_activated',
+    grouping_columns=['modeltype', 'samplenum', 'fiber_diam', 'sim', 'deformation'],
+)
 #%% tortuosities
 sns.set(font_scale=1.75)
 sns.set_style('white')
@@ -1362,51 +1382,26 @@ tort = np.median(newdefdat.query('type=="3DM" and deformation=="3D-3D"').cuff_to
 print(f'Median tortuosity: {tort}')
 # plt.title('Histogram of tortuosity values')
 # %%
-sns.set(font_scale=2, style='whitegrid')
-g = sns.catplot(
-    kind='violin',
-    col='deformation',
-    data=newdefdat.query("fiber_diam in [3,13]"),
-    x='nerve_label',
-    y='threshold',
-    sharey=False,
-    errorbar='se',
-    palette=pal2d3d,
-    row='fiber_diam',
-    hue='type',
-    margin_titles=True,
-)
-for ax in g.axes.ravel():
-    # ax.set_xlabel('')
-    ax.set_ylim([0, None])
-g.set_axis_labels('', 'Threshold (mA)')
-g.set_titles(col_template="Deformation: {col_name}", row_template="Fiber Diameter: {row_name} μm")
-g.legend.set_title('')
-
-# g.fig.set_size_inches(6, 6, forward=True)
-# plt.subplots_adjust(top=0.9, wspace=0.4)
-# g.axes.ravel()[0].set_ylabel('Threshold (mA)')
-# # plt.suptitle('2DEM vs 3DM Thresholds for all samples')
-# g.axes.ravel()[0].set_title('3 μm')
-# g.axes.ravel()[1].set_title('13 μm')
+newdef = newdefdat.copy()[newdefdat['deformation'] != "Undeformed"]
+newdef['deformation'] = pd.Categorical(newdef['deformation'], categories=['2D-3D', '3D-3D'], ordered=True)
 plt.show()
 g = sns.catplot(
     kind='violin',
-    col='deformation',
-    data=newdefdat.query("fiber_diam in [3,13]"),
-    x='type',
+    x='deformation',
+    data=newdef.query("fiber_diam in [3,13]"),
+    hue='type',
     y='threshold',
     sharey=False,
     errorbar='se',
     palette=pal2d3d,
-    row='fiber_diam',
+    col='fiber_diam',
     margin_titles=True,
 )
 for ax in g.axes.ravel():
     #     ax.set_xlabel('')
     ax.set_ylim([0, None])
 g.set_axis_labels('', 'Threshold (mA)')
-g.set_titles(col_template="Deformation: {col_name}", row_template="Fiber Diameter: {row_name} μm")
+g.set_titles(col_template="Fiber Diameter: {col_name} μm", row_template="")
 # g.fig.set_size_inches(6, 6, forward=True)
 # plt.subplots_adjust(top=0.9, wspace=0.4)
 # g.axes.ravel()[0].set_ylabel('Threshold (mA)')
@@ -1414,25 +1409,8 @@ g.set_titles(col_template="Deformation: {col_name}", row_template="Fiber Diamete
 # g.axes.ravel()[0].set_title('3 μm')
 # g.axes.ravel()[1].set_title('13 μm')
 # plt.show()
-#%% dose-response
-def calculate_dose_response(df, threshold_column, outcolumn, grouping_columns):
-    def calculate_dose_response_per_sample(group):
-        threshold_values = group[threshold_column].values
-        activated_fibers = group[threshold_column].values[:, None] <= threshold_values
-        dose_response = activated_fibers.sum(axis=0) / len(group)
-        group[outcolumn] = dose_response
-        return group
+g.fig.set_size_inches(12, 5)
 
-    return df.groupby(grouping_columns).apply(calculate_dose_response_per_sample)
-
-
-defdr = newdefdat.copy().rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
-defdr = calculate_dose_response(
-    defdr,
-    'threshold',
-    'percent_activated',
-    grouping_columns=['modeltype', 'samplenum', 'fiber_diam', 'sim', 'deformation'],
-)
 # %% dose-response deformed
 sns.set(font_scale=2)
 sns.set_style('whitegrid')
@@ -1475,57 +1453,60 @@ g.set_titles(col_template="Deformation: {col_name}", row_template='')
 g._legend.texts[0].set_text('')
 g._legend.texts[5].set_text('')
 # %% activation order
-for stringdat in ['Undeformed', '3D-3D']:
-    newdefdr = defdr.copy().query(f"deformation=='{stringdat}'")
-    sns.set(font_scale=2)
-    sns.set_style('whitegrid')
-    newdefdr['percent_activated2d'] = np.nan
-    # go through every row and for each fiber find the 2D activation percent
-    for i, row in newdefdr.iterrows():
-        # find the 2D threshold for this fiber (same nerve, fiber diameter, and master fiber index)
-        thisdat = newdefdr.query(
-            f'modeltype == "2DEM" and nerve_label == @row.nerve_label and fiber_diam == @row.fiber_diam and sim == @row.sim and master_fiber_index == @row.master_fiber_index and contact in {main_comparison}'
-        )
-        assert len(thisdat) == 1
-        val = thisdat.percent_activated.values[0]
-        assert not val is np.nan
-        newdefdr.loc[i, 'percent_activated2d'] = val
-    sns.set(font_scale=2.25, style='whitegrid')
-    plt.figure()
-    g = sns.catplot(
-        kind='swarm',
-        row='fiber_diam',
-        data=newdefdr.query(f"fiber_diam in [3,13] and contact in {main_comparison}"),
-        y='percent_activated',
-        x='modeltype',
-        units='nerve_label',
-        col='nerve_label',
-        palette='plasma',
-        hue='percent_activated2d',
-        # hue='inner',
-        estimator=None,
-        linewidth=0,
-        facet_kws={'margin_titles': True},
-        s=25,
+newdefdr = defdr.copy()
+newdefdr = newdefdr.query("'5R' in nerve_label and deformation!='2D-3D'").sort_values('modeltype')
+newdefdr['nerve_label'] = pd.Categorical(newdefdr['nerve_label'], categories=['5R'])
+newdefdr['deformation'] = pd.Categorical(newdefdr['deformation'], categories=['Undeformed', '3D-3D'])
+sns.set(font_scale=2)
+sns.set_style('whitegrid')
+newdefdr['percent_activated2d'] = np.nan
+# go through every row and for each fiber find the 2D activation percent
+for i, row in newdefdr.iterrows():
+    # find the 2D threshold for this fiber (same nerve, fiber diameter, and master fiber index)
+    thisdat = newdefdr.query(
+        f'modeltype == "2DEM" and nerve_label == @row.nerve_label and fiber_diam == @row.fiber_diam and sim == @row.sim and master_fiber_index == @row.master_fiber_index and contact in {main_comparison} and deformation==@row.deformation'
     )
-    plt.subplots_adjust(top=0.87)
-    plt.suptitle(stringdat, x=0.37)
-    g.set_titles(row_template='', col_template='{col_name}')
-    g.axes[0][0].set_xlabel('')
-    g.axes[0][0].set_ylabel('Proportion fibers\nactivated (3 μm)')
-    g.axes[1][0].set_ylabel('Proportion fibers\nactivated (13 μm)')
-    g.set_xlabels('')
-    g.legend.remove()
-    norm = plt.Normalize(0, 1)
-    sm = plt.cm.ScalarMappable(cmap="plasma", norm=norm)
-    sm.set_array([])
+    assert len(thisdat) == 1
+    val = thisdat.percent_activated.values[0]
+    assert not val is np.nan
+    newdefdr.loc[i, 'percent_activated2d'] = val
+#%%
+sns.set(font_scale=1.75, style='whitegrid')
+plt.figure()
+g = sns.catplot(
+    kind='swarm',
+    row='fiber_diam',
+    data=newdefdr.query(f"fiber_diam in [3,13] and contact in {main_comparison}"),
+    y='percent_activated',
+    x='modeltype',
+    units='nerve_label',
+    col='deformation',
+    palette='plasma',
+    hue='percent_activated2d',
+    # hue='inner',
+    estimator=None,
+    linewidth=0,
+    facet_kws={'margin_titles': True},
+    s=25,
+)
+plt.subplots_adjust(top=0.87)
+# plt.suptitle(stringdat, x=0.37)
+g.set_titles(row_template='', col_template='{col_name}')
+g.axes[0][0].set_xlabel('')
+g.axes[0][0].set_ylabel('Proportion fibers\nactivated (3 μm)')
+g.axes[1][0].set_ylabel('Proportion fibers\nactivated (13 μm)')
+g.set_xlabels('')
+g.legend.remove()
+norm = plt.Normalize(0, 1)
+sm = plt.cm.ScalarMappable(cmap="plasma", norm=norm)
+sm.set_array([])
 
-    # Remove the legend and add a colorbar
-    g.figure.colorbar(
-        sm, ax=g.axes.ravel().tolist(), aspect=10, shrink=0.8, label='Proportion 2DEM fibers activated'
-    ).ax.yaxis.set_ticks_position('left')
+# Remove the legend and add a colorbar
+g.figure.colorbar(
+    sm, ax=g.axes.ravel().tolist(), aspect=10, shrink=0.6, label='Proportion 2DEM fibers activated', pad=0.1
+).ax.yaxis.set_ticks_position('left')
 
-    # g._legend.set_title('')
+# g._legend.set_title('')
 #%% recruitment cost:
 sns.set(font_scale=1.75)
 sns.set_style('whitegrid')
@@ -1707,70 +1688,6 @@ g.set_ylabels("Percent Difference")
 plt.xticks([3, 5, 7, 9, 11, 13])
 plt.ylim(ylimpe)
 sns.move_legend(g, 'lower center', bbox_to_anchor=(0.75, 0.5), ncol=1)
-
-# %% dose-response deformed vs undeformed 3D only
-sns.set(font_scale=2)
-sns.set_style('whitegrid')
-# could shade in min and max to show response range?
-defdefdr = defdr.query("modeltype=='3DM' and deformation!='3D-3D'")
-defdefdr['deformed'] = defdefdr['deformation'] == "2D-3D"
-
-plt.figure()
-g = sns.relplot(
-    kind='line',
-    col='fiber_diam',
-    data=defdefdr.query("fiber_diam in [3,13]"),
-    y='percent_activated',
-    x='threshold',
-    hue='nerve_label',
-    row="nerve_label",
-    palette=defpal,
-    estimator=None,
-    linewidth=3,
-    facet_kws={'sharex': False, 'margin_titles': True},
-    **{'style': 'deformed'},
-)
-
-# Accessing the underlying matplotlib axes
-axes = g.axes.flatten()
-
-# Fill the space between the lines for each facet
-for ax in axes:
-    line1 = ax.lines[0]
-    line2 = ax.lines[1]
-
-    x1 = line1.get_xdata()
-    y1 = line1.get_ydata()
-
-    x2 = line2.get_xdata()
-    y2 = line2.get_ydata()
-
-    # Interpolate the lines to create smooth curves
-    x_interp = np.linspace(min(min(x1), min(x2)), max(max(x1), max(x2)), 1000)
-    y1_interp = np.interp(x_interp, x1, y1)
-    y2_interp = np.interp(x_interp, x2, y2)
-
-    # Take the color of the fill from one of the lines
-    fill_color = line1.get_color()
-
-    # Hide the lines
-    line1.set_visible(False)
-    line2.set_visible(False)
-
-    # Fill the space between the interpolated curves with the chosen color
-    ax.fill_between(x_interp, y1_interp, y2_interp, color=fill_color, alpha=0.3)
-
-# sns.move_legend(g, 'lower center', bbox_to_anchor=(0.9, 0.4), ncol=1)
-g.legend.remove()
-g.axes[0][0].set_xlabel('')
-g.set_ylabels('Proportion Activated')
-g._legend.set_title('')
-g.set_xlabels('Threshold (mA)')
-g.set_titles(col_template="D: {col_name} μm", row_template='{row_name}')
-g._legend.texts[0].set_text('')
-g._legend.texts[5].set_text('')
-g._legend.texts[6].set_text('Undeformed')
-g._legend.texts[7].set_text('Deformed')
 # %% deformation mean error threshold
 tomatch = newdefdat.query('deformation=="3D-3D"')
 defmatched = datamatch(tomatch.query('type=="2DEM"'), tomatch.query('type=="3DM"'), 'threshold').drop(columns='type')
@@ -2048,8 +1965,8 @@ for comparison in [
     ['threshold', 'cuff_tortuosity'],
     # ['threshold', 'peri_thk_act_site'],
     ['threshold', 'smallest_thk_under_cuff'],
-    ['threshold', 'peri_thk_act_site'],
-    # ['smallest_thk_under_cuff', 'peri_thk_act_site'],
+    # ['threshold', 'peri_thk_act_site'],
+    ['smallest_thk_under_cuff', 'peri_thk_act_site'],
     # TODO try smallest thk over whole cuffspan as well as over both cuff spans
     # ['threshold', 'minimum_efib_distance'],
     # ['threshold', 'peak_second_diff'],
@@ -2205,7 +2122,7 @@ g = sns.catplot(
 g.set_ylabels('Threshold (mA)')
 g.set_xlabels('')
 
-# %%
+# %% imthera
 imdata = pd.read_csv("thresh_unmatched_sim16_immy.csv")
 imdata = addpwfd(imdata, '3')
 imdata['contact'] = imdata['sample'].astype(str).str[2].replace({'2': 'cathodic', '0': 'anodic', '1': 'center'})
@@ -2382,7 +2299,7 @@ g = sns.FacetGrid(data=alldf, col='type', row='fiber_diam', margin_titles=True)
 g.map_dataframe(sns.pointplot, dodge=0.3, y='threshold', x='deformed', hue='name', palette='Set2')
 leg = plt.legend(bbox_to_anchor=(1.4, -0.4))
 new_labs = [
-    'Peak Second Differential',
+    'Peak Second Difference',
     'Perineurium Thickness (Center)',
     'Perineurium Thickness (Activation Site)',
     'Tortuosity',
@@ -2391,5 +2308,159 @@ new_labs = [
 for t, l in zip(leg.get_texts(), new_labs):
     t.set_text(l)
 plt.ylim(0, 1)
-g.set_ylabels('R2')
+g.set_ylabels(r'$R^2$', rotation=90)
 g.set_titles(col_template="{col_name}", row_template="D: {row_name} μm")
+
+#%% deformation zpos
+for stringdat in ['Undeformed', '2D-3D', '3D-3D']:
+    sns.set(font_scale=1.75, style='whitegrid')
+    newthreshz = newdefdat.query(f'contact in {main_comparison} and deformation=="{stringdat}"')
+    newthreshz['activation_zpos'] = newthreshz['activation_zpos'] / 10000
+    fig, axs = plt.subplots(1, 2, sharex=False, sharey=True)
+    for nerve_label in pd.unique(newthreshz.nerve_label):
+        for ax, modeltype in zip(axs, ["2DEM", "3DM"]):
+            g = sns.histplot(
+                data=newthreshz.query(
+                    f"fiber_diam in [3,13] and contact in {main_comparison} and nerve_label=='{nerve_label}' and type=='{modeltype}'"
+                ).rename(columns={'nerve_label': 'Sample'}),
+                y='activation_zpos',
+                hue='fiber_diam',
+                # hue='Sample',
+                # facet_kws={'sharex': False},
+                # kind='kde',
+                palette=[sns.color_palette('binary')[5], sns.color_palette('binary')[2]],
+                common_norm=False,
+                # legend=False,
+                # multiple="fill",
+                element='poly',
+                fill=False,
+                bins=np.arange(1.5, 3.6, 0.1),
+                ax=ax,
+            )
+    # delete both legends and remake my own
+    for ax in axs:
+        ax.get_legend().remove()
+    # make my own legend
+    axs[0].plot([], [], color=sns.color_palette('binary')[5], label='3 μm', linewidth=2)
+    axs[0].plot([], [], color=sns.color_palette('binary')[2], label='13 μm', linewidth=2)
+    # put legenbd to right of figure
+    axs[0].legend(loc='center left', bbox_to_anchor=(2.2, 0.5))
+    axs[0].set_xlim(reversed(axs[0].get_xlim()))
+    axs[0].set_ylabel("Activation Location (cm)")
+    axs[0].set_title("2DEM-100%")
+    axs[1].set_title("3DM-100%")
+    plt.suptitle(f'Deformation: {stringdat}', y=1.1)
+
+# %% dose-response
+sns.set(font_scale=1.75, style='whitegrid')
+defsamples = ["2L", "3R", "5R", "6R"]
+und_def_dr = drdat.query(f"nerve_label in {defsamples}")
+und_def_dr['nerve_label'] = pd.Categorical(und_def_dr['nerve_label'], categories=defsamples, ordered=True)
+plt.figure()
+g = sns.relplot(
+    kind='line',
+    col='nerve_label',
+    data=und_def_dr.query(f"fiber_diam in [3] and contact in {main_comparison}"),
+    y='percent_activated',
+    x='threshold',
+    units='nerve_label',
+    hue='modeltype',
+    palette=pal2d3d,
+    estimator=None,
+    linewidth=2,
+    facet_kws={'sharex': False},
+)
+
+g.legend.set_title('')
+# sns.move_legend(g,[0.5,0.5])
+for ax in g.axes.ravel():
+    ax.set_xlabel('Threshold (mA)')
+    ax.set_ylim([0, 1])
+    ax.set_xlim([0, None])
+g.set_titles(row_template='', col_template='{col_name}')
+
+# g.axes[0][0].set_xlabel('')
+g.set_ylabels('Proportion activated')
+# g.axes[0][0].axhline(0.9, linewidth=2, color='k', linestyle='-', label='saturation')
+# g.axes[0][0].axhline(0.1, linewidth=2, color='k', linestyle='--', label='onset')
+# g.axes[1][0].axhline(0.9, linewidth=2, color='k', linestyle='-', label='saturation')
+# g.axes[1][0].axhline(0.1, linewidth=2, color='k', linestyle='--', label='onset')
+# # add text at 0.9 and 0.1 for each plot
+# g.axes[0][0].text(1.0, 0.87, 'saturation', fontsize=18, transform=g.axes[0][0].transAxes)
+# g.axes[0][0].text(1.0, 0.1, 'onset', fontsize=18, transform=g.axes[0][0].transAxes)
+# g.axes[1][0].text(1.0, 0.87, 'saturation', fontsize=18, transform=g.axes[1][0].transAxes)
+# g.axes[1][0].text(1.0, 0.1, 'onset', fontsize=18, transform=g.axes[1][0].transAxes)
+# g.fig.set_size_inches([7, 10])
+
+# %% dose-response
+sns.set(font_scale=1.75, style='whitegrid')
+defsamples = ["2L", "3R", "5R", "6R"]
+newdef = defdr.copy()[defdr['deformation'] != "Undeformed"]
+newdef['deformation'] = pd.Categorical(newdef['deformation'], categories=['2D-3D', '3D-3D'], ordered=True)
+plt.figure()
+g = sns.relplot(
+    kind='line',
+    col='nerve_label',
+    style='deformation',
+    data=newdef.query(
+        f"fiber_diam in [3] and contact in {main_comparison} and nerve_label in {defsamples} and deformation!='Undeformed'"
+    ),
+    y='percent_activated',
+    x='threshold',
+    units='nerve_label',
+    hue='modeltype',
+    palette=pal2d3d,
+    estimator=None,
+    linewidth=2,
+    facet_kws={'sharex': False, 'margin_titles': True},
+)
+
+g.legend.set_title('')
+# sns.move_legend(g,[0.5,0.5])
+for ax in g.axes.ravel():
+
+    ax.set_ylim([0, 1])
+    ax.set_xlim([0, None])
+g.set_titles(row_template='', col_template='{col_name}')
+
+# g.axes[0][0].set_xlabel('')
+g.set_ylabels('Proportion activated')
+g.set_xlabels('Threshold (mA)')
+# g.axes[0][0].axhline(0.9, linewidth=2, color='k', linestyle='-', label='saturation')
+# g.axes[0][0].axhline(0.1, linewidth=2, color='k', linestyle='--', label='onset')
+# g.axes[1][0].axhline(0.9, linewidth=2, color='k', linestyle='-', label='saturation')
+# g.axes[1][0].axhline(0.1, linewidth=2, color='k', linestyle='--', label='onset')
+# # add text at 0.9 and 0.1 for each plot
+# g.axes[0][0].text(1.0, 0.87, 'saturation', fontsize=18, transform=g.axes[0][0].transAxes)
+# g.axes[0][0].text(1.0, 0.1, 'onset', fontsize=18, transform=g.axes[0][0].transAxes)
+# g.axes[1][0].text(1.0, 0.87, 'saturation', fontsize=18, transform=g.axes[1][0].transAxes)
+# g.axes[1][0].text(1.0, 0.1, 'onset', fontsize=18, transform=g.axes[1][0].transAxes)
+# g.fig.set_size_inches([7, 10])
+# %% dose-response deformed vs undeformed 3D only
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+# could shade in min and max to show response range?
+defdefdr = defdr.query("modeltype=='3DM' and deformation!='3D-3D'")
+defdefdr['deformed'] = defdefdr['deformation'] == "2D-3D"
+
+plt.figure()
+g = sns.relplot(
+    kind='line',
+    data=defdefdr.query("fiber_diam in [3]"),
+    y='percent_activated',
+    x='threshold',
+    # hue='nerve_label',
+    col="nerve_label",
+    # palette=defpal,
+    estimator=None,
+    linewidth=3,
+    color=pal2d3d[1],
+    facet_kws={'sharex': False, 'margin_titles': True},
+    **{'style': 'deformed'},
+)
+
+# sns.move_legend(g, 'lower center', bbox_to_anchor=(0.9, 0.4), ncol=1)
+g.axes[0][0].set_xlabel('')
+g.set_ylabels('Proportion Activated')
+g.set_xlabels('Threshold (mA)')
+g.set_titles(col_template="{col_name}", row_template='{row_name}')

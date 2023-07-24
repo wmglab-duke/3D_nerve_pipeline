@@ -44,6 +44,38 @@ fiber.set_save_vm()
 amp, ap = stimulation.find_threshold(fiber, stimamp_top=-1, stimamp_bottom=-0.1)
 
 plt.plot([apc.time for apc in fiber.apc])
+#%% gating plot
+fig, axs = plt.subplots(2, 1, sharex=True)
+apc = [apc.time for apc in fiber.apc]
+apc[0] = float('Inf')
+apc[-1] = float('Inf')
+actloc = np.argmin(apc)
+# plot gating vars at activation location
+for var, data in fiber.gating.items():
+    plt.plot(stimulation.time, data[actloc], label=var)
+plt.gca().twinx().plot(list(stimulation.time)[1:], -stimulation.waveform, 'k--')
+plt.legend()
+plt.xlim(0, 2)
+plt.xlabel('ms')
+axs[0].plot(stimulation.time, fiber.vm[actloc])
+fig.set_size_inches([6, 6])
+axs[0].set_title('Activation location 13 um')
+
+fig, axs = plt.subplots(2, 1, sharex=True)
+actloc = np.abs(len(fiber.nodes) - actloc)
+# plot gating vars at activation location
+for var, data in fiber.gating.items():
+    plt.plot(stimulation.time, data[actloc], label=var)
+plt.gca().twinx().plot(list(stimulation.time)[1:], stimulation.waveform, 'k--')
+plt.legend()
+plt.xlim(0, 2)
+plt.xlabel('ms')
+axs[0].plot(stimulation.time, fiber.vm[actloc])
+fig.set_size_inches([6, 6])
+#%% wut
+plt.figure()
+plt.plot(fiber.coordinates[::11][1:-1], np.diff(fiber.potentials[::11], n=2))
+plt.gca().twinx().plot(fiber.coordinates[::11], [apc.time for apc in fiber.apc])
 #%% make video of vm
 fps = 30
 skip = 10
@@ -144,6 +176,34 @@ amp, ap = stimulation.find_threshold(fiber, stimamp_top=-1, stimamp_bottom=-0.1)
 plt.figure()
 plt.plot([apc.time for apc in fiber.apc])
 
+#%% gating plot
+fig, axs = plt.subplots(2, 1, sharex=True)
+apc = [apc.time for apc in fiber.apc]
+apc[0] = float('Inf')
+apc[-1] = float('Inf')
+actloc = np.argmin(apc)
+# plot gating vars at activation location
+for var, data in fiber.gating.items():
+    plt.plot(stimulation.time, data[actloc], label=var)
+plt.gca().twinx().plot(list(stimulation.time)[1:], -stimulation.waveform, 'k--')
+plt.legend()
+plt.xlim(0, 2)
+plt.xlabel('ms')
+axs[0].plot(stimulation.time, fiber.vm[actloc])
+fig.set_size_inches([6, 6])
+axs[0].set_title('Activation location 3 um')
+
+fig, axs = plt.subplots(2, 1, sharex=True)
+actloc = np.abs(len(fiber.nodes) - actloc)
+# plot gating vars at activation location
+for var, data in fiber.gating.items():
+    plt.plot(stimulation.time, data[actloc], label=var)
+plt.gca().twinx().plot(list(stimulation.time)[1:], stimulation.waveform, 'k--')
+plt.legend()
+plt.xlim(0, 2)
+plt.xlabel('ms')
+axs[0].plot(stimulation.time, fiber.vm[actloc])
+fig.set_size_inches([6, 6])
 #%% make video of vm
 fps = 30
 skip = 10

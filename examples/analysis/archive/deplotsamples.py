@@ -41,14 +41,18 @@ for sampledata in results['samples']:
         final=False,
         ax=ax,
         inner_index_labels=False,
-        # scalebar=True,
-        # scalebar_length=100,
-        # scalebar_units='μm',
+        scalebar=True if sample_index == 6729 else False,
+        scalebar_length=1,
+        scalebar_units='mm',
     )
     ax.axis('off')
     plt.xlabel('\u03bcm')
     plt.ylabel('\u03bcm')
+    if sample_index == 672:
+        ylims = plt.ylim()
+    else:
+        plt.ylim(ylims)
     plt.show()
-
     fname = str(sample_index)
     fmt = 'svg'
+    fig.savefig(f'{sample_index}.png', dpi=400, bbox_inches='tight')

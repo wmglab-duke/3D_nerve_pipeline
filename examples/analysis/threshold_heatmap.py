@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samp2d = 2520
+samp2d = 5715
 model = 0
 simint = 3
-samp3d = 2530
+samp3d = 5735
 import pandas as pd
 import seaborn as sns
 
@@ -46,7 +46,7 @@ dat3d = q3.data(source_sample=samp2d, thresh_only=True)
 dat3d['threed'] = True
 sample_obj = q.get_object(Object.SAMPLE, [samp2d])
 sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
-threshdat = pd.concat([dat2d, dat3d])
+threshdat = pd.concat([dat2d, dat3d]).query('fiberset_index==5')
 #%%
-g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
+g = sns.FacetGrid(threshdat, row='active_src_index', col='sample', sharex=False, sharey=False)
 g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, scatter_kws={'s': 25})

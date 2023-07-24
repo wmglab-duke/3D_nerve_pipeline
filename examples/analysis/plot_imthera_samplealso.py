@@ -14,9 +14,10 @@ import os
 import numpy as np
 
 os.chdir('../..')
-
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import seaborn as sns
+from matplotlib.colors import to_hex
 
 from src.core import Sample
 from src.core.query import Query
@@ -25,7 +26,7 @@ from src.utils import Object
 criteria = {
     'partial_matches': True,
     'include_downstream': False,
-    'indices': {'sample': [2515], 'model': None, 'sim': None},
+    'indices': {'sample': [5715], 'model': None, 'sim': None},
 }
 
 
@@ -39,6 +40,7 @@ sample_index = results['samples'][0]['index']
 fig, ax = plt.subplots(1, 1)
 item: Sample = q.get_object(Object.SAMPLE, [results['samples'][0]['index']])
 slide = item.slides[0]
+cmap = cm.get_cmap('rainbow', len(slide.inners()))
 slide.plot(
     fix_aspect_ratio=True,
     final=False,
@@ -47,7 +49,7 @@ slide.plot(
     # scalebar=True,
     # scalebar_length=100,
     # scalebar_units='μm',
-    fascicle_colors=sns.color_palette('Set1')[:4],
+    fascicle_colors=[to_hex(cmap(i)) for i in range(len(slide.inners()))],
     inner_format='w-',
 )
 plt.xlabel('\u03bcm')

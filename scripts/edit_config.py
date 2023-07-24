@@ -116,7 +116,6 @@ elif c == 'r':
         '271',
         '272',
         '273',
-        '2731',
         '370',
         '3701',
         '3709',
@@ -139,7 +138,6 @@ elif c == 'r':
         '651',
         '652',
         '653',
-        '6531',
         '670',
         '6701',
         '6709',
@@ -149,17 +147,25 @@ elif c == 'r':
         '6729',
         '673',
         '6731',
+        '2519',
+        '2511',
+        '3711',
+        '3719',
+        '6711',
+        '6719',
+        '5711',
+        '5719',
     ]
-    runlist.remove('2731')
-    runlist.remove('6531')
 
     change = ['sims']
 
-    # newval = [7, 11]
+    newval = [7, 11, 20, 30]
+
+    print(str([int(x) for x in runlist]))
 
     print(str([int(x) for x in runlist]).replace(',', ''))
 
-    newval = [3, 10]
+    # newval = [3, 10]
 
     for run in runlist:
         # change, newval = param_picker(path + f'/{run}.json')

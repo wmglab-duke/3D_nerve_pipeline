@@ -66,9 +66,13 @@ def loadcoord(sim_object, sample, model, sim, n_sim):
 rho = [1, 1, 5]
 for sample, samp3d, nerve_label in zip(
     # [252, 372, 572, 652, 672], [253, 373, 573, 653, 673], ['2L', '3R', '5R', '6L', '6R']
-    [252],
-    [253],
-    ['2L'],
+    # [252],
+    # [253],
+    # ['2L'],
+    [2521, 3721, 5721, 6721],
+    [253, 373, 573, 653, 673],
+    ['2Ldef', '3Rdef', '5Rdef', '6Rdef']
+    # [2529, 3729, 5729, 6729], [2531, 3731, 5731, 6531, 6731], ['2Lasc', '3Rasc', '5Rasc', '6Rasc']
 ):
     sim_object = Query.get_object(Object.SIMULATION, [sample, model, sim])
 
@@ -209,11 +213,11 @@ for sample, samp3d, nerve_label in zip(
     axs[0].set_title('2D')
     axs[1].set_title('3D')
     axs[2].set_title('3D (point sources)')
-    plt.subplots_adjust(top=0.8)
-    plt.legend()
-    plt.savefig(f'plots/2diff/{nerve_label}_{n_sim}_{sim}2diff.png', dpi=400)
+    fig.subplots_adjust(top=0.8)
+    fig.axes[-1].legend()
+    fig.savefig(f'plots/2diff/{nerve_label}_{n_sim}_{sim}2diff.png', dpi=400)
     figve.set_size_inches(4, 6)
     axve.legend()
     axve.set_ylabel('Distance along nerve (cm)')
     axve.set_xlabel('Electrical potential (V)')
-    figve.savefig(f'test.png')
+    figve.savefig(f'plots/2diff/{nerve_label}_{n_sim}_{sim}ve.png', dpi=400)

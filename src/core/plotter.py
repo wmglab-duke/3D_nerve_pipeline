@@ -610,27 +610,13 @@ def datamatch_agg(dest, dat3d, importval, merge=False):
     return dest
 
 
-# def datamatch(dest, dat3d, importval, merge=False):
-#     dest[importval + '3d'] = np.nan
+def datamatch_merge(dest, dat3d, importval, merge_cols):
+    merged = dest.merge(dat3d[merge_cols + [importval]], on=merge_cols, how="left", suffixes=["", "3d"])
 
-#     # Create a multi-column key for merging
-#     dest['key'] = dest['model'] + dest['sim'] + dest['nerve_label'] + dest['nsim'] + dest['master_fiber_index']
-#     dat3d['key'] = dat3d['model'] + dat3d['sim'] + dat3d['nerve_label'] + dat3d['nsim'] + dat3d['master_fiber_index']
+    if merged[importval + "3d"].isna().any():
+        raise RuntimeError('No match for master fiber index.')
 
-#     # Merge the dataframes based on the multi-column key
-#     merged_df = pd.merge(dest, dat3d[[importval, 'key']], on='key', how='left')
-
-#     # Update the values in the destination dataframe
-#     dest[importval + '3d'] = merged_df[importval].values
-
-#     # Check for NaN values
-#     if dest[importval + '3d'].isna().any():
-#         sys.exit('Issue with NaN values.')
-
-#     # Clean up by removing the extra columns
-#     dest.drop(columns=['key'], inplace=True)
-
-#     return dest
+    return merged
 
 
 def datamatch(dest, dat3d, importval, merge=False):

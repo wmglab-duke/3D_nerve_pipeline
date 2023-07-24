@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samp2ds = [5729]
+samp2ds = [5719]
 model = 0
 simint = 3
 samp3ds = [573]
@@ -41,6 +41,18 @@ def add_act_colorbar(ax):
     )
     cb = plt.colorbar(mappable=mappable, ax=ax, ticks=[0, 1])
     cb.ax.set_ylabel('Percent Activated')
+
+
+def add_thresh_colorbar(ax, mint, maxt):
+    cmap = colormaps['viridis']
+    cmap.set_bad(color='w')
+    cmap = cmap.reversed()
+    mappable = plt.cm.ScalarMappable(
+        cmap=cmap,
+        norm=mplcolors.Normalize(vmin=mint, vmax=maxt),
+    )
+    cb = plt.colorbar(mappable=mappable, ax=ax, ticks=[mint, maxt])
+    cb.ax.set_ylabel('Threshold (mA)')
 
 
 def addpwfd(data, sim):
@@ -84,6 +96,7 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     threshdat = pd.concat([dat2d, dat3d])
     threshdat.query('nsim in [0,5]', inplace=True)
     threshdat = addpwfd(threshdat, '3')
+    threshdat.query('nsim==0', inplace=True)
     # %%
     # calculate activation order
     drdat = threshdat.copy().reset_index()  # change this to repeated?
@@ -106,15 +119,23 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
         sim_object=sim_obj,
         scatter_kws={'s': 25},
         min_max_ticks=True,
+        min_thresh=threshdat.threshold.min(),
+        max_thresh=threshdat.threshold.max(),
+        colorbar=False,
     )
+    minsave = threshdat.threshold.min()
+    maxsave = threshdat.threshold.max()
     g.set_xlabels('')
     g.set_ylabels('')
     g.set_titles(col_template="", row_template='')
-    for ax, diam in zip(g.axes[:, 0], [3, 13]):
-        ax.set_ylabel(f'D: {diam} um')
-    # for ax, name in zip(g.axes[0, :], ['2DEM', '3DM']):
-    #     #TODO get title and infer name from whether there is a 3
-    #     ax.set_title(name)
+    for ax, name in zip(g.axes[0, :], ['2DEM\n3D-3D', '3DM']):
+        # TODO get title and infer name from whether there is a 3
+        ax.set_title(name)
+    add_thresh_colorbar(
+        g.axes,
+        threshdat.threshold.min(),
+        threshdat.threshold.max(),
+    )
 
     # plot activation order
     drdat['threshold'] = drdat['percent_activated']
@@ -132,7 +153,56 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     g.set_xlabels('')
     g.set_ylabels('')
     g.set_titles(col_template="", row_template='')
-    for ax, diam in zip(g.axes[:, 0], [3, 13]):
-        ax.set_ylabel(f'D: {diam} um')
-    # for ax, name in zip(g.axes[0, :], ['2DEM', '3DM']):
-    #     ax.set_title(name)
+    for ax, name in zip(g.axes[0, :], ['2DEM\n3D-3D', '3DM']):
+        ax.set_title(name)
+
+#%%
+
+samp2d = 5719
+model = 0
+simint = 3
+samp3d = 573
+import pandas as pd
+import seaborn as sns
+
+from src.utils import Object
+
+q = Query(
+    {
+        'partial_matches': True,
+        'include_downstream': True,
+        'indices': {'sample': [samp2d], 'model': [model], 'sim': [simint]},
+    }
+).run()
+dat2d = q.data(thresh_only=True)
+dat2d['threed'] = False
+q3 = Query(
+    {
+        'partial_matches': True,
+        'include_downstream': True,
+        'indices': {'sample': [samp3d], 'model': [model], 'sim': [simint]},
+    }
+).run()
+dat3d = q3.data(source_sample=samp2d, thresh_only=True)
+dat3d['threed'] = True
+sample_obj = q.get_object(Object.SAMPLE, [samp2d])
+sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
+threshdat = pd.concat([dat2d, dat3d])
+#%%
+threshdat.query('nsim==0', inplace=True)
+g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
+g.map(
+    heatmaps,
+    *threshdat.columns,
+    sample_object=sample_obj,
+    sim_object=sim_obj,
+    scatter_kws={'s': 25},
+    min_thresh=minsave,
+    max_thresh=maxsave,
+    colorbar=False,
+)
+g.set_xlabels('')
+g.set_ylabels('')
+g.set_titles('')
+for ax, name in zip(g.axes[0, :], ['3DM (UD)', '2DEM\n2D-3D']):
+    ax.set_title(name)

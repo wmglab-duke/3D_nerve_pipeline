@@ -173,3 +173,6 @@ master_index_key.xlsx
 tmp
 bin/
 projects/
+
+
+*.mp4
