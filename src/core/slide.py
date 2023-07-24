@@ -623,3 +623,8 @@ class Slide:
                 if not trace.polygon().is_valid:
                     return False
         return True
+
+    def inners(self, polygon=False):
+        if polygon:
+            return [inner.polygon() for f in self.fascicles for inner in f.inners]
+        return [inner for f in self.fascicles for inner in f.inners]

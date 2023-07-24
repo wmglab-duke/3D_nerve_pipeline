@@ -169,3 +169,6 @@ bin/
 projects/
 schema/
 user_input_gui.py
+
+
+*.mp4

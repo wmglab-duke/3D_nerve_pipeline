@@ -8,7 +8,6 @@ sys.path.append('.')
 import os
 
 os.chdir('../..')
-
 from src.core.query import Query
 
 model = 0
@@ -34,9 +33,9 @@ for simdex in config['sim_data'].keys():
             tortuosity=True,
             peri_site=True,
             zpos=True,
-            cuffspan=[28000, 30000],
+            cuffspan=[20000, 30000],
             label=nerve_label,
-            efib_distance=False,
+            efib_distance=True,
             oneten=True,
         )
         dat2d['type'] = '2D'
@@ -63,10 +62,10 @@ for simdex in config['sim_data'].keys():
             tortuosity=True,
             peri_site=True,
             zpos=True,
-            cuffspan=[28000, 30000],
+            cuffspan=[20000, 30000],
             source_sim=source_sim,
             label=nerve_label,
-            efib_distance=False,
+            efib_distance=True,
             oneten=True,
         )
         dat3d['type'] = '3D'

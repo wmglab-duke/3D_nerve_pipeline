@@ -19,11 +19,16 @@ import matplotlib.pyplot as plt
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samplenames = ['2L', '2Lasc', '2Ldef', '3R', '3Rdef', '5R', '5Rdef', '6R', '6Rdef']
-samp2ds = [252, 2521, 2529, 372, 3721, 572, 5721, 672, 6721]
+# samplenames = ['2L', '2R','3R','5R', '6L','6R',  '2Ldef','2Lasc', '3Rdef', '5Rdef', '6Rdef']
+# samp2ds = [252, 272,372,572,652,672,2521,2529]
+# model = 0
+# simint = 10
+# samp3ds = [253, 273,373,573,653,673,2531,253]
+samplenames = ['5Rdef', '2Ldef', '6Rdef', '3Rdef', '5Rdef']
+samp2ds = [5721, 2521, 6721, 3701, 5701]
 model = 0
 simint = 10
-samp3ds = [253, 2531, 253, 373, 3731, 573, 5731, 673, 6731]
+samp3ds = [5731, 2531, 6731, 3731, 5731]
 import pickle
 
 import matplotlib.colors as mplcolors
@@ -111,14 +116,15 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
         *threshdat.columns,
         sample_object=sample_obj,
         sim_object=sim_obj,
-        scatter_kws={'s': 25},
+        scatter_kws={'s': 15},
         min_max_ticks=True,
     )
     g.set_xlabels('')
     g.set_ylabels('')
     for ax, diam in zip(g.axes[:, 0], [3, 13]):
         ax.set_ylabel(f'D: {diam} um')
-    g.set_titles(col_template="col_name", row_template='')
+    g.set_titles(col_template="{col_name}", row_template='')
+    g.savefig(os.path.join(plotdir, 'threshold.png'), dpi=400)
 
     # plot activation order
     drdat['threshsave'] = drdat['threshold']
@@ -129,7 +135,7 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
         *drdat.columns,
         sample_object=sample_obj,
         sim_object=sim_obj,
-        scatter_kws={'s': 25},
+        scatter_kws={'s': 15},
         cmap=plasmap,
         colorbar=False,
     )
@@ -140,7 +146,8 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
         ax.set_ylabel(f'D: {diam} um')
     for ax, diam in zip(g.axes[:, 0], [3, 13]):
         ax.set_ylabel(f'D: {diam} um')
-    g.set_titles(col_template="col_name", row_template='')
+    g.set_titles(col_template="{col_name}", row_template='')
+    g.savefig(os.path.join(plotdir, 'activation.png'), dpi=400)
     # sys.exit()
     # %%
     for plotdiam in [3, 13]:
@@ -174,7 +181,7 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
         fibers = {}
         # load each fiber file and append to list
         for file in os.listdir(fiberpath):
-            print(file)
+            # print(file)
             # if file == '1.dat':# use this to watch a specific fiber
             if file.endswith('.dat'):
                 fibers[int(file.replace('.dat', ''))] = np.loadtxt(os.path.join(fiberpath, file), skiprows=1)
@@ -237,8 +244,8 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
             plt.colorbar()
             plt.scatter(xsact, ysact, c='k', marker='x')
             # label the top of colorbar "activates first in 2D" and bottom "activates first in 3D"
-            plt.text(1.25, 1.03, 'activates first in 3D', ha='center', va='bottom', transform=plt.gca().transAxes)
-            plt.text(1.25, -0.03, 'activates first in 2D', ha='center', va='top', transform=plt.gca().transAxes)
+            plt.text(1.25, 1.03, 'activates first in 2D', ha='center', va='bottom', transform=plt.gca().transAxes)
+            plt.text(1.25, -0.03, 'activates first in 3D', ha='center', va='top', transform=plt.gca().transAxes)
             plt.title(f'Slide {i}-zpos{zpos}')
             # add colorbar with new colormap
             slide.plot(final=False)
@@ -252,8 +259,8 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
             plt.colorbar()
             plt.scatter(xsact, ysact, c='k', marker='x')
             # label the top of colorbar "higher threshold in 2D" and bottom "higher threshold in 3D"
-            plt.text(1.25, 1.03, 'lower threshold in 3D', ha='center', va='bottom', transform=plt.gca().transAxes)
-            plt.text(1.25, -0.03, 'lower threshold in 2D', ha='center', va='top', transform=plt.gca().transAxes)
+            plt.text(1.25, 1.03, 'lower threshold in 2D', ha='center', va='bottom', transform=plt.gca().transAxes)
+            plt.text(1.25, -0.03, 'lower threshold in 3D', ha='center', va='top', transform=plt.gca().transAxes)
             plt.title(f'Slide {i}-zpos{zpos}')
             # add colorbar with new colormap
             slide.plot(final=False)

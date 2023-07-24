@@ -412,7 +412,7 @@ class Query(Configurable, Saveable):
                             [sample_index, model_index, sim_index],
                             just_directory=True,
                         )
-                        print(len(sim_object.fibersets[0].fibers))
+                        # print(len(sim_object.fibersets[0].fibers))
                         for master_index in range(len(sim_object.fibersets[0].fibers)):
                             inner_index, fiber_index = sim_object.indices_fib_to_n(0, master_index)
                             outerall = [index for index, inners in enumerate(out_in) if inner_index in inners]

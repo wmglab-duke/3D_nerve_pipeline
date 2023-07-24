@@ -32,7 +32,7 @@ q = Query(
         'indices': {'sample': [samp2d], 'model': [model], 'sim': [simint]},
     }
 ).run()
-dat2d = q.data()
+dat2d = q.data(thresh_only=True)
 dat2d['threed'] = False
 q3 = Query(
     {
@@ -41,13 +41,13 @@ q3 = Query(
         'indices': {'sample': [samp3d], 'model': [model], 'sim': [simint]},
     }
 ).run()
-dat3d = q3.data(source_sample=samp2d)
+dat3d = q3.data(source_sample=samp2d, thresh_only=True)
 dat3d['threed'] = True
 sample_obj = q.get_object(Object.SAMPLE, [samp2d])
 sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
-threshdat = pd.concat([dat2d, dat3d])
+threshdat = pd.concat([dat2d, dat3d]).query('fiberset_index==5')
 # %%
-g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
+g = sns.FacetGrid(threshdat, row='active_src_index', col='sample', sharex=False, sharey=False)
 g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, scatter_kws={'s': 25})
 
 save_directory = os.path.join('output', 'analysis')

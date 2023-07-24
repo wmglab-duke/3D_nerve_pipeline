@@ -612,6 +612,15 @@ def datamatch_agg(dest, dat3d, importval, merge=False):
     return dest
 
 
+def datamatch_merge(dest, dat3d, importval, merge_cols):
+    merged = dest.merge(dat3d[merge_cols + [importval]], on=merge_cols, how="left", suffixes=["", "3d"])
+
+    if merged[importval + "3d"].isna().any():
+        raise RuntimeError('No match for master fiber index.')
+
+    return merged
+
+
 def datamatch(dest, dat3d, importval, merge=False):
     dest[importval + '3d'] = np.nan
     for i in range(len(dest)):
@@ -624,7 +633,9 @@ def datamatch(dest, dat3d, importval, merge=False):
             & (dat3d["master_fiber_index"] == row['master_fiber_index'])
         ][importval]
         val = list(val)
-        if len(val) != 1:
+        if len(val) == 0:
+            raise RuntimeError('No match for master fiber index.')
+        elif len(val) > 1:
             raise RuntimeError('Found more than one match for master fiber index.')
         dest.iloc[i, -1] = val[0]
     if np.any(dest[importval] == np.nan):

@@ -12,8 +12,9 @@ from src.core import Query
 from src.utils import Object
 
 model = 0
-sim = 10
-n_sim = 1
+sim = 3
+n_sim = 0
+threshtarget = 'og'
 
 
 def pt_src(sourcepoint, nodepoint, current=1, rho=[1, 1, 1]):
@@ -64,12 +65,19 @@ def loadcoord(sim_object, sample, model, sim, n_sim):
 # TODO get peak 2diffs for each sample and compare their location and value. start with 2L, will need to get contact centers for the rest of them
 rho = [1, 1, 5]
 for sample, samp3d, nerve_label in zip(
-    [252, 372, 572, 652, 672], [253, 373, 573, 653, 673], ['2L', '3R', '5R', '6L', '6R']
+    # [252, 372, 572, 652, 672], [253, 373, 573, 653, 673], ['2L', '3R', '5R', '6L', '6R']
+    # [252],
+    # [253],
+    # ['2L'],
+    [2521, 3721, 5721, 6721],
+    [253, 373, 573, 653, 673],
+    ['2Ldef', '3Rdef', '5Rdef', '6Rdef']
+    # [2529, 3729, 5729, 6729], [2531, 3731, 5731, 6531, 6731], ['2Lasc', '3Rasc', '5Rasc', '6Rasc']
 ):
     sim_object = Query.get_object(Object.SIMULATION, [sample, model, sim])
 
     # todo: make loop samples and save to disk
-    threshdat = pd.read_csv(f'thresh_unmatched_sim{sim}_og.csv')
+    threshdat = pd.read_csv(f'thresh_unmatched_sim{sim}_{threshtarget}.csv')
     threshdat = threshdat.query(f'sample=={sample} & nsim=={n_sim} & model=={model} & sim=={sim}')
     threshdat.reset_index(drop=True, inplace=True)
     sns.set_style('whitegrid')
@@ -78,6 +86,10 @@ for sample, samp3d, nerve_label in zip(
     base_n_sim3d = os.path.join('samples', str(samp3d), 'models', str(model), 'sims', str(sim), 'n_sims')
     # make figure with 2 subplots, share y axis
     fig, axs = plt.subplots(1, 3, sharey=True, sharex=True)
+
+    figve, axve = plt.subplots()
+
+    assert len(threshdat) > 0
 
     # loop through each fiber
     for i, row in threshdat.iterrows():
@@ -96,15 +108,18 @@ for sample, samp3d, nerve_label in zip(
         der2 = der2 / np.max(np.abs(der2))
 
         # get z coordinate of each node
-        z_coords = loadcoord(sim_object, sample, model, sim, n_sim)
-        z_coords = z_coords[::11]
-        zspacing = np.diff(z_coords)[0]
+        z_coords_loaded = loadcoord(sim_object, sample, model, sim, n_sim)
+        z_coords_loaded = z_coords_loaded[::11]
+        zspacing = np.diff(z_coords_loaded)[0]
         # get new point for second difference
+        z_coords = z_coords_loaded.copy()
         z_coords = (z_coords[1:] + z_coords[:-1]) / 2
         z_coords = (z_coords[1:] + z_coords[:-1]) / 2
 
         # plot with transparency
         axs[0].plot(der2, z_coords / 10000, alpha=0.1, color='r')
+
+        axve.plot(v2, z_coords_loaded / 10000, alpha=0.1, color='b', label='2DEM' if i == 0 else '_')
 
         # run again for 3d
         inner3d = 0
@@ -121,7 +136,8 @@ for sample, samp3d, nerve_label in zip(
         zcoordpath = os.path.join(
             'samples', str(samp3d), 'models', str(model), 'sims', str(sim), 'fibersets', str(n_sim), f'{fiber3d}.dat'
         )
-        z_coords_arc = np.loadtxt(zcoordpath, skiprows=1)[:, 2][::11]
+        z_coords_arc_loaded = np.loadtxt(zcoordpath, skiprows=1)[:, 2][::11]
+        z_coords_arc = z_coords_arc_loaded.copy()
         # get new points for second difference
         z_coords_arc = (z_coords_arc[1:] + z_coords_arc[:-1]) / 2
         z_coords_arc = (z_coords_arc[1:] + z_coords_arc[:-1]) / 2
@@ -131,27 +147,11 @@ for sample, samp3d, nerve_label in zip(
         )
         fiber = nd_line(np.loadtxt(fiberpath, skiprows=1))
         z_coords3d = np.array([fiber.interp(d) for d in z_coords_arc])[:, 2]
+        loaded_3d = np.array([fiber.interp(d) for d in z_coords_arc_loaded])[:, 2]
 
         axs[1].plot(der3, z_coords3d / 10000, alpha=0.1, color='r')
+        axve.plot(v3, loaded_3d / 10000, alpha=0.1, color='k', label='3DM' if i == 0 else '_')
 
-        # plot 3D second differential for supersamples
-        # load in fiber coordinates from ascent fiber
-        # sspath0 = os.path.join('samples', str(samp3d), 'models', str(model), 'sims', str(sim), 'ss_bases','0', f'{fiber3d}.dat')
-        # sspath1 = os.path.join('samples', str(samp3d), 'models', str(model), 'sims', str(sim), 'ss_bases','1', f'{fiber3d}.dat')
-
-        # ss1 = np.loadtxt(sspath0, skiprows=1)
-        # ss2 = np.loadtxt(sspath1, skiprows=1)
-
-        # superve = -ss1+ss2
-
-        # superpoints = fiber.points[::100][:,2]
-
-        # superdiff=np.diff(np.diff(superve[::100]))
-
-        # plt.plot(superpoints[2:],superdiff, alpha=0.1, color='r')
-
-        # now load the 3D fiber and calculate the point source potential at each node
-        # assert that z coords are monotonic
         try:
             assert np.all(np.diff(fiber.points[:, 2]) < 0)
         except AssertionError:
@@ -208,11 +208,16 @@ for sample, samp3d, nerve_label in zip(
     # label axes
     axs[0].set_ylabel('z-coordinate (cm)')
     axs[1].set_xlabel('Normalized Second Differential')
-    plt.suptitle(f'2nd Differential of Ve for all {nerve_label} fibers')
+    fig.suptitle(f'2nd Differential of Ve for all {nerve_label} fibers')
     # label each axis
     axs[0].set_title('2D')
     axs[1].set_title('3D')
     axs[2].set_title('3D (point sources)')
-    plt.subplots_adjust(top=0.8)
-    plt.legend()
-    plt.savefig(f'plots/2diff/{nerve_label}_{n_sim}_{sim}2diff.png', dpi=400)
+    fig.subplots_adjust(top=0.8)
+    fig.axes[-1].legend()
+    fig.savefig(f'plots/2diff/{nerve_label}_{n_sim}_{sim}2diff.png', dpi=400)
+    figve.set_size_inches(4, 6)
+    axve.legend()
+    axve.set_ylabel('Distance along nerve (cm)')
+    axve.set_xlabel('Electrical potential (V)')
+    figve.savefig(f'plots/2diff/{nerve_label}_{n_sim}_{sim}ve.png', dpi=400)

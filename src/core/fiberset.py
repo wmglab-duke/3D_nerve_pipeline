@@ -462,7 +462,11 @@ class FiberSet(Configurable, Saveable):
             checkslide = deepcopy(self.sample.undeformed)
         else:
             checkslide = deepcopy(self.sample.slides[0])
+        checkslide.plot(final=False)
+        for i, fiber in enumerate(points):
+            plt.scatter(fiber[0], fiber[1])
         checkslide.move_center([0, 0])
+
         # check that all fibers are within exactly one inner
         for i, fiber in enumerate(points):
             innertraces = [inner.deepcopy() for fascicle in checkslide.fascicles for inner in fascicle.inners]
@@ -480,7 +484,10 @@ class FiberSet(Configurable, Saveable):
                         Point(fiber).distance(correct_fascicle) + buffer
                     )  # TODO add some leeway instead of doing +5 micron
                     if movedist > 10 + buffer:
-                        warnings.warn(f"Moved a fiber by {movedist} microns.", stacklevel=2)
+                        if movedist < 50:
+                            warnings.warn(f"Moved a fiber by {movedist} microns.", stacklevel=2)
+                        else:
+                            raise RuntimeError(f"Correction would move {movedist} microns")
                     dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                     newpoint = distpoint(fiber, dest, movedist)
                     try:
@@ -579,6 +586,9 @@ class FiberSet(Configurable, Saveable):
         ax: plt.Axes = None,
         meshgridcolors=None,
         scatter_kws: dict = None,
+        indices=False,
+        inner_specific_indices=True,
+        annotate_kws={},
     ):
         """Plot the xy coordinates of the fibers.
 
@@ -599,6 +609,13 @@ class FiberSet(Configurable, Saveable):
                 y,
                 **scatter_kws,
             )
+            if indices:
+                for mfi in range(len(self.fibers)):
+                    if not inner_specific_indices:
+                        plt.annotate(mfi, (x[mfi], y[mfi]), **annotate_kws)
+                    else:
+                        # would need to then get the proper fiber index for that inner
+                        raise NotImplementedError("Can only print master fiber index for now")
         else:
             # set up meshgrid from x and y points, where values comes from meshgridcolor
             x = np.array(x)
