@@ -59,7 +59,13 @@ At the end of the NEURON simulation, the program saves state variables
 as indicated with saveflags, CPU time, and threshold values. Output
 files are saved to the `data/outputs/` directory within its `n_sim` folder.
 
-## run_controls.py
+## Simulation hierarchy & run_controls.py
+
+The hierarchy of the NEURON simulations can be described as follows:
+1. For each run, the `submit.py` file is responsible for creating each of the jobs that need to be executed.
+2. For each job, the `submit.py` file generates and runs shell scripts that handle the submission of the respective
+jobs.
+3. Finally, the shell scripts call the `run_controls.py` script, which performs the actual simulation tasks.
 
 The `run_controls.py` file controls the parameters and simulation protocol for
 modeling fiber response to electrical stimulation in NEURON and is
