@@ -18,7 +18,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.utils import MorphologyError, WriteMode
+from src.utils import MorphologyError, WriteMode, MaskSpaceMode
 
 from .nerve import Nerve
 from .trace import Trace
@@ -278,6 +278,7 @@ class Fascicle:
         inner_img_path: str,
         outer_img_path: str,
         contour_mode,
+        mask_space_mode,
         z: float = 0,
     ) -> List['Fascicle']:
         """Convert a set of inner and outer images to a list of fascicles.
@@ -295,7 +296,9 @@ class Fascicle:
             params = [cv2.RETR_TREE, contour_mode.value]
             # default findContours params
 
-            img = np.flipud(cv2.imread(path, -1))
+            img = cv2.imread(path, -1)
+            if mask_space_mode!=MaskSpaceMode.IMAGE:
+                img=np.flipud(img)
 
             if len(img.shape) > 2 and img.shape[2] > 1:
                 img = img[:, :, 0]

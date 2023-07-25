@@ -454,7 +454,7 @@ class FiberSet(Configurable, Saveable):
             next(f)
             reader = csv.reader(f, delimiter=" ")
             points = [
-                (float(row[0]), -float(row[1])) for row in reader
+                (float(row[0]), float(row[1])) for row in reader
             ]  # flips coordinates from image space to cartesian space
         from copy import deepcopy
 
@@ -467,8 +467,10 @@ class FiberSet(Configurable, Saveable):
             plt.scatter(fiber[0], fiber[1])
         checkslide.move_center([0, 0])
 
+        self.movedists = []
         # check that all fibers are within exactly one inner
         for i, fiber in enumerate(points):
+            movedist=0
             innertraces = [inner.deepcopy() for fascicle in checkslide.fascicles for inner in fascicle.inners]
             innerbuffer = [x.deepcopy() for x in innertraces]
             [x.offset(distance=-buffer) for x in innerbuffer]
@@ -560,6 +562,7 @@ class FiberSet(Configurable, Saveable):
                             newpoint = distpoint(fiber, dest, movedist)
                             assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
                     points[i] = newpoint
+            self.movedists.append(movedist)
         return points
 
     def plot_fibers_on_sample(self, sim_directory):

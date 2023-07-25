@@ -178,6 +178,15 @@ class ContourMode(ASCENTEnum, Enum):
 
     NONE = cv2.CHAIN_APPROX_NONE
     SIMPLE = cv2.CHAIN_APPROX_SIMPLE
+    
+    
+@unique
+class MaskSpaceMode(ASCENTEnum, Enum):
+    config = 'mask_space'
+
+    CARTESIAN = 0
+    IMAGE = 1
+
 
 
 # %% Fiber Position and Type
