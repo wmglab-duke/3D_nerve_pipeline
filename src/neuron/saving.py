@@ -94,7 +94,7 @@ class Saving:
         # save threshold to submit/n_sims/#/data/outputs/thresh_inner#_fiber#.dat
         thresh_path = os.path.join(self.output_path, f'thresh_inner{self.inner_ind}_fiber{self.fiber_ind}.dat')
         with open(thresh_path, 'w') as thresh_file:
-            thresh_file.write(f"{thresh:.6f} mA")
+            thresh_file.write(f"{thresh:.6f}")
 
     def save_runtime(self, runtime: float, amp_ind: int = 0):
         """Save NEURON simulation runtime to file.
