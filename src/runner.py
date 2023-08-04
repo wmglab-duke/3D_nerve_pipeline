@@ -346,7 +346,7 @@ class Runner(Configurable):
         except:
             check = [False]
         if np.all(check):
-            print("SKIP BUILD AND EXPORT NSIMS")
+            print(f"SKIP BUILD AND EXPORT NSIMS - SIM {sim_num}")
             return
 
         # load up correct simulation and build required sims

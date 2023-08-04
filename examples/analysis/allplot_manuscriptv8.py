@@ -890,8 +890,11 @@ plt.gcf().set_size_inches([6, 4])
 plt.yscale('log')
 # %% imthera
 imdata = pd.read_csv("thresh_unmatched_sim17_immy.csv")
+imdata = addpwfd(imdata, '3')
 imdata['contact'] = imdata['sample'].astype(str).str[2].replace({'2': 'cathodic', '0': 'anodic', '1': 'center'})
 diams = {0: 3, 1: 13}
+imdata['fiber_diam'] = imdata['fiberset_index'].replace(diams)
+
 # inners need to match the center slice
 innerid = {}
 for inner in pd.unique(imdata.inner):
@@ -971,21 +974,324 @@ imdatfasr = pd.DataFrame(imdatfasr)
 # %% plot FASR
 sns.set(font_scale=1.75, style='white')
 g = sns.relplot(
-    data=imdatfasr.query('fiber_diam in [3,13]'),
+    data=imdatfasr.query('fiber_diam in [3]'),
     x='active_src_index',
     y='FASR',
     kind='line',
-    row='fiber_diam',
+    col='inner',
     facet_kws=dict(margin_titles=True),
     # sharey=False,
     hue='inner',
     style='type',
     palette='rainbow',
     linewidth=3,
+    col_wrap=5,
 )
 plt.ylim(0, 1)
 g.set_xlabels('Contact Configuration')
 g.set_titles(col_template='D: {col_name} μm')
 plt.xticks(range(7))
-g.fig.set_size_inches([8, 10])
+# g.fig.set_size_inches([8, 10])
 g.set_titles(row_template='D: {row_name} μm')
+sns.move_legend(g, [0.85, 0.05])
+# %% plot FASR
+sns.set(font_scale=1.75, style='white')
+g = sns.relplot(
+    data=imdatfasr.query('fiber_diam in [3]'),
+    x='inner',
+    y='FASR',
+    kind='line',
+    col='active_src_index',
+    facet_kws=dict(margin_titles=True),
+    # sharey=False,
+    style='type',
+    palette='rainbow',
+    linewidth=3,
+    col_wrap=3,
+)
+plt.ylim(0, 1)
+# %% remake the above with individual calls of histplot
+sns.set(font_scale=1.75, style='whitegrid')
+newthreshz = threshload.copy()
+newthreshz['activation_zpos'] = newthreshz['activation_zpos'] / 10000
+fig, axs = plt.subplots(1, 2, sharex=False, sharey=True)
+for nerve_label in pd.unique(newthreshz.nerve_label):
+    for ax, modeltype in zip(axs, ["2DEM", "3DM"]):
+        g = sns.histplot(
+            data=newthreshz.query(
+                f"fiber_diam in [3,13] and contact in {main_comparison} and nerve_label=='{nerve_label}' and type=='{modeltype}'"
+            ).rename(columns={'nerve_label': 'Sample'}),
+            y='activation_zpos',
+            hue='fiber_diam',
+            # hue='Sample',
+            # facet_kws={'sharex': False},
+            # kind='kde',
+            palette=[sns.color_palette('binary')[5], sns.color_palette('binary')[2]],
+            common_norm=False,
+            # legend=False,
+            # multiple="fill",
+            element='poly',
+            fill=False,
+            bins=np.arange(1.5, 3.6, 0.1),
+            ax=ax,
+        )
+# delete both legends and remake my own
+for ax in axs:
+    ax.get_legend().remove()
+# make my own legend
+axs[0].plot([], [], color=sns.color_palette('binary')[5], label='3 μm', linewidth=2)
+axs[0].plot([], [], color=sns.color_palette('binary')[2], label='13 μm', linewidth=2)
+# put legenbd to right of figure
+axs[0].legend(loc='center left', bbox_to_anchor=(2.2, 0.5))
+axs[0].set_xlim(reversed(axs[0].get_xlim()))
+axs[0].set_ylabel("Activation Location (cm)")
+axs[0].set_title("2DEM-100%")
+axs[1].set_title("3DM-100%")
+
+# %% Correlation2DEM3DM
+sns.reset_orig()
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+usedata = matched.rename(columns={'threshold': 'threshold2DEM'})
+for comparison in [
+    ['threshold2DEM', 'threshold3d'],
+    # ['threshold2DEM', 'peri_thk'],
+    # ['threshold3d', 'peri_thk'],
+    # ['threshold2DEM', 'minimum_efib_distance'],
+    # ['threshold2DEM', 'peak_second_diff'],
+    # ['peak_second_diff', 'peri_thk'],
+    # ['peak_second_diff', 'minimum_efib_distance'],
+    # ['peak_second_z', 'activation_zpos'],
+    # ['peak_second_diff_node', 'apnode'],
+]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
+    corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], categories=['cathodic', 'center', 'anodic'], ordered=True)
+    plt.figure()
+    # g = sns.FacetGrid(data=corrs,col='contact')
+    # g.map_dataframe(sns.stripplot, hue='Sample', y='correlation',dodge=True, palette='colorblind')
+    # g.map_dataframe(sns.boxplot,y='correlation', boxprops={'facecolor':'None'},whis=100)
+    sns.swarmplot(data=corrs, palette='RdPu', y='contact', hue='fiber_diam', x='correlation', dodge=True, s=6)
+    sns.boxplot(data=corrs, y='contact', x='correlation', boxprops={'facecolor': 'None'}, whis=100)
+    # plt.subplots_adjust(top=0.8)
+    plt.title(f'Correlation between \n{comparison[0]} and {comparison[1]}', pad=25)
+    plt.gca().set_xlim([-1, 1])
+    plt.legend(title="D (μm)", bbox_to_anchor=(1, 1))
+    plt.ylabel('')
+    plt.gca().set_yticklabels('')
+    plt.gcf().set_size_inches([6, 5])
+
+    # make lmplot to accompany
+    sns.lmplot(
+        data=usedata.query('fiber_diam in [3,13]'),
+        x=comparison[0],
+        y=comparison[1],
+        hue='nerve_label',
+        col='contact',
+        col_order=['cathodic', 'center', 'anodic'],
+        palette='colorblind',
+        row='fiber_diam',
+        row_order=[3, 13],
+        facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+        scatter_kws={'linewidth': 1, 'edgecolor': 'k'},
+    )
+# %% Correlation 3Donly
+sns.reset_orig()
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+usedata = threshload.query('contact=="3D"')
+for comparison in [
+    # ['threshold', 'tortuosity'],
+    # ['threshold', 'nodal_tortuosity'],
+    # ['threshold', 'cuff_tortuosity'],
+    # ['threshold', 'peri_thk_act_site'],
+    # ['threshold', 'smallest_thk_under_cuff'],
+    # ['threshold','peri_thk_act_site'],
+    # ['smallest_thk_under_cuff', 'peri_thk_act_site'],
+    # # TODO try smallest thk over whole cuffspan as well as over both cuff spans
+    # ['threshold', 'minimum_efib_distance'],
+    ['threshold', 'peak_second_diff'],
+    # ['peak_second_diff', 'peri_thk_act_site'],
+    # ['peak_second_diff', 'tortuosity'],
+    # ['peak_second_diff', 'nodal_tortuosity'],
+    # ['peak_second_z', 'activation_zpos'],
+    # ['peak_second_long_pos', 'long_ap_pos'],
+    # ['peak_second_diff_node', 'apnode'],
+    # ['peak_second_diff', 'minimum_efib_distance'],
+]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
+    corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], ordered=True)
+    plt.figure()
+    # g = sns.FacetGrid(data=corrs,col='contact')
+    # g.map_dataframe(sns.stripplot, hue='Sample', y='correlation',dodge=True, palette='colorblind')
+    # g.map_dataframe(sns.boxplot,y='correlation', boxprops={'facecolor':'None'},whis=100)
+    sns.swarmplot(data=corrs, palette='RdPu', y='contact', hue='fiber_diam', x='correlation', dodge=True, s=6)
+    sns.boxplot(data=corrs, y='contact', x='correlation', boxprops={'facecolor': 'None'}, whis=100)
+    # plt.subplots_adjust(top=0.8)
+    plt.title(f'Correlation between \n{comparison[0]} and {comparison[1]}', pad=25)
+    plt.gca().set_xlim([-1, 1])
+    plt.legend(title="D (μm)", bbox_to_anchor=(1, 1))
+    plt.ylabel('')
+    plt.gca().set_yticklabels('')
+    plt.gcf().set_size_inches([6, 5])
+    # make lmplot to accompany
+    sns.lmplot(
+        data=usedata.query('fiber_diam in [3,13]'),
+        x=comparison[0],
+        y=comparison[1],
+        hue='nerve_label',
+        row='fiber_diam',
+        row_order=[3, 13],
+        palette='colorblind',
+        facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+        scatter_kws={'linewidth': 1, 'edgecolor': 'k'},
+    )
+# %% Correlation2DEM3DM deformed
+threeddefmatch = deftomatch.query('deformation=="3D-3D"')
+deffinalmatch = datamatch_merge(
+    threeddefmatch.query('type=="2DEM"'),
+    threeddefmatch.query('type=="3DM"'),
+    'threshold',
+    merge_cols=["model", "sim", "nerve_label", "nsim", "master_fiber_index"],
+).drop(columns='type')
+sns.reset_orig()
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+usedata = deffinalmatch.rename(columns={'threshold': 'threshold2DEM'})
+for comparison in [
+    ['threshold2DEM', 'threshold3d'],
+    # ['threshold2DEM', 'peri_thk'],
+    # ['threshold3d', 'peri_thk'],
+    # # ['threshold2DEM', 'minimum_efib_distance'],
+    # ['threshold2DEM', 'peak_second_diff'],
+    # ['peak_second_diff', 'peri_thk'],
+    # # ['peak_second_diff', 'minimum_efib_distance'],
+    # ['peak_second_z', 'activation_zpos'],
+    # ['peak_second_diff_node', 'apnode'],
+]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
+    corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], categories=['cathodic', 'center', 'anodic'], ordered=True)
+    plt.figure()
+    # g = sns.FacetGrid(data=corrs,col='contact')
+    # g.map_dataframe(sns.stripplot, hue='Sample', y='correlation',dodge=True, palette='colorblind')
+    # g.map_dataframe(sns.boxplot,y='correlation', boxprops={'facecolor':'None'},whis=100)
+    sns.swarmplot(data=corrs, palette='RdPu', y='contact', hue='fiber_diam', x='correlation', dodge=True, s=6)
+    sns.boxplot(data=corrs, y='contact', x='correlation', boxprops={'facecolor': 'None'}, whis=100)
+    # plt.subplots_adjust(top=0.8)
+    plt.title(f'Correlation between \n{comparison[0]} and {comparison[1]}', pad=25)
+    plt.gca().set_xlim([-1, 1])
+    plt.legend(title="D (μm)", bbox_to_anchor=(1, 1))
+    plt.ylabel('')
+    plt.gca().set_yticklabels('')
+    plt.gcf().set_size_inches([6, 5])
+
+    # make lmplot to accompany
+    sns.lmplot(
+        data=usedata.query('fiber_diam in [3,13]'),
+        x=comparison[0],
+        y=comparison[1],
+        hue='nerve_label',
+        col='contact',
+        col_order=['cathodic', 'center', 'anodic'],
+        palette='colorblind',
+        row='fiber_diam',
+        row_order=[3, 13],
+        facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+        scatter_kws={'linewidth': 1, 'edgecolor': 'k'},
+    )
+# %% Correlation 3Donly deformed
+sns.reset_orig()
+sns.set(font_scale=1.75)
+sns.set_style('whitegrid')
+mpl.rcParams['figure.dpi'] = 400
+usedata = newdefdat.query('contact=="3D" and deformation=="3D-3D"')
+for comparison in [
+    # ['threshold', 'tortuosity'],
+    # ['threshold', 'nodal_tortuosity'],
+    ['threshold', 'cuff_tortuosity'],
+    # ['threshold', 'peri_thk_act_site'],
+    ['threshold', 'smallest_thk_under_cuff'],
+    # ['threshold', 'peri_thk_act_site'],
+    ['smallest_thk_under_cuff', 'peri_thk_act_site'],
+    # TODO try smallest thk over whole cuffspan as well as over both cuff spans
+    # ['threshold', 'minimum_efib_distance'],
+    # ['threshold', 'peak_second_diff'],
+    # ['peak_second_diff', 'peri_thk_act_site'],
+    # ['peak_second_diff', 'tortuosity'],
+    # ['peak_second_diff', 'nodal_tortuosity'],
+    # ['peak_second_z', 'activation_zpos'],
+    # ['peak_second_long_pos', 'long_ap_pos'],
+    # ['peak_second_diff_node', 'apnode'],
+    # ['peak_second_diff', 'minimum_efib_distance'],
+]:
+    corrs = usedata.groupby(['sample', 'fiber_diam', 'contact', 'nerve_label'])[comparison].corr().iloc[0::2, -1]
+    corrs = corrs.reset_index().rename(columns={comparison[1]: 'correlation'})
+    corrs['fiber_diam'] = pd.Categorical(corrs['fiber_diam'].astype(int), ordered=True)
+    corrs['contact'] = pd.Categorical(corrs['contact'], ordered=True)
+    plt.figure()
+    # g = sns.FacetGrid(data=corrs,col='contact')
+    # g.map_dataframe(sns.stripplot, hue='Sample', y='correlation',dodge=True, palette='colorblind')
+    # g.map_dataframe(sns.boxplot,y='correlation', boxprops={'facecolor':'None'},whis=100)
+    sns.swarmplot(data=corrs, palette='RdPu', y='contact', hue='fiber_diam', x='correlation', dodge=True, s=6)
+    sns.boxplot(data=corrs, y='contact', x='correlation', boxprops={'facecolor': 'None'}, whis=100)
+    # plt.subplots_adjust(top=0.8)
+    plt.title(f'Correlation between \n{comparison[0]} and {comparison[1]}', pad=25)
+    plt.gca().set_xlim([-1, 1])
+    plt.legend(title="D (μm)", bbox_to_anchor=(1, 1))
+    plt.ylabel('')
+    plt.gca().set_yticklabels('')
+    plt.gcf().set_size_inches([6, 5])
+    # make lmplot to accompany
+    sns.lmplot(
+        data=usedata.query('fiber_diam in [3,13]'),
+        x=comparison[0],
+        y=comparison[1],
+        hue='nerve_label',
+        row='fiber_diam',
+        row_order=[3, 13],
+        palette='colorblind',
+        facet_kws={'sharex': False, 'sharey': False, 'margin_titles': True},
+        scatter_kws={'linewidth': 1, 'edgecolor': 'k'},
+    )
+# %%
+thisdef = deftomatch.query('deformation!="2D-3D" and fiber_diam in [3,13]')
+thisdef['deformed'] = thisdef['deformation'] == "3D-3D"
+
+comparecols = ['peak_second_diff', 'peri_thk', 'peri_thk_act_site', 'tortuosity', 'minimum_efib_distance']
+# comparecols = ['peak_second_diff','peri_thk']
+
+alldf = []
+
+for name in comparecols:
+    # Calculate correlation for each column with the "threshold" column based on the grouping variables
+    correlation_df = (
+        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[[name, "threshold"]].corr().reset_index()
+    )
+    correlation_df['name'] = name
+    alldf.append(correlation_df.query('threshold!=1'))
+alldf = pd.concat(alldf)
+alldf.threshold = alldf.threshold**2
+# Plot each column as a separate line in the line plot
+g = sns.FacetGrid(data=alldf, col='type', row='fiber_diam', margin_titles=True)
+g.map_dataframe(sns.pointplot, dodge=0.3, y='threshold', x='deformed', hue='name', palette='Set2')
+leg = plt.legend(bbox_to_anchor=(1.4, -0.4))
+new_labs = [
+    'Peak Second Difference',
+    'Perineurium Thickness (Center)',
+    'Perineurium Thickness (Activation Site)',
+    'Tortuosity',
+    'Minimum Electrode-Fiber Distance',
+]
+for t, l in zip(leg.get_texts(), new_labs):
+    t.set_text(l)
+plt.ylim(0, 1)
+g.set_ylabels(r'$R^2$', rotation=90)
+g.set_titles(col_template="{col_name}", row_template="D: {row_name} μm")
