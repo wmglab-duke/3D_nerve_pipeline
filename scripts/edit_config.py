@@ -56,73 +56,17 @@ import shutil
 os.chdir('..')
 
 if c == 'm':
-    samples =[250,
-     2501,
-     2509,
-     251,
-     2511,
-     2515,
-     2519,
-     252,
-     2520,
-     2521,
-     2524,
-     2526,
-     2529,
-     253,
-     2530,
-     2531,
-     2534,
-     2535,
-     2536,
-     270,
-     271,
-     272,
-     273,
-     370,
-     3701,
-     3709,
-     371,
-     3711,
-     3719,
-     372,
-     3721,
-     3729,
-     373,
-     3731,
-     570,
-     5701,
-     5709,
-     571,
-     5711,
-     5715,
-     5719,
-     572,
-     5721,
-     5729,
-     573,
-     5731,
-     5735,
-     650,
-     651,
-     652,
-     653,
-     670,
-     6701,
-     6709,
-     671,
-     6711,
-     6719,
-     672,
-     6721,
-     6729,
-     673,
-     6731]
+    samples =[
+    370,
+    3701,
+    3719,
+    3721,
+    650]
     models = [0]
 
-    change = ['modes','cuff_shift']
+    change = ['inner_interp_tol']
 
-    newval = "NONE"
+    newval = 0.015
 
     clear = False
 
@@ -219,13 +163,15 @@ elif c == 'r':
 
     change = ['sims']
 
-    newval = [3]
+    # newval = [3]
 
     print(str([int(x) for x in runlist]))
 
     print(str([int(x) for x in runlist]).replace(',', ''))
 
-    # newval = [3, 10]
+    # newval = [3, 7, 10,11,20,30]
+    newval = [3, 10]
+
 
     for run in runlist:
         # change, newval = param_picker(path + f'/{run}.json')
@@ -235,47 +181,71 @@ elif c == 'r':
         print(f'Updated run {run} parameter {change} from {oldval} to {newval}.')
 #%%
 elif c == 'e':
-    samples = [2501,
+    samples = [250,
+     2501,
      2509,
+     251,
      2511,
      2515,
      2519,
+     252,
      2520,
      2521,
      2524,
      2526,
      2529,
+     253,
      2530,
      2531,
      2534,
      2535,
      2536,
+     270,
+     271,
+     272,
+     273,
+     370,
      3701,
      3709,
+     371,
      3711,
      3719,
+     372,
      3721,
      3729,
+     373,
      3731,
+     570,
      5701,
      5709,
+     571,
      5711,
      5715,
      5719,
+     572,
      5721,
      5729,
+     573,
      5731,
      5735,
+     650,
+     651,
+     652,
+     653,
+     670,
      6701,
      6709,
+     671,
      6711,
      6719,
+     672,
      6721,
      6729,
+     673,
      6731]
-    change = ["modes",'ci_perineurium_thickness']
+    change = ["boundary_separation"]
 
-    newval = "HUMAN_VN_INHOUSE_200601"
+    newval =  {'fascicles':10,'nerve':10}
 
     clear = False
 

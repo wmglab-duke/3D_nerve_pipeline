@@ -8,7 +8,7 @@ import pandas as pd
 sys.path.append('.')
 import os
 
-os.chdir('../..')
+# os.chdir('../..')
 from src.core.query import Query
 
 model = 0
@@ -81,4 +81,4 @@ for simdex in config['sim_data'].keys():
         datas.append(dat2d)
         datas.append(dat3d)
     data = pd.concat(datas)
-    data.to_csv(f'thresh_unmatched_sim{simint}_og3r.csv', index=False)
+    data.to_csv(f'thresh_unmatched_sim{simint}_og.csv', index=False)

@@ -703,6 +703,7 @@ class Simulation(Configurable, Saveable):
         sim_obj_dir: str,
         target: str,
         export_behavior=None,
+        check=False
     ):
         """Export the n_sims to the target directory.
 
@@ -720,15 +721,22 @@ class Simulation(Configurable, Saveable):
             target = sim_export_base + product_index
 
             if os.path.exists(target):
+                if check:
+                    yield True
+                    continue
                 if export_behavior == ExportMode.OVERWRITE.value:
                     shutil.rmtree(target)
                 elif export_behavior == ExportMode.ERROR.value:
-                    sys.exit(f'{target} already exists, exiting...')
+                    raise FileExistsError(f"{target} exists")
                 elif export_behavior == ExportMode.SELECTIVE.value or export_behavior is None:
                     print(f'\tSkipping n_sim export for {target} because folder already exists.')
                     continue
                 else:
                     sys.exit('Invalid export_behavior')
+            else:
+                if check:
+                    yield False
+                    continue
 
             shutil.copytree(os.path.join(sim_dir, product_index), sim_export_base + product_index)
 

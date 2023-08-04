@@ -321,15 +321,6 @@ class Runner(Configurable):
         sim_dir = os.path.join(
             os.getcwd(), 'samples', str(self.configs[Config.RUN.value]['sample']), 'models', str(model_num), 'sims'
         )
-
-        # load up correct simulation and build required sims
-        simulation: Simulation = self.load_obj(sim_obj_path)
-        simulation.build_n_sims(sim_dir, sim_num, threed=threed)
-
-        # delete folder containing fiberset .txt files
-        if self.configs[Config.RUN.value].get('delete_fibersets'):
-            shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
-
         # get export behavior
         if self.configs[Config.CLI_ARGS.value].get('export_behavior') is not None:
             export_behavior = self.configs[Config.CLI_ARGS.value]['export_behavior']
@@ -340,16 +331,39 @@ class Runner(Configurable):
         # check to make sure we have a valid behavior
         if not np.any([export_behavior == x.value for x in ExportMode]):
             raise ValueError("Invalid export behavior defined in run.json")
+        try:
+            check =  list(Simulation.export_n_sims(
+                                sample_num,
+                                model_num,
+                                sim_num,
+                                sim_dir,
+                                os.environ[Env.NSIM_EXPORT_PATH.value],
+                                export_behavior=export_behavior,
+                                check=True
+                            ))
+        except:
+            check=[False]
+        if np.all(check):
+            print("SKIP BUILD AND EXPORT NSIMS")
+            return
+
+        # load up correct simulation and build required sims
+        simulation: Simulation = self.load_obj(sim_obj_path)
+        simulation.build_n_sims(sim_dir, sim_num, threed=threed)
+
+        # delete folder containing fiberset .txt files
+        if self.configs[Config.RUN.value].get('delete_fibersets'):
+            shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
 
         # export simulations
-        Simulation.export_n_sims(
+        list(Simulation.export_n_sims(
             sample_num,
             model_num,
             sim_num,
             sim_dir,
             os.environ[Env.NSIM_EXPORT_PATH.value],
             export_behavior=export_behavior,
-        )
+        ))
 
         # ensure run configuration is present
         Simulation.export_run(self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value])

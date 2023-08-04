@@ -685,7 +685,7 @@ class Sample(Configurable, Saveable):
         if slide.nerve.area() != pre_area:
             slide.nerve.scale((pre_area / slide.nerve.area()) ** 0.5)
         else:
-            print(f'Note: nerve area before deformation was {pre_area}, post deformation is {self.nerve.area()}')
+            print(f'Note: nerve area before deformation was {pre_area}, post deformation is {slide.nerve.area()}')
 
         # shift slide about (0,0)
         slide.move_center(np.array([0, 0]))
