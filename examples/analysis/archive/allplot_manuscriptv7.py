@@ -106,7 +106,7 @@ threshload.loc[threedcontact, 'contact'] = '3D'
 # set all inners and outers where 'type' is 3D to 0
 threshload.loc[(threshload['type'] == '3D'), 'inner'] = 0
 threshload.loc[(threshload['type'] == '3D'), 'outer'] = 0
-#%% inners need to match the cathodic leading contact
+# %% inners need to match the cathodic leading contact
 # Query the rows with type '3D'
 df_3d = threshload.query("type == '3D'")
 
@@ -120,7 +120,7 @@ merged_df = pd.merge(df_3d, df_2d, on=['nerve_label', 'master_fiber_index', 'nsi
 threshload.loc[df_3d.index, 'inner'] = merged_df['inner_2d'].values
 threshload.loc[df_3d.index, 'outer'] = merged_df['outer_2d'].values
 threshload.loc[df_3d.index, 'fiber'] = merged_df['fiber_2d'].values
-#%%
+# %%
 if gogo == "initial":  # remove all where nerve_label length is >2
     threshload = threshload[threshload['nerve_label'].str.len() < 3]
 threshload['type'] = threshload['type'].replace({'2D': '2DEM', '3D': '3DM'})
@@ -155,7 +155,7 @@ repeated['type'] = pd.Categorical(repeated['type'], categories=['2DEM', '3DM'], 
 multimatched = datamatchlist(
     threshload.query('type=="2DEM"'), threshload.query('type=="3DM"'), ['threshold', 'activation_zpos']
 ).drop(columns='type')
-#%%
+# %%
 print('dose-response')
 # dose response
 drdat = threshload.copy()  # change this to repeated?
@@ -241,7 +241,7 @@ for i, non_directness in enumerate(non_directness_values):
 plt.subplots_adjust(wspace=0)
 plt.tight_layout()
 plt.show()
-#%% tortuosity lineplot
+# %% tortuosity lineplot
 sns.set(font_scale=1.75)
 sns.set_style('whitegrid')
 nsimdata = threshload.query('fiber_diam in [3,13] and type=="3DM"')
@@ -562,7 +562,7 @@ g.set_xlabels('')
 
 g.set_ylabels('Threshold (mA)')
 # plt.suptitle('thresholds compared between 2DEM (cathodic) and 3DM')
-#%% organization compare nsim
+# %% organization compare nsim
 # remove all samples which dont end with a 2
 sns.reset_orig()
 sns.set(font_scale=1.25, style='whitegrid')
@@ -817,7 +817,7 @@ tort = np.median(threshload.query('type=="3DM"').tortuosity)
 plt.gca().set_aspect(0.00012)
 print(f'Median tortuosity: {tort}')
 # plt.title('Histogram of tortuosity values')
-#%%
+# %%
 corrs = (
     nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'type'])['threshold', 'tortuosity'].corr().iloc[0::2, -1]
 )
@@ -1137,7 +1137,7 @@ for ax, r, letter in zip(
 g.set_titles(col_template='{col_name}', row_template='Fiber Diameter = {row_name}')
 # g.fig.set_size_inches(10, 6)
 plt.show()
-#%% Dose-response info all diams
+# %% Dose-response info all diams
 plt.figure()
 levels = {
     'onset': 10,
@@ -1315,7 +1315,8 @@ defpal = [sns.color_palette('colorblind')[ind] for ind in [0, 2, 3, 5]]
 defdefcomp = newdefdat.query('type=="3DM" and deformation != "2D-3D"')
 defdefcomp['deformed'] = defdefcomp['deformation'] != "Undeformed"
 
-#%% dose-response
+
+# %% dose-response
 def calculate_dose_response(df, threshold_column, outcolumn, grouping_columns):
     def calculate_dose_response_per_sample(group):
         threshold_values = group[threshold_column].values
@@ -1334,7 +1335,7 @@ defdr = calculate_dose_response(
     'percent_activated',
     grouping_columns=['modeltype', 'samplenum', 'fiber_diam', 'sim', 'deformation'],
 )
-#%% tortuosities
+# %% tortuosities
 sns.set(font_scale=1.75)
 sns.set_style('white')
 plt.figure()
@@ -1456,7 +1457,7 @@ for i, row in newdefdr.iterrows():
     val = thisdat.percent_activated.values[0]
     assert not val is np.nan
     newdefdr.loc[i, 'percent_activated2d'] = val
-#%%
+# %%
 sns.set(font_scale=1.75, style='whitegrid')
 plt.figure()
 g = sns.catplot(
@@ -1493,7 +1494,7 @@ g.figure.colorbar(
 ).ax.yaxis.set_ticks_position('left')
 
 # g._legend.set_title('')
-#%% recruitment cost:
+# %% recruitment cost:
 sns.set(font_scale=1.75)
 sns.set_style('whitegrid')
 scores = []
@@ -1700,7 +1701,7 @@ plt.xlabel('Fiber Diam')
 plt.title('Mean Threshold Percent Difference\nDeformation=3D-3D')
 plt.legend(loc='lower right', bbox_to_anchor=(1.4, 0))
 plt.show()
-#%% new idea analysis
+# %% new idea analysis
 concats = []
 for deftype in ["Undeformed", "3D-3D"]:
     thismatch = deftomatch.query('deformation==@deftype')
@@ -1711,7 +1712,9 @@ for deftype in ["Undeformed", "3D-3D"]:
     concats.append(matchednow)
 concats = pd.concat(concats)
 concats['deformation'] = pd.Categorical(concats['deformation'], categories=['Undeformed', '3D-3D'], ordered=True)
-#%%
+
+
+# %%
 def concordance_correlation_coefficient(y_true, y_pred):
     """Concordance correlation coefficient."""
     y_true, y_pred = np.array(y_true), np.array(y_pred)
@@ -1740,7 +1743,7 @@ def concordance_correlation_coefficient(y_true, y_pred):
     return numerator / denominator
 
 
-#%%
+# %%
 grouped = concats.query('contact != "center"').groupby(
     ['nerve_label', 'fiber_diam', 'master_fiber_index', 'deformation']
 )
@@ -1795,7 +1798,7 @@ for diam, pos, ax, deformation in zip(
 g.set_titles('D: {col_name} μm')
 g.set_xlabels('2DEM Threshold (mA)')
 g.set_ylabels('3DM Threshold (mA)')
-#%% LCCC comparison maincath
+# %% LCCC comparison maincath
 
 nsimdata = concats.query(
     f'fiber_diam in [3,13] and contact in {main_comparison}'
@@ -1838,7 +1841,7 @@ for diam, pos, ax, deformation in zip(
 g.set_titles(col_template='D: {col_name} μm')
 g.set_xlabels('2DEM Threshold (mA)')
 g.set_ylabels('3DM Threshold (mA)')
-#%% Deformation thresholds unity line
+# %% Deformation thresholds unity line
 sns.set(font_scale=1.75)
 sns.set_style('whitegrid')
 # usedata = addpwfd(pd.read_csv('thresh_unmatched_sim10.csv'), '10')
@@ -1890,7 +1893,7 @@ threeddefmatch = deftomatch.query('deformation=="3D-3D"')
 deffinalmatch = datamatch(threeddefmatch.query('type=="2DEM"'), threeddefmatch.query('type=="3DM"'), 'threshold').drop(
     columns='type'
 )
-#%% Correlation2DEM3DM deformed
+# %% Correlation2DEM3DM deformed
 sns.reset_orig()
 sns.set(font_scale=1.75)
 sns.set_style('whitegrid')
@@ -2262,7 +2265,7 @@ g.set_titles(col_template='D: {col_name} μm')
 plt.xticks(range(7))
 g.fig.set_size_inches([8, 10])
 g.set_titles(row_template='D: {row_name} μm')
-#%%
+# %%
 thisdef = deftomatch.query('deformation!="2D-3D" and fiber_diam in [3,13]')
 thisdef['deformed'] = thisdef['deformation'] == "3D-3D"
 
@@ -2297,7 +2300,7 @@ plt.ylim(0, 1)
 g.set_ylabels(r'$R^2$', rotation=90)
 g.set_titles(col_template="{col_name}", row_template="D: {row_name} μm")
 
-#%% deformation zpos
+# %% deformation zpos
 for stringdat in ['Undeformed', '2D-3D', '3D-3D']:
     sns.set(font_scale=1.75, style='whitegrid')
     newthreshz = newdefdat.query(f'contact in {main_comparison} and deformation=="{stringdat}"')
@@ -2404,7 +2407,6 @@ g = sns.relplot(
 g.legend.set_title('')
 # sns.move_legend(g,[0.5,0.5])
 for ax in g.axes.ravel():
-
     ax.set_ylim([0, 1])
     ax.set_xlim([0, None])
 g.set_titles(row_template='', col_template='{col_name}')

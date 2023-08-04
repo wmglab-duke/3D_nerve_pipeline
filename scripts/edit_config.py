@@ -56,12 +56,7 @@ import shutil
 os.chdir('..')
 
 if c == 'm':
-    samples =[
-    370,
-    3701,
-    3719,
-    3721,
-    650]
+    samples = [370, 3701, 3719, 3721, 650]
     models = [0]
 
     change = ['inner_interp_tol']
@@ -84,7 +79,7 @@ if c == 'm':
             except Exception as e:
                 print(sample, e)
 
-#%%
+# %%
 elif c == 's':
     sims = [1, 10, 11, 12, 13, 14]
 
@@ -98,7 +93,7 @@ elif c == 's':
             print(f'Updated sim {sim} parameter {change} from {oldval} to {newval}.')
         except:
             pass
-#%%
+# %%
 elif c == 'r':
     path = 'config/user/runs'
 
@@ -172,80 +167,81 @@ elif c == 'r':
     # newval = [3, 7, 10,11,20,30]
     newval = [3, 10]
 
-
     for run in runlist:
         # change, newval = param_picker(path + f'/{run}.json')
 
         oldval = configval(f'config/user/runs/{run}.json', change, newval)
 
         print(f'Updated run {run} parameter {change} from {oldval} to {newval}.')
-#%%
+# %%
 elif c == 'e':
-    samples = [250,
-     2501,
-     2509,
-     251,
-     2511,
-     2515,
-     2519,
-     252,
-     2520,
-     2521,
-     2524,
-     2526,
-     2529,
-     253,
-     2530,
-     2531,
-     2534,
-     2535,
-     2536,
-     270,
-     271,
-     272,
-     273,
-     370,
-     3701,
-     3709,
-     371,
-     3711,
-     3719,
-     372,
-     3721,
-     3729,
-     373,
-     3731,
-     570,
-     5701,
-     5709,
-     571,
-     5711,
-     5715,
-     5719,
-     572,
-     5721,
-     5729,
-     573,
-     5731,
-     5735,
-     650,
-     651,
-     652,
-     653,
-     670,
-     6701,
-     6709,
-     671,
-     6711,
-     6719,
-     672,
-     6721,
-     6729,
-     673,
-     6731]
+    samples = [
+        250,
+        2501,
+        2509,
+        251,
+        2511,
+        2515,
+        2519,
+        252,
+        2520,
+        2521,
+        2524,
+        2526,
+        2529,
+        253,
+        2530,
+        2531,
+        2534,
+        2535,
+        2536,
+        270,
+        271,
+        272,
+        273,
+        370,
+        3701,
+        3709,
+        371,
+        3711,
+        3719,
+        372,
+        3721,
+        3729,
+        373,
+        3731,
+        570,
+        5701,
+        5709,
+        571,
+        5711,
+        5715,
+        5719,
+        572,
+        5721,
+        5729,
+        573,
+        5731,
+        5735,
+        650,
+        651,
+        652,
+        653,
+        670,
+        6701,
+        6709,
+        671,
+        6711,
+        6719,
+        672,
+        6721,
+        6729,
+        673,
+        6731,
+    ]
     change = ["boundary_separation"]
 
-    newval =  {'fascicles':10,'nerve':10}
+    newval = {'fascicles': 10, 'nerve': 10}
 
     clear = False
 

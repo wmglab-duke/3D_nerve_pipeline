@@ -24,7 +24,6 @@ innernum, fibernum, mfi = 0, 0, 212
 samplename = '6R'
 
 for d, n in zip(diams, n_sims):
-
     twood = rf'D:\threed_ascent\samples\{sample}2\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner{innernum}_fiber{fibernum}.dat'
     threed = rf'D:\threed_ascent\samples\{sample}3\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner0_fiber{mfi}.dat'
 
@@ -81,7 +80,7 @@ for d, n in zip(diams, n_sims):
     ve2_2diff = np.diff(np.diff(ve2)) * 1000
     ve3 = ve3[::-1]
 
-    #%%
+    # %%
     plotdiam = d
     import os
     import pickle
@@ -205,7 +204,7 @@ for d, n in zip(diams, n_sims):
     ax2.tick_params(axis='y', labelcolor='b')
     ax.set_ylabel('Second difference of Ve', color='k')
     plt.title(f'Fiber {mfi}')
-#%%
+# %%
 # now simulate the 3 micron fiber 2D
 from wmglab_neuron import FiberModel, ScaledStim, build_fiber  # noqa: E402
 
@@ -273,7 +272,7 @@ for diam in [3]:
 
         duration = len(fiber.vm[1]) / fps / skip
         ylim = (0, 1)
-        #%%
+        # %%
         plt.figure()
         plt.plot(fiber.coordinates[::11][1:-1], -np.diff(fiber.potentials[::11], n=2))
         plt.gca().twinx().plot(fiber.coordinates[::11], [apc.time for apc in fiber.apc], 'r')
@@ -292,7 +291,7 @@ for diam in [3]:
         plt.xlim(15000, 35000)
         plt.axvline(fiber.coordinates[::11][np.argmin(apctest)], color='g')
 
-        #%% plot ve over time, with each line colored according to time, downsample time
+        # %% plot ve over time, with each line colored according to time, downsample time
         plt.figure()
         vm = np.array([np.array(v) for v in fiber.vm[1:-1]]).T
         start = 1
@@ -307,7 +306,7 @@ for diam in [3]:
         sm._A = []
         plt.colorbar(sm)
         plt.ylim(-100, -40)
-        #%%
+        # %%
         ##% that didnt look good, let's try the same as above but make subplots, where each time is its own subplot
         fig, axs = plt.subplots(len(times), 1, sharex=True, sharey=True)
         for i, t in enumerate(times):

@@ -1,6 +1,7 @@
 ffmpeg
 matplotlib
 nd_line
+nd_line
 numpy
 opencv-python<=4.5.*
 openpyxl
@@ -19,4 +20,3 @@ shapely==1.8.*
 wheel
 # wmglab-neuron # todo: uncomment when PyPI package is available
 xlsxwriter
-nd_line

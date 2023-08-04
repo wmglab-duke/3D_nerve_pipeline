@@ -28,7 +28,7 @@ for sample, samplenum in zip(["2L", "2R", "3R", "5R", "6L", "6R"], [253, 273, 37
         if file.endswith('.dat'):
             fibers.append(np.loadtxt(os.path.join(fiberpath, file), skiprows=1))
 
-    #%%     makde video
+    # %%     makde video
     os.makedirs('vids', exist_ok=True)
 
     # importing movie py libraries
@@ -45,7 +45,6 @@ for sample, samplenum in zip(["2L", "2R", "3R", "5R", "6L", "6R"], [253, 273, 37
 
     # method to get frames
     def make_frame(t):
-
         # clear
         ax.clear()
 

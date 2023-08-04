@@ -18,7 +18,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.utils import MorphologyError, WriteMode, MaskSpaceMode
+from src.utils import MaskSpaceMode, MorphologyError, WriteMode
 
 from .nerve import Nerve
 from .trace import Trace
@@ -297,8 +297,8 @@ class Fascicle:
             # default findContours params
 
             img = cv2.imread(path, -1)
-            if mask_space_mode!=MaskSpaceMode.IMAGE:
-                img=np.flipud(img)
+            if mask_space_mode != MaskSpaceMode.IMAGE:
+                img = np.flipud(img)
 
             if len(img.shape) > 2 and img.shape[2] > 1:
                 img = img[:, :, 0]

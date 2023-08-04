@@ -470,7 +470,7 @@ class FiberSet(Configurable, Saveable):
         self.movedists = []
         # check that all fibers are within exactly one inner
         for i, fiber in enumerate(points):
-            movedist=0
+            movedist = 0
             innertraces = [inner.deepcopy() for fascicle in checkslide.fascicles for inner in fascicle.inners]
             innerbuffer = [x.deepcopy() for x in innertraces]
             [x.offset(distance=-buffer) for x in innerbuffer]

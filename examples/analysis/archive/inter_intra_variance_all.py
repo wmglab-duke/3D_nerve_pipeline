@@ -26,7 +26,7 @@ for simdex in ['3']:
         samples2d = [x['index'] for x in sample_data['exsamples']]
         # remove all integer samples ending in 0 from samples2d
         samples2d = [x for x in samples2d if not str(x).endswith('0')]
-        #%%
+        # %%
         # threshdat query from alldat, sample should be in samples2d and sim should be simdex
         threshdat = alldat[(alldat['sample'].isin(samples2d)) & (alldat['sim'] == simint)]
         test = threshdat.groupby(['inner', 'sample', 'nsim'], as_index=False)

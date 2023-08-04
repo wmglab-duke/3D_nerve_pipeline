@@ -30,6 +30,7 @@ from src.utils import (
     MaskError,
     MaskFileNames,
     MaskInputMode,
+    MaskSpaceMode,
     NerveMode,
     PerineuriumThicknessMode,
     ReshapeNerveMode,
@@ -38,7 +39,6 @@ from src.utils import (
     SetupMode,
     ShrinkageMode,
     WriteMode,
-    MaskSpaceMode
 )
 
 
@@ -308,7 +308,7 @@ class Sample(Configurable, Saveable):
         self.scale_input_mode = self.search_mode(ScaleInputMode, Config.SAMPLE, optional=True)
         self.sample_rotation = self.search(Config.SAMPLE, "rotation", optional=True)
         self.contour_mode = self.search_mode(ContourMode, Config.SAMPLE, optional=True)
-        self.mask_space_mode = self.search_mode(MaskSpaceMode, Config.SAMPLE,optional=True)
+        self.mask_space_mode = self.search_mode(MaskSpaceMode, Config.SAMPLE, optional=True)
 
         # For backwards compatibility, if scale mode is not specified assume a mask image is provided
         if self.scale_input_mode is None:
@@ -333,8 +333,8 @@ class Sample(Configurable, Saveable):
         :return: Slide object
         """
         img = cv2.imread(MaskFileNames.ORIENTATION.value, -1)
-        
-        if self.mask_space_mode!=MaskSpaceMode.IMAGE:
+
+        if self.mask_space_mode != MaskSpaceMode.IMAGE:
             img = np.flipud(img)
 
         if len(img.shape) > 2 and img.shape[2] > 1:
@@ -422,7 +422,7 @@ class Sample(Configurable, Saveable):
                 outer_mask = None
 
         # generate fascicle objects from masks
-        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.contour_mode,self.mask_space_mode)
+        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.contour_mode, self.mask_space_mode)
         return fascicles
 
     def get_epineurium_from_mask(self):
@@ -438,9 +438,9 @@ class Sample(Configurable, Saveable):
         if len(img_nerve.shape) > 2 and img_nerve.shape[2] > 1:
             img_nerve = img_nerve[:, :, 0]
 
-        if self.mask_space_mode!=MaskSpaceMode.IMAGE:
+        if self.mask_space_mode != MaskSpaceMode.IMAGE:
             img_nerve = np.flipud(img_nerve)
-            
+
         contour, _ = cv2.findContours(img_nerve, cv2.RETR_TREE, self.contour_mode.value)
         nerve = Nerve(
             Trace(

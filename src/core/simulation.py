@@ -697,13 +697,7 @@ class Simulation(Configurable, Saveable):
 
     @staticmethod
     def export_n_sims(
-        sample: int,
-        model: int,
-        sim: int,
-        sim_obj_dir: str,
-        target: str,
-        export_behavior=None,
-        check=False
+        sample: int, model: int, sim: int, sim_obj_dir: str, target: str, export_behavior=None, check=False
     ):
         """Export the n_sims to the target directory.
 

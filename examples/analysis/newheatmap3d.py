@@ -28,7 +28,7 @@ for simdex in config['sim_data'].keys():
         for extrusion_sample in sample_data['exsamples']:
             plt.close('all')
             samp2d = extrusion_sample['index']
-            #%%
+            # %%
             q = Query(
                 {
                     'partial_matches': True,
@@ -50,7 +50,7 @@ for simdex in config['sim_data'].keys():
             sample_obj = q.get_object(Object.SAMPLE, [samp2d])
             sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
             threshdat = pd.concat([dat2d, dat3d])
-            #%%
+            # %%
             g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
             g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, scatter_kws={'s': 25})
 
@@ -61,7 +61,7 @@ for simdex in config['sim_data'].keys():
                 ax.set_xlabel('')
                 ax.set_ylabel('')
             plt.savefig(f'out/analysis/{str(simdex)}/heatmap3D-{samp2d}-{simint}', dpi=400, bbox_inches='tight')
-            #%%
+            # %%
             g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
             g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, mode='inners')
 
@@ -72,7 +72,7 @@ for simdex in config['sim_data'].keys():
                 ax.set_xlabel('')
                 ax.set_ylabel('')
             plt.savefig(f'out/analysis/{str(simdex)}/heatmap3Dinner-{samp2d}-{simint}', dpi=400, bbox_inches='tight')
-            #%% Process seaborn data
+            # %% Process seaborn data
 
             def add_colorbar(ax):
                 cmap = plt.cm.get_cmap('viridis')
@@ -90,7 +90,7 @@ for simdex in config['sim_data'].keys():
                 this = threshdat.query(f"nsim=={n}")
                 min_prenorm, max_prenorm = min(this.threshold), max(this.threshold)
                 this.threshold = this.threshold / max(this.threshold)
-                #%%
+                # %%
                 g = sns.FacetGrid(this, col='sample', sharex=False, sharey=False)
                 g.map(
                     heatmaps,
@@ -111,7 +111,7 @@ for simdex in config['sim_data'].keys():
                     ax.set_ylabel('')
                 add_colorbar(g.axes)
                 plt.savefig(f'out/analysis/heatmaps/{samp2d}-{simint}-{n}', dpi=400, bbox_inches='tight')
-                #%%
+                # %%
                 g = sns.FacetGrid(this, col='sample', sharex=False, sharey=False)
                 g.map(
                     heatmaps,

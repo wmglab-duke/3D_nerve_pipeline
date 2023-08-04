@@ -29,7 +29,7 @@ for sample, samplenum in zip(["5Rdef"], [5735]):
         if file.endswith('.dat'):
             fibers[file.replace('.dat', '')] = np.loadtxt(os.path.join(fiberpath, file), skiprows=1)
 
-    #%%
+    # %%
 
     # loop through each slide, and calculate z position
     for i, slide in enumerate(slidelist):

@@ -44,7 +44,7 @@ fiber.set_save_vm()
 amp, ap = stimulation.find_threshold(fiber, stimamp_top=-1, stimamp_bottom=-0.1)
 
 plt.plot([apc.time for apc in fiber.apc])
-#%% gating plot
+# %% gating plot
 fig, axs = plt.subplots(2, 1, sharex=True)
 apc = [apc.time for apc in fiber.apc]
 apc[0] = float('Inf')
@@ -72,11 +72,11 @@ plt.xlim(0, 2)
 plt.xlabel('ms')
 axs[0].plot(stimulation.time, fiber.vm[actloc])
 fig.set_size_inches([6, 6])
-#%% wut
+# %% wut
 plt.figure()
 plt.plot(fiber.coordinates[::11][1:-1], np.diff(fiber.potentials[::11], n=2))
 plt.gca().twinx().plot(fiber.coordinates[::11], [apc.time for apc in fiber.apc])
-#%% make video of vm
+# %% make video of vm
 fps = 30
 skip = 10
 
@@ -101,7 +101,7 @@ animation.write_videofile('test13.mp4', fps=fps)
 duration = len(fiber.vm[1]) / fps / skip
 ylim = (0, 1)
 
-#%%gating video
+# %%gating video
 fig, ax = plt.subplots()
 
 
@@ -119,7 +119,7 @@ def make_frame(i):
 
 animation = VideoClip(make_frame, duration=duration)
 animation.write_videofile('test13-gating.mp4', fps=fps)
-#%% make video of vm at 110% threshold
+# %% make video of vm at 110% threshold
 stimulation.run_sim(amp * 1.1, fiber)
 
 fps = 30
@@ -142,7 +142,7 @@ def make_frame(i):
 
 animation = VideoClip(make_frame, duration=duration)
 animation.write_videofile('test13_1.1.mp4', fps=fps)
-#%%now 3 micron
+# %%now 3 micron
 
 potfile = r'D:\threed_ascent\samples\250\models\0\sims\3\n_sims\0\data\inputs\inner0_fiber0.dat'
 
@@ -176,7 +176,7 @@ amp, ap = stimulation.find_threshold(fiber, stimamp_top=-1, stimamp_bottom=-0.1)
 plt.figure()
 plt.plot([apc.time for apc in fiber.apc])
 
-#%% gating plot
+# %% gating plot
 fig, axs = plt.subplots(2, 1, sharex=True)
 apc = [apc.time for apc in fiber.apc]
 apc[0] = float('Inf')
@@ -204,7 +204,7 @@ plt.xlim(0, 2)
 plt.xlabel('ms')
 axs[0].plot(stimulation.time, fiber.vm[actloc])
 fig.set_size_inches([6, 6])
-#%% make video of vm
+# %% make video of vm
 fps = 30
 skip = 10
 
@@ -225,7 +225,7 @@ def make_frame(i):
 
 animation = VideoClip(make_frame, duration=duration)
 animation.write_videofile('test3.mp4', fps=fps)
-#%% make video of vm at 110% threshold
+# %% make video of vm at 110% threshold
 stimulation.run_sim(amp * 0.9, fiber)
 
 fps = 30
@@ -250,7 +250,7 @@ def make_frame(i):
 animation = VideoClip(make_frame, duration=duration)
 animation.write_videofile('test3_0.9.mp4', fps=fps)
 
-#%%gating video
+# %%gating video
 fig, ax = plt.subplots()
 ylim = (0, 1)
 

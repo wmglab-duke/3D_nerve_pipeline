@@ -31,7 +31,6 @@ n_sims = [0] * len(mfis)
 samplename = '5R'
 for dz in [1]:
     for d, n, mfi in zip(diams, n_sims, mfis):
-
         # twood = (
         #     rf'D:\threed_ascent\samples\{sample}2\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner{innernum}_fiber{fibernum}.dat'
         # )
@@ -68,7 +67,7 @@ for dz in [1]:
         # ve2_2diff = np.diff(np.diff(ve2)) * 1000
         ve3 = ve3[::-1]
 
-        #%%
+        # %%
         plotdiam = d
         import os
         import pickle
@@ -157,7 +156,7 @@ for dz in [1]:
         ax.set_ylabel('Second difference of Ve', color='k')
         plt.title(f'Fiber {mfi}')
         plt.xlim()
-        #%% now do cross correlelograms
+        # %% now do cross correlelograms
         # first, threshold the absolute value of perineurium thickness to find splits and merges
         from scipy.signal import find_peaks
 

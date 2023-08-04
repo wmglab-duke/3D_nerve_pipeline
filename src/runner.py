@@ -332,17 +332,19 @@ class Runner(Configurable):
         if not np.any([export_behavior == x.value for x in ExportMode]):
             raise ValueError("Invalid export behavior defined in run.json")
         try:
-            check =  list(Simulation.export_n_sims(
-                                sample_num,
-                                model_num,
-                                sim_num,
-                                sim_dir,
-                                os.environ[Env.NSIM_EXPORT_PATH.value],
-                                export_behavior=export_behavior,
-                                check=True
-                            ))
+            check = list(
+                Simulation.export_n_sims(
+                    sample_num,
+                    model_num,
+                    sim_num,
+                    sim_dir,
+                    os.environ[Env.NSIM_EXPORT_PATH.value],
+                    export_behavior=export_behavior,
+                    check=True,
+                )
+            )
         except:
-            check=[False]
+            check = [False]
         if np.all(check):
             print("SKIP BUILD AND EXPORT NSIMS")
             return
@@ -356,14 +358,16 @@ class Runner(Configurable):
             shutil.rmtree(os.path.join(sim_dir, sim_num, 'fibersets'))
 
         # export simulations
-        list(Simulation.export_n_sims(
-            sample_num,
-            model_num,
-            sim_num,
-            sim_dir,
-            os.environ[Env.NSIM_EXPORT_PATH.value],
-            export_behavior=export_behavior,
-        ))
+        list(
+            Simulation.export_n_sims(
+                sample_num,
+                model_num,
+                sim_num,
+                sim_dir,
+                os.environ[Env.NSIM_EXPORT_PATH.value],
+                export_behavior=export_behavior,
+            )
+        )
 
         # ensure run configuration is present
         Simulation.export_run(self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value])

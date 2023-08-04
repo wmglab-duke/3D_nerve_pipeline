@@ -24,7 +24,6 @@ innernum, fibernum, mfi = 11, 1, 26
 samplename = '5R'
 
 for d, n in zip(diams, n_sims):
-
     twood = rf'D:\threed_ascent\samples\{sample}2\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner{innernum}_fiber{fibernum}.dat'
     threed = rf'D:\threed_ascent\samples\{sample}3\models\0\sims\{sim}\n_sims\{n}\data\inputs\inner0_fiber{mfi}.dat'
 
@@ -102,7 +101,7 @@ for d, n in zip(diams, n_sims):
     ve2_2diff = np.diff(np.diff(ve2)) * 1000
     ve3 = ve3[::-1]
 
-    #%%
+    # %%
     plotdiam = d
     import os
     import pickle
@@ -226,7 +225,7 @@ for d, n in zip(diams, n_sims):
     ax2.tick_params(axis='y', labelcolor='b')
     ax.set_ylabel('Second difference of Ve', color='k')
     plt.title(f'Fiber {mfi}')
-#%%
+# %%
 sys.exit('temp')
 # now simulate the 3 micron fiber 2D
 from wmglab_neuron import FiberModel, ScaledStim, build_fiber  # noqa: E402

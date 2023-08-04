@@ -124,7 +124,7 @@ threshload.loc[threedcontact, 'contact'] = '3D'
 # set all inners and outers where 'type' is 3D to 0
 threshload.loc[(threshload['type'] == '3D'), 'inner'] = 0
 threshload.loc[(threshload['type'] == '3D'), 'outer'] = 0
-#%% inners need to match the cathodic leading contact
+# %% inners need to match the cathodic leading contact
 # Query the rows with type '3D'
 df_3d = threshload.query("type == '3D'")
 
@@ -140,7 +140,7 @@ merged_df = pd.merge(
 threshload.loc[df_3d.index, 'inner'] = merged_df['inner_2d'].values
 threshload.loc[df_3d.index, 'outer'] = merged_df['outer_2d'].values
 threshload.loc[df_3d.index, 'fiber'] = merged_df['fiber_2d'].values
-#%%
+# %%
 if gogo == "initial":  # remove all where nerve_label length is >2
     threshload = threshload[threshload['nerve_label'].str.len() < 3]
 threshload['type'] = threshload['type'].replace({'2D': '2DEM', '3D': '3DM'})
@@ -172,7 +172,7 @@ repeated = matched.melt(
 )
 repeated['type'] = repeated['type'].replace({'threshold': '2DEM', 'threshold3d': '3DM'})
 repeated['type'] = pd.Categorical(repeated['type'], categories=['2DEM', '3DM'], ordered=True)
-#%%
+# %%
 print('dose-response')
 # dose response
 drdat = threshload.copy().rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
@@ -245,7 +245,7 @@ defpal = [sns.color_palette('colorblind')[ind] for ind in [0, 2, 3, 5]]
 defdefcomp = newdefdat.query('type=="3DM" and deformation != "2D-3D"')
 defdefcomp['deformed'] = defdefcomp['deformation'] != "Undeformed"
 defsamples = ["2L", "3R", "5R", "6R"]
-#%% dose-response
+# %% dose-response
 print('deformdr')
 defdr = newdefdat.copy().rename(columns={'sample': 'samplenum', 'type': 'modeltype'})
 defdr = calculate_dose_response(
@@ -255,7 +255,7 @@ defdr = calculate_dose_response(
     grouping_columns=['modeltype', 'samplenum', 'fiber_diam', 'sim', 'deformation'],
 )
 sys.exit('prepdone')
-#%%violinplot
+# %%violinplot
 newdef = newdefdat.copy()
 newdef['deformation'] = pd.Categorical(newdef['deformation'], categories=['Undeformed', '2D-3D', '3D-3D'], ordered=True)
 plt.show()
@@ -537,7 +537,7 @@ g.set_xlabels('')
 g.set_ylabels('Threshold (mA)')
 # plt.suptitle('thresholds compared between 2DEM (cathodic) and 3DM')
 
-#%% organization compare nsim
+# %% organization compare nsim
 # remove all samples which dont end with a 2
 sns.reset_orig()
 sns.set(font_scale=1.25, style='whitegrid')
@@ -598,11 +598,11 @@ for nerve in pd.unique(threshdat['nerve_label']):
 plt.figure()
 scoredat = pd.DataFrame(scores)
 scoredat['fiber_diam'] = pd.Categorical(scoredat['fiber_diam'].astype(int), categories=[3, 13], ordered=True)
-ax = sns.boxplot(data=scoredat, y='score2d3d', x='fiber_diam', boxprops={'facecolor': 'white'},whis=10)
+ax = sns.boxplot(data=scoredat, y='score2d3d', x='fiber_diam', boxprops={'facecolor': 'white'}, whis=10)
 ax = sns.stripplot(data=scoredat, y='score2d3d', x='fiber_diam', color='black', size=5, jitter=0.25)
 ax.set_xlabel('Fiber Diameter (μm)')
 plt.ylabel('AR')
-plt.ylim(0,0.5)
+plt.ylim(0, 0.5)
 # plt.gcf().set_size_inches([3, 5])
 # %% organizatino compare type
 sns.set(font_scale=1.75)
@@ -619,11 +619,11 @@ for nerve in pd.unique(threshdat['nerve_label']):
         scores.append({'sample': nerve, 'type': model, 'scoresmolbeeg': rc})
 plt.figure()
 scoredat = pd.DataFrame(scores)
-ax = sns.boxplot(data=scoredat, y='scoresmolbeeg', x='type', boxprops={'facecolor': 'white'},whis=10)
+ax = sns.boxplot(data=scoredat, y='scoresmolbeeg', x='type', boxprops={'facecolor': 'white'}, whis=10)
 ax = sns.stripplot(data=scoredat, y='scoresmolbeeg', x='type', color='black', size=5, jitter=0.25)
 plt.ylabel('AR')
 plt.xlabel('')
-plt.ylim(0,0.5)
+plt.ylim(0, 0.5)
 # plt.gcf().set_size_inches([3, 5])
 # %% activation order
 newdefdr = defdr.copy()
@@ -680,7 +680,7 @@ g.figure.colorbar(
 ).ax.yaxis.set_ticks_position('left')
 
 # g._legend.set_title('')
-#%% recruitment cost:
+# %% recruitment cost:
 sns.set(font_scale=1)
 sns.set_style('whitegrid')
 datahere = deftomatch.query('deformation in ["3D-3D","Undeformed"]')
@@ -891,7 +891,7 @@ plt.yscale('log')
 # %% imthera
 imdata = pd.read_csv("thresh_unmatched_sim17_immy.csv")
 imdata['contact'] = imdata['sample'].astype(str).str[2].replace({'2': 'cathodic', '0': 'anodic', '1': 'center'})
-diams = {0:3,1:13}
+diams = {0: 3, 1: 13}
 # inners need to match the center slice
 innerid = {}
 for inner in pd.unique(imdata.inner):
@@ -901,7 +901,7 @@ for inner in pd.unique(imdata.inner):
 imdata['type'] = imdata['type'].replace({'2D': '2DEM', '3D': '3DM'})
 # %% imthera contact config
 sns.set(font_scale=1.5, style='whitegrid')
-imdata['active_src_index'] = pd.Categorical(imdata['active_src_index'], categories=[0,3,1,4,2,5], ordered=True)
+imdata['active_src_index'] = pd.Categorical(imdata['active_src_index'], categories=[0, 3, 1, 4, 2, 5], ordered=True)
 
 g = sns.catplot(
     data=imdata.query('fiber_diam in [3]'),
@@ -918,7 +918,7 @@ g = sns.catplot(
     dodge=True,
     col_wrap=2,
     palette=pal2d3d,
-    edgecolor='k'
+    edgecolor='k',
 )
 g.set_ylabels('Threshold (mA)')
 g.set_xlabels('')

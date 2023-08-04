@@ -24,7 +24,6 @@ def get_activation(
     sample_override=None,
     delete_vmtime=False,
 ):
-
     vm_t_data = np.loadtxt(filepath, skiprows=1)
 
     V_o = np.mean(vm_t_data[0, 1:])

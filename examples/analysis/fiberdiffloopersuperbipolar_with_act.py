@@ -263,7 +263,7 @@ plt.axvspan(25000, 29000, color='b', alpha=0.2, label='approach')
 plt.axvspan(29000, 34000, color='orange', alpha=0.2, label='recede')
 plt.legend()
 
-#%%
+# %%
 import seaborn as sns
 
 sns.catplot(data=threshdata, kind='strip', col='nsim', y='activation_zpos')

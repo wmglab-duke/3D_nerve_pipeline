@@ -186,7 +186,7 @@ for samp3d, samplename in zip(threeds, samps):
                 axfib[0].axhline(0, color='gray', linestyle=':')
         allsum.append(summed_2diffs_split)
         alldiff.append(summed_2diffs_merge)
-#%% plot each summed 2diff
+# %% plot each summed 2diff
 fig, ax = plt.subplots(1, 2, sharex=True, sharey=False)
 # each summed 2diff is in order of nerve, then approach/recede (so 0 is approach for one nerve, 1 is recede for that nerve, 2 is approach for next nerve, etc)
 # plot all approaches and recedes for sum and diff on two plots, one for approach and one for recede

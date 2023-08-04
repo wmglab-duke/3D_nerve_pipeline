@@ -156,7 +156,7 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     for ax, name in zip(g.axes[0, :], ['2DEM\n3D-3D', '3DM']):
         ax.set_title(name)
 
-#%%
+# %%
 
 samp2d = 5719
 model = 0
@@ -188,7 +188,7 @@ dat3d['threed'] = True
 sample_obj = q.get_object(Object.SAMPLE, [samp2d])
 sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
 threshdat = pd.concat([dat2d, dat3d])
-#%%
+# %%
 threshdat.query('nsim==0', inplace=True)
 g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
 g.map(
