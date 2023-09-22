@@ -1,0 +1,10 @@
+{
+  "outpath": "/work/wmglab/dpm42/3d_vns/sipsource/preprocessed/5R_DS5_clean",
+  "infile": "/work/wmglab/dpm42/3d_vns/sipsource/5R_DS5_clean.sip",
+  "resample_factor": 1,
+  "resample_xy": 2.0,
+  "um_per_px": 10,
+  "um_per_slice": 20,
+  "n_mask": "epineurium_destepped",
+  "i_mask": "endoneurium_ds_opened"
+}
