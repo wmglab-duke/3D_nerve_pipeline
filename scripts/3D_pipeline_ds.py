@@ -4,7 +4,7 @@ Takes segmented nerve/fascicle, preprocesses the images,
 creates the perineurium, generates a connectivity map, and creates fibersets
 """
 #edit to use threedmodel TODO max importance
-
+# also may need to move over cuff models from 3D? to see #TODO
 import argparse
 import gc
 import glob
@@ -360,7 +360,7 @@ def run_comsol(threed_config_path, runtype):
     os.chdir('../..')
     core_name = 'ModelWrapper'
 
-    runner.handoff(threed_config_path, run_type=runtype, class_name=core_name)
+    runner.handoff(threed_config_path, run_type=runtype, class_name=core_name, modelfolder="threedmodel")
 
 
 def get_minbound_r(slidelist):
