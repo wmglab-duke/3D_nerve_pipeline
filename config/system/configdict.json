@@ -1,6 +1,6 @@
 {
-  "outpath": "/work/wmglab/dpm42/3d_vns/sipsource/preprocessed/5R_DS5_clean",
-  "infile": "/work/wmglab/dpm42/3d_vns/sipsource/5R_DS5_clean.sip",
+  "outpath": "D:\\work\\ascent_threed_combo\\sipsource\\preprocessed\\2L_strip",
+  "infile": "D:\\work\\ascent_threed_combo\\sipsource\\2L_strip.sip",
   "resample_factor": 1,
   "resample_xy": 2.0,
   "um_per_px": 10,

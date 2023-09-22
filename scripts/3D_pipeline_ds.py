@@ -59,7 +59,7 @@ args = parser.parse_args()
 if args.config_script is not None:
     configname = args.config_script
 else:
-    configname = '2Lstrip_im.json'
+    configname = '2Lstrip.json'
 config3d_path = os.path.join('..', 'config', configname)
 # %% defs
 pseudonym = os.path.splitext(os.path.split(configname)[-1])[0]
@@ -149,9 +149,9 @@ buffer = params['preprocess']['buffer']
 
 # TODO break point config
 
-preproc = False
+preproc = True
 
-imfills = False
+imfills = True
 
 slidegen = True
 
@@ -231,8 +231,8 @@ params['input']['um_per_slice'] = params['input']['um_per_slice'] / resample_fac
 params['input']['um_per_px'] = params['output']['image_um_per_px']
 
 # %% Generate slides
-os.chdir(root + '/subrepos/ascent')
-os.chdir('../../Scripts')
+os.chdir(root)
+os.chdir('Scripts')
 
 n_imgs_pp, _, _ = get_sorted_image_list(preprocpath + '/n', '*.tiff')
 
@@ -353,11 +353,10 @@ def compute_medium_params(configmodel: dict, nslice: int, um_per_slice: float):
 
 
 def run_comsol(threed_config_path, runtype):
-    os.chdir(root + '/subrepos/ascent')
+    os.chdir(root)
     runner = Runner(0)
     runner.add(SetupMode.OLD, Config.ENV, env)
     runner.populate_env_vars()
-    os.chdir('../..')
     core_name = 'ModelWrapper'
 
     runner.handoff(threed_config_path, run_type=runtype, class_name=core_name, modelfolder="threedmodel")
@@ -397,13 +396,12 @@ class AscentUtil(Configurable):
             nerve_mode,
             will_reposition=(deform_mode != DeformationMode.NONE),
         )
-        os.chdir('../subrepos/ascent')
+        os.chdir('..')
         model = Model()
         model.add(SetupMode.NEW, Config.MODEL, os.path.join(params['project_path'], 'model.json'))
         model.add(SetupMode.NEW, Config.SIM, root + '/config/sim.json')
         with open(root + f'/config/{samplefile}', 'r') as f:
             sample_config = json.load(f)
-        os.chdir('../..')
         sample_config['Morphology'] = {}
         sample_config['Morphology']['Nerve'] = {}
         sample_config['Morphology']['Nerve']['area'] = nerve_copy.area()
@@ -554,13 +552,13 @@ class AscentUtil(Configurable):
 
 
 # initialize util
-os.chdir(root + '/subrepos/ascent')
+os.chdir(root)
 util = AscentUtil(Configurable)
 util.add(SetupMode.NEW, Config.MODEL, os.path.join(params['project_path'], 'model.json'))
 util.add(SetupMode.NEW, Config.SIM, root + '/config/sim.json')
 util.add(SetupMode.NEW, Config.SAMPLE, root + f'/config/{samplefile}')
 
-os.chdir('../../Scripts')
+os.chdir('Scripts')
 # %% temporary output for separated peri
 from copy import deepcopy
 
