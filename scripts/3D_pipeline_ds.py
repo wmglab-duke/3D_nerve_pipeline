@@ -3,6 +3,8 @@
 Takes segmented nerve/fascicle, preprocesses the images,
 creates the perineurium, generates a connectivity map, and creates fibersets
 """
+#edit to use threedmodel TODO max importance
+
 import argparse
 import gc
 import glob
@@ -30,7 +32,7 @@ scriptloc = os.path.abspath(__file__)
 root = os.path.split(os.path.split(scriptloc)[0])[0]
 scriptroot = os.path.split(scriptloc)[0]
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
-sys.path.insert(0, os.path.abspath(root + '/subrepos/ascent'))
+sys.path.insert(0, os.path.abspath(root))
 sys.path.insert(0, os.path.join(root, 'src', 'utilities'))
 from nd_line.nd_line import nd_line
 from src.core import Deformable, Fascicle, FiberSet, Model, Nerve, Slide, Trace
