@@ -249,7 +249,6 @@ class Query(Configurable, Saveable):
         :raises ValueError: if invalid mode is chosen
         :return: path
         """
-
         if indices is None:
             indices = [
                 0,
@@ -780,7 +779,7 @@ class Query(Configurable, Saveable):
             threshold = np.loadtxt(thresh_path)
             if threshold.size > 1:
                 threshold = threshold[-1]
-        except IOError:
+        except OSError:
             if ignore_missing:
                 threshold = np.nan
                 warnings.warn('Missing threshold, but continuing.', stacklevel=2)

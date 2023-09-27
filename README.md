@@ -1,43 +1,38 @@
-# ASCENT: Automated Simulations to Characterize Electrical Nerve Thresholds
+# Installation
 
-[![License](https://img.shields.io/github/license/wmglab-duke/ascent)](https://github.com/wmglab-duke/ascent/blob/master/LICENSE) [![Releases](https://img.shields.io/github/v/release/wmglab-duke/ascent)](https://github.com/wmglab-duke/ascent/releases) [![Documentation](https://img.shields.io/readthedocs/wmglab-duke-ascent?logo=read-the-docs&logoColor=white)](https://wmglab-duke-ascent.readthedocs.io/en/latest/) [![DOI](https://zenodo.org/badge/379064819.svg)](https://zenodo.org/badge/latestdoi/379064819) [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+1. Clone the repository
+2. Create a subdirectory called "sipsource" and place the input .sip files there.
+3. `pip install -r requirements.txt`
+4. Copy `config/system/example_env.json` and rename to `config/system/env.json` edit with the following paths:
 
-**User support: nikki.pelot@duke.edu**
+    - ASCENT_COMSOL_PATH: Path to COMSOL installation ending in `/multiphysics`
+    - ASCENT_JDK_PATH: Path to jdk installation ending in `/bin` (Must be either JDK8 or 11, 11 is recommended)
+    - ASCENT_PROJECT_PATH: Root of the repository
+    - ASCENT_NSIM_EXPORT_PATH: Not used but must be present
+    - SIMPLEWARE_SCANIP_PATH: Path to simpleware installation which contains the executable "console scan ip"
 
-**Funding: NIH SPARC OT2 OD025340**
+# Running
 
-[<img src="./config/system/images/sparc-logo-white_bwoutline.svg" alt="drawing" width="100"/>](https://reporter.nih.gov/project-details/9525478#description)
+1. Create a configuration file (.e.g., `2LDS5.json`) from `example.json` (place in same directory)
+2. Change the "sourcefile" to the correct file (name only, not full path).
+3. Change the "project_path" to the directory where you want the files to be created
+4. Navigate to the "Scripts" dir
+5. `python 3D_pipeline_ds.py 2LDS5.json` (replace with the configuration file you created)
+6. To generate thresholds, take the directories from the 7_ascent folder after running and place them in the relevant ASCENT directories (under the "3d" branch). Add `"post_java_only":true` to your ASCENT run config.
+Note: Simpleware will only run if there is a display, so on the cluster this must be run in a DCC desktop session.
+Note2: If using Imthera cuff, your 3D config must have `"use_nastran": true` in your mesh block. If using Livanova, this must be absent or false. Other cuffs are not tested.
 
-**ASCENT** is an open source platform for simulating peripheral nerve stimulation. For more information, see the ASCENT documentation: [https://wmglab-duke-ascent.readthedocs.io/en/latest/](https://wmglab-duke-ascent.readthedocs.io/en/latest/)
+# Deformation
 
-**Cite both the paper and the DOI for the release of the repository used for your work. We encourage you to clone the most recent commit of the repository.**
+1. Use a sample where deform is set to True (Note, currently only supports LivaNova cuff and deform_ratio of 1)
+2. Pipeline will exit prior to actually running deformation simulation. You need to check the following:
+     - Look through predeform.sip to see that no fascicle jump around. If they do, you must manually correct them.
+     - Manually run the deform algorithm. You may need to adjust the contact penalty parameters to get a successful simulation. Even then, you may not succeed. However, if you simulation gets most of the way there, it may still be usable since the ramping is exponential decreasing.
+     - Export as postdeform.stl
+     - Import into Simpleware predeform file and scroll through to check that everything looks ok.
+     - Manually use the code in postdeform.py to generate contour coordinates for the deformed fascicles.
+     - Run the pipeline again, it should skip deformation now that the proper files are in place.
+     - If there are any topological mismatches a window will pop up and ask you to indicate fascicles which watershed segmentation thinks are separate but are not.
+     - Once this completes, the pipeline will run as normal.
 
-- **Cite the paper:**
-
-  > **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2021). ASCENT (Automated Simulations to Characterize Electrical Nerve Thresholds): A pipeline for sample-specific computational modeling of electrical stimulation of peripheral nerves. PLOS Computational Biology, 17(9), e1009285. <https://doi.org/10.1371/journal.pcbi.1009285>
-
-- **Cite the code (use the DOI for the version of code used):**
-
-  > **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2023). wmglab-duke/ascent: ASCENT v1.2.1 (v1.2.1) [Computer software]. Zenodo. <https://doi.org/10.5281/ZENODO.7627427>
-
----
-
-The copyrights of this software are owned by Duke University. As such, two licenses for this software are offered:
-
-1. An open-source license under the GPLv2 license for non-commercial use  (See [LICENSE](LICENSE)).
-
-2. A custom license with Duke University, for commercial use or for use without the GPLv2 license restrictions.
-
-As a recipient of this software, you may choose which license to receive the code under. Outside contributions to the Duke-owned code base cannot be accepted unless the contributor transfers the copyright to those changes over to Duke University.
-
-To enter a custom license agreement without the GPLv2 license restrictions, please contact the Digital Innovations department at Duke Office for Translation & Commercialization (https://olv.duke.edu/software/) at olvquestions@duke.edu with reference to "OTC File No. 7483" in your email.
-
-Please note that this software is distributed AS IS, WITHOUT ANY WARRANTY; and without the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-## Check out the ASCENT promo video:
-
-[![Watch the video](https://img.youtube.com/vi/rG-KU7wWcXY/maxresdefault.jpg)](https://youtu.be/rG-KU7wWcXY)
-
-## Click below for our video tutorial:
-
-[![Watch the video](https://img.youtube.com/vi/C41nHvMXyEo/maxresdefault.jpg)](https://youtu.be/C41nHvMXyEo)
+Note: Sometimes the mesh from comsol will be non manifold. In these cases, you may need to "fix" the import geometry before exporting contours. However, this will result in a LOT of windows popping up during the watershed. To avoid this, new code should be written that loops through and export all possible contours where the mesh is manifold, skipping the others, then fixes the stl, and exports the remaining contours.

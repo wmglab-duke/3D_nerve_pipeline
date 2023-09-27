@@ -574,7 +574,7 @@ class FiberSet(Configurable, Saveable):
         self.sample.slides[0].plot(
             final=False,
             fix_aspect_ratio='True',
-            axlabel=u"\u03bcm",
+            axlabel="\u03bcm",
             title='Fiber locations for nerve model',
         )
         self.plot()

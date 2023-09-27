@@ -20,3 +20,21 @@ shapely==1.8.*
 wheel
 # wmglab-neuron # todo: uncomment when PyPI package is available
 xlsxwriter
+matplotlib
+mock
+nd_line
+numpy
+opencv-python==4.5.*
+pandas
+pathlib
+pillow
+pyclipper
+pygame
+pymunk
+pytest
+quantiphy
+scikit-image
+scipy
+seaborn
+shapely==1.*
+tifffile

@@ -36,7 +36,7 @@ def get_z_coords(root, file):
     :param file: fiber file to get z-coords from
     :return: z-coords
     """
-    with open(os.path.join(root, file), 'r') as coords_file:
+    with open(os.path.join(root, file)) as coords_file:
         coords_file_lines = coords_file.readlines()[1:]
         coords = []
         for coords_file_line in coords_file_lines:
@@ -92,7 +92,7 @@ class Simulation(Configurable, Saveable):
         :param config_path: the string path to load up
         :return: json data (usually dict or list)
         """
-        with open(config_path, "r") as h:
+        with open(config_path) as h:
             return json.load(h)
 
     def resolve_factors(self) -> 'Simulation':
@@ -438,7 +438,7 @@ class Simulation(Configurable, Saveable):
             :return: None
             """
             inner_fiber_diam_key = []
-            diams = np.loadtxt(os.path.join(my_potentials_directory, my_file), unpack=True)
+            diams = np.loadtxt(os.path.join(my_potentials_directory, my_file), unpack=True, ndmin=1)
             for fiber_ind in range(diams.size):
                 diam = diams[fiber_ind]
 

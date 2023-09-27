@@ -7,8 +7,7 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 import os
 import sys
-
-import mock
+from unittest import mock
 
 # -- Path setup --------------------------------------------------------------
 
@@ -25,7 +24,7 @@ copyright = '2021-2023, Duke University'  # noqa A001
 author = 'Musselman ED, Cariello JE, Marshall DM, Grill WM, Pelot NA.'
 
 # The full version, including alpha/beta/rc tags
-release = 'v1.2.1'
+release = 'v1.2.2'
 
 # -- General configuration ---------------------------------------------------
 

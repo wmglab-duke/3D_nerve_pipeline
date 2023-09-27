@@ -511,7 +511,7 @@ class Runner(Configurable):
                     f' in {os.environ[Env.NSIM_EXPORT_PATH.value]}'
                 )
 
-    def handoff(self, config_path, run_type=None, class_name='ModelWrapper'):
+    def handoff(self, config_path, run_type=None, class_name='ModelWrapper', modelfolder="model"):
         """Handoff to Java.
 
         :param run_number: int, run number
@@ -536,19 +536,19 @@ class Runner(Configurable):
             compile_command = (
                 f'""{jdk_path}\\javac" '
                 f'-cp "..\\bin\\json-20190722.jar";"{comsol_path}\\plugins\\*" '
-                f'model\\*.java -d ..\\bin"'
+                f'{modelfolder}\\*.java -d ..\\bin"'
             )
             java_command = (
                 f'""{comsol_path}\\java\\win64\\jre\\bin\\java" '
                 f'-cp "{comsol_path}\\plugins\\*";"..\\bin\\json-20190722.jar";"..\\bin" '
-                f'model.{class_name} "{project_path}" "{config_path}" "{argfinal}""'
+                f'{modelfolder}.{class_name} "{project_path}" "{config_path}" "{argfinal}""'
             )
         else:
             server_command = [f'{comsol_path}/bin/comsol', 'mphserver', '-login', 'auto']
 
             compile_command = (
                 f'{jdk_path}/javac -classpath ../bin/json-20190722.jar:'
-                f'{comsol_path}/plugins/* model/*.java -d ../bin'
+                f'{comsol_path}/plugins/* {modelfolder}/*.java -d ../bin'
             )
             if sys.platform.startswith('linux'):  # linux
                 java_comsol_path = comsol_path + '/java/glnxa64/jre/bin/java'
@@ -559,7 +559,7 @@ class Runner(Configurable):
                 f'{java_comsol_path} '
                 f'-cp .:$(echo {comsol_path}/plugins/*.jar | '
                 f'tr \' \' \':\'):../bin/json-20190722.jar:'
-                f'../bin model.{class_name} "{project_path}" "{config_path}" "{argfinal}"'
+                f'../bin {modelfolder}.{class_name} "{project_path}" "{config_path}" "{argfinal}"'
             )
 
         # start comsol server

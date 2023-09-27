@@ -1,0 +1,10 @@
+{
+  "outpath": "D:\\work\\ascent_threed_combo\\sipsource\\preprocessed\\2L_strip",
+  "infile": "D:\\work\\ascent_threed_combo\\sipsource\\2L_strip.sip",
+  "resample_factor": 1,
+  "resample_xy": 2.0,
+  "um_per_px": 10,
+  "um_per_slice": 20,
+  "n_mask": "epineurium_destepped",
+  "i_mask": "endoneurium_ds_opened"
+}

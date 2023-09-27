@@ -112,8 +112,8 @@ class Slide:
             plt.figure()
             self.plot(
                 final=False,
-                fix_aspect_ratio='True',
-                axlabel=u"\u03bcm",
+                fix_aspect_ratio=True,
+                axlabel="\u03bcm",
                 title='Debug sample which failed validation.',
             )
             if plot_debug:
@@ -472,12 +472,12 @@ class Slide:
 
         :param mode: Sectionwise for now... could be other types in the future (STL, DXF)
         :param path: root path of slide
-        :raises IOError: if path does not exist
+        :raises OSError: if path does not exist
         """
         start = os.getcwd()
 
         if not os.path.exists(path):
-            raise IOError("Invalid path to write Slide to.")
+            raise OSError("Invalid path to write Slide to.")
         else:
             # go to directory to write to
             os.chdir(path)

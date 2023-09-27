@@ -172,3 +172,39 @@ user_input_gui.py
 
 
 *.mp4
+
+Data/*
+Iso2Mesh/*
+iso2mesh-win64/*
+storage/*
+Images/*
+datanew/*
+old/*
+out/*
+Reference/*
+samples/*
+.idea
+mimics/*
+centroidtest/*
+base_datasets/*
+Dataold/*
+bin/*2R_Images/*
+bin/*
+lab_meeting/*
+subrepos/*
+config/system/sipconfig.json
+config/system/sipmeshconfig.json
+config/*.json
+config/system/env.json
+3D_VNS.iml
+.spyproject/*
+new_datasets/*
+mri_data/*
+offshoots/*
+debug/*
+sipsource/*
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.iml

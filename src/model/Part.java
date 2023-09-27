@@ -8,7 +8,6 @@ package model;
 
 import com.comsol.model.*;
 import com.comsol.model.physics.PhysicsFeature;
-import java.io.IOException;
 import java.util.HashMap;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -36,7 +35,7 @@ class Part {
         // only used once per method, so ok to define outside the switch
         model.geom().create(id, "Part", 3);
         model.geom(id).label(pseudonym);
-        model.geom(id).lengthUnit("\u00b5m");
+        model.geom(id).lengthUnit("um");
 
         // only used once per method, so ok to define outside the switch
         IdentifierManager im = new IdentifierManager();
@@ -160,7 +159,7 @@ class Part {
         // only used once per method, so ok to define outside the switch
         model.geom().create(id, "Part", 3);
         model.geom(id).label(pseudonym);
-        model.geom(id).lengthUnit("\u00b5m");
+        model.geom(id).lengthUnit("um");
 
         // only used once per method, so ok to define outside the switch
         IdentifierManager im = new IdentifierManager();
@@ -2536,7 +2535,7 @@ class Part {
 
                 break;
             case "uCuffTrap_Primitive":
-                model.geom(id).lengthUnit("\u00b5m");
+                model.geom(id).lengthUnit("um");
 
                 model.geom(id).inputParam().set("R_in", "70 [um]");
                 model.geom(id).inputParam().set("Ut_tangent", "100 [um]");
@@ -2778,7 +2777,7 @@ class Part {
             case "uContactTrap_Primitive":
                 model.geom(id).label("uContactTrap_Primitive");
 
-                model.geom(id).lengthUnit("\u00b5m");
+                model.geom(id).lengthUnit("um");
 
                 model.geom(id).inputParam().set("Center", "0 [mm]");
                 model.geom(id).inputParam().set("R_in", "100 [um]");
