@@ -76,9 +76,6 @@ App.GetDocument().GetGenericMaskByName("Copy of i").Activate()
 # 2022-07-24 10:53:47 - Mask removal
 App.GetDocument().RemoveMask(App.GetDocument().GetActiveGenericMask())
 ##########
-print('maybe should activate this fill gaps first')
-# doc.ApplyFillGaps(Doc.MostContactSurface, [doc.GetMaskByName("n"), doc.GetMaskByName("i")], True, 0)
-
 doc.GetGenericMaskByName("i").Activate()
 
 # 2022-06-13 12:19:20 - Smart mask smoothing

@@ -4,7 +4,7 @@ Please refer to the LICENSE.txt and README.txt files for licensing instructions.
 The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent
 */
 
-package model;
+package threedmodel;
 
 import java.io.*;
 import java.util.Scanner;

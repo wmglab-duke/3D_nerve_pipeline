@@ -46,6 +46,7 @@ from src.utils import (
     NerveMode,
     ReshapeNerveMode,
     SetupMode,
+    MaskSpaceMode
 )
 from threedclass import FascicleConnectivityMap
 
@@ -167,7 +168,7 @@ extract = True
 
 quit_premesh = False
 
-no_remesh = False
+no_remesh = True
 
 skipsave = True
 
@@ -268,7 +269,7 @@ def slidegenerator(nerveimg, fascicleimg, scale='all'):
         img_nerve = img_nerve[:, :, 0]
     contour, _ = cv2.findContours(np.flipud(img_nerve), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     nerve = Nerve(Trace([point + [0] for point in contour[0][:, 0, :]]))
-    fascicles = Fascicle.to_list(fascicleimg, None, ContourMode.NONE)
+    fascicles = Fascicle.to_list(fascicleimg, None, ContourMode.NONE, MaskSpaceMode.CARTESIAN)
     slide: Slide = Slide(
         fascicles,
         nerve,
@@ -300,7 +301,6 @@ def get_slide_dims(slidelist):
     dims = tuple([(-max(x), max(x)) for x in dims])
     return dims
 
-
 if slidegen:
     slides = []
     # TODO make from ASCENT
@@ -315,7 +315,11 @@ if slidegen:
             sys.exit(f'Error generating slide index {i}')
     dims = get_slide_dims(slides)
     nervesave = deepcopy([s.nerve for s in slides])
+#%%
+i=333
+slide = slidegenerator(preprocpath + f'/n/{n_imgs_pp[i]}', preprocpath + f'/i/{i_imgs_pp[i]}')
 
+#%%
 print('Generating fascicle connectivity map...')
 if slidegen and not skipsave:
     fmap = FascicleConnectivityMap(slides)
@@ -1452,6 +1456,7 @@ if extract:
         fiberset = FiberSet(None)
         fiberset.configs.update(ascent_configs.configs)
         fpoints = fiberset._generate_z([(0, 0)], super_sample=True, override_length=le)
+        fpoints= [d['fiber'] for d in fpoints]
         fpoints = np.vstack(fpoints)[:, -1]
         coords = np.zeros([len(fpoints), 3])
         coords[:, 2] = fpoints
