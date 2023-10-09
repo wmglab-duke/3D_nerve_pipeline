@@ -1,4 +1,3 @@
-# # -*- coding: utf-8 -*-
 # """
 # Created on Tue Oct 19 14:09:22 2021
 
@@ -24,7 +23,7 @@ import json
 
 
 def param_picker(file):
-    with open(file, 'r') as f:
+    with open(file) as f:
         config = json.load(f)
     choice = [input(f'Pick a parameter to change (or a subparam) from the list:\n{config.keys()}')]
     while type(config[choice[-1]]) == dict:
@@ -36,7 +35,7 @@ def param_picker(file):
 
 
 def configval(path, param, val):
-    with open(path, 'r') as f:
+    with open(path) as f:
         config = json.load(f)
     cf = config
     for p in param[:-1]:

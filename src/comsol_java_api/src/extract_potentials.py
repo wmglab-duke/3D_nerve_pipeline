@@ -16,7 +16,7 @@ OS = 'UNIX-LIKE' if any([s in sys.platform for s in ['darwin', 'linux']]) else '
 
 
 def load(config_path: str):
-    with open(config_path, "r") as handle:
+    with open(config_path) as handle:
         return json.load(handle)
 
 
@@ -40,9 +40,7 @@ def handoff(env: dict, run_number: int):
     if sys.platform.startswith('darwin'):  # macOS
         subprocess.Popen([f'{comsol_path}/bin/comsol', 'server'], close_fds=True)
         os.system(
-            '{}/javac -classpath ../bin/json-20190722.jar:{}/plugins/* model/*.java -d ../bin'.format(
-                jdk_path, comsol_path
-            )
+            f'{jdk_path}/javac -classpath ../bin/json-20190722.jar:{comsol_path}/plugins/* model/*.java -d ../bin'
         )
         # https://stackoverflow.com/questions/219585/including-all-the-jars-in-a-directory-within-the-java-classpath
         os.system(
@@ -56,9 +54,7 @@ def handoff(env: dict, run_number: int):
     elif sys.platform.startswith('linux'):  # linux
         subprocess.Popen([f'{comsol_path}/bin/comsol', 'server'], close_fds=True)
         os.system(
-            '{}/javac -classpath ../bin/json-20190722.jar:{}/plugins/* model/*.java -d ../bin'.format(
-                jdk_path, comsol_path
-            )
+            f'{jdk_path}/javac -classpath ../bin/json-20190722.jar:{comsol_path}/plugins/* model/*.java -d ../bin'
         )
         # https://stackoverflow.com/questions/219585/including-all-the-jars-in-a-directory-within-the-java-classpath
         os.system(

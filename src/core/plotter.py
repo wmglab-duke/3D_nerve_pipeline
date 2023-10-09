@@ -562,7 +562,7 @@ def _build_path(
     :param indices: Indices of object to load.
     :return: Path to pickled python object.
     """
-    result = str()
+    result = ''
 
     if indices is None:
         indices = [
@@ -1133,7 +1133,7 @@ def ap_plot(samp2d, samp3d, model, simdex, cuff_contacts, source_sim=None):
         sharey=True,
     )
     axs = g.axes
-    axs[0][0].set_ylabel(u'Activation z-position (mm)')
+    axs[0][0].set_ylabel('Activation z-position (mm)')
     # for i, s in enumerate([2, 5, 8, 11, 13]):
     #     axs[0][i].set_title(f'fiber diam: {s}μm')
     plt.subplots_adjust(top=0.88)

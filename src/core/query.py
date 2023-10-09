@@ -784,7 +784,7 @@ class Query(Configurable, Saveable):
                 threshold = np.nan
                 warnings.warn('Missing threshold, but continuing.', stacklevel=2)
             else:  # raise error
-                raise IOError(f'Missing threshold file {thresh_path}')
+                raise OSError(f'Missing threshold file {thresh_path}')
         return abs(threshold)
 
     @staticmethod

@@ -70,7 +70,7 @@ plasmap.set_bad(color='w')
 plasmap = plasmap.reversed()
 # %%
 for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
-    plotdir = os.path.join(os.getcwd(), r'plots\activation\{}-{}\{}'.format(samp2d, samp3d, simint))
+    plotdir = os.path.join(os.getcwd(), fr'plots\activation\{samp2d}-{samp3d}\{simint}')
     os.makedirs(plotdir, exist_ok=True)
     q = Query(
         {
@@ -171,8 +171,8 @@ for samp2d, samp3d, samplename in zip(samp2ds, samp3ds, samplenames):
                 thisdat['threshold_error'] = [(np.diff(thisdat['threshsave'])), (np.diff(thisdat['threshsave']))]
                 drdat.loc[thisdat.index, 'activation_error'] = thisdat['activation_error']
                 drdat.loc[thisdat.index, 'threshold_error'] = thisdat['threshold_error']
-        fiberpath = os.path.join(os.getcwd(), r'samples\{}\models\0\sims\3\3D_fiberset'.format(samp3d))
-        slidespath = os.path.join(os.getcwd(), r'input\slides\{}slides.obj'.format(samplename))
+        fiberpath = os.path.join(os.getcwd(), fr'samples\{samp3d}\models\0\sims\3\3D_fiberset')
+        slidespath = os.path.join(os.getcwd(), fr'input\slides\{samplename}slides.obj')
 
         # load pickled slidelist
         with open(slidespath, 'rb') as f:

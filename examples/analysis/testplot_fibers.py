@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Created on Wed Sep  7 19:58:14 2022.
 
 @author: Daniel
@@ -15,8 +14,8 @@ os.chdir('../..')
 # for sample, samplenum in zip(["2L", "2R", "3R", "5R", "6L", "6R"], [253, 273, 373, 573, 653, 673]):
 for sample, samplenum in zip(["5Rdef"], [5735]):
     fibers = {}
-    fiberpath = os.path.join(os.getcwd(), r'samples\{}\models\0\sims\3\3D_fiberset'.format(samplenum))
-    slidespath = os.path.join(os.getcwd(), r'input\slides\{}slides.obj'.format(sample))
+    fiberpath = os.path.join(os.getcwd(), fr'samples\{samplenum}\models\0\sims\3\3D_fiberset')
+    slidespath = os.path.join(os.getcwd(), fr'input\slides\{sample}slides.obj')
 
     # load pickled slidelist
     with open(slidespath, 'rb') as f:

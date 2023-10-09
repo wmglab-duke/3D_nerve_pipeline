@@ -111,8 +111,8 @@ for d, n in zip(diams, n_sims):
     samp3d = int(str(sample) + '3')
     diamdir = rf'D:\threed_ascent\plots\testfollow\{d}'
     os.makedirs(diamdir, exist_ok=True)
-    fiberpath = os.path.join(os.getcwd(), r'samples\{}\models\0\sims\3\3D_fiberset'.format(samp3d))
-    slidespath = os.path.join(os.getcwd(), r'input\slides\{}slides.obj'.format(samplename))
+    fiberpath = os.path.join(os.getcwd(), fr'samples\{samp3d}\models\0\sims\3\3D_fiberset')
+    slidespath = os.path.join(os.getcwd(), fr'input\slides\{samplename}slides.obj')
 
     # load pickled slidelist
     with open(slidespath, 'rb') as f:

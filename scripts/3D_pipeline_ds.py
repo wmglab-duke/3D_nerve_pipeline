@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Takes segmented nerve/fascicle, preprocesses the images,
-creates the perineurium, generates a connectivity map, and creates fibersets
-"""
-#edit to use threedmodel TODO max importance
+"""Takes segmented nerve/fascicle, preprocesses the images,
+creates the perineurium, generates a connectivity map, and creates fibersets."""
+# edit to use threedmodel TODO max importance
 # also may need to move over cuff models from 3D? to see #TODO
 import argparse
 import gc
@@ -35,6 +32,8 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
 sys.path.insert(0, os.path.abspath(root))
 sys.path.insert(0, os.path.join(root, 'src', 'utilities'))
 from nd_line.nd_line import nd_line
+from threedclass import FascicleConnectivityMap
+
 from src.core import Deformable, Fascicle, FiberSet, Model, Nerve, Slide, Trace
 from src.runner import Runner
 from src.utils import (
@@ -43,12 +42,11 @@ from src.utils import (
     ContourMode,
     DeformationMode,
     DownSampleMode,
+    MaskSpaceMode,
     NerveMode,
     ReshapeNerveMode,
     SetupMode,
-    MaskSpaceMode
 )
-from threedclass import FascicleConnectivityMap
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config_script", nargs="?")
@@ -301,6 +299,7 @@ def get_slide_dims(slidelist):
     dims = tuple([(-max(x), max(x)) for x in dims])
     return dims
 
+
 if slidegen:
     slides = []
     # TODO make from ASCENT
@@ -315,11 +314,11 @@ if slidegen:
             sys.exit(f'Error generating slide index {i}')
     dims = get_slide_dims(slides)
     nervesave = deepcopy([s.nerve for s in slides])
-#%%
-i=333
+# %%
+i = 333
 slide = slidegenerator(preprocpath + f'/n/{n_imgs_pp[i]}', preprocpath + f'/i/{i_imgs_pp[i]}')
 
-#%%
+# %%
 print('Generating fascicle connectivity map...')
 if slidegen and not skipsave:
     fmap = FascicleConnectivityMap(slides)
@@ -404,7 +403,7 @@ class AscentUtil(Configurable):
         model = Model()
         model.add(SetupMode.NEW, Config.MODEL, os.path.join(params['project_path'], 'model.json'))
         model.add(SetupMode.NEW, Config.SIM, root + '/config/sim.json')
-        with open(root + f'/config/{samplefile}', 'r') as f:
+        with open(root + f'/config/{samplefile}') as f:
             sample_config = json.load(f)
         sample_config['Morphology'] = {}
         sample_config['Morphology']['Nerve'] = {}
@@ -802,8 +801,7 @@ if slidegen:
     import math
 
     def rotate(origin, point, angle):
-        """
-        Rotate a point counterclockwise by a given angle around a given origin.
+        """Rotate a point counterclockwise by a given angle around a given origin.
 
         The angle should be given in radians.
         """
@@ -935,7 +933,7 @@ if slidegen:
             nervedir = os.path.join(defdir, 'n', str(i))
             fascicles = []
             for file in [f for f in os.listdir(fascdir) if f.endswith('.txt')]:
-                with open(os.path.join(fascdir, file), 'r') as f:
+                with open(os.path.join(fascdir, file)) as f:
                     # load in python list
                     fascpts = eval(f.read())
                 # append 0 to each point
@@ -946,7 +944,7 @@ if slidegen:
                     print('Drop')
             nervefiles = [f for f in os.listdir(nervedir) if f.endswith('.txt')]
             assert len(nervefiles) == 1
-            with open(os.path.join(nervedir, nervefiles[0]), 'r') as f:
+            with open(os.path.join(nervedir, nervefiles[0])) as f:
                 # load in python list
                 nervepts = eval(f.read())
             # append 0 to each point
@@ -1080,7 +1078,7 @@ if slidegen:
 # %%
 if geometry:
     # temporary measure. If deforming and using imthera cuff, then open model config and edit min_radius_enclosing_circle1 to be the maximum between the two radii
-    with open(os.path.join(params['project_path'], 'model.json'), 'r') as f:
+    with open(os.path.join(params['project_path'], 'model.json')) as f:
         model_config = json.load(f)
     if 'ImThera' in model_config['cuff']['preset']:
         print("Temporarily editing model config to use max radius")
@@ -1092,11 +1090,11 @@ if geometry:
     print("Generating geometry in comsol...")
     run_comsol(config3d_path, "geometry")
     # load and dump matmap.json with indent=2
-    with open(os.path.join(params['path']['comsol'], 'stl', 'matmap.json'), 'r') as f:
+    with open(os.path.join(params['path']['comsol'], 'stl', 'matmap.json')) as f:
         matmap = json.load(f)
     with open(os.path.join(params['path']['comsol'], 'stl', 'matmap.json'), 'w') as f:
         json.dump(matmap, f, indent=2)
-    with open(os.path.join(params['path']['comsol'], 'stl', 'dommap.json'), 'r') as f:
+    with open(os.path.join(params['path']['comsol'], 'stl', 'dommap.json')) as f:
         dommap = json.load(f)
     # dommap is a list of objects and their domains. Remove domains which are repeated, unless they are the first domain
     removed = True
@@ -1309,7 +1307,7 @@ for sli in slices:
     ensure_dir(params['path']['ascent'] + '/samples/' + this_pseudo)
     ensure_dir(params['path']['ascent'] + '/samples/' + this_pseudo + '/models/0/sims/3')
     # update model con
-    with open(os.path.join(params['project_path'], 'model.json'), 'r') as m:
+    with open(os.path.join(params['project_path'], 'model.json')) as m:
         model_config = json.load(m)
     # read in min_radius set during slidegen step and set as r_nerve_override
     # TODO: if deformation set this to mean area under cuff used for deformation?
@@ -1327,7 +1325,7 @@ for sli in slices:
         model_config["cuff"]["preset"] = model_config["ascent_cuff"]
         json.dump(model_config, m, indent=2)
     # update sample con
-    with open(f"{configdir}/{samplefile}", 'r') as m:
+    with open(f"{configdir}/{samplefile}") as m:
         sample_config = json.load(m)
     sample_config["boundary_separation"]["nerve"] = 0
     sample_config["boundary_separation"]["fascicles"] = 0
@@ -1456,7 +1454,7 @@ if extract:
         fiberset = FiberSet(None)
         fiberset.configs.update(ascent_configs.configs)
         fpoints = fiberset._generate_z([(0, 0)], super_sample=True, override_length=le)
-        fpoints= [d['fiber'] for d in fpoints]
+        fpoints = [d['fiber'] for d in fpoints]
         fpoints = np.vstack(fpoints)[:, -1]
         coords = np.zeros([len(fpoints), 3])
         coords[:, 2] = fpoints

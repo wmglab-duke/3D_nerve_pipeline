@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep  7 16:44:25 2021
+"""Created on Tue Sep  7 16:44:25 2021.
 
 @author: dpm42
 """
@@ -148,7 +146,7 @@ doc.SetImageToGlobalTransformationMatrix(temp_mat)
 # 2021-09-10 12:57:40 - Import STL file
 
 path = config["stl_path"]
-with open(path + '/matmap.json', 'r') as f:
+with open(path + '/matmap.json') as f:
     matmap = json.load(f)
 
 matmap["i"] = "endoneurium"
@@ -184,7 +182,7 @@ if use_nastran:
     App.GetDocument().RemoveVolumeMesh(App.GetDocument().GetVolumeMeshByName("alldomain"))
 
     # get dommap
-    with open(path + '/dommap.json', 'r') as f:
+    with open(path + '/dommap.json') as f:
         dommap = json.load(f)
 
     # Rename elements to correct surface names

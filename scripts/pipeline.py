@@ -51,7 +51,7 @@ def run(args):
         if not os.path.exists(grouppath):
             raise FileNotFoundError(f'Run group file not found: {grouppath}')
         else:
-            with open(grouppath, 'r') as f:
+            with open(grouppath) as f:
                 rungroups = json.load(f)
             if args.run_group not in rungroups:
                 raise ValueError(f'Run group not found: {args.run_group}')

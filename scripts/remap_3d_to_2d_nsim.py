@@ -10,11 +10,11 @@ new_nsim = 1
 dest_samples, dest_model, dest_sim = [3070, 3150, 3230], 0, 3000
 source_sample, source_model, source_sim = 3000, 0, 3000
 for dest_sample in dest_samples:
-    with open(r'samples\{}\models\{}\sims\{}\sim.obj'.format(dest_sample, dest_model, dest_sim), 'rb') as obj:
+    with open(fr'samples\{dest_sample}\models\{dest_model}\sims\{dest_sim}\sim.obj', 'rb') as obj:
         sim = pickle.load(obj)
 
-    destnsim = r'samples\{}\models\{}\sims\{}\n_sims\{}'.format(dest_sample, dest_model, dest_sim, new_nsim)
-    sourcepath = r'samples\{}\models\{}\sims\{}\n_sims\0\data\outputs'.format(source_sample, source_model, source_sim)
+    destnsim = fr'samples\{dest_sample}\models\{dest_model}\sims\{dest_sim}\n_sims\{new_nsim}'
+    sourcepath = fr'samples\{source_sample}\models\{source_model}\sims\{source_sim}\n_sims\0\data\outputs'
 
     if os.path.isdir(destnsim):
         shutil.rmtree(destnsim)
@@ -29,6 +29,6 @@ for dest_sample in dest_samples:
                 l, k = sim.indices_fib_to_n(0, q)
             shutil.copyfile(
                 sourcepath + f'/thresh_inner0_fiber{q}.dat',
-                destnsim + r'\data\outputs/thresh_inner{}_fiber{}.dat'.format(l, k),
+                destnsim + fr'\data\outputs/thresh_inner{l}_fiber{k}.dat',
             )
     del sim

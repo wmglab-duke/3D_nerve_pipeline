@@ -58,7 +58,7 @@ plt.ylabel('\u03bcm')
 # load contact coordinates
 dir = r'D:\threed_ascent\input\contact_coords\5RDS5'
 for i in range(2):
-    contact_coords = np.loadtxt(dir + '\pcs' + str(i + 1) + '.txt', skiprows=8)[:, :2]
+    contact_coords = np.loadtxt(dir + r'\pcs' + str(i + 1) + '.txt', skiprows=8)[:, :2]
     plt.scatter(contact_coords[:, 0], contact_coords[:, 1], color='k', label='contacts' if i == 0 else '_')
     plt.legend()
 plt.show()

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep  7 16:44:25 2021
+"""Created on Tue Sep  7 16:44:25 2021.
 
 @author: dpm42
 Notes:
@@ -60,7 +58,7 @@ doc.CopyBackgroundToMask()
 doc.GetGenericMaskByName("Stack (2)").SetName("n")
 
 os.makedirs(config['out'], exist_ok=True)
-#%% Setup
+# %% Setup
 zmove = config['transition_distance'] / doc.GetDimensions().GetSpacingZ() / 1000
 
 # crop
@@ -82,7 +80,7 @@ App.GetDocument().GetGenericMaskByName("p").Activate()
 # # 2022-12-21 12:38:05 - Morphological filter
 # App.GetDocument().ApplyOpenFilter(Doc.TargetMask, 3, 3, 0, 0.0)
 
-#%% mesh generation
+# %% mesh generation
 smod = doc.CreateSurfaceModel("Model 1")
 
 smod.AddMask(App.GetDocument().GetGenericMaskByName("p"))
@@ -95,7 +93,7 @@ smod.SetExportType(Model.StlFeCfdCad)
 
 smod.SetCompoundCoarsenessOnPart(smod.GetPartByName("p"), -50)
 
-#%% mesh export
+# %% mesh export
 dims = doc.GetDimensions()
 # Store the image-to-global transformation matrix
 i2g_mat = doc.GetImageToGlobalTransformationMatrix()

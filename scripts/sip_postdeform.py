@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Sep  7 16:44:25 2021
+"""Created on Tue Sep  7 16:44:25 2021.
 
 @author: dpm42
 """

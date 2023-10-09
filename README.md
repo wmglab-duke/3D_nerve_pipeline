@@ -21,6 +21,7 @@
 6. To generate thresholds, take the directories from the 7_ascent folder after running and place them in the relevant ASCENT directories (under the "3d" branch). Add `"post_java_only":true` to your ASCENT run config.
 Note: Simpleware will only run if there is a display, so on the cluster this must be run in a DCC desktop session.
 Note2: If using Imthera cuff, your 3D config must have `"use_nastran": true` in your mesh block. If using Livanova, this must be absent or false. Other cuffs are not tested.
+Note3: examples/3D has a mock nerve which can be used for local runs
 
 # Deformation
 

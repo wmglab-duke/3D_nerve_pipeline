@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Created on Wed Jan 19 12:55:26 2022.
 
 @author: dpm42

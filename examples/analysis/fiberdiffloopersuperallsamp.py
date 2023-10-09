@@ -31,8 +31,8 @@ samps = ['2Ldef', '3Rdef', '5Rdef', '6Rdef']
 for samp3d, samplename in zip(threeds, samps):
     # %% load fiber data
     print('dataload')
-    fiberpath = os.path.join(os.getcwd(), r'samples\{}\models\0\sims\3\3D_fiberset'.format(samp3d))
-    slidespath = os.path.join(os.getcwd(), r'input\slides\{}slides.obj'.format(samplename))
+    fiberpath = os.path.join(os.getcwd(), fr'samples\{samp3d}\models\0\sims\3\3D_fiberset')
+    slidespath = os.path.join(os.getcwd(), fr'input\slides\{samplename}slides.obj')
 
     # load pickled slidelist
     with open(slidespath, 'rb') as f:

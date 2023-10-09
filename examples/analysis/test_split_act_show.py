@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Created on Wed Sep  7 19:58:14 2022.
 
 @author: Daniel
@@ -17,8 +16,8 @@ threshdata = pd.read_csv('thresh_unmatched_sim3_og.csv').query('nsim==5')
 zpos = [29150, 29050, 28950]
 for sample, samplenum, samp2d in zip(["6L"], [653], [652]):
     fibers = []
-    fiberpath = os.path.join(os.getcwd(), r'samples\{}\models\0\sims\3\3D_fiberset'.format(samplenum))
-    slidespath = os.path.join(os.getcwd(), r'input\slides\{}slides.obj'.format(sample))
+    fiberpath = os.path.join(os.getcwd(), fr'samples\{samplenum}\models\0\sims\3\3D_fiberset')
+    slidespath = os.path.join(os.getcwd(), fr'input\slides\{sample}slides.obj')
     # load pickled slidelist
     with open(slidespath, 'rb') as f:
         slidelist = pickle.load(f)
