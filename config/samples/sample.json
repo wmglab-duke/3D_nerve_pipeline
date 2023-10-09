@@ -1,0 +1,31 @@
+{
+  "sample": "",
+  "scale": {
+    "scale_ratio": 5,
+    "shrinkage": 0.2
+  },
+  "boundary_separation": {
+    "fascicles": 0,
+    "nerve": 0
+  },
+  "modes": {
+    "mask_input": "INNER_AND_OUTER_SEPARATE",
+    "scale_input": "RATIO",
+    "nerve": "PRESENT",
+    "deform": "NONE",
+    "ci_perineurium_thickness": "MEASURED",
+    "reshape_nerve": "NONE",
+    "contour_approximation": "NONE",
+    "shrinkage_definition": "LENGTH_FORWARDS"
+  },
+  "deform_ratio": 0,
+  "Morphology": null,
+  "image_preprocessing": {
+    "fill_holes": true,
+    "object_removal_area": 20
+  },
+  "smoothing": {
+    "nerve_distance": 0,
+    "fascicle_distance": 0
+  }
+}
