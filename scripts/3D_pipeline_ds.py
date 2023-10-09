@@ -80,7 +80,7 @@ def run_scanip(configpath, configdict, script, progress=False):
     progstring = "--no-progress" if not progress else ''
     os.system(
         f'{executable} {progstring} --force-queuing'
-        f' --disable-undo --run-script="{root}/Scripts/{script}.py" --input-value="{configpath}"'
+        f' --disable-undo --run-script="{root}/scripts/{script}.py" --input-value="{configpath}"'
     )
     os.chdir(os.path.split(os.path.split(scriptloc)[0])[0])
     print('returned to python')
@@ -232,7 +232,7 @@ params['input']['um_per_px'] = params['output']['image_um_per_px']
 
 # %% Generate slides
 os.chdir(root)
-os.chdir('Scripts')
+os.chdir('scripts')
 
 n_imgs_pp, _, _ = get_sorted_image_list(preprocpath + '/n', '*.tiff')
 
@@ -414,7 +414,7 @@ class AscentUtil(Configurable):
         )
         new_model_config = model.configs[Config.MODEL.value]
         modelcon[rparam] = new_model_config['min_radius_enclosing_circle']
-        os.chdir('Scripts')
+        os.chdir('scripts')
         return modelcon
 
     def deform_sep(self, slidelist, override_sep=None):
@@ -562,7 +562,7 @@ util.add(SetupMode.NEW, Config.MODEL, os.path.join(params['project_path'], 'mode
 util.add(SetupMode.NEW, Config.SIM, root + '/config/sim.json')
 util.add(SetupMode.NEW, Config.SAMPLE, root + f'/config/{samplefile}')
 
-os.chdir('Scripts')
+os.chdir('scripts')
 # %% temporary output for separated peri
 from copy import deepcopy
 
