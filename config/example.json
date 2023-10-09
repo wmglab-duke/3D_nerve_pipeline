@@ -1,0 +1,54 @@
+{
+  "project_path": "",
+  "sourcedir": "../sipsource",
+  "sourcefile": "",
+  "path": {
+    "sip_input": "0_base",
+    "preprocess": "1_preprocessed",
+    "slides": "2_slides",
+    "fibers": "3_fiberset",
+    "mesh": "4_meshing",
+    "neuron": "6_neuron",
+    "comsol": "5_comsol",
+    "ascent": "7_ascent",
+    "temp": "tmp"
+  },
+  "config": {
+    "path": "../config",
+    "run": "run.json",
+    "model": "model_newln.json",
+    "sample": "sample.json"
+  },
+  "input": {
+    "i_mask": "endoneurium_ds_opened",
+    "n_mask": "epineurium_destepped",
+    "um_per_px": 10,
+    "um_per_slice": 20,
+    "z+": "caudal",
+    "z-": "rostral",
+    "destepped": true
+  },
+  "preprocess": {
+    "upsample_z": 1,
+    "buffer": 10,
+    "crop": "True",
+    "center_target": "nerve",
+    "nsmoothing": 25,
+    "fsmoothing": 10
+  },
+  "output": {
+    "image_um_per_px": 5,
+    "id_font": 60,
+    "addl_cuff_buffer": 0
+  },
+  "mesh": {
+    "min_edge_length": 0.01,
+    "max_error": 0.005,
+    "max_edge_length": 1.6,
+    "internal_change_rate": 30,
+    "surface_change_rate": 60,
+    "n_layer_elements": 1.0,
+    "smooth_against_background": true,
+    "second_order": true
+  }
+}
