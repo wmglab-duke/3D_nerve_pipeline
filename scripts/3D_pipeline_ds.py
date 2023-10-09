@@ -197,7 +197,7 @@ os.chdir(scriptroot)
 sipsource = params['sourcedir']
 infile = params['sourcefile']
 if not os.path.exists(sipsource + '/' + infile):
-    sys.exit('source .sip file not found')
+    raise FileNotFoundError('source .sip file not found: {sipsource + ' / ' + infile}')
 
 # start of "3D" run
 print('Preprocessing images...')
