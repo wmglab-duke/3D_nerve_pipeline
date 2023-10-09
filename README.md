@@ -10,6 +10,7 @@
     - ASCENT_PROJECT_PATH: Root of the repository
     - ASCENT_NSIM_EXPORT_PATH: Not used but must be present
     - SIMPLEWARE_SCANIP_PATH: Path to simpleware installation which contains the executable "console scan ip"
+5. Run the installation command `python run install`, with the `--no-conda` flag  if you already have an ASCENT environment (but them must manually `pip install -r requirements.txt`)
 
 # Running
 
