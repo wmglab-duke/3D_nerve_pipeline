@@ -196,9 +196,9 @@ if not os.path.exists(params['project_path'] + '/model.json'):
 os.chdir(scriptroot)
 sipsource = params['sourcedir']
 infile = params['sourcefile']
-sourcesipfile = os.path.join(sipsource,infile)
+sourcesipfile = os.path.join(sipsource, infile)
 if not os.path.exists(sourcesipfile):
-    raise FileNotFoundError('source .sip file not found: {sourcesipfile}')
+    raise FileNotFoundError(f'source .sip file not found: {sourcesipfile}')
 
 # start of "3D" run
 print('Preprocessing images...')
