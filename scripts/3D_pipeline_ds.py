@@ -148,27 +148,27 @@ buffer = params['preprocess']['buffer']
 
 # TODO break point config
 
-preproc = True
+preproc = False
 
-imfills = True
+imfills = False
 
-slidegen = True
+slidegen = False
 
-geometry = True
+geometry = False
 
-mesh = True
+mesh = False
 
-model = True
+model = False
 
-fibergen = True
+fibergen = False
 
 extract = True
 
 quit_premesh = False
 
-no_remesh = True
+no_remesh = False
 
-skipsave = True
+skipsave = False
 
 # TODO: make each model source from datanew directory instead of main model directory
 
@@ -1396,6 +1396,7 @@ def get_pots(mphfile, fiberspath, outpath):
         subprocess.Popen([f'{comsol_path}/bin/comsol', 'server'], close_fds=True)
         time.sleep(5)
         os.chdir(project_path + '/' + 'src')
+        print(os.getcwd())
         os.system(
             f'{jdk_path}/javac -classpath ../bin/json-20190722.jar:{comsol_path}/plugins/* model/*.java -d ../bin'
         )
@@ -1439,10 +1440,10 @@ if extract:
         if fiberdata.iloc[0]['z'] > 100:
             continue
         fibers[line] = fiberdata
-    print('Generating supersampled fibers to extract from COMSOL')
+    print(f'Generating {len(fibers.keys())} supersampled fibers to extract from COMSOL: ')
     # resample each fiber according to sim settings
     for i, line in enumerate(fibers.keys()):
-        print(f'Fiber {i} of {len(fibers.keys())}')
+        print(i,end=' ')
         fiberdata = fibers[line]
         fiberpoints = np.array(fiberdata.loc[:, ['x', 'y', 'z']])
         fiberflip = np.flip(fiberpoints, axis=0)
@@ -1477,6 +1478,8 @@ if extract:
             header=str(len(sample_points)),
             comments='',
         )
+    else:
+        print('')
     # format fiber xy points for ascent
     for file in slices:
         this_pseudo = pseudonym + '-' + file
