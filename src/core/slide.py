@@ -134,7 +134,7 @@ class Slide:
 
         if shapely and not self.polygons_are_valid():
             debug_plot()
-            error_message = "A polygon was detected which is invalid. Using smoothing may fix this error_message."
+            error_message = "A polygon was detected which is invalid."
 
         if not self.monofasc():
             if self.fascicle_fascicle_intersection(target=intersection_target):
@@ -619,10 +619,11 @@ class Slide:
         """
         for trace in self.trace_list():
             if not trace.polygon().is_valid:
-                trace.offset(distance=0)
-                if not trace.polygon().is_valid:
-                    return False
+                return False
         return True
+
+    def has_peanut_fasc(self):
+        return np.any(np.array([len(f.inners) for f in self.fascicles]) > 1)
 
     def inners(self, polygon=False):
         if polygon:

@@ -19,8 +19,9 @@ import numpy as np
 import pyclipper
 import pymunk
 from shapely.affinity import rotate, scale
-from shapely.geometry import Point, Polygon
+from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import nearest_points
+from shapely.validation import make_valid
 
 from src.utils import DownSampleMode, MorphologyError, WriteMode
 
@@ -51,6 +52,16 @@ class Trace:
 
         self.points = None  # must declare instance variable in __init__ at some point!
         self.append(points)
+
+    @classmethod
+    def from_polygon(cls, polygon):
+        if not isinstance(polygon, Polygon):
+            raise ValueError("Input must be a Shapely Polygon object.")
+
+        assert polygon.is_valid, "Input polygon must be valid."
+
+        trace_points = np.array(polygon.exterior.coords.xy).T.tolist()
+        return cls(trace_points)
 
     # %% public, MUTATING methods
     def append(self, points):
@@ -772,6 +783,30 @@ class Trace:
         :return: twice the signed area of the triangle defined by (x0, y0), (x1, y1), (x2, y2)
         """
         return (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0)
+
+    def validate_polygon(self):
+        input_polygon = self.polygon()
+
+        if input_polygon.is_valid:
+            # If the input polygon is already valid, return it
+            return [input_polygon]
+        else:
+            # If the input polygon is invalid, use make_valid() to fix it
+            valid_polygons = list(make_valid(input_polygon))
+
+            # List to store valid polygons
+            result_polygons = []
+
+            for geom in valid_polygons:
+                if isinstance(geom, Polygon):
+                    # If it's a polygon, add it to the result list
+                    result_polygons.append(geom)
+                elif isinstance(geom, MultiPolygon):
+                    # If it's a multipolygon, add all contained polygons to the result list
+                    result_polygons.extend(list(geom))
+
+            # Return the list of valid polygons
+            return result_polygons
 
     # %% private utility methods
     def __update(self):

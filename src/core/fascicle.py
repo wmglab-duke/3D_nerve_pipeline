@@ -311,7 +311,12 @@ class Fascicle:
 
         if outer_img_path is None:
             # inners only case, set each inner as an outer
-            outers = np.array(build_traces(inner_img_path))
+            fixtrace = []
+            # check that each trace is valid, if not validate
+            for tr in build_traces(inner_img_path):
+                fixtrace.extend(tr.validate_polygon())
+            # convert back to traces
+            outers = np.array([Trace.from_polygon(tr) for tr in fixtrace])
         else:
             # build traces list for inner and outer image paths
             inners, outers = (np.array(build_traces(path)) for path in (inner_img_path, outer_img_path))

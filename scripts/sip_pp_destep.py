@@ -33,7 +33,6 @@ doc.GetGenericMaskByName("n").Activate()
 
 doc.MoveMaskTo(doc.GetActiveGenericMask(), 1)
 
-
 for m in masks:
     doc.GetGenericMaskByName(m).Activate()
 

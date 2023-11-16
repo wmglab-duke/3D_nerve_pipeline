@@ -58,7 +58,7 @@ args = parser.parse_args()
 if args.config_script is not None:
     configname = args.config_script
 else:
-    configname = '2Lstrip.json'
+    configname = '2LDS5.json'
 config3d_path = os.path.join('..', 'config', configname)
 # %% defs
 pseudonym = os.path.splitext(os.path.split(configname)[-1])[0]
@@ -315,9 +315,6 @@ if slidegen:
             sys.exit(f'Error generating slide index {i}')
     dims = get_slide_dims(slides)
     nervesave = deepcopy([s.nerve for s in slides])
-# %%
-i = 333
-slide = slidegenerator(preprocpath + f'/n/{n_imgs_pp[i]}', preprocpath + f'/i/{i_imgs_pp[i]}')
 
 # %%
 print('Generating fascicle connectivity map...')
@@ -1443,7 +1440,7 @@ if extract:
     print(f'Generating {len(fibers.keys())} supersampled fibers to extract from COMSOL: ')
     # resample each fiber according to sim settings
     for i, line in enumerate(fibers.keys()):
-        print(i,end=' ')
+        print(i, end=' ')
         fiberdata = fibers[line]
         fiberpoints = np.array(fiberdata.loc[:, ['x', 'y', 'z']])
         fiberflip = np.flip(fiberpoints, axis=0)
