@@ -58,7 +58,7 @@ args = parser.parse_args()
 if args.config_script is not None:
     configname = args.config_script
 else:
-    configname = '2LDS5.json'
+    configname = '2RDS5.json'
 config3d_path = os.path.join('..', 'config', configname)
 # %% defs
 pseudonym = os.path.splitext(os.path.split(configname)[-1])[0]
@@ -148,13 +148,13 @@ buffer = params['preprocess']['buffer']
 
 # TODO break point config
 
-preproc = False
+preproc = True
 
-imfills = False
+imfills = True
 
-slidegen = False
+slidegen = True
 
-geometry = False
+geometry = True
 
 mesh = False
 
@@ -162,7 +162,7 @@ model = False
 
 fibergen = False
 
-extract = True
+extract = False
 
 quit_premesh = False
 
@@ -273,8 +273,9 @@ def slidegenerator(nerveimg, fascicleimg, scale='all'):
         fascicles,
         nerve,
         nerve_mode,
-        will_reposition=(deform_mode != DeformationMode.NONE),
+        will_reposition=True,
     )
+    slide.validate(intersection_target='inners')
     # shift slide about (0,0)
     slide.move_center(np.array([0, 0]))
     slide.scale(params["input"]["um_per_px"])
@@ -1036,7 +1037,7 @@ if slidegen:
         issues = 0
         print('done deforming')
         for i, slide in enumerate(slides):
-            if not slide.validation(die=False, plot_debug=True, intersection_target='inners'):
+            if not slide.validate(die=False, plot_debug=True, intersection_target='inners'):
                 issues += 1
                 print(i)
         # %%
