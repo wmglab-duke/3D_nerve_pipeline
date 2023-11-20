@@ -11,4 +11,4 @@ docstring-style: SPHINX
 max-line-length = 120
 max-complexity = 18
 extend-ignore = D, RST, DAR, C #this is temporary for 3d
-exclude = examples
+exclude = examples/*
