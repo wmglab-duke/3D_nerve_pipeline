@@ -10,5 +10,5 @@ per-file-ignores =
 docstring-style: SPHINX
 max-line-length = 120
 max-complexity = 18
-extend-ignore = D, RST, DAR, C #this is temporary for 3d
+extend-ignore = D, RST, DAR, C, F405, F403 #this is temporary for 3d
 exclude = examples/*
