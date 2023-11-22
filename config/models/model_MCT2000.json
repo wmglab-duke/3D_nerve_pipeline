@@ -30,7 +30,7 @@
       }
     }
   },
-  "ascent_cuff": "MultiContact_threed2000.json",
+  "ascent_cuff": "MultiContact_threed_2000_3D.json",
   "conductivities": {
     "recess": "saline",
     "perineurium": {
@@ -63,7 +63,7 @@
       "y": 0,
       "z": 0
     },
-    "preset": "ImThera_flip_100.json"
+    "preset": "MultiContact_threed_2000_3D.json"
   },
   "mesh": {
     "distal": {
