@@ -22,7 +22,6 @@ from shapely.affinity import rotate, scale
 from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import nearest_points
 from shapely.validation import make_valid
-
 from src.utils import DownSampleMode, MorphologyError, WriteMode
 
 
@@ -807,6 +806,16 @@ class Trace:
 
             # Return the list of valid polygons
             return result_polygons
+
+    def make_valid(self):
+        from shapely.validation import make_valid
+
+        polyout = make_valid(self.polygon())
+        assert isinstance(polyout, Polygon)
+        self.points = self.from_polygon(polyout).points
+        self.__update()
+        assert self.from_polygon(polyout).polygon().is_valid
+        assert self.polygon().is_valid
 
     # %% private utility methods
     def __update(self):

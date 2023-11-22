@@ -15,7 +15,6 @@ import os
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 from src.core.query import Query
 
 sns.set_theme()

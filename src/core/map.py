@@ -49,7 +49,6 @@ import warnings
 from typing import List
 
 import numpy as np
-
 from src.utils import Config, Configurable, SetupMode
 
 

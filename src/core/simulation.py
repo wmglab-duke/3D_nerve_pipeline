@@ -21,7 +21,6 @@ from typing import List, Tuple
 
 import numpy as np
 import scipy.interpolate as sci
-
 from src.core import Sample
 from src.utils import Config, Configurable, Env, ExportMode, IncompatibleParametersError, Saveable, SetupMode, WriteMode
 

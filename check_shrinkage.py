@@ -7,7 +7,6 @@ import os
 import pickle
 
 import numpy as np
-
 from src.core import Sample
 from src.utils import Config, SetupMode, WriteMode
 

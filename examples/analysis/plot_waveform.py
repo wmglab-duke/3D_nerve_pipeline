@@ -13,7 +13,6 @@ import json
 import os
 
 import matplotlib.pyplot as plt
-
 from src.core import Simulation
 from src.core.query import Query
 from src.utils import Object

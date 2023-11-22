@@ -284,7 +284,7 @@ def slidegenerator(nerveimg, fascicleimg, scale='all'):
     slide.move_center(np.array([0, 0]))
     if scale == 'all':
         slide.generate_perineurium(fit={'a': 0.03702, 'b': 10.50})
-    slide.validate(intersection_target='inners', shapely=False)
+    slide.validate(intersection_target='inners')
     return slide
 
 
@@ -315,6 +315,8 @@ if slidegen:
             sys.exit(f'Error generating slide index {i}')
     dims = get_slide_dims(slides)
     nervesave = deepcopy([s.nerve for s in slides])
+# %%
+slide = slidegenerator(preprocpath + f'/n/{n_imgs_pp[i]}', preprocpath + f'/i/{i_imgs_pp[i]}')
 
 # %%
 print('Generating fascicle connectivity map...')

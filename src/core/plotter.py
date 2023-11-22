@@ -21,7 +21,6 @@ from nd_line.nd_line import nd_line
 from scipy.interpolate import griddata
 from scipy.stats import pearsonr
 from shapely.geometry import Point
-
 from src.core import Query, Sample, Simulation
 from src.utils import Config, Object
 

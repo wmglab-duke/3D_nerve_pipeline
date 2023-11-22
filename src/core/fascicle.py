@@ -17,7 +17,6 @@ from typing import List, Tuple, Union
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-
 from src.utils import MaskSpaceMode, MorphologyError, WriteMode
 
 from .nerve import Nerve
@@ -60,6 +59,10 @@ class Fascicle:
 
         :raises MorphologyError: if validation fails
         """
+        # check that inners are valid
+        if not self.outer.polygon().is_valid:
+            self.outer.make_valid()
+
         # ensure all inner Traces are actually inside outer Trace
         if any(not inner.within(self.outer) for inner in self.inners):
             raise MorphologyError("Not all inner Traces fall within outer Trace")

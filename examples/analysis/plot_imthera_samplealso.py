@@ -18,7 +18,6 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import to_hex
-
 from src.core import Sample
 from src.core.query import Query
 from src.utils import Object

@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import binary_fill_holes
 from skimage import morphology
-
 from src.core import Deformable, Fascicle, Map, Nerve, Slide, Trace
 from src.utils import (
     Config,

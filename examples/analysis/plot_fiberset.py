@@ -12,7 +12,6 @@ RUN THIS FROM REPOSITORY ROOT
 import os
 
 import matplotlib.pyplot as plt
-
 from src.core import Sample, Simulation
 from src.core.query import Query
 from src.utils import Object

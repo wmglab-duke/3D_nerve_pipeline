@@ -8,7 +8,6 @@ https://github.com/wmglab-duke/ascent
 
 import numpy as np
 import pytest
-
 from src.core.trace import Trace
 
 

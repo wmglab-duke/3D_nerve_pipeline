@@ -17,7 +17,6 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-
 from src.core.query import Query
 
 # RUN THIS FROM REPOSITORY ROOT
