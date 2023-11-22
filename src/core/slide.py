@@ -16,7 +16,6 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from quantiphy import Quantity
 from shapely.ops import unary_union
-
 from src.utils import MethodError, MorphologyError, NerveMode, ReshapeNerveMode, WriteMode
 
 from .fascicle import Fascicle
@@ -116,6 +115,7 @@ class Slide:
                 axlabel="\u03bcm",
                 title='Debug sample which failed validation.',
             )
+            self.plot_poly_invalid()
             if plot_debug:
                 plt.show()
             else:
@@ -621,6 +621,15 @@ class Slide:
             if not trace.polygon().is_valid:
                 return False
         return True
+
+    def plot_poly_invalid(self):
+        """Check if all polygons are valid and attempt to fix if not.
+
+        :return: True if all polygons are valid, False if not
+        """
+        for trace in self.trace_list():
+            if not trace.polygon().is_valid:
+                trace.plot(plot_format='r-')
 
     def has_peanut_fasc(self):
         return np.any(np.array([len(f.inners) for f in self.fascicles]) > 1)

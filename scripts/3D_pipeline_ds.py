@@ -32,8 +32,6 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
 sys.path.insert(0, os.path.abspath(root))
 sys.path.insert(0, os.path.join(root, 'src', 'utilities'))
 from nd_line.nd_line import nd_line
-from threedclass import FascicleConnectivityMap
-
 from src.core import Deformable, Fascicle, FiberSet, Model, Nerve, Slide, Trace
 from src.runner import Runner
 from src.utils import (
@@ -47,6 +45,7 @@ from src.utils import (
     ReshapeNerveMode,
     SetupMode,
 )
+from threedclass import FascicleConnectivityMap
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config_script", nargs="?")
@@ -275,7 +274,6 @@ def slidegenerator(nerveimg, fascicleimg, scale='all'):
         nerve_mode,
         will_reposition=True,
     )
-    slide.validate(intersection_target='inners')
     # shift slide about (0,0)
     slide.move_center(np.array([0, 0]))
     slide.scale(params["input"]["um_per_px"])
@@ -286,6 +284,7 @@ def slidegenerator(nerveimg, fascicleimg, scale='all'):
     slide.move_center(np.array([0, 0]))
     if scale == 'all':
         slide.generate_perineurium(fit={'a': 0.03702, 'b': 10.50})
+    slide.validate(intersection_target='inners', shapely=False)
     return slide
 
 
@@ -355,6 +354,7 @@ def compute_medium_params(configmodel: dict, nslice: int, um_per_slice: float):
 
 
 def run_comsol(threed_config_path, runtype):
+    print('to java')
     os.chdir(root)
     runner = Runner(0)
     runner.add(SetupMode.OLD, Config.ENV, env)
@@ -362,6 +362,7 @@ def run_comsol(threed_config_path, runtype):
     core_name = 'ModelWrapper'
 
     runner.handoff(threed_config_path, run_type=runtype, class_name=core_name, modelfolder="threedmodel")
+    print('returned to python')
 
 
 def get_minbound_r(slidelist):
@@ -484,9 +485,7 @@ class AscentUtil(Configurable):
         if not os.path.exists(outpath + '/predeform.stl'):
             run_scanip(sip_config_path, sipconfig, scriptname)
         if not os.path.exists(outpath + '/postdeform.stl'):
-            print('to java')
             run_comsol(config3d_path, runstring)
-            print('returned to python')
         if not os.path.exists(outpath + '/postdeform.stl'):
             sys.exit("postdeform.stl was not created, please manually generate and rerun")
         if not os.path.exists(outpath + '/postdeformed.sip'):
