@@ -1,5 +1,4 @@
 {
-  "project_path": "D:/work/ascent_threed_combo/datanew/2LDS5_strip",
   "sourcedir": "../sipsource",
   "sourcefile": "2L_strip.sip",
   "path": {
@@ -12,7 +11,7 @@
   "config": {
     "path": "../config",
     "run": "run.json",
-    "model": "model_base.json",
+    "model": "model_LN2000.json",
     "sample": "sample.json"
   },
   "input": {

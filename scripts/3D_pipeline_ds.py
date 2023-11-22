@@ -57,7 +57,7 @@ args = parser.parse_args()
 if args.config_script is not None:
     configname = args.config_script
 else:
-    configname = '2RDS5.json'
+    configname = '2Lstrip.json'
 config3d_path = os.path.join('..', 'config', configname)
 # %% defs
 pseudonym = os.path.splitext(os.path.split(configname)[-1])[0]
@@ -140,6 +140,14 @@ with open(root + '/config/system/env.json') as f:
 
 nerve_mode = NerveMode.PRESENT
 
+if 'project_path' in params:
+    raise ValueError(
+        'Specifying project path in your config is deprecated, the path will be assumed from your json name'
+    )
+params['project_path'] = os.path.join(
+    env['ASCENT_PROJECT_PATH'], 'datanew', os.path.split(config3d_path)[-1].replace('.json', '')
+)
+
 for key, value in params['path'].items():
     params['path'][key] = params['project_path'] + '/' + value
 
@@ -205,10 +213,9 @@ print('Preprocessing images...')
 os.makedirs(os.path.join(sipsource, "preprocessed"), exist_ok=True)
 preprocpath = sipsource + '/preprocessed/' + os.path.splitext(infile)[0]
 # skip preprocessing if the modified date of the preprocessed folder is newer than the sip file
-if os.path.exists(preprocpath):
-    if os.path.getmtime(preprocpath) > os.path.getmtime(sipsource + '/' + infile):
-        print('preprocessed images found, skipping preprocessing')
-        preproc = False
+if os.path.exists(preprocpath) and os.path.getmtime(preprocpath) > os.path.getmtime(sipsource + '/' + infile):
+    print('preprocessed images found, skipping preprocessing')
+    preproc = False
 
 if preproc:
     # set up scanIP config and run sip file
@@ -378,7 +385,7 @@ class AscentUtil(Configurable):
         Configurable.__init__(self)
 
     # TODO make from ASCENT
-    def compute_cuff_shift_3D(self, modelcon: dict, slidesec: list, rparam: str):
+    def compute_cuff_shift_3D(self, modelcon: dict, slidesec: list, rparam: str):  # noqa: N802
         deform_ratio = self.search(Config.SAMPLE, 'deform_ratio')
 
         if len(slidesec) == 0:
@@ -562,9 +569,6 @@ util.add(SetupMode.NEW, Config.SIM, root + '/config/sim.json')
 util.add(SetupMode.NEW, Config.SAMPLE, root + f'/config/{samplefile}')
 
 os.chdir('scripts')
-# %% temporary output for separated peri
-from copy import deepcopy
-
 # %%Apply deformation if specified.
 if slidegen:
     with open(params['project_path'] + '/model.json') as f:
