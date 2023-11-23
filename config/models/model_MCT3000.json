@@ -61,7 +61,7 @@
     "shift": {
       "x": 0,
       "y": 0,
-      "z": 0
+      "z": 4000
     },
     "preset": "MultiContact_threed_3000_3D.json"
   },

@@ -57,7 +57,7 @@ args = parser.parse_args()
 if args.config_script is not None:
     configname = args.config_script
 else:
-    configname = '2Lstrip.json'
+    configname = '2LDS5def.json'
 config3d_path = os.path.join('..', 'config', configname)
 # %% defs
 pseudonym = os.path.splitext(os.path.split(configname)[-1])[0]
@@ -140,13 +140,19 @@ with open(root + '/config/system/env.json') as f:
 
 nerve_mode = NerveMode.PRESENT
 
+projpath = os.path.join(env['ASCENT_PROJECT_PATH'], 'datanew', os.path.split(config3d_path)[-1].replace('.json', ''))
+
 if 'project_path' in params:
-    raise ValueError(
-        'Specifying project path in your config is deprecated, the path will be assumed from your json name'
+    print(
+        f'''Project path will be overwritten with new smart pathing...
+        From {params['project_path']}
+        to {projpath}
+        '''
     )
-params['project_path'] = os.path.join(
-    env['ASCENT_PROJECT_PATH'], 'datanew', os.path.split(config3d_path)[-1].replace('.json', '')
-)
+params['project_path'] = projpath
+
+with open(config3d_path, 'w') as f:
+    json.dump(params, f, indent=2)
 
 for key, value in params['path'].items():
     params['path'][key] = params['project_path'] + '/' + value
@@ -155,15 +161,15 @@ buffer = params['preprocess']['buffer']
 
 # TODO break point config
 
-preproc = True
+preproc = False
 
-imfills = True
+imfills = False
 
-slidegen = True
+slidegen = False
 
 geometry = True
 
-mesh = False
+mesh = True
 
 model = False
 
@@ -171,11 +177,11 @@ fibergen = False
 
 extract = False
 
-quit_premesh = False
+quit_premesh = True
 
 no_remesh = False
 
-skipsave = False
+skipsave = True
 
 # TODO: make each model source from datanew directory instead of main model directory
 
@@ -322,9 +328,6 @@ if slidegen:
             sys.exit(f'Error generating slide index {i}')
     dims = get_slide_dims(slides)
     nervesave = deepcopy([s.nerve for s in slides])
-# %%
-slide = slidegenerator(preprocpath + f'/n/{n_imgs_pp[i]}', preprocpath + f'/i/{i_imgs_pp[i]}')
-
 # %%
 print('Generating fascicle connectivity map...')
 if slidegen and not skipsave:
