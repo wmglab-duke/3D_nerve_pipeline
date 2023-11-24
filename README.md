@@ -38,3 +38,8 @@ Note3: examples/3D has a mock nerve which can be used for local runs
      - Once this completes, the pipeline will run as normal.
 
 Note: Sometimes the mesh from comsol will be non manifold. In these cases, you may need to "fix" the import geometry before exporting contours. However, this will result in a LOT of windows popping up during the watershed. To avoid this, new code should be written that loops through and export all possible contours where the mesh is manifold, skipping the others, then fixes the stl, and exports the remaining contours.
+
+Other note: sometimes you may want to run a new cuff on a deformed nerve without redoing the whole deformation process. In this case, follow all the steps to make a new config as normal, then:
+1. Copy the "slides" folder to the relevant new directory (in datanew, e.g., from 2Ldeform to 2Ldeformnewcuff)
+2. Make sure 3D pipeline has the following settings: slidegen = True, skipsave = True, rundeform = False
+3. Run as normal, the pipeline should use the deformed slides and put the new cuff on the geometry

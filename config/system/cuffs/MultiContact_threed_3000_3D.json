@@ -58,11 +58,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -83,11 +83,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -108,11 +108,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -133,11 +133,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -158,11 +158,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -183,11 +183,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -208,11 +208,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -233,11 +233,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -258,11 +258,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -283,11 +283,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -308,11 +308,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -333,11 +333,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     }
@@ -389,7 +389,7 @@
     },
     {
       "name": "R_in_MCT",
-      "expression": "max(r_nerve+thk_medium_gap_internal_MCT,r_cuff_in_pre_MCT)",
+      "expression": "max(r_nerve1+thk_medium_gap_internal_MCT,r_cuff_in_pre_MCT)",
       "description": ""
     },
     {
@@ -399,7 +399,7 @@
     },
     {
       "name": "L_MCT",
-      "expression": "5.5 [mm]",
+      "expression": "5.4 [mm]",
       "description": ""
     },
     {
@@ -459,7 +459,7 @@
     },
     {
       "name": "Recess_MCT",
-      "expression": "0 [mm]",
+      "expression": "0.05 [mm]",
       "description": ""
     },
     {
@@ -518,7 +518,7 @@
       "description": ""
     }
   ],
-  "zspan1": [-2750, 2750],
+  "zspan1": [-2700, 2700],
   "expandable": true,
   "fixed_point": "clockwise_end",
   "angle_to_contacts_deg": 180,

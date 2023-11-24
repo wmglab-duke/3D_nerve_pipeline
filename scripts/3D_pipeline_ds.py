@@ -57,7 +57,7 @@ args = parser.parse_args()
 if args.config_script is not None:
     configname = args.config_script
 else:
-    configname = '2LDS5def.json'
+    configname = '2LDS5def_MCT.json'
 config3d_path = os.path.join('..', 'config', configname)
 # %% defs
 pseudonym = os.path.splitext(os.path.split(configname)[-1])[0]
@@ -165,7 +165,9 @@ preproc = False
 
 imfills = False
 
-slidegen = False
+slidegen = True
+
+rundeform = False
 
 geometry = True
 
@@ -616,7 +618,7 @@ if slidegen:
         json.dump(model_config, f, indent=2)
     # %%
     # Run deformation algorithm
-    if deform_mode == DeformationMode.PHYSICS and not skipsave:
+    if deform_mode == DeformationMode.PHYSICS and not skipsave and rundeform:
         if False:
             assert 'Livanova' in model_config['cuff']['preset'], "Must use Livanova cuff for physics-based deformation"
         if not os.path.exists(params['path']['slides'] + '/doubledeform/deformed.sip'):
@@ -920,7 +922,7 @@ if slidegen:
 
     # %%
     # update new fascicle positions to slides
-    if deform_mode == DeformationMode.PHYSICS:
+    if deform_mode == DeformationMode.PHYSICS and rundeform:
         slides = deepcopy(slidesave)
         print('Deform postfix')
         defsection = slides[deformspan1[0] : deformspan2[1]]
@@ -990,7 +992,7 @@ if slidegen:
     # %%
     slides = deepcopy(slidesave)
     gc.collect()
-    if deform_mode == DeformationMode.PHYSICS:
+    if deform_mode == DeformationMode.PHYSICS and rundeform:
         slidemods = []
         # temp
         bottom = math.floor(slidespan1[0]) - transition_n
@@ -1055,32 +1057,31 @@ if slidegen:
         # TODO: rework to use new fascicle shape. smooth and then scale to original area
     # %% Compute parameters and generate comsol file
     os.chdir(os.path.split(scriptloc)[0])
-    if slidegen:
-        model_config["nerve_length"] = (len(slides)) * params["input"]["um_per_slice"]
-        # get medium params and save
-        model_config = compute_medium_params(model_config, len(slides), params["input"]["um_per_slice"])
-        with open(params['project_path'] + '/model.json', 'w') as f:
-            json.dump(model_config, f, indent=2)
+    model_config["nerve_length"] = (len(slides)) * params["input"]["um_per_slice"]
+    # get medium params and save
+    model_config = compute_medium_params(model_config, len(slides), params["input"]["um_per_slice"])
+    with open(params['project_path'] + '/model.json', 'w') as f:
+        json.dump(model_config, f, indent=2)
+    if not skipsave:
+        # save slides
+        print("Saving slides...")
+        with open(os.path.join(params['path']['slides'], 'slides.obj'), 'wb') as f:
+            pickle.dump(slides, f)
 
-    # save slides
-    print("Saving slides...")
-    with open(os.path.join(params['path']['slides'], 'slides.obj'), 'wb') as f:
-        pickle.dump(slides, f)
-
-    # save images now that deformation is complete
-    print("Generating output images...")
-    final_fmap = FascicleConnectivityMap(slides)
-    final_fmap.save_images(  # TODO: make this a static method
-        params['path']['slides'],
-        dims,
-        separate=True,
-        print_ids=False,
-        resize_factor=1 / params["output"]["image_um_per_px"],
-        id_font=params["output"]["id_font"],
-    )
-    # fill holes
-    for dire in ['p', 'n', 'i']:
-        fill_img_holes(os.path.join(params['path']['slides'], dire))
+        # save images now that deformation is complete
+        print("Generating output images...")
+        final_fmap = FascicleConnectivityMap(slides)
+        final_fmap.save_images(  # TODO: make this a static method
+            params['path']['slides'],
+            dims,
+            separate=True,
+            print_ids=False,
+            resize_factor=1 / params["output"]["image_um_per_px"],
+            id_font=params["output"]["id_font"],
+        )
+        # fill holes
+        for dire in ['p', 'n', 'i']:
+            fill_img_holes(os.path.join(params['path']['slides'], dire))
 # TODO: add fill holes to image export
 # %%
 if geometry:
@@ -1118,7 +1119,7 @@ if geometry:
     with open(os.path.join(params['path']['comsol'], 'stl', 'dommap.json'), 'w') as f:
         json.dump(dommap, f, indent=2)
 # %% temp check for cliffs
-if slidegen:
+if slidegen and not skipsave:
     params['openbuffer'] = 10
     openbuffer = params['openbuffer']  # distance in um that peri will be shrun kwhen checking for exposed endo
     w = (dims[0][1] - dims[0][0]) / params["output"]["image_um_per_px"]

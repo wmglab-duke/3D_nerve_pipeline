@@ -1998,6 +1998,7 @@ public class ModelWrapper {
             // assign cuff materials
             JSONArray materials = itemObject.getJSONArray("materials");
             for (Object o : materials) {
+                System.out.println(o);
                 int label_index = ((JSONObject) o).getInt("label_index");
                 String selection = myLabels[label_index];
                 String info = ((JSONObject) o).getString("info");
@@ -2026,6 +2027,7 @@ public class ModelWrapper {
                 // Need to record the domains associated with each cuff material. First set mat1 selection
                 //example: model.component("comp1").material("mat1").selection().named("geom1_pi6_csel7_dom");
                 try {
+                    System.out.println("getmats");
                     model
                         .component("comp1")
                         .material("mat1")
