@@ -1319,16 +1319,22 @@ for sli in slices:
         model_config = json.load(m)
     # read in min_radius set during slidegen step and set as r_nerve_override
     # TODO: if deformation set this to mean area under cuff used for deformation?
-    if params['input']['z-'] in sli:
-        if deform_mode == DeformationMode.PHYSICS:
-            model_config['3d_nerve_override'] = r1
+    # TODO make this more robust, but for now passing
+    if False:
+        if params['input']['z-'] in sli:
+            if deform_mode == DeformationMode.PHYSICS:
+                model_config['3d_nerve_override'] = r1
+            else:
+                model_config['3d_nerve_override'] = model_config['min_radius_enclosing_circle1']
         else:
-            model_config['3d_nerve_override'] = model_config['min_radius_enclosing_circle1']
+            if deform_mode == DeformationMode.PHYSICS:
+                model_config['3d_nerve_override'] = r2
+            else:
+                model_config['3d_nerve_override'] = model_config['min_radius_enclosing_circle2']
     else:
-        if deform_mode == DeformationMode.PHYSICS:
-            model_config['3d_nerve_override'] = r2
-        else:
-            model_config['3d_nerve_override'] = model_config['min_radius_enclosing_circle2']
+        print(
+            'NOTEWARNINGNOTE: skipping output of 3D nerve override, must manually put this value in model when running paired ASCENT models'
+        )
     with open(f"{params['path']['ascent']}/samples/{this_pseudo}/models/0/model.json", 'w') as m:
         model_config["cuff"]["preset"] = model_config["ascent_cuff"]
         json.dump(model_config, m, indent=2)
