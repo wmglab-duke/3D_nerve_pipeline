@@ -35,8 +35,8 @@ def run(args):
         import wmglab_neuron
     except ImportError:
         raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
-    assert wmglab_neuron.__version__ == '0.0.2', (
-        'wmglab_neuron version 0.0.2 required, your version is ' + wmglab_neuron.__version__
+    assert wmglab_neuron.__version__ in ['0.0.2','0.0.3'] (
+        'wmglab_neuron version 0.0.2 ore 0.0.3 required, your version is ' + wmglab_neuron.__version__
     )
 
     # create bin/ directory for storing compiled Java files if it does not yet exist
