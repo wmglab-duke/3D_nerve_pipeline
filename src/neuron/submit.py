@@ -188,7 +188,7 @@ def load(config_path: str):
     :param config_path: the string path to load up
     :return: json data (usually dict or list)
     """
-    with open(config_path, "r") as handle:
+    with open(config_path) as handle:
         return json.load(handle)
 
 
@@ -434,9 +434,9 @@ def submit_fibers(submission_context, submission_data):
                 print(f"Submitting locally to {cpus} CPUs")
 
             else:
-                cpus = multiprocessing.cpu_count() - 1
+                cpus = multiprocessing.cpu_count() / 2
                 warnings.warn(
-                    f"You did not define number of cores to use (-n), so proceeding with cpu_core_count-1={cpus}",
+                    f"You did not define number of cores to use (-n), so proceeding with cpu_core_count/2={cpus}",
                     stacklevel=2,
                 )
             os.chdir(sim_path)
