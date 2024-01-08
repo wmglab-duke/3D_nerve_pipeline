@@ -12,14 +12,12 @@ import argparse
 import json
 import multiprocessing
 import os
-import pickle
 import re
 import shutil
 import subprocess
 import sys
 import time
 import warnings
-from json import JSONDecodeError
 
 import numpy as np
 import pandas as pd
@@ -41,7 +39,7 @@ class ListAction(argparse.Action):
             with open(run_path + '/' + j) as f:
                 try:
                     rundata = json.load(f)
-                except JSONDecodeError as e:
+                except JSONDecodeError as e:  # noqa: F821
                     print(f'WARNING: Could not load {j}, check for syntax errors. Original error: {e}')
                     continue
                 data.append(
@@ -202,36 +200,6 @@ def ensure_dir(directory):
     os.makedirs(directory, exist_ok=True)
 
 
-def auto_compile(override: bool = False):
-    """Compile NEURON files if they have not been compiled yet.
-
-    :param override: if True, compile regardless of whether the files have already been compiled
-    :return: True if ran compilation, False if not
-    """
-    if (
-        (not os.path.exists(os.path.join('MOD_Files', 'x86_64', 'special')) and OS == 'UNIX-LIKE')
-        or (not os.path.exists(os.path.join('MOD_Files', 'nrnmech.dll')) and OS == 'WINDOWS')
-        or override
-    ):
-        print('compiling NEURON files...')
-        os.chdir(os.path.join('MOD_Files'))
-        exit_data = subprocess.run(['nrnivmodl'], shell=True, capture_output=True, text=True)
-        # note, nrnivmodl always returns 0, even if it fails
-        if (
-            exit_data.returncode != 0
-            or (not os.path.exists(os.path.join('x86_64', 'special')) and OS == 'UNIX-LIKE')
-            or (not os.path.exists(os.path.join('nrnmech.dll')) and OS == 'WINDOWS')
-        ):
-            print(exit_data.stderr)
-            sys.exit("Error in compiling of NEURON files. Exiting...")
-        os.chdir('..')
-        compiled = True
-    else:
-        print('skipped compile')
-        compiled = False
-    return compiled
-
-
 def get_diameter(my_inner_fiber_diam_key, my_inner_ind, my_fiber_ind):
     """Get the diameter of the fiber from the inner fiber diameter key.
 
@@ -367,79 +335,46 @@ def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
 
 
 def make_task(
-    sub_con: str,
     my_os: str,
+    sub_con: str,
     start_p: str,
     sim_p: str,
-    inner: int,
-    fiber: int,
-    top: float,
-    bottom: float,
-    diam: float,
-    deltaz: float,
-    axonnodes: int,
+    inner_ind: int,
+    fiber_ind: int,
+    potentials_path: str,
+    waveform_path: str,
+    n_sim: int,
 ):
     """Create shell script used to run a fiber simulation.
 
     :param sub_con: the string name of the submission context.
     :param my_os: the string name of the operating system
+    :param sub_con: the string name of the submission context
     :param start_p: the string path to the start_dir
     :param sim_p: the string path to the sim_dir
-    :param inner: the index of the inner this fiber is in
-    :param fiber: the index of the fiber this simulation is for
-    :param top: the upper threshold bound
-    :param bottom: the lower threshold bound
-    :param diam: the diameter of the fiber
-    :param deltaz: the deltaz for the fiber
-    :param axonnodes: the number of axon nodes
+    :param inner_ind: the index of the inner this fiber is in
+    :param fiber_ind: the index of the fiber this simulation is for
+    :param potentials_path: the string path to the potentials text file
+    :param waveform_path: the string path to the waveform text file
+    :param n_sim: the index of the n_sim
     """
     with open(start_p, 'w+') as handle:
+        lines = [
+            'cd ../../\n',
+            f'python -u run_controls.py '
+            f'\"{inner_ind}\" '
+            f'\"{fiber_ind}\" '
+            f'\"{potentials_path}\" '
+            f'\"{waveform_path}\" '
+            f'\"{sim_p}\" ',
+            f'\"{n_sim}\" ',
+        ]
+
         if my_os == 'UNIX-LIKE':
-            lines = [
-                '#!/bin/bash\n',
-                f'cd "{sim_p}\"\n',
-                'chmod a+rwx special\n',
-                './special -nobanner '
-                '-c \"strdef sim_path\" '
-                f'-c \"sim_path=\\\"{sim_p}\\\"\" '
-                f'-c \"inner_ind={inner}\" '
-                f'-c \"fiber_ind={fiber}\" '
-                f'-c \"stimamp_top={top}\" '
-                f'-c \"stimamp_bottom={bottom}\" '
-                f'-c \"fiberD={diam:.1f}\" '
-                f'-c \"deltaz={deltaz:.4f}\" '
-                f'-c \"axonnodes={axonnodes}\" '
-                '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n',
-            ]
-            if sub_con != 'cluster':
-                lines.remove(f'cd "{sim_p}\"\n')
+            lines.insert(0, '#!/bin/bash\n')
 
-            # copy special files ahead of time to avoid 'text file busy error'
-            if not os.path.exists('special'):
-                shutil.copy(os.path.join('MOD_Files', 'x86_64', 'special'), sim_p)
-
-        else:  # OS is 'WINDOWS'
-            sim_path_win = os.path.join(*sim_p.split(os.pathsep)).replace('\\', '\\\\')
-            main_path_win = os.getcwd().replace('\\', '/')
-            lines = [
-                'nrniv -nobanner '
-                f'-dll \"{main_path_win}/MOD_Files/nrnmech.dll\" '
-                '-c \"strdef sim_path\" '
-                f'-c \"sim_path=\\\"{sim_path_win}\"\" '
-                f'-c \"inner_ind={inner}\" '
-                f'-c \"fiber_ind={fiber}\" '
-                f'-c \"stimamp_top={top}\" '
-                f'-c \"stimamp_bottom={bottom}\" '
-                f'-c \"fiberD={diam:.1f}\" '
-                f'-c \"deltaz={deltaz:.4f}\" '
-                f'-c \"axonnodes={axonnodes}\" '
-                '-c \"saveflag_end_ap_times=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"saveflag_runtime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"saveflag_ap_loctime=0\" '  # for backwards compatible, overwritten in launch.hoc if 1
-                '-c \"load_file(\\\"launch.hoc\\\")\" blank.hoc\n'
-            ]
+            if sub_con == 'cluster':
+                lines.remove('cd ../../\n')
 
         handle.writelines(lines)
         handle.close()
@@ -608,64 +543,25 @@ def make_fiber_tasks(submission_list, submission_context):
         ]:
             ensure_dir(cur_dir)
 
-        # ensure blank.hoc exists
-        blank_path = os.path.join(sim_path, 'blank.hoc')
-        if not os.path.exists(blank_path):
-            with open(blank_path, 'w'):
-                pass
-
-        # load JSON file with bisection search amplitudes
-        n_sim = sim_name.split('_')[-1]
-        sim_config = load(os.path.join(sim_path, f'{n_sim}.json'))
-        fiber_model = sim_config['fibers']['mode']
-
-        # load the inner x fiber -> diam key saved in the n_sim folder
-        inner_fiber_diam_key_file = os.path.join(fibers_path, 'inner_fiber_diam_key.obj')
-        inner_fiber_diam_key = None
-        if os.path.exists(inner_fiber_diam_key_file):
-            with open(inner_fiber_diam_key_file, 'rb') as f:
-                inner_fiber_diam_key = pickle.load(f)
-            f.close()
-        else:
-            diameter = sim_config['fibers']['z_parameters']['diameter']
-
         for fiber_data in runfibers:
             inner_ind, fiber_ind = fiber_data['inner'], fiber_data['fiber']
 
-            if inner_fiber_diam_key is not None:
-                diameter = get_diameter(inner_fiber_diam_key, inner_ind, fiber_ind)
-            deltaz, neuron_flag = get_deltaz(fiber_model, diameter)
-
-            # get the axonnodes from data/inputs/inner{}_fiber{}.dat top line
-            fiber_ve_path = os.path.join(
-                fibers_path,
-                f'inner{inner_ind}_fiber{fiber_ind}.dat',
-            )
-            fiber_ve = np.loadtxt(fiber_ve_path)
-            n_fiber_coords = int(fiber_ve[0])
-
-            if neuron_flag == 2:
-                axonnodes = int(1 + (n_fiber_coords - 1) / 11)
-            elif neuron_flag == 3:
-                axonnodes = int(n_fiber_coords)
-
             start_path = f"{start_path_base}{fiber_data['job_number']}{'.sh' if OS == 'UNIX-LIKE' else '.bat'}"
 
-            stimamp_top, stimamp_bottom = get_thresh_bounds(sim_dir, sim_name, inner_ind)
-            if stimamp_top is not None and stimamp_bottom is not None:
-                make_task(
-                    submission_context,
-                    OS,
-                    start_path,
-                    sim_path,
-                    inner_ind,
-                    fiber_ind,
-                    stimamp_top,
-                    stimamp_bottom,
-                    diameter,
-                    deltaz,
-                    axonnodes,
-                )
+            potentials_path = os.path.join(sim_path, 'data', 'inputs', f'inner{inner_ind}_fiber{fiber_ind}.dat')
+            waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
+            n_sim = sim_name.split('_')[-1]
+            make_task(
+                OS,
+                submission_context,
+                start_path,
+                sim_path,
+                inner_ind,
+                fiber_ind,
+                potentials_path,
+                waveform_path,
+                n_sim,
+            )
 
 
 def make_run_sub_list(run_number: int):
@@ -819,8 +715,7 @@ def pre_submit_setup():
     if len(args.run_indices) == 0:
         sys.exit("Error: No run indices to use.")
     run_inds = args.run_indices
-    # compile MOD files if they have not yet been compiled
-    auto_compile(args.force_recompile)
+
     # check for submission context
     if args.cluster_submit:
         submission_context = 'cluster'
@@ -832,9 +727,37 @@ def pre_submit_setup():
     return run_inds, submission_context
 
 
+def get_installed_packages():
+    """Return a dictionary of all installed packages.
+
+    :return: dictionary (key: string pkg name; value: string version (e.g., "0.0.1"))
+    """
+    command = ["conda", "list"]
+    output = subprocess.check_output(command).decode("utf-8")
+    conda_data = output.splitlines()
+    packages = {}
+    for line in conda_data:
+        data = line.split()
+        if '#' not in data[0]:
+            packages[data[0]] = data[1]
+    return packages
+
+
 # main
 def main():
-    """Prepare fiber submissions and run NEURON sims."""
+    """Prepare fiber submissions and run NEURON sims.
+
+    :raises ImportError: if wmglab_neuron is not installed
+    """
+    # check for wmglab_neuron
+    try:
+        import wmglab_neuron
+    except ImportError:
+        raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
+    assert wmglab_neuron.__version__ == '0.0.2', (
+        'wmglab_neuron version 0.0.2 required, your version is ' + wmglab_neuron.__version__
+    )
+
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()
     # get list of simulations to be submitted

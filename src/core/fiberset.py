@@ -61,7 +61,7 @@ class FiberSet(Configurable, Saveable):
             SetupMode.NEW,
             Config.FIBER_Z,
             os.path.join('config', 'system', 'fiber_z.json'),
-        )
+        )  # todo: remove fiber_z.json and replace completely with fiber_z.py in wmglab_neuron
 
     def init_post_config(self):
         """Make sure Model and Simulation are configured.

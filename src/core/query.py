@@ -448,7 +448,7 @@ class Query(Configurable, Saveable):
 
         return pd.DataFrame(alldat)
 
-    def excel_output(  # noqa: C901
+    def excel_output(
         self,
         filepath: str,
         sample_keys=None,
@@ -470,7 +470,7 @@ class Query(Configurable, Saveable):
         :param: individual_indices: Include column for each index. Defaults tp True.
         :param: config_paths: Include column for each config path. Defaults to True.
         :param: column_width: Column width for Excel document. Defaults to None (system default).
-        :param: console_output: Print progress to console. Defaults to False.
+        :param: console_output: Print progress to console. Defaults to True.
         """
         sims: dict = {}
         sample_keys: List[list] = sample_keys if sample_keys else []
@@ -501,104 +501,43 @@ class Query(Configurable, Saveable):
 
                 # SIM
                 for sim_index in model_results.get('sims', []):
-                    sim_config_path = self.build_path(Config.SIM, indices=[sim_index])
-                    sim_config = self.load(sim_config_path)
-                    self.add(SetupMode.OLD, Config.SIM, sim_config)
-                    sim_object: Simulation = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
-                    sim_dir = self.build_path(
-                        Object.SIMULATION,
-                        [sample_index, model_index, sim_index],
-                        just_directory=True,
+                    sim_config_path, sim_dir, sim_object = self.handle_sim(
+                        sim_index,
+                        sample_index,
+                        model_index,
+                        console_output,
+                        sims,
+                        config_paths,
+                        sample_keys,
+                        model_keys,
+                        sim_keys,
+                        individual_indices,
                     )
-
-                    if console_output:
-                        print(f'\t\tsim: {sim_index}')
-
-                    # init sheet if necessary
-                    if str(sim_index) not in sims.keys():
-                        # base header
-                        sample_parts = [
-                            'Sample Index',
-                            *['->'.join(['sample'] + key) for key in sample_keys],
-                        ]
-                        model_parts = [
-                            'Model Index',
-                            *['->'.join(['model'] + key) for key in model_keys],
-                        ]
-                        sim_parts = [
-                            'Sim Index',
-                            *['->'.join(['sim'] + key) for key in sim_keys],
-                        ]
-                        header = [
-                            'Indices',
-                            *(sample_parts if individual_indices else sample_parts[1:]),
-                            *(model_parts if individual_indices else model_parts[1:]),
-                            *(sim_parts if individual_indices else sim_parts[1:]),
-                        ]
-                        if individual_indices:
-                            header += ['Nsim Index']
-                        # populate with nsim factors
-                        for fib_key_name in sim_object.fiberset_key:
-                            header.append(fib_key_name)
-                        for wave_key_name in sim_object.wave_key:
-                            header.append(wave_key_name)
-                        # add paths
-                        if config_paths:
-                            header += [
-                                'Sample Config Path',
-                                'Model Config Path',
-                                'Sim Config Path',
-                                'NSim Path',
-                            ]
-                        # set header as first row
-                        sims[str(sim_index)] = [header]
 
                     # NSIM
                     for nsim_index, (
                         potentials_product_index,
                         waveform_index,
                     ) in enumerate(sim_object.master_product_indices):
-                        nsim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
-                        (
-                            active_src_index,
-                            fiberset_index,
-                        ) = sim_object.potentials_product[potentials_product_index]
-                        # fetch additional sample, model, and sim values
-                        # that's one juicy list comprehension right there
-                        values = [
-                            [self.search(config, *key) for key in category]
-                            for category, config in zip(
-                                [sample_keys, model_keys, sim_keys],
-                                [Config.SAMPLE, Config.MODEL, Config.SIM],
-                            )
-                        ]
-                        # base row data
-                        sample_parts = [sample_index, *values[0]]
-                        model_parts = [model_index, *values[1]]
-                        sim_parts = [sim_index, *values[2]]
-                        row = [
-                            f'{sample_index}_{model_index}_{sim_index}_{nsim_index}',
-                            *(sample_parts if individual_indices else sample_parts[1:]),
-                            *(model_parts if individual_indices else model_parts[1:]),
-                            *(sim_parts if individual_indices else sim_parts[1:]),
-                        ]
-                        if individual_indices:
-                            row += [nsim_index]
-                        # populate factors (same order as header)
-                        for fib_key_value in sim_object.fiberset_product[fiberset_index]:
-                            row.append(fib_key_value)
-                        for wave_key_value in sim_object.wave_product[waveform_index]:
-                            row.append(wave_key_value)
-                        # add paths
-                        if config_paths:
-                            row += [
-                                sample_config_path,
-                                model_config_path,
-                                sim_config_path,
-                                nsim_dir,
-                            ]
-                        # add to sim sheet
-                        sims[str(sim_index)].append(row)
+                        self.handle_nsim(
+                            sim_dir,
+                            nsim_index,
+                            sim_object,
+                            potentials_product_index,
+                            sample_keys,
+                            model_keys,
+                            sim_keys,
+                            sample_index,
+                            model_index,
+                            sim_index,
+                            individual_indices,
+                            waveform_index,
+                            config_paths,
+                            sims,
+                            sample_config_path,
+                            model_config_path,
+                            sim_config_path,
+                        )
 
                     # "prune" old configs
                     self.remove(Config.SIM)
@@ -616,3 +555,129 @@ class Query(Configurable, Saveable):
                 writer.sheets[sheet_name].set_column(0, 256)
 
         writer.save()
+
+    def handle_sim(  # noqa: D102
+        self,
+        sim_index: int,
+        sample_index: int,
+        model_index: int,
+        console_output: bool,
+        sims: dict,
+        config_paths: str,
+        sample_keys: List[int] = None,
+        model_keys: List[int] = None,
+        sim_keys: List[int] = None,
+        individual_indices: bool = True,
+    ):
+        sim_config_path = self.build_path(Config.SIM, indices=[sim_index])
+        sim_config = self.load(sim_config_path)
+        self.add(SetupMode.OLD, Config.SIM, sim_config)
+        sim_object: Simulation = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
+        sim_dir = self.build_path(
+            Object.SIMULATION,
+            [sample_index, model_index, sim_index],
+            just_directory=True,
+        )
+        if console_output:
+            print(f'\t\tsim: {sim_index}')
+        # init sheet if necessary
+        if str(sim_index) not in sims.keys():
+            # base header
+            sample_parts = [
+                'Sample Index',
+                *['->'.join(['sample'] + key) for key in sample_keys],
+            ]
+            model_parts = [
+                'Model Index',
+                *['->'.join(['model'] + key) for key in model_keys],
+            ]
+            sim_parts = [
+                'Sim Index',
+                *['->'.join(['sim'] + key) for key in sim_keys],
+            ]
+            header = [
+                'Indices',
+                *(sample_parts if individual_indices else sample_parts[1:]),
+                *(model_parts if individual_indices else model_parts[1:]),
+                *(sim_parts if individual_indices else sim_parts[1:]),
+            ]
+            if individual_indices:
+                header += ['Nsim Index']
+            # populate with nsim factors
+            for fib_key_name in sim_object.fiberset_key:
+                header.append(fib_key_name)
+            for wave_key_name in sim_object.wave_key:
+                header.append(wave_key_name)
+            # add paths
+            if config_paths:
+                header += [
+                    'Sample Config Path',
+                    'Model Config Path',
+                    'Sim Config Path',
+                    'NSim Path',
+                ]
+            # set header as first row
+            sims[str(sim_index)] = [header]
+        return sim_config_path, sim_dir, sim_object
+
+    def handle_nsim(  # noqa: D102
+        self,
+        sim_dir: str,
+        nsim_index: int,
+        sim_object: Simulation,
+        potentials_product_index: int,
+        sample_keys: List,
+        model_keys: List,
+        sim_keys: List,
+        sample_index: int,
+        model_index: int,
+        sim_index: int,
+        individual_indices: bool,
+        waveform_index: int,
+        config_paths: bool,
+        sims: List[str],
+        sample_config_path: str,
+        model_config_path: str,
+        sim_config_path: str,
+    ):
+        nsim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
+        (
+            active_src_index,
+            fiberset_index,
+        ) = sim_object.potentials_product[potentials_product_index]
+        # fetch additional sample, model, and sim values
+        # that's one juicy list comprehension right there
+        values = [
+            [self.search(config, *key) for key in category]
+            for category, config in zip(
+                [sample_keys, model_keys, sim_keys],
+                [Config.SAMPLE, Config.MODEL, Config.SIM],
+            )
+        ]
+        # base row data
+        sample_parts = [sample_index, *values[0]]
+        model_parts = [model_index, *values[1]]
+        sim_parts = [sim_index, *values[2]]
+        row = [
+            f'{sample_index}_{model_index}_{sim_index}_{nsim_index}',
+            *(sample_parts if individual_indices else sample_parts[1:]),
+            *(model_parts if individual_indices else model_parts[1:]),
+            *(sim_parts if individual_indices else sim_parts[1:]),
+        ]
+        if individual_indices:
+            row += [nsim_index]
+        # populate factors (same order as header)
+        for fib_key_value in sim_object.fiberset_product[fiberset_index]:
+            row.append(fib_key_value)
+        for wave_key_value in sim_object.wave_product[waveform_index]:
+            row.append(wave_key_value)
+        # add paths
+        if config_paths:
+            row += [
+                sample_config_path,
+                model_config_path,
+                sim_config_path,
+                nsim_dir,
+            ]
+        # add to sim sheet
+        sims[str(sim_index)].append(row)

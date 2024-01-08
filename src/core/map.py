@@ -58,7 +58,6 @@ class Map(Configurable):
 
     def __init__(self):
         """Initialize Map object."""
-
         # set up super class
         Configurable.__init__(self)
         self.slides = None

@@ -27,7 +27,6 @@ from src.core import Sample
 from src.utils import Config, Configurable, Env, ExportMode, IncompatibleParametersError, Saveable, SetupMode, WriteMode
 
 from .fiberset import FiberSet
-from .hocwriter import HocWriter
 from .waveform import Waveform
 
 
@@ -341,13 +340,6 @@ class Simulation(Configurable, Saveable):
         # save the paired down simulation config to its corresponding neuron simulation t folder
         with open(os.path.join(sim_dir, str(sim_num), "n_sims", str(t), f"{t}.json"), "w") as handle:
             handle.write(json.dumps(sim_copy, indent=2))
-        n_tsteps = len(self.waveforms[waveform_ind].wave)
-        # add config and write launch.hoc
-        n_sim_dir = os.path.join(sim_dir, str(sim_num), "n_sims", str(t))
-        hocwriter = HocWriter(os.path.join(sim_dir, str(sim_num)), n_sim_dir)
-        hocwriter.add(SetupMode.OLD, Config.MODEL, self.configs[Config.MODEL.value]).add(
-            SetupMode.OLD, Config.SIM, sim_copy
-        ).add(SetupMode.OLD, Config.CLI_ARGS, self.configs[Config.CLI_ARGS.value]).build_hoc(n_tsteps)
         return active_src_vals[0], fiberset_ind, nsim_inputs_directory
 
     def get_bases(self, file: str, sim_dir: str, source_sim: int, fiberset_ind: int = None):
@@ -703,6 +695,11 @@ class Simulation(Configurable, Saveable):
 
             shutil.copytree(os.path.join(sim_dir, product_index), sim_export_base + product_index)
 
+            # need to export model.json file to get temperature value for fiber simulation
+            src = os.path.join(os.getcwd(), 'samples', str(sample), 'models', str(model), 'model.json')
+            dst = os.path.join(sim_export_base + product_index, 'model.json')
+            shutil.copy(src, dst)
+
     @staticmethod
     def export_neuron_files(target: str):
         """Export the neuron files to the target directory.
@@ -729,28 +726,20 @@ class Simulation(Configurable, Saveable):
         shutil.copy2(submit_source, submit_target)
 
     @staticmethod
-    def export_system_config_files(target: str):
-        """Export the system config files to the target directory.
+    def export_slurm_files(target: str):
+        """Export required slurm files to the target directory.
 
         :param target: Target directory
         """
         # make NSIM_EXPORT_PATH (defined in Env.json) directory if it does not yet exist
         os.makedirs(target, exist_ok=True)
 
-        # fiber_z.json files
-        shutil.copy2(
-            os.path.join(os.environ[Env.PROJECT_PATH.value], 'config', 'system', 'fiber_z.json'),
-            target,
-        )
-        shutil.copy2(
-            os.path.join(
-                os.environ[Env.PROJECT_PATH.value],
-                'config',
-                'system',
-                'slurm_params.json',
-            ),
-            target,
-        )
+        slurm_target = os.path.join(target, 'slurm_params.json')
+        if os.path.isfile(slurm_target):
+            os.remove(slurm_target)
+
+        slurm_source = os.path.join('config', 'system', 'slurm_params.json')
+        shutil.copy2(slurm_source, slurm_target)
 
     @staticmethod
     def import_n_sims(
