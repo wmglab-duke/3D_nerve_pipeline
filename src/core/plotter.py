@@ -616,7 +616,7 @@ def datamatch_merge(dest, dat3d, importval, merge_cols):
     merged = dest.merge(dat3d[merge_cols + [importval]], on=merge_cols, how="left", suffixes=["", "3d"])
 
     if merged[importval + "3d"].isna().any():
-        raise RuntimeError('No match for master fiber index.')
+        raise RuntimeError('Found nan value after merge.')
 
     return merged
 

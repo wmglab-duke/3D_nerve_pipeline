@@ -534,7 +534,8 @@ class FiberSet(Configurable, Saveable):
                 fiber = points[i]
                 if not Point(fiber).within(unary_union(innershapes)):
                     if (
-                        not True or Point(fiber).distance(unary_union(innershapes)) > 2 * buffer
+                        # not True or Point(fiber).distance(unary_union(innershapes)) > 2 * buffer
+                        False
                     ):  # TODO add point adjust param and buffer amt, also wrap this in funciton
                         # plt.scatter(fiber[0], fiber[1])
                         # self.sample.slides[0].plot()
@@ -547,6 +548,11 @@ class FiberSet(Configurable, Saveable):
                         movedist = (
                             Point(fiber).distance(correct_fascicle) + buffer
                         )  # TODO add some leeway instead of doing +5 micron
+                        if movedist > 10 + buffer:
+                            if movedist < 50:
+                                warnings.warn(f"Moved a fiber by {movedist} microns.", stacklevel=2)
+                            else:
+                                raise RuntimeError(f"Correction would move {movedist} microns")
                         dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                         newpoint = distpoint(fiber, dest, movedist)
                         try:

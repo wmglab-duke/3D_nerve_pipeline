@@ -134,6 +134,8 @@ def main(
 
             time_total += time_individual
 
+    print('Total runtime:', time.time() - start_time)
+
 
 def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimulation: ScaledStim):
     """Prepare for bisection threshold search.

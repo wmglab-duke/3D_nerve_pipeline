@@ -25,7 +25,7 @@ from src.utils import Object
 criteria = {
     'partial_matches': True,
     'include_downstream': False,
-    'indices': {'sample': [571], 'model': None, 'sim': None},
+    'indices': {'sample': [6729], 'model': None, 'sim': None},
 }
 
 
@@ -55,11 +55,25 @@ plt.xlabel('\u03bcm')
 plt.ylabel('\u03bcm')
 
 # load contact coordinates
-dir = r'D:\threed_ascent\input\contact_coords\5RDS5'
-for i in range(2):
+dir = r'D:\threed_final\input\contact_coords\6RdefDS5'
+for i in [1]:  # NOTE set this to only load caudal coords
     contact_coords = np.loadtxt(dir + r'\pcs' + str(i + 1) + '.txt', skiprows=8)[:, :2]
     plt.scatter(contact_coords[:, 0], contact_coords[:, 1], color='k', label='contacts' if i == 0 else '_')
     plt.legend()
 plt.show()
 fname = str(sample_index)
 fmt = 'svg'
+
+# plot fascicle ECD
+ECD = {i: f.ecd() for i, f in enumerate(slide.inners())}
+colors = [to_hex(cmap(i)) for i in range(len(slide.inners()))]
+# plot sxcatterplot of ECD with x=0 for all
+fig, ax = plt.subplots(1, 1)
+for i, ecd in ECD.items():
+    ax.scatter(0, ecd, color=colors[i], marker='s', s=100)
+    ax.scatter(0, ecd, color='black', marker='_', s=100)
+plt.gca().set_aspect(0.0015)
+plt.xticks([], [])
+plt.ylabel('fascicle diameter (μm)')
+plt.ylim(0, 1000)
+plt.show()

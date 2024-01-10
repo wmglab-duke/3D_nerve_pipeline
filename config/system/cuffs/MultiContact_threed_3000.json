@@ -59,11 +59,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -84,11 +84,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -109,11 +109,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -134,11 +134,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -159,11 +159,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -184,11 +184,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -209,11 +209,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -234,11 +234,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -259,11 +259,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -284,11 +284,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -309,11 +309,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     },
@@ -334,11 +334,11 @@
       "materials": [
         {
           "info": "conductor",
-          "label_index": 3
+          "label_index": 6
         },
         {
           "info": "recess",
-          "label_index": 4
+          "label_index": 2
         }
       ]
     }
@@ -432,7 +432,7 @@
     },
     {
       "name": "Recess_MCT",
-      "expression": "0 [mm]",
+      "expression": "0.05 [mm]",
       "description": ""
     },
     {

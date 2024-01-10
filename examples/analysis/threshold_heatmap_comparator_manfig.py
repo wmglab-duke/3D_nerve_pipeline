@@ -15,13 +15,17 @@ os.chdir('../..')
 import json
 
 import matplotlib.pyplot as plt
+import numpy as np
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
-samp2ds = [5719]
+samp2ds = [572, 5729, 5721]
 model = 0
-simint = 3
-samp3ds = [573]
+simint = 333
+samp3ds = [573, 573, 5731]
+pairnames = ["Undeformed", "ASCENT", "Structural"]
+slidenames = ['6RDS5', '6RdefDS5', '6RdefDS5']
+
 import matplotlib.colors as mplcolors
 import pandas as pd
 import seaborn as sns
@@ -70,7 +74,7 @@ plasmap = colormaps['plasma']
 plasmap.set_bad(color='w')
 plasmap = plasmap.reversed()
 # %%
-for samp2d, samp3d in zip(samp2ds, samp3ds):
+for samp2d, samp3d, pairname, slidename in zip(samp2ds, samp3ds, pairnames, slidenames):
     q = Query(
         {
             'partial_matches': True,
@@ -109,6 +113,7 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     drdat = drdat.rename(columns={'samplenum': 'sample'})
 
     # %%plot heatmaps
+    titles = [f'2DEM\n{pairname}', '3DM']
     g = sns.FacetGrid(threshdat, row='fiber_diam', col='sample', sharex=False, sharey=False, margin_titles=True)
     g.map(
         heatmaps,
@@ -125,15 +130,21 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     maxsave = threshdat.threshold.max()
     g.set_xlabels('')
     g.set_ylabels('')
-    g.set_titles(col_template="", row_template='')
-    for ax, name in zip(g.axes[0, :], ['2DEM\n3D-3D', '3DM']):
-        # TODO get title and infer name from whether there is a 3
-        ax.set_title(name)
+    g.set_titles(col_template="{col_name}", row_template='')
+    for ax in g.axes[0, :]:
+        thename = titles[0] if ax.get_title()[2] != '3' else titles[1]
+        ax.set_title(thename)
     add_thresh_colorbar(
         g.axes,
         threshdat.threshold.min(),
         threshdat.threshold.max(),
     )
+    # load contact coordinates
+    dire = rf'D:\threed_final\input\contact_coords\{slidename}'
+    for i in [1]:
+        contact_coords = np.loadtxt(dire + r'\pcs' + str(i + 1) + '.txt', skiprows=8)[:, :2]
+        for ax in g.axes.ravel():
+            ax.scatter(contact_coords[:, 0], contact_coords[:, 1], s=1, color='k', label='contacts' if i == 0 else '_')
 
     # plot activation order
     drdat['threshold'] = drdat['percent_activated']
@@ -150,16 +161,24 @@ for samp2d, samp3d in zip(samp2ds, samp3ds):
     add_act_colorbar(g.axes)
     g.set_xlabels('')
     g.set_ylabels('')
-    g.set_titles(col_template="", row_template='')
-    for ax, name in zip(g.axes[0, :], ['2DEM\n3D-3D', '3DM']):
-        ax.set_title(name)
-
+    g.set_titles(col_template="{col_name}", row_template='')
+    for ax in g.axes[0, :]:
+        thename = titles[0] if ax.get_title()[2] != '3' else titles[1]
+        ax.set_title(thename)
+    # load contact coordinates
+    dire = rf'D:\threed_final\input\contact_coords\{slidename}'
+    for i in [1]:
+        contact_coords = np.loadtxt(dire + r'\pcs' + str(i + 1) + '.txt', skiprows=8)[:, :2]
+        for ax in g.axes.ravel():
+            ax.scatter(contact_coords[:, 0], contact_coords[:, 1], s=1, color='k', label='contacts' if i == 0 else '_')
 # %%
 
-samp2d = 5719
+samp2d = samp2ds[1]
 model = 0
 simint = 3
-samp3d = 573
+samp3d = samp3ds[1]
+titles = [f'2DEM\n{pairnames[1]}', '3DM Undeformed']
+
 import pandas as pd
 import seaborn as sns
 from src.utils import Object
@@ -187,7 +206,7 @@ sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
 threshdat = pd.concat([dat2d, dat3d])
 # %%
 threshdat.query('nsim==0', inplace=True)
-g = sns.FacetGrid(threshdat, row='nsim', col='sample', sharex=False, sharey=False)
+g = sns.FacetGrid(threshdat, col='sample', sharex=False, sharey=False)
 g.map(
     heatmaps,
     *threshdat.columns,
@@ -198,8 +217,21 @@ g.map(
     max_thresh=maxsave,
     colorbar=False,
 )
-g.set_xlabels('')
 g.set_ylabels('')
-g.set_titles('')
-for ax, name in zip(g.axes[0, :], ['3DM (UD)', '2DEM\n2D-3D']):
-    ax.set_title(name)
+g.set_xlabels('')
+
+g.set_titles(col_template="{col_name}", row_template='')
+for ax in g.axes[0, :]:
+    thename = titles[0] if ax.get_title()[2] != '3' else titles[1]
+    ax.set_title(thename)
+add_thresh_colorbar(
+    g.axes,
+    minsave,
+    maxsave,
+)
+# load contact coordinates
+dire = rf'D:\threed_final\input\contact_coords\{slidename}'
+for i in [1]:
+    contact_coords = np.loadtxt(dire + r'\pcs' + str(i + 1) + '.txt', skiprows=8)[:, :2]
+    for ax in g.axes.ravel():
+        ax.scatter(contact_coords[:, 0], contact_coords[:, 1], s=1, color='k', label='contacts' if i == 0 else '_')

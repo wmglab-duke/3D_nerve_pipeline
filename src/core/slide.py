@@ -360,30 +360,33 @@ class Slide:
             ax.set_ylabel(axlabel)
 
         if scalebar:
-            # apply aspect for correct scaling
-            ax.apply_aspect()
-            # convert scalebar length to meters and calculat span across axes
-            quantity = Quantity(scalebar_length, scalebar_units, scale='m')
-            scalespan = quantity.scale('micron') / np.diff(ax.get_xlim())[0]
-            # add scalebar and label
-            ax.add_patch(
-                plt.Rectangle(
-                    (0.99, 0.02), -scalespan, 0.02, fill='black', facecolor='black', linewidth=0, transform=ax.transAxes
-                )
-            )
-            ax.text(
-                0.99,
-                0.05,
-                f'{scalebar_length} {scalebar_units}',
-                horizontalalignment='right',
-                verticalalignment='bottom',
-                transform=ax.transAxes,
-                color='black',
-            )
+            self.add_scalebar(ax, scalebar_length, scalebar_units)
 
         # if final plot, show
         if final:
             plt.show()
+
+    def add_scalebar(self, ax, scalebar_length: float = 1, scalebar_units: str = 'mm'):
+        # apply aspect for correct scaling
+        ax.apply_aspect()
+        # convert scalebar length to meters and calculat span across axes
+        quantity = Quantity(scalebar_length, scalebar_units, scale='m')
+        scalespan = quantity.scale('micron') / np.diff(ax.get_xlim())[0]
+        # add scalebar and label
+        ax.add_patch(
+            plt.Rectangle(
+                (0.99, 0.02), -scalespan, 0.02, fill='black', facecolor='black', linewidth=0, transform=ax.transAxes
+            )
+        )
+        ax.text(
+            0.99,
+            0.05,
+            f'{scalebar_length} {scalebar_units}',
+            horizontalalignment='right',
+            verticalalignment='bottom',
+            transform=ax.transAxes,
+            color='black',
+        )
 
     def scale(self, factor: float):
         """Scale the nerve and fascicles by a factor.

@@ -55,12 +55,12 @@ import shutil
 os.chdir('..')
 
 if c == 'm':
-    samples = [370, 3701, 3719, 3721, 650]
+    samples = [570, 571, 572, 670, 671, 672, 5701, 5709, 5711, 5719, 5721, 5729, 6701, 6709, 6711, 6719, 6721, 6729]
     models = [0]
 
-    change = ['inner_interp_tol']
+    change = ['cuff', 'preset']
 
-    newval = 0.015
+    newval = 'LivaNova2000_v2.json'
 
     clear = False
 
@@ -164,7 +164,7 @@ elif c == 'r':
     print(str([int(x) for x in runlist]).replace(',', ''))
 
     # newval = [3, 7, 10,11,20,30]
-    newval = [3, 10]
+    newval = [3, 333, 330, 332]
 
     for run in runlist:
         # change, newval = param_picker(path + f'/{run}.json')

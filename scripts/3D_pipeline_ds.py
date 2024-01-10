@@ -57,7 +57,7 @@ args = parser.parse_args()
 if args.config_script is not None:
     configname = args.config_script
 else:
-    configname = '2LDS5def_MCT.json'
+    configname = '5RDS5def_MCT.json'
 config3d_path = os.path.join('..', 'config', configname)
 # %% defs
 pseudonym = os.path.splitext(os.path.split(configname)[-1])[0]
@@ -165,23 +165,25 @@ preproc = False
 
 imfills = False
 
-slidegen = True
+slidegen = False
 
 rundeform = False
 
-geometry = True
+geometry = False
 
-mesh = True
+mesh = False
 
 model = False
 
 fibergen = False
 
-extract = False
+extract = True
 
-quit_premesh = True
+skip_getpots = True
 
-no_remesh = False
+quit_premesh = False
+
+no_remesh = True
 
 skipsave = True
 
@@ -1280,17 +1282,13 @@ if model and run_config['submission_context'] == "cluster":
     np.savetxt(params['path']['comsol'] + '/solve_hours.dat', [solve_hours])
 # %%Set up ascent directory and prep for fibersets
 print('Generating files for ascent')
+if os.path.exists(params['path']['ascent']):
+    shutil.rmtree(params['path']['ascent'])
 os.chdir(root)
 configdir = os.path.split(params['config']['path'])[1]
-slices = [
-    params['input']['z-'],
-    'center',
-    params['input']['z+'],
-    params['input']['z+'] + '+1mm',
-    params['input']['z+'] + '-1mm',
-    params['input']['z-'] + '+1mm',
-    params['input']['z-'] + '-1mm',
-]
+zlocs = params['output']['slices']
+slices = zlocs.keys()
+
 ensure_dir(params['path']['fibers'] + '/3D_fiberset')
 ensure_dir(params['path']['ascent'] + '/inputs')
 ensure_dir(params['path']['ascent'] + '/samples')
@@ -1351,15 +1349,6 @@ for sli in slices:
     for file in os.listdir(params['path']['comsol'] + '/pcs'):
         if file.startswith('pcs'):
             zs.append(np.loadtxt(params['path']['comsol'] + '/pcs/' + file)[-1])
-zlocs = {
-    slices[0]: min(zs),
-    slices[1]: np.mean(zs),
-    slices[2]: max(zs),
-    slices[3]: max(zs) + 1000,
-    slices[4]: max(zs) - 1000,
-    slices[5]: min(zs) + 1000,
-    slices[6]: min(zs) - 1000,
-}
 with open(params['path']['fibers'] + '/zlocs.json', 'w') as f:
     json.dump(zlocs, f, indent=2)
 zslices = {}
@@ -1375,9 +1364,8 @@ for sli, zval in zlocs.items():
         )
 with open(params['path']['fibers'] + '/zslices.json', 'w') as f:
     json.dump(zslices, f, indent=2)
-shutil.copyfile(f"{configdir}/sim.json", f"{params['path']['ascent']}/sim.json")
-
-
+shutil.copyfile(params['path']['fibers'] + '/zslices.json', params['path']['ascent'] + '/zslices.json')
+shutil.copyfile(params['path']['fibers'] + '/zlocs.json', params['path']['ascent'] + '/zlocs.json')
 # %% generate fiberset and extract all potentials
 
 
@@ -1519,13 +1507,16 @@ if extract:
         fibers = params['path']['fibers'] + '/3D_fiberset'
         out = params['path']['comsol'] + f'/potentials/{i}'
         ensure_dir(out)
-        get_pots(mph, fibers, out)
+        if not skip_getpots:
+            get_pots(mph, fibers, out)
         if os.path.exists(params['path']['ascent'] + f'/samples/3D/models/0/sims/3/ss_bases/{i}'):
             shutil.rmtree(params['path']['ascent'] + f'/samples/3D/models/0/sims/3/ss_bases/{i}')
         shutil.copytree(out, params['path']['ascent'] + f'/samples/3D/models/0/sims/3/ss_bases/{i}')
     shutil.copytree(fibers, params['path']['ascent'] + '/samples/3D/models/0/sims/3/3D_fiberset')
-    ensure_dir(params['project_path'] + '/out')
+    ensure_dir(env['THREED_DATA_EXPORT_PATH'])
     # copy ascent output from ascent path to out
-    shutil.copytree(params['path']['ascent'], params['project_path'] + f'/out/{pseudonym}')
+    if os.path.exists(env['THREED_DATA_EXPORT_PATH'] + f'/{pseudonym}'):
+        shutil.rmtree(env['THREED_DATA_EXPORT_PATH'] + f'/{pseudonym}')
+    shutil.copytree(params['path']['ascent'], env['THREED_DATA_EXPORT_PATH'] + f'/{pseudonym}')
 # %%
 print('fin')
