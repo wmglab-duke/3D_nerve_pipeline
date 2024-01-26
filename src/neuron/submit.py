@@ -361,7 +361,7 @@ def make_task(
     with open(start_p, 'w+') as handle:
         lines = [
             'cd ../../\n',
-            f'python run_controls.py '
+            f'python -u run_controls.py '
             f'\"{inner_ind}\" '
             f'\"{fiber_ind}\" '
             f'\"{potentials_path}\" '
