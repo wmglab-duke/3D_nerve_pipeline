@@ -434,9 +434,9 @@ def submit_fibers(submission_context, submission_data):
                 print(f"Submitting locally to {cpus} CPUs")
 
             else:
-                cpus = multiprocessing.cpu_count() / 2
+                cpus = int(multiprocessing.cpu_count() / 2)
                 warnings.warn(
-                    f"You did not define number of cores to use (-n), so proceeding with cpu_core_count/2={cpus}",
+                    f"You did not define number of cores to use (-n), so proceeding with int(cpu_core_count/2)={cpus}",
                     stacklevel=2,
                 )
             os.chdir(sim_path)
@@ -754,7 +754,7 @@ def main():
         import wmglab_neuron
     except ImportError:
         raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
-    assert wmglab_neuron.__version__ in ['0.0.2','0.0.3'] (
+    assert wmglab_neuron.__version__ in ['0.0.2', '0.0.3'], (
         'wmglab_neuron version 0.0.2 or 0.0.3 required, your version is ' + wmglab_neuron.__version__
     )
 
