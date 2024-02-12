@@ -71,7 +71,7 @@ for sample, samp3d, nerve_label in zip(
     # ['2L'],
     [2521, 3721, 5721, 6721],
     [253, 373, 573, 653, 673],
-    ['2Ldef', '3Rdef', '5Rdef', '6Rdef']
+    ['2Ldef', '3Rdef', '5Rdef', '6Rdef'],
     # [2529, 3729, 5729, 6729], [2531, 3731, 5731, 6531, 6731], ['2Lasc', '3Rasc', '5Rasc', '6Rasc']
 ):
     sim_object = Query.get_object(Object.SIMULATION, [sample, model, sim])

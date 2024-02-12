@@ -12,6 +12,7 @@ Apply more squeeze to nerve than sep so then there is wiggle room for separation
 can also grow fascicles before doing the sep and then shrink them after for separation
 May need to change contact type to symmetric
 """
+
 import json
 import os
 

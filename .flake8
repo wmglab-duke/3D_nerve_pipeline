@@ -1,7 +1,9 @@
 [flake8]
-ignore = E203, W503, # Black compatibility
-    #place additional ignores here
-    #TODO Remove this ignore once this branch is to be merged into master
+ignore =
+    # Black compatibility
+    E203, W503,
+    # place additional ignores here
+    # TODO Remove this ignore once this branch is to be merged into master
     E800
 per-file-ignores =
     __init__.py: F401, F403
@@ -10,5 +12,6 @@ per-file-ignores =
 docstring-style: SPHINX
 max-line-length = 120
 max-complexity = 18
-extend-ignore = D, RST, DAR, C, F405, F403 #this is temporary for 3d
+# this extend ignore is temporary for 3d
+extend-ignore = D, RST, DAR, C, F405, F403
 exclude = examples/*

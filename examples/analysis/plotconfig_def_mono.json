@@ -1,0 +1,59 @@
+{
+  "source_sim": 3,
+  "sample_data": [
+    {
+      "name": "2Ldef",
+      "index3d": 2531,
+      "exsamples": [2501, 2511, 2521]
+    },
+    {
+      "name": "3Rdef",
+      "index3d": 3731,
+      "exsamples": [3701, 3711, 3721]
+    },
+    {
+      "name": "5Rdef",
+      "index3d": 5731,
+      "exsamples": [5701, 5711, 5721]
+    },
+    {
+      "name": "6Rdef",
+      "index3d": 6731,
+      "exsamples": [6701, 6711, 6721]
+    },
+    {
+      "name": "2Lasc",
+      "index3d": 253,
+      "exsamples": [2509, 2519, 2529]
+    },
+    {
+      "name": "3Rasc",
+      "index3d": 373,
+      "exsamples": [3709, 3719, 3729]
+    },
+    {
+      "name": "5Rasc",
+      "index3d": 573,
+      "exsamples": [5709, 5719, 5729]
+    },
+    {
+      "name": "6Rasc",
+      "index3d": 673,
+      "exsamples": [6709, 6719, 6729]
+    }
+  ],
+  "sim_data": {
+    "330": {
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.2,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.2,
+          "fiber_diam": 13
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "source_sim": 3,
+  "sample_data": [
+    {
+      "name": "2L_MCT",
+      "index3d": 25312,
+      "exsamples": [25212]
+    },
+    {
+      "name": "3R_MCT",
+      "index3d": 37312,
+      "exsamples": [37212]
+    },
+    {
+      "name": "5R_MCT",
+      "index3d": 57312,
+      "exsamples": [57212]
+    },
+    {
+      "name": "6R_MCT",
+      "index3d": 67312,
+      "exsamples": [67212]
+    }
+  ],
+  "sim_data": {
+    "121": {
+      "nsim_key": {
+        "0": {
+          "pulse_width": 0.2,
+          "fiber_diam": 3
+        },
+        "1": {
+          "pulse_width": 0.2,
+          "fiber_diam": 13
+        },
+        "2": {
+          "pulse_width": 0.2,
+          "fiber_diam": 3
+        },
+        "3": {
+          "pulse_width": 0.2,
+          "fiber_diam": 13
+        },
+        "4": {
+          "pulse_width": 0.2,
+          "fiber_diam": 3
+        },
+        "5": {
+          "pulse_width": 0.2,
+          "fiber_diam": 13
+        },
+        "6": {
+          "pulse_width": 0.2,
+          "fiber_diam": 3
+        },
+        "7": {
+          "pulse_width": 0.2,
+          "fiber_diam": 13
+        }
+      }
+    }
+  }
+}

@@ -2,6 +2,7 @@
 
 @author: Daniel
 """
+
 # TODO: make this into a video animation
 import os
 import pickle
