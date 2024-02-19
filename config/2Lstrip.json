@@ -20,21 +20,21 @@
     "um_per_px": 10,
     "um_per_slice": 20,
     "z+": "caudal",
-    "z-": "rostral",
-    "destepped": true
+    "z-": "rostral"
   },
   "preprocess": {
     "upsample_z": 1,
     "buffer": 10,
-    "crop": "True",
-    "center_target": "nerve",
     "nsmoothing": 25,
     "fsmoothing": 10
   },
   "output": {
     "image_um_per_px": 5,
     "id_font": 60,
-    "addl_cuff_buffer": 0
+    "addl_cuff_buffer": 0,
+    "slices": {
+      "center": 29051
+    }
   },
   "mesh": {
     "min_edge_length": 0.01,
@@ -46,5 +46,6 @@
     "smooth_against_background": true,
     "second_order": true,
     "use_nastran": false
-  }
+  },
+  "project_path": "D:\\threed_final\\datanew\\2Lstrip"
 }
