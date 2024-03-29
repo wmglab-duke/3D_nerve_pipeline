@@ -23,6 +23,7 @@
 Note: Simpleware will only run if there is a display, so on the cluster this must be run in a DCC desktop session.
 Note2: If using Imthera cuff, your 3D config must have `"use_nastran": true` in your mesh block. If using Livanova, this must be absent or false. Other cuffs are not tested.
 Note3: examples/3D has a mock nerve which can be used for local runs
+Note4: When generating a sim json config file for the ascent run, keep in mind that the 3D pipeline is currently hard coded to save the super sampled bases (`ss_bases/`) into the `3D/models/0/sims/3/` folder. Therefore, the sim file you create should be set up to use the super sampled bases from `"source_sim":3`.
 
 # Deformation
 
