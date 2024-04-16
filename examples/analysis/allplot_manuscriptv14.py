@@ -1,3 +1,8 @@
+"""Created on Wed Mar  6 12:35:05 2024.
+
+@author: dpm42
+"""
+
 import json
 import os
 
@@ -7,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
 from scipy import stats
 from scipy.stats import pearsonr, sem, variation
@@ -15,7 +19,6 @@ from scipy.stats import pearsonr, sem, variation
 os.chdir("../../")
 import sys
 
-from matplotlib.colors import to_hex
 from src.core import Sample
 from src.core.query import Query
 from src.utils import Object
@@ -1620,7 +1623,7 @@ g = sns.catplot(
     # hue='inner',
     estimator=None,
     linewidth=0,
-    facet_kws={"margin_titles": True},
+    # facet_kws={"margin_titles": True},
     s=25,
 )
 plt.subplots_adjust(top=0.87)
@@ -4393,3 +4396,175 @@ plt.ylabel("Threshold Range (mA)")
 plt.xlabel("Fiber Diameter (μm)")
 plt.gca().get_legend().set_title("")
 plt.ylim(0, None)
+# %% dose-response f31
+sns.set(context="paper", style="whitegrid")
+alldr = defdr.query(f"nerve_label in {defsamples}").query(
+    "nerve_label=='3R' and deformation!= 'ASCENT' and contact in ['cathodic','3D']"
+)
+alldr["deformed"] = alldr["deformation"] != "Undeformed"
+allstore = []
+for contact in alldr.contact.unique():
+    if contact == "3D":
+        continue
+    thisdat = alldr.query('contact in [@contact, "3D"]')
+    thisdat["contact"] = contact
+    allstore.append(thisdat)
+alldr = pd.concat(allstore)
+alldr["deformation"] = pd.Categorical(
+    alldr["deformation"],
+    ordered=True,
+    categories=["Undeformed", "Structural", "ASCENT"],
+)
+
+plt.figure()
+g = sns.relplot(
+    kind="line",
+    data=alldr.query(f"fiber_diam in [3]"),
+    y="percent_activated",
+    x="threshold",
+    units="nerve_label",
+    hue="modeltype",
+    palette=pal2d3d,
+    estimator=None,
+    linewidth=2,
+    facet_kws={"sharex": True, "margin_titles": True},
+    col="deformed",
+    row="contact",
+)
+
+g.legend.set_title("")
+
+for ax in g.axes.ravel():
+    ax.set_ylim([0, 1])
+    ax.set_xlim([0, None])
+g.set_ylabels("Proportion fibers active")
+g.set_titles(col_template="{col_name}")
+# plt.subplots_adjust(hspace=0.25)
+
+g.set_xlabels("threshold (mA)")
+# change the line width for the legend
+for line, l in zip(g.legend.get_lines(), g.legend.get_texts()):
+    line.set_linewidth(2.0)
+    # if l.get_text() in ['deformation', 'modeltype']:
+    #     l.set_text('')
+sns.move_legend(g, (0.65, 0.27), frameon=True, framealpha=1)
+g.fig.set_size_inches(3, 1.5)
+g.set_titles(row_template="")
+g.axes[0][0].set_title("Undeformed")
+g.axes[0][1].set_title("Deformed")
+rownames(g, row_template="Proportion activated fibers")
+# plt.xticks([0,5,10])
+# plt.subplots_adjust(wspace=0.2)
+# %%# %% plot activation order f31
+sns.set(context="paper", style="ticks", font_scale=0.8)
+plotactidata = newdefdr.query("fiber_diam in [3] and nerve_label=='6R'")
+plt.figure()
+g = sns.catplot(
+    kind="swarm",
+    row="fiber_diam",
+    data=plotactidata,
+    y="percent_activated",
+    x="contact",
+    units="nerve_label",
+    palette="plasma",
+    hue="percent_activated3d",
+    # hue='inner',
+    estimator=None,
+    linewidth=0,
+    # facet_kws={"margin_titles": True},
+    s=5,
+)
+plt.subplots_adjust(top=0.87)
+# plt.suptitle(stringdat, x=0.37)
+g.set_titles(row_template="", col_template="{col_name}")
+g.axes[0][0].set_xlabel("")
+g.axes[0][0].set_ylabel("Proportion fibers\nactivated")
+g.set_xlabels("")
+g.legend.remove()
+norm = plt.Normalize(0, 1)
+sm = plt.cm.ScalarMappable(cmap="plasma", norm=norm)
+sm.set_array([])
+# plt.axvline(0.5, linestyle="--", color="black", alpha=0.5)
+# Remove the legend and add a colorbar
+g.figure.colorbar(
+    sm,
+    ax=g.axes.ravel().tolist(),
+    aspect=10,
+    shrink=0.8,
+    label="Proportion true-3D\nfibers activated",
+    pad=0.1,
+).ax.yaxis.set_ticks_position("left")
+for i, con in enumerate(newdefdr.contact.sort_values().unique()[1:]):
+    shortdat = plotactidata.query("contact==@con")
+    data2d = shortdat.sort_values("percent_activated").master_fiber_index
+    data3d = shortdat.sort_values("percent_activated3d").master_fiber_index
+    rc = compute_reorder_cost(list(data2d), list(data3d))
+    print(i + 0.77, 1.065, round(rc, 3))
+g.fig.set_size_inches(3, 1.5)
+plt.xlim(-0.5, 1.5)
+plt.gca().set_xticklabels(["true-3D", "extrusion"])
+# %% CCC comparison maincomp
+sns.set(context="paper", style="whitegrid")
+diam = 3
+comp = cath_comparison
+deformation = "Structural"
+nsimdata = concats.query(
+    f"fiber_diam in [3] and contact in {comp} and deformation==@deformation"
+)  # TODO replace all cath comparison with non
+g = sns.relplot(
+    data=nsimdata.rename(columns={"nerve_label": "Sample"}),
+    kind="scatter",
+    x="threshold",
+    y="threshold3d",
+    # hue='Sample',
+    color="white",
+    s=10,
+    facet_kws={"sharex": False, "sharey": False, "margin_titles": True},
+    edgecolor="black",
+    linewidth=0.5,
+    alpha=1,
+    label="single fiber",
+)
+lim = {}
+ax = g.axes[0, 0]
+# TODO Clean up this calc
+rdata = nsimdata.query(f'fiber_diam=={diam} and deformation=="{deformation}"')
+r = concordance_correlation_coefficient(rdata.threshold3d, rdata.threshold)
+print(r)
+perc = sum(rdata.threshold > rdata.threshold3d) / len(rdata.threshold)
+lim[deformation] = np.amax([ax.get_xlim()[1], ax.get_ylim()[1]])
+# add correlation to plot
+# ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
+print(f"{diam} {deformation} {comp[0]} μm CCC: {r ** 2:.2f}")
+# ax.set_title(f'{diam} μm')
+ax.plot(
+    [0, lim[deformation]],
+    [0, lim[deformation]],
+    "--k",
+    linewidth=1,
+    # label="unity line",
+)
+plt.legend(bbox_to_anchor=(0.9, 1.25))
+# ax.set_aspect('equal', 'box')
+# ax.apply_aspect()
+ax.set_xlim([0, lim[deformation]])
+ax.set_ylim([0, lim[deformation]])
+
+# ax.set_yticks(ax.get_xticks())
+g.set_titles("D: {col_name} μm")
+g.set_xlabels("extrusion threshold (mA)")
+g.set_ylabels("true-3D threshold (mA)")
+g.set_titles(row_template="", col_template="Deformation: {col_name}")
+
+g.set_titles(row_template="", col_template="Deformation: {col_name}")
+mid = [np.diff(plt.xlim()) / 2, np.diff(plt.ylim()) / 2]
+mid = [float(x) for x in mid]
+plt.arrow(mid[0] - 0.25, mid[1] + 0.25, -0.75, 0.75, color="black", width=0.08)
+plt.text(mid[0] - 1.8, mid[1] + 1.4, "true-3D higher")
+plt.arrow(mid[0] + 0.25, mid[1] - 0.25, +0.75, -0.75, color="black", width=0.08)
+plt.text(mid[0], mid[1] - 1.7, "extrusion higher")
+plt.gcf().set_size_inches(1.5, 1.5)
+# ax.apply_aspect()
+ax.set_xlim([0, lim[deformation]])
+ax.set_ylim([0, lim[deformation]])
+plt.xticks([0, 1, 2, 3])
