@@ -176,7 +176,7 @@ mesh = False
 
 model = False
 
-fibergen = False
+fibergen = True
 
 extract = True
 
@@ -1395,7 +1395,7 @@ def get_pots(mphfile, fiberspath, outpath):
         os.chdir('..')
 
     elif sys.platform.startswith('linux'):  # linux
-        subprocess.Popen([f'{comsol_path}/bin/comsol', 'server'], close_fds=True)
+        subprocess.Popen([f'{comsol_path}/bin/comsol', 'mphserver', '-login', 'auto'], close_fds=True)
         time.sleep(5)
         os.chdir(project_path + '/' + 'src')
         print(os.getcwd())
@@ -1411,7 +1411,7 @@ def get_pots(mphfile, fiberspath, outpath):
         os.chdir('..')
 
     else:  # assume to be 'win64'
-        subprocess.Popen([f'{comsol_path}\\bin\\win64\\comsolmphserver.exe'], close_fds=True)
+        subprocess.Popen([f'{comsol_path}\\bin\\win64\\comsolmphserver.exe', '-login', 'auto'], close_fds=True)
         time.sleep(5)
         os.chdir(project_path + '/' + 'src')
         os.system(
