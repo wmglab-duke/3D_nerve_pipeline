@@ -763,21 +763,21 @@ class Query(Configurable, Saveable):
 
         return tstop, time_vector, current_matrix
 
-    def common_data_extraction(self, 
-                                data_types: List[str],
-                                sim_indices: List[int] = None,
-                                all_fibers: bool = False,
-                                fiber_indices: List[int] = None, 
-                                ignore_missing: bool = False,
-                                as_dataframe = True,
-                                amp_ind = 0,
-                                ) -> List[dict]:
-        """
-        Extracts data from a simulation for specified data types.
+    def common_data_extraction(
+        self,
+        data_types: List[str],
+        sim_indices: List[int] = None,
+        all_fibers: bool = False,
+        fiber_indices: List[int] = None,
+        ignore_missing: bool = False,
+        as_dataframe=True,
+        amp_ind=0,
+    ) -> List[dict]:
+        """Extracts data from a simulation for specified data types.
 
-        This method extracts common data from a simulation for each specified data type and returns 
+        This method extracts common data from a simulation for each specified data type and returns
         a list of dictionaries containing the extracted data.
-        
+
         Options for data types include:
             - 'sfap': SFAP data
             - 'threshold': Threshold data
@@ -790,7 +790,7 @@ class Query(Configurable, Saveable):
             - 'space_vm': Space voltage data
             - 'aploctime': AP location time data
             - 'apendtimes': AP end times data
-            
+
 
         :param sample_results: A dictionary containing the results for a sample.
         :param fiber_indices: A list of fiber indices to include.
@@ -860,7 +860,7 @@ class Query(Configurable, Saveable):
 
                             for local_fiber_index, _ in enumerate(out_in_fib[outer][out_in[outer].index(inner)]):
                                 master_index = sim_object.indices_n_to_fib(fiberset_index, inner, local_fiber_index)
-                                
+
                                 fiber_indices = fiber_indices or [0]
                                 if all_fibers or master_index in fiber_indices:
                                     data = {
@@ -876,8 +876,8 @@ class Query(Configurable, Saveable):
                                         'active_src_index': active_src_index,
                                         'active_rec_index': active_rec_index,
                                     }
-                                    #set index for finite amps
-                                    data['amp_ind']=amp_ind
+                                    # set index for finite amps
+                                    data['amp_ind'] = amp_ind
 
                                     for data_type in data_types:
                                         if data_type == 'sfap':
@@ -908,7 +908,7 @@ class Query(Configurable, Saveable):
             return alldat
         else:
             return pd.DataFrame(alldat)
-    
+
     def retrieve_sfap_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):
         sfap_path = os.path.join(
             n_sim_dir,
@@ -951,7 +951,7 @@ class Query(Configurable, Saveable):
 
         data['threshold'] = threshold
         alldat.append(data)
-        
+
     def retrieve_runtime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
         runtime_path = os.path.join(
             n_sim_dir,
