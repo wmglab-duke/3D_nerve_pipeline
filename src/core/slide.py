@@ -288,6 +288,8 @@ class Slide:
         scalebar_length: float = 1,
         scalebar_units: str = 'mm',
         line_kws=None,
+        colors_for_outers=True,
+        inners_flag=True,
     ):
         """Quick util for plotting the nerve and fascicles.
 
@@ -319,8 +321,12 @@ class Slide:
             ax.set_aspect('equal')
 
         # loop through constituents and plot each
+        line_kws = line_kws or {}
+        nerve_kws = line_kws.copy()
+        nerve_kws['linewidth'] = 1.5
+
         if not self.monofasc():
-            self.nerve.plot(plot_format='k-', ax=ax, linewidth=1.5, line_kws=line_kws)
+            self.nerve.plot(plot_format='k-', ax=ax, line_kws=nerve_kws)
 
         out_to_in = []
         inner_ind = 0
@@ -349,6 +355,8 @@ class Slide:
                 outer_flag=outers_flag,
                 inner_index_start=inner_index if inner_index_labels else None,
                 line_kws=line_kws,
+                outer_color=color[0] if colors_for_outers else None,
+                inners_flag=inners_flag,
             )
             inner_index += len(fascicle.inners)
 

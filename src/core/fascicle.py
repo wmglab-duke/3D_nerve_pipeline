@@ -177,6 +177,8 @@ class Fascicle:
         outer_flag=True,
         inner_index_start: int = None,
         line_kws=None,
+        outer_color=None,
+        inners_flag=True,
     ):
         """Plot the fascicle.
 
@@ -193,7 +195,7 @@ class Fascicle:
             ax = plt.gca()
 
         if outer_flag:
-            self.outer.plot(ax=ax, line_kws=line_kws)
+            self.outer.plot(ax=ax, line_kws=line_kws, color=outer_color)
 
         if color is not None:
             if len(self.inners) != len(color):
@@ -202,7 +204,11 @@ class Fascicle:
             color = [None] * len(self.inners)
 
         for i, (inner, c) in enumerate(zip(self.inners, color)):
-            inner.plot(plot_format, color=c, ax=ax, line_kws=line_kws, linewidth=2)
+            if not inners_flag:
+                break
+            if 'linewidth' not in line_kws:
+                line_kws['linewidth'] = 2
+            inner.plot(plot_format, color=c, ax=ax, line_kws=line_kws)
             if inner_index_start is not None:
                 ax.text(*inner.centroid(), s=str(i + inner_index_start), ha='center', va='center')
 

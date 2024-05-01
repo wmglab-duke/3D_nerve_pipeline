@@ -21,10 +21,10 @@ from src.core.plotter import heatmaps
 from src.core.query import Query
 from src.utils import Object
 
-samp2d = 672
+samp2d = 3721
 model = 0
-simint = 3
-samp3d = 673
+simint = 333
+samp3d = 3731
 
 
 q = Query(
@@ -49,19 +49,9 @@ sample_obj = q.get_object(Object.SAMPLE, [samp2d])
 sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
 threshdat = pd.concat([dat2d, dat3d]).query("fiberset_index==5")
 # %%
-g = sns.FacetGrid(
-    threshdat, row="active_src_index", col="sample", sharex=False, sharey=False
-)
-g.map(
-    heatmaps,
-    *threshdat.columns,
-    sample_object=sample_obj,
-    sim_object=sim_obj,
-    scatter_kws={"s": 25}
-)
+g = sns.FacetGrid(threshdat, row="active_src_index", col="sample", sharex=False, sharey=False, margin_titles=True)
+g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, scatter_kws={"s": 25})
 
 save_directory = os.path.join("output", "analysis")
 os.makedirs(save_directory, exist_ok=True)
-plt.savefig(
-    os.path.join(save_directory, "threshold_heatmap.png"), dpi=400, bbox_inches="tight"
-)
+plt.savefig(os.path.join(save_directory, "threshold_heatmap.png"), dpi=400, bbox_inches="tight")

@@ -11,15 +11,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from shapely.ops import unary_union
 
-sys.path.append(r'D:/work/threed/subrepos/ascent')
-sys.path.append(r'D:/work/threed/Scripts')
+sys.path.append('../../..')
+sys.path.append('../../../Scripts')
 from src.core import Fascicle, Nerve, Slide, Trace
-from src.utils import ContourMode, DeformationMode, DownSampleMode, NerveMode
+from src.utils import ContourMode, DeformationMode, DownSampleMode, MaskSpaceMode, NerveMode
 from threedclass import FascicleConnectivityMap
 
 root = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
 
-ascentdir = r'D:\threed_ascent\input\slides'
+ascentdir = r'D:\threed_final\input\slides'
 
 os.makedirs(ascentdir, exist_ok=True)
 
@@ -65,7 +65,7 @@ pickleonly = False
 
 nerve_mode = NerveMode.PRESENT
 deform_mode = DeformationMode.PHYSICS
-os.chdir(os.path.join(root, 'subrepos', 'ascent'))
+os.chdir(os.path.join(root))
 
 # samples = ['2LDS5','2RDS5','3RDS5','5RDS5','6LDS5','6RDS5','2LDS5def', '3RDS5def', '5RDS5def', '6RDS5def','2LDS5_fine','2LDS5_im','2LDS5_up','2LDS5_down']
 # samples = ['2LDS5']
@@ -86,7 +86,7 @@ for sample_index, sample in enumerate(samples):
     with open(config3d_path) as f:
         params = json.load(f)
 
-    dire = params['project_path'] + '/' + params['path']['slides']
+    dire = os.path.join(root, 'datanew', sample, params['path']['slides'])
 
     dire = dire.replace('/work/wmglab/dpm42/3d_vns/datanew/', 'D:/work/threed/datanew/')
 
@@ -100,6 +100,8 @@ for sample_index, sample in enumerate(samples):
     slides = []
 
     for i in range(start, stop):
+        if i % 100 == 0:
+            print(100 * i / stop)
         img_nerve = cv2.imread(dire + f'/n/{n[i]}', -1)
 
         if len(img_nerve.shape) > 2 and img_nerve.shape[2] > 1:
@@ -109,7 +111,7 @@ for sample_index, sample in enumerate(samples):
 
         fascicles = []
 
-        fascicles = Fascicle.to_list(dire + f'/i/{imgs[i]}', None, ContourMode.NONE)
+        fascicles = Fascicle.to_list(dire + f'/i/{imgs[i]}', None, ContourMode.NONE, MaskSpaceMode.IMAGE)
 
         slide: Slide = Slide(
             fascicles,
@@ -185,7 +187,7 @@ for sample_index, sample in enumerate(samples):
         import seaborn as sns
 
         sns.reset_orig()
-        fig, axs = plt.subplots(1, 5, sharey=True)
+        fig, axs = plt.subplots(1, 4, sharey=True)
         plt.subplots_adjust(wspace=0.2)
         i_a = []
         n_a = []
@@ -216,16 +218,16 @@ for sample_index, sample in enumerate(samples):
                 xs.append(i * 20 / 1000)
 
         axs[0].set_ylabel('Nerve Position (mm)')
-        axs[0].scatter(np.array(yds) * 1e-3, xs, marker='+', color='k')
+        axs[1].scatter(np.array(yds) * 1e-3, xs, marker='+', color='k')
         # axs[0].set_xscale('log')
-        axs[0].set_xlabel('Inner ECDs (mm)\nevery 2 mm')
-        axs[1].plot(np.array(n_a) * 1e-6, xpos, color='k')
-        axs[1].set_xlabel('Nerve Area (mm2)')
-        axs[2].plot(i_n, xpos, color='k')
-        axs[2].set_xlabel('Fascicle Count')
-        axs[3].plot(np.array(i_a) * 1e-6, xpos, color='k')
-        axs[3].set_xlabel('Endoneurium Area (mm2)')
-        axs[4].eventplot(branches, orientation='vertical', color=['k'])
+        axs[1].set_xlabel('Fascicle Diameter\n(every 2 mm)')
+        axs[2].plot(np.array(n_a) * 1e-6, xpos, color='k', label='Whole Nerve')
+        axs[0].plot(i_n, xpos, color='k')
+        axs[0].set_xlabel('Fascicle Count')
+        axs[2].plot(np.array(i_a) * 1e-6, xpos, color='k', ls=':', label='Endoneurium')
+        axs[2].set_xlabel('Area (mm2)')
+        axs[2].legend()
+        axs[3].eventplot(branches, orientation='vertical', color=['k'])
         fig.set_size_inches(10, 6)
         for ax in axs[:-1]:
             ax.set_xlim([0, None])
@@ -233,15 +235,15 @@ for sample_index, sample in enumerate(samples):
             modtick = np.diff(ax.get_xlim())[0] % difftick
             ax.set_xlim([None, ax.get_xlim()[1] + difftick - modtick])
             # print(ax.get_xlim())
-        axs[4].set_xticks([0, 1])
-        axs[4].set_xticklabels(["merge", "split"], rotation=-45)
+        axs[3].set_xticks([0, 1])
+        axs[3].set_xlim([-1, 2])
+        axs[3].set_xticklabels(["merge", "split"], rotation=-45)
         # axs[4].legend(labels=['merges','splits'],bbox_to_anchor=[2.5,1])
         plt.suptitle(f"Morphological Data for {sample[:2]}")
         # plt.subplots_adjust(hspace=0, wspace=0.3)
-        fig.set_size_inches(15, 5, forward=True)
+        fig.set_size_inches(10, 4, forward=True)
         fig.subplots_adjust(top=0.9)
         fig.savefig(os.path.join(morphdir, 'detailed.png'), dpi=400, bbox_inches='tight')
-
 # %% new plots
 
 import seaborn as sns

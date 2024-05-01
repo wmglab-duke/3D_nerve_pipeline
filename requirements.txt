@@ -7,7 +7,6 @@ nd_line
 nd_line
 numpy
 numpy
-opencv-python<=4.5.*
 opencv-python==4.5.*
 openpyxl
 pandas
@@ -15,7 +14,6 @@ pandas
 pathlib
 pillow
 pillow
-pip
 pyclipper
 pyclipper
 pygame
