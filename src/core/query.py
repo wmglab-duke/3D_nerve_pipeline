@@ -960,7 +960,7 @@ class Query(Configurable, Saveable):
             f'runtime_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
         )
         with open(runtime_path) as runtime_file:
-            runtime = float(runtime_file.read())
+            runtime = float(runtime_file.read().replace('s', ''))
         data['runtime'] = runtime
         alldat.append(data)
 
