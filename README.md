@@ -16,6 +16,9 @@
 
   > **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2021). ASCENT (Automated Simulations to Characterize Electrical Nerve Thresholds): A pipeline for sample-specific computational modeling of electrical stimulation of peripheral nerves. PLOS Computational Biology, 17(9), e1009285. <https://doi.org/10.1371/journal.pcbi.1009285>
 
+  > **Peña, E.**, Pelot, N. A., & Grill, W. M. (2024). Computational models of compound nerve action potentials: Efficient filter-based methods to quantify effects of tissue conductivities, conduction distance, and nerve fiber parameters. PLoS computational biology, 20(3), e1011833. <https://doi.org/10.1371/journal.pcbi.1011833>
+  
+
 - **Cite the code (use the DOI for the version of code used):**
 
   > **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2023). wmglab-duke/ascent: ASCENT v1.2.2 (v1.2.2) [Computer software]. Zenodo. <https://doi.org/10.5281/ZENODO.8298703>

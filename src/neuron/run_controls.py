@@ -9,6 +9,7 @@ https://github.com/wmglab-duke/ascent
 import json
 import sys
 import time
+import warnings
 
 from saving import Saving
 from wmglab_neuron import FiberModel, ScaledStim, _Fiber, build_fiber
@@ -93,7 +94,8 @@ def main(
     fiber = build_fiber(diameter=diameter, fiber_model=model, temperature=temperature, n_sections=axontotal)
     fiber.potentials = potentials
 
-    # create stimulation object
+    # create stimulation object 
+    #TODO: if stim cuff is present
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop)
 
     # attach intracellular stimulation
@@ -133,6 +135,26 @@ def main(
             saving.save_runtime(time_individual, amp_ind)  # Save runtime of inidividual run
 
             time_total += time_individual
+
+    # TODO: do recording here?
+    # If recording cuff is present, record sfap
+    import os, pd
+    if sim_configs.contains['active_recs']:
+        rec_potentials_path = os.path.dirname(potentials_path) + f'rec_inner{inner_ind}_fiber{fiber_ind}.dat'
+        with open(rec_potentials_path, 'r') as rec_potentials_file:
+            axontotal = int(rec_potentials_file.readline())
+            file_lines = rec_potentials_file.read().splitlines()
+            rec_potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
+        fiber.rec_potentials = rec_potentials
+
+        # generate and save single fiber action potential, and I_membrane_current if applicable. 
+        sfap = fiber.record_SFAP(stimulation.time)
+        saving.save_sfap(sfap) # TODO: write the save_sfap method
+        if saving.imembrane_matrix:
+            if hasattr(fiber, 'membrane_current'):
+                saving.save_imembrane_matrix(fiber.membrane_current)
+            else:
+                print("WARNING: NO MEMBRANE CURRENT MATRIX GENERATED TO SAVE...")
 
 
 def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimulation: ScaledStim):
@@ -199,6 +221,9 @@ def handle_saving(
         fiber.set_save_vm()
     if saving_configs['space']['gating'] or saving_configs['time']['gating']:
         fiber.set_save_gating()
+    # TODO: uncomment if you want to save membrane current matrix without periaxonal current influence. 
+    # if saving_configs['Imembrane_matrix']:
+    #     fiber.set_save_membrane_current() # differenet methods for what is saved for sfap vs full matrix in wmglab_neuron?
     end_ap_times = 'end_ap_times' in saving_configs  # end_ap_times in <sim_index>.json
     loc_min = saving_configs['end_ap_times']['loc_min'] if end_ap_times else None
     loc_max = saving_configs['end_ap_times']['loc_max'] if end_ap_times else None
@@ -223,6 +248,7 @@ def handle_saving(
         loc_max=loc_max,
         ap_loctime=ap_loctime,
         runtime=runtimes,
+        imembrane_matrix=saving_configs['Imembrane_matrix']
     )
     return saving
 

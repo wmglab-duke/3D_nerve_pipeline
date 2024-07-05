@@ -6,6 +6,7 @@ source code can be found on the following GitHub repository:
 https://github.com/wmglab-duke/ascent
 """
 
+from operator import index
 import os
 
 import pandas as pd
@@ -34,6 +35,7 @@ class Saving:
         loc_max: float = 0.9,
         ap_loctime: bool = False,
         runtime: bool = False,
+        imembrane_matrix: bool = False,
     ):
         """Initialize instance of Saving class.
 
@@ -54,6 +56,7 @@ class Saving:
         :param loc_max: if end_ap_times, decimal % of fiber length at which to save times when Vm returns to threshold
         :param ap_loctime: save, for each fiber node, the last time an AP passed over that node
         :param runtime: save the simulation runtime
+        :param Imembrane_matrix: save the full membrane current matrix
         :return: Saving object
         """
         nodecount = len(fiber.nodes)
@@ -82,6 +85,7 @@ class Saving:
             self.ap_end_times = None
         self.ap_loctime = ap_loctime
         self.runtime = runtime
+        self.imembrane_matrix = imembrane_matrix
         self.output_path = os.path.join(sim_path, 'data', 'outputs')
         os.makedirs(self.output_path, exist_ok=True)
         return
@@ -109,6 +113,27 @@ class Saving:
             )
             with open(runtimes_path, 'w') as runtime_file:
                 runtime_file.write(f'{runtime:.3f}s')
+
+    def save_sfap(self, sfap: list):
+        """Save sfap from NEURON simulation to file.
+
+        :param sfap: single fiber action potential from NEURON simulation
+        """
+        # save threshold to submit/n_sims/#/data/outputs/thresh_inner#_fiber#.dat
+        sfap_path = os.path.join(self.output_path, f'SFAP_inner{self.inner_ind}_fiber{self.fiber_ind}.dat')
+        with open(sfap_path, 'w') as sfap_file:
+            sfap_file.write(f"{sfap:.6f}")
+
+    def save_imembrane_matrix(self, imembrane_matrix: list): 
+        """ Fill in """ #TODO
+        
+        if self.imembrane_matrix:
+            i_mem_path = os.path.join(
+                self.output_path, f'Imembrane_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
+            )
+        
+            i_mem_data = pd.DataFrame(imembrane_matrix)
+            i_mem_data.to_csv(i_mem_path, header=['Time [s]', 'I_membrane [V]'], sep='\t', float_format='%.6f', index=False) #TODO check this. 
 
     def save_activation(self, n_aps: int, amp_ind: int):
         """Save the number of action potentials that occurred at the location specified in sim config to file.
@@ -145,6 +170,10 @@ class Saving:
             ]
             self.save_space_gating(all_gating_data, amp_ind, fiber, stimulation.dt)
             self.save_time_gating(all_gating_data, amp_ind, stimulation)
+        # TODO: uncomment if you want to save membrane current without influence of periaxonal currents. 
+        # if hasattr(fiber, 'membrane_current'):
+        #     imem_matrix_data = pd.DataFrame([list(imem) for imem in fiber.membrane_current if imem is not None]) 
+        #     self.save_imembrane_matrix(imem_matrix_data)
         istim_data = pd.DataFrame(list(stimulation.istim_record))
         self.save_istim(amp_ind, istim_data, stimulation)
         self.save_aploctime(amp_ind, fiber)

@@ -112,12 +112,18 @@ public class ModelSearcher {
                 }
                 // rVal is NOT boolean
                 else if (!(rVal instanceof Boolean)) {
-                    // recurse!
-                    boolean match = ModelSearcher.meshMatch(
-                        new JSONObject((Map<String, Object>) rVal),
-                        new JSONObject((Map<String, Object>) q1Map.get(rKey)),
-                        new JSONObject((Map<String, Object>) q2Map.get(rKey))
-                    );
+                    boolean match;
+                    if (rKey.equals("cuff")) {
+                        match = q1Map.get(rKey).equals(q2Map.get(rKey));
+                    } else {
+                        // recurse!
+                        match =
+                            ModelSearcher.meshMatch(
+                                new JSONObject((Map<String, Object>) rVal),
+                                new JSONObject((Map<String, Object>) q1Map.get(rKey)),
+                                new JSONObject((Map<String, Object>) q2Map.get(rKey))
+                            );
+                    }
                     if (!match) return false;
                 }
                 // in case that rVal is boolean: false, do nothing --> go to next key
