@@ -35,9 +35,7 @@ def run(args):
         import pyfibers
     except ImportError:
         raise ImportError('PyFibers not installed. Please install PyFibers and try again.')
-    assert pyfibers.__version__ in ['0.1.0'], (
-        'PyFibers version 0.1.0 required, your version is ' + pyfibers.__version__
-    )
+    assert pyfibers.__version__ in ['0.1.0'], 'PyFibers version 0.1.0 required, your version is ' + pyfibers.__version__
 
     # create bin/ directory for storing compiled Java files if it does not yet exist
     if not (os.path.exists('bin')):

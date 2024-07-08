@@ -10,9 +10,9 @@ import json
 import sys
 import time
 
-from saving import Saving
 from pyfibers import FiberModel, ScaledStim, _Fiber, build_fiber
 from pyfibers.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
+from saving import Saving
 
 
 def handle_termination(protocol_configs: dict) -> (int, float):
@@ -75,14 +75,14 @@ def main(
         temperature = model_configs['temperature']
 
     # Read in waveform array, time step, and stop time
-    with open(waveform_path, 'r') as waveform_file:
+    with open(waveform_path) as waveform_file:
         dt = float(waveform_file.readline().strip())  # time step
         tstop = int(waveform_file.readline().strip())  # stop time
         file_lines = waveform_file.read().splitlines()
         waveform = [float(i) for i in file_lines]
 
     # Read in extracellular potentials
-    with open(potentials_path, 'r') as potentials_file:
+    with open(potentials_path) as potentials_file:
         axontotal = int(potentials_file.readline())
         file_lines = potentials_file.read().splitlines()
         potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
