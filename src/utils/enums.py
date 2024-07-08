@@ -193,7 +193,8 @@ class FiberXYMode(ASCENTEnum, Enum):
     CENTROID = 2  # a single fiber per inner trace (endoneurium bundle?), located at each inner trace centroid
     WHEEL = 3  # 1) points on lines extending radially for each inner centroid, 2) offset inwards from boundary
     SL_PSEUDO_INTERP = 4  # special mode for interpolating along approximate superior laryngeal branch of vagus nerve
-    EXPLICIT = 5  # looks for explicit.txt in samples/#/models/#/sims/#/ directory for coordinates
+    EXPLICIT = 5  # looks for explicit.txt in samples/#/models/#/sims/#/ directory for XY-coordinates
+    EXPLICIT_3D = 6  # looks for explicit.txt in samples/#/models/#/sims/#/ directory for XYZ-coordinates
 
 
 @unique
@@ -202,7 +203,7 @@ class FiberZMode(ASCENTEnum, Enum):
     parameters = 'z_parameters'
 
     EXTRUSION = 0
-    LOFTED = 1
+    EXPLICIT = 1
 
 
 @unique
@@ -230,7 +231,7 @@ class FiberGeometry(ASCENTEnum, Enum):
     NONE = None
     MRG_DISCRETE = "MRG_DISCRETE"
     MRG_INTERPOLATION = "MRG_INTERPOLATION"
-    B_FIBER = "B_FIBER"
+    SMALL_MRG_INTERPOLATION_V1 = "SMALL_MRG_INTERPOLATION_V1"
     C_FIBER = "C_FIBER"
 
 

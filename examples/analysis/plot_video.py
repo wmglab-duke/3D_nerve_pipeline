@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.7
-
 """Plot a video over time of Ve over the length of a fiber.
 
 The copyrights of this software are owned by Duke University.
@@ -13,6 +11,8 @@ RUN THIS FROM REPOSITORY ROOT
 import os
 import shutil
 import sys
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
 import numpy as np
