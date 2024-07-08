@@ -41,8 +41,6 @@ public class ModelSearcher {
      */
     public ModelSearcher.Match searchMeshMatch(JSONObject query, JSONObject reference)
         throws IOException {
-        //        System.out.println("queryPath = " + queryPath);
-
         for (Path file : Files.walk(this.root).toArray(Path[]::new)) {
             String[] fileParts;
             String os = System.getProperty("os.name").toLowerCase(); // https://www.techiedelight.com/determine-operating-system-and-its-version-java/
@@ -79,10 +77,8 @@ public class ModelSearcher {
             directory + "/mesh/im.json",
         };
         for (String filename : filenames) {
-            //            System.out.println("Checking existence of: " + filename);
             if (!new File(filename).exists()) return false;
         }
-        //        System.out.println("MESH FILES EXIST");
         return true;
     }
 
@@ -106,7 +102,6 @@ public class ModelSearcher {
                         (q1Map.containsKey(rKey) ^ q2Map.containsKey(rKey)) ||
                         !q1Map.get(rKey).equals(q2Map.get(rKey))
                     ) {
-                        //                        System.out.println("\t\tA value does not match here: " + q1Map.get(rKey).toString() + " and " + q2Map.get(rKey).toString());
                         return false; // a value DOES NOT MATCH
                     }
                 }
@@ -168,7 +163,6 @@ public class ModelSearcher {
                 File ppimPath = new File(path + "/mesh/ppim/");
                 for (String filename : Objects.requireNonNull(ppimPath.list())) {
                     String[] fileParts = filename.split("\\.");
-                    //                    System.out.println("file path = " + ppimPath.toString() + "/" + filename);
                     ppims.put(
                         fileParts[0],
                         IdentifierManager.fromJSONObject(JSONio.read(ppimPath + "/" + filename))

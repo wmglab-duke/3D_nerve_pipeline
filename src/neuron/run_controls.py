@@ -11,9 +11,8 @@ import sys
 import time
 import warnings
 
+from pyfibers import BoundsSearchMode, Fiber, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
 from saving import Saving
-from wmglab_neuron import FiberModel, ScaledStim, _Fiber, build_fiber
-from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
 
 
 def handle_termination(protocol_configs: dict) -> (int, float):
@@ -76,14 +75,14 @@ def main(
         temperature = model_configs['temperature']
 
     # Read in waveform array, time step, and stop time
-    with open(waveform_path, 'r') as waveform_file:
+    with open(waveform_path) as waveform_file:
         dt = float(waveform_file.readline().strip())  # time step
         tstop = int(waveform_file.readline().strip())  # stop time
         file_lines = waveform_file.read().splitlines()
         waveform = [float(i) for i in file_lines]
 
     # Read in extracellular potentials
-    with open(potentials_path, 'r') as potentials_file:
+    with open(potentials_path) as potentials_file:
         axontotal = int(potentials_file.readline())
         file_lines = potentials_file.read().splitlines()
         potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
@@ -94,20 +93,31 @@ def main(
     fiber = build_fiber(diameter=diameter, fiber_model=model, temperature=temperature, n_sections=axontotal)
     fiber.potentials = potentials
 
-    # create stimulation object 
-    #TODO: if stim cuff is present
+    # create stimulation object
+    # TODO: if stim cuff is present
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop)
 
     # attach intracellular stimulation
-    istim_configs = sim_configs['intracellular_stim']
-    stimulation.set_intracellular_stim(
-        delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
-        pw=istim_configs['times']['pw'],
-        dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
-        freq=istim_configs['pulse_repetition_freq'],
-        amp=istim_configs['amp'],
-        ind=istim_configs['ind'],
-    )
+    # TODO change all references to istim in docs and code
+    # TODO change to use fiber.add_intrinsic_activity
+    istim_configs = sim_configs.get('intrinsic_activity', {})
+    if istim_configs:
+        # stimulation.set_intracellular_stim(
+        #     delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
+        #     pw=istim_configs['times']['pw'],
+        #     dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
+        #     freq=istim_configs['pulse_repetition_freq'],
+        #     amp=istim_configs['amp'],
+        #     ind=istim_configs['ind'],
+        # )
+        fiber.add_intrinsic_activity(**istim_configs)  # Add to docs to look at pyfiber docs for this
+
+    else:
+        import warnings
+
+        warnings.warn('For now PyFibers ignores ASCENT intracellular stimulation params, need to update')
+    if 'intracellular_stim' in istim_configs:
+        raise NotImplementedError('Intracellular stimulation is deprecated, use intrinsic_activity instead')
 
     # create saving object
     saving_configs = sim_configs['saving']
@@ -115,9 +125,8 @@ def main(
 
     # determine protocol
     protocol_configs = sim_configs['protocol']
-    amps = protocol_configs['amplitudes'] if protocol_configs['mode'] == 'FINITE_AMPLITUDES' else False
 
-    if not amps:  # enter binary search modes
+    if not protocol_configs['mode'] == 'FINITE_AMPLITUDES':  # threshold search
         amp = threshold_protocol(fiber, protocol_configs, sim_configs, stimulation)
         saving.save_thresh(amp)  # Save threshold value to file
         saving.save_variables(fiber, stimulation)  # Save user-specified variables
@@ -125,6 +134,7 @@ def main(
 
     else:  # finite amplitudes protocol
         time_total = 0
+        amps = protocol_configs['amplitudes']
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
@@ -138,18 +148,21 @@ def main(
 
     # TODO: do recording here?
     # If recording cuff is present, record sfap
-    import os, pd
+    import os
+
+    import pd
+
     if sim_configs.contains['active_recs']:
         rec_potentials_path = os.path.dirname(potentials_path) + f'rec_inner{inner_ind}_fiber{fiber_ind}.dat'
-        with open(rec_potentials_path, 'r') as rec_potentials_file:
+        with open(rec_potentials_path) as rec_potentials_file:
             axontotal = int(rec_potentials_file.readline())
             file_lines = rec_potentials_file.read().splitlines()
             rec_potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
         fiber.rec_potentials = rec_potentials
 
-        # generate and save single fiber action potential, and I_membrane_current if applicable. 
+        # generate and save single fiber action potential, and I_membrane_current if applicable.
         sfap = fiber.record_SFAP(stimulation.time)
-        saving.save_sfap(sfap) # TODO: write the save_sfap method
+        saving.save_sfap(sfap)  # TODO: write the save_sfap method
         if saving.imembrane_matrix:
             if hasattr(fiber, 'membrane_current'):
                 saving.save_imembrane_matrix(fiber.membrane_current)
@@ -204,7 +217,7 @@ def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimula
 
 
 def handle_saving(
-    fiber: _Fiber, fiber_ind: int, inner_ind: int, saving_configs: dict, sim_path: str, time_step: float
+    fiber: Fiber, fiber_ind: int, inner_ind: int, saving_configs: dict, sim_path: str, time_step: float
 ) -> Saving:
     """Create an instance of the Saving class.
 
@@ -221,7 +234,7 @@ def handle_saving(
         fiber.set_save_vm()
     if saving_configs['space']['gating'] or saving_configs['time']['gating']:
         fiber.set_save_gating()
-    # TODO: uncomment if you want to save membrane current matrix without periaxonal current influence. 
+    # TODO: uncomment if you want to save membrane current matrix without periaxonal current influence.
     # if saving_configs['Imembrane_matrix']:
     #     fiber.set_save_membrane_current() # differenet methods for what is saved for sfap vs full matrix in wmglab_neuron?
     end_ap_times = 'end_ap_times' in saving_configs  # end_ap_times in <sim_index>.json
@@ -248,7 +261,7 @@ def handle_saving(
         loc_max=loc_max,
         ap_loctime=ap_loctime,
         runtime=runtimes,
-        imembrane_matrix=saving_configs['Imembrane_matrix']
+        imembrane_matrix=saving_configs['Imembrane_matrix'],
     )
     return saving
 

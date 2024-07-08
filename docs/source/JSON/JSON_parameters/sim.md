@@ -59,6 +59,8 @@ following syntax:
         "seed": Integer
       },
 
+      "mode": String,
+      "fiber_z_shift": Integer,
       "min": Double,
       "max": Double,
       "full_nerve_length": Boolean,
@@ -92,6 +94,12 @@ following syntax:
     // EXAMPLE XY Parameters for EXPLICIT
     "xy_parameters": {
       "mode": "EXPLICIT",
+      "explicit_fiberset_index" : Integer
+    },
+
+    // EXAMPLE XY Parameters for EXPLICIT_3D
+    "xy_parameters": {
+      "mode": "EXPLICIT_3D",
       "explicit_fiberset_index" : Integer
     },
 
@@ -183,11 +191,8 @@ following syntax:
       "istim": Boolean,
       "locs": [Double] OR String
     },
-    "end_ap_times": {
-      "loc_min": Double,
-      "loc_max": Double,
-    }
     "runtimes": Boolean,
+    "3D_fiber_intermediate_data": Boolean,
     "Imembrane_matrix": Boolean, // only applicable for models of recording
   },
 
@@ -278,15 +283,23 @@ fiber are calculated in the following way for an example weighting:
 `"example_cuff_preset.json": [[1, -1]]` // [[weight<sub>1</sub> (for src 1 on),
 weight<sub>2</sub> (for src 2 on)]]
 
-![f2]
+$$V_{e}=(amplitude)*potentials$$
 
-![f3]
+$$potentials=(weight_{1})*bases_{1}(x,y,z)+(weight_{2})*bases_{2}(x,y,z)$$
 
 The value of potentials/ is applied to a model fiber in NEURON
 multiplied by the stimulation amplitude, which is either from a list of
 finite amplitudes or a bisection search for thresholds ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols))
 
-![f4]
+$$potentials=(1)*bases_{1}(x,y,z)+(-1)*bases_{2}(x,y,z)$$
+
+- `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
+  stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
+
+`“active_recs”`: The JSON Object value serves the same purpose as `active_srcs`, but provides contact weightings for preset cuffs used for recording. Only required when modeling a recording cuff in the Model configurations.
+
+- `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
+  stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
 
 - `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
   stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
@@ -304,6 +317,8 @@ length of the fiber). Required.
 
 - `“mode”`: The value (String) is the “FiberGeometry” mode that tells
   the program which fiber geometries to simulate in NEURON ([NEURON Fiber Models](../../Running_ASCENT/Info.md#implementation-of-neuron-fiber-models)). Required.
+  %TODO add link to docs for pyfibers
+  %TODO update description here for pyfibers
 
   - As listed in [Enums](../../Code_Hierarchy/Python.md#enums), known modes include
 
@@ -360,6 +375,16 @@ length of the fiber). Required.
         - `“upper”`: The value (Double, units micrometer) is the upper limit on the distribution of diameters. Required.
         - `“lower”`: The value (Double, units micrometer) is the lower limit on the distribution of diameters. Required.
         - `“seed”`: The value (Integer) seeds the random number generator before sampling fiber diameters.
+
+  - `“mode”`: The value (String) is the `“FiberZMode”` that tells the program how to seed fiber z-locations along the length of the FEM model. Required.
+
+    As listed in [Enums](../../Code_Hierarchy/Python.md#enums), implemented modes include
+
+    - `“EXTRUSION”`: Creates straight fibers along the length of the model by extruding the xy- fiber locations defined by `“FiberXYMode”`.
+
+    - `“EXPLICIT”`: Creates curved fibers within a 2D extrusion model by importing explicit 3D fiber coordinates from a file. When this mode is used, `"FiberXYMode"` must be `"EXPLICIT_3D"`.
+
+      - `“fiber_z_shift"`: The value (Integer) specifies the longitudinal shift of the fiber coordinates from the model's center. This is shift is only applicable if the fibers are shorter than the model and are being extruded; the fiber_z_shift must be equal to or less than the extrusion length, such that all user-provided fiber coordinates remain within the model length. (optional)
 
   - `“min”`: the value (Double or List\[Double\], units: micrometer)
     is the distal extent of the seeded fiber along the length of the
@@ -449,7 +474,16 @@ length of the fiber). Required.
       degrees. If false, the program interprets `“angle_offset”` in
       radians. Required.
 
-  - `“EXPLICIT”`: The mode looks for a `“<explicit_index>.txt”` file in the user created directory (`samples/<sample_index>/explicit_fibersets`) for user-specified fiber (x,y)-coordinates (see `config/templates/explicit.txt`). Note, this file is only required if the user is using the `“EXPLICIT”` `“FiberXYMode”`. An error is thrown if any explicitly defined coordinates are not inside any inners.
+  - `“EXPLICIT”`: The mode looks for a `“<explicit_index>.txt”` file in the user-created directory (`input/<input sample name>/explicit_fibersets`, where `<input sample name>` is the `sample` parameter in **_Sample_**) for user-specified fiber (x,y)-coordinates (see `config/templates/explicit.txt`). Note, this file is only required if the user is using the `“EXPLICIT”` `“FiberXYMode”`. An error is thrown if any explicitly defined coordinates are not inside any fascicle inner boundaries.
+
+    - `“explicit_fiberset_index”`: The value (Integer) indicates which explicit index file to use.
+
+  - `“EXPLICIT_3D”`: The mode looks for a `“<explicit_index>.npy”` file in the user-created directory
+    (`input/<input sample name>/explicit_fibersets`, where `<input sample name>` is the `sample` parameter in **_Sample_**) for user-specified fiber (x,y,z)-coordinates in microns (see `config/templates/explicit_3D.npy`). Note, this file is only required if the user is using the `“EXPLICIT_3D”` `“FiberXYMode”`. The explicit coordinates data structure in the pickled `.npy` file must be a numpy array of fibers, where each index contains a 2D np.array of fiber xyz-points (e.g., np.array(np.array(fiber 1 xyz-coords), ..., np.array(fiber N xyz-coords)). The lengths fibers may be differ. An error is thrown if any explicitly defined coordinates are not inside any fascicle inner boundaries. If the fibers are shorter than the length of the model, the whole population of the provided fiber coordinates is centered longitudinally by default, and each fiber is individually extruded to the length of the model.
+
+    To visualize the `explicit_3D.npy` template, open a command-line window and change directories to `config/templates/`. Enter `python` to start an interactive python session and enter `import numpy as np`. Then run the `np.load('explicit_3D.npy', allow_pickle=True)` to load and print the file contents to the consol. The template file contains two short fibers of varying lengths, and is compatible with the ascent tutorial.
+
+    To generate a 3D coordinate file: Create a python list of fibers, where each index is a 2D np.array of xyz values. To save a python list of np.arrays of varying lengths to a .npy file, use `np.save('<file name>.npy', np.array(<list of fiber arrays>, dtype=object), allow_pickle=True)`.)
 
     - `“explicit_fiberset_index”`: The value (Integer) indicates which explicit index file to use.
 
@@ -737,29 +771,16 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     (String) to prompt the program to save the state variables at
     all segments (unmyelinated) and sections (myelinated). Required.
 
-- `“end_ap_times”`:
-
-  - `“loc_min”`: The value (Double) tells the program at which location to save
-    times at which V<sub>m</sub> passes the threshold voltage (defined below)
-    with a positive slope. The value must be between 0 and 1, and less than the
-    value for `“loc_max”`. Be certain not to record from the end section (i.e., 0)
-    if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
-    z=length of proximal domain. Required if this JSON object (which is optional) is included.
-
-  - `“loc_max”`: The value (Double) tells the program at which location to save
-    times at which V<sub>m</sub> passes the threshold voltage (defined below)
-    with a positive slope. The value must be between 0 and 1, and greater than the
-    value for `“loc_min”`. Be certain not to record from the end section (i.e., 1)
-    if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
-    z=length of proximal domain. Required if this JSON object (which is optional) is included.
-
 - `“runtimes”`: The value (Boolean), if true, tells the program to save
   the NEURON runtime for either the finite amplitude or bisection search for
   threshold simulation. If this key-value pair is omitted, the default
   behavior is False.
 
+- `"3D_fiber_intermediate_data"`: The value (Boolean), if true, tells the program to save the fiber lengths and longitudinal coordinate compartment spacings for sampled potentials into directories within the sample called `tracto_lengths/`, `tracto_coords/`, `3D_tracto_fiberset/` respectively.
+
 - `“Imembrane_matrix”`: The value (Boolean), if true, tells the program to save the
   transmembrane current matrix for each fiber. This parameter is only considered if a model contains a recording cuff, and will be ignored if no recording cuff is present. These are memory-intensive matrices that contain the transmembrane currents for all fiber compartments across all time points. The matrices are required if the user aims to later generate current templates using the `examples\analysis\generate_templates.py` script. Default: False. Optional.
+% TODO make this in the same place as vm and then use shared code
 
 `“protocol”`:
 
@@ -881,69 +902,6 @@ simulation for an AP and exit the simulation. Optional.
 
 <!-- end list -->
 
-- `“termination_criteria”`: Required for threshold finding protocols
-  (i.e., `“ACTIVATION_THRESHOLDS”` and `“BLOCK_THRESHOLDS”`) ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols)).
-
-  - `“mode”`: The value (String) is the `“TerminationCriteriaMode”` that
-    tells the program when the upper and lower bound have converged
-    on a solution of appropriate precision. Required.
-
-    - As listed in Enums ([Enums](../../Code_Hierarchy/Python.md#enums)), known `“TerminationCriteriaModes”`
-      include:
-
-      - `“ABSOLUTE_DIFFERENCE”`: If the upper bound and lower
-        bound in the bisection search are within a fixed
-        “tolerance” amount (e.g., 0.001 mA), the upper bound
-        value is threshold.
-
-        - `“tolerance”`: The value (Double) is the absolute
-          difference between upper and lower bound in the
-          bisection search for finding threshold (unit: mA).
-          Required.
-
-      - `“PERCENT_DIFFERENCE”`: If the upper bound and lower
-        bound in the bisection search are within a relative
-        “percent” amount (e.g., 1%), the upper bound value is
-        threshold. This mode is generally recommended as the
-        `ABSOLUTE_DIFFERENCE` approach requires adjustment of the
-        “tolerance” to be suitable for different threshold
-        magnitudes.
-
-        - `“percent”`: The value (Double) is the percent
-          difference between upper and lower bound in the
-          bisection search for finding threshold (e.g., 1 is 1%).
-          Required.
-
-`“supersampled_bases”`: Optional. Required only for either generating or
-reusing super-sampled bases. This can be a memory efficient process by
-eliminating the need for long-term storage of the bases/ COMSOL `*.mph`
-files. Control of `“supersampled_bases”` belongs in **_Sim_** because the
-(x,y)-fiber locations in the nerve are determined by **_Sim_**. The
-potentials are sampled densely along the length of the nerve at
-(x,y)-fiber locations once so that in a future pipeline run different
-fiber types can be simulated at the same location in the nerve cross-section without loading COMSOL files into memory.
-
-- `“generate”`: The value (Boolean) indicates if the program will create
-  super-sampled fiber coordinates and super-sampled bases (i.e.,
-  sampled potentials from COMSOL). Required only if generating
-  `ss_bases/`.
-
-- `“use”`: The value (Boolean) if true directs the program to
-  interpolate the super-sampled bases to create the extracellular
-  potential inputs for NEURON. If false, the program will sample along
-  the length of the COMSOL FEM at the coordinates explicitly required
-  by “fibers”. Required only if generating `ss_bases/`.
-
-- `“dz”`: The value (Double, units: micrometer) is the spatial sampling
-  of the super-sampled bases. Required only if generating `ss_bases/`.
-
-- `“source_sim”`: The value (Integer) is the **_Sim_** index that
-  contains the super-sampled bases. If the user sets both “generate”
-  and “use” to true, then the user should indicate the index of the
-  current **_Sim_** here. Required only if generating `ss_bases/`.
-
-<!-- end list -->
-
 - `"termination_criteria"`: Required for threshold finding protocols
   (i.e., `"ACTIVATION_THRESHOLDS"` and `"BLOCK_THRESHOLDS"`) ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols)).
 
@@ -1013,7 +971,3 @@ fiber types can be simulated at the same location in the nerve cross-section wit
 .. include:: ../../../../config/templates/sim.json
    :code: javascript
 ```
-
-[f2]: https://chart.apis.google.com/chart?cht=tx&chl=V_{e}=(amplitude)*potentials
-[f3]: https://chart.apis.google.com/chart?cht=tx&chl=potentials=(weight_{1})*bases_{1}(x,y,z)%2B(weight_{2})*bases_{2}(x,y,z)
-[f4]: https://chart.apis.google.com/chart?cht=tx&chl=potentials=(1)*bases_{1}(x,y,z)%2B(-1)*bases_{2}(x,y,z)
