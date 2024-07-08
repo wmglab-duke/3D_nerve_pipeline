@@ -96,21 +96,26 @@ def main(
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop)
 
     # attach intracellular stimulation
+    # TODO change all references to istim in docs and code
     # TODO change to use fiber.add_intrinsic_activity
-    try:
-        istim_configs = sim_configs['intrinsic_activity']
-    except KeyError:
+    istim_configs = sim_configs.get('intrinsic_activity', {})
+    if istim_configs:
+        # stimulation.set_intracellular_stim(
+        #     delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
+        #     pw=istim_configs['times']['pw'],
+        #     dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
+        #     freq=istim_configs['pulse_repetition_freq'],
+        #     amp=istim_configs['amp'],
+        #     ind=istim_configs['ind'],
+        # )
+        fiber.add_intrinsic_activity(**istim_configs)  # Add to docs to look at pyfiber docs for this
+
+    else:
         import warnings
 
         warnings.warn('For now PyFibers ignores ASCENT intracellular stimulation params, need to update')
-    # stimulation.set_intracellular_stim(
-    #     delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
-    #     pw=istim_configs['times']['pw'],
-    #     dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
-    #     freq=istim_configs['pulse_repetition_freq'],
-    #     amp=istim_configs['amp'],
-    #     ind=istim_configs['ind'],
-    # )
+    if 'intracellular_stim' in istim_configs:
+        raise NotImplementedError('Intracellular stimulation is deprecated, use intrinsic_activity instead')
 
     # create saving object
     saving_configs = sim_configs['saving']
@@ -118,9 +123,8 @@ def main(
 
     # determine protocol
     protocol_configs = sim_configs['protocol']
-    amps = protocol_configs['amplitudes'] if protocol_configs['mode'] == 'FINITE_AMPLITUDES' else False
 
-    if not amps:  # enter binary search modes
+    if not protocol_configs['mode'] == 'FINITE_AMPLITUDES':  # threshold search
         amp = threshold_protocol(fiber, protocol_configs, sim_configs, stimulation)
         saving.save_thresh(amp)  # Save threshold value to file
         saving.save_variables(fiber, stimulation)  # Save user-specified variables
@@ -128,6 +132,7 @@ def main(
 
     else:  # finite amplitudes protocol
         time_total = 0
+        amps = protocol_configs['amplitudes']
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
