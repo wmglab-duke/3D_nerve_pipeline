@@ -24,7 +24,7 @@ def run(args):
     """Run the pipeline.
 
     :param args: The command line arguments.
-    :raises ImportError: If wmglab_neuron is not installed.
+    :raises ImportError: If PyFibers is not installed.
     """
     # test
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 7):
@@ -32,11 +32,11 @@ def run(args):
         sys.exit()
 
     try:
-        import wmglab_neuron
+        import pyfibers
     except ImportError:
-        raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
-    assert wmglab_neuron.__version__ in ['0.0.2', '0.0.3'], (
-        'wmglab_neuron version 0.0.2 ore 0.0.3 required, your version is ' + wmglab_neuron.__version__
+        raise ImportError('PyFibers not installed. Please install PyFibers and try again.')
+    assert pyfibers.__version__ in ['0.1.0'], (
+        'PyFibers version 0.1.0 required, your version is ' + pyfibers.__version__
     )
 
     # create bin/ directory for storing compiled Java files if it does not yet exist

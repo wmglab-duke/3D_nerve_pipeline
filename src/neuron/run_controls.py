@@ -11,8 +11,8 @@ import sys
 import time
 
 from saving import Saving
-from wmglab_neuron import FiberModel, ScaledStim, _Fiber, build_fiber
-from wmglab_neuron.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
+from pyfibers import FiberModel, ScaledStim, _Fiber, build_fiber
+from pyfibers.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
 
 
 def handle_termination(protocol_configs: dict) -> (int, float):
