@@ -191,10 +191,6 @@ following syntax:
       "istim": Boolean,
       "locs": [Double] OR String
     },
-    "end_ap_times": {
-      "loc_min": Double,
-      "loc_max": Double,
-    }
     "runtimes": Boolean,
     "3D_fiber_intermediate_data": Boolean
   },
@@ -286,15 +282,15 @@ fiber are calculated in the following way for an example weighting:
 `"example_cuff_preset.json": [[1, -1]]` // [[weight<sub>1</sub> (for src 1 on),
 weight<sub>2</sub> (for src 2 on)]]
 
-![f2]
+$$V_{e}=(amplitude)*potentials$$
 
-![f3]
+$$potentials=(weight_{1})*bases_{1}(x,y,z)+(weight_{2})*bases_{2}(x,y,z)$$
 
 The value of potentials/ is applied to a model fiber in NEURON
 multiplied by the stimulation amplitude, which is either from a list of
 finite amplitudes or a bisection search for thresholds ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols))
 
-![f4]
+$$potentials=(1)*bases_{1}(x,y,z)+(-1)*bases_{2}(x,y,z)$$
 
 - `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
   stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
@@ -312,6 +308,8 @@ length of the fiber). Required.
 
 - `“mode”`: The value (String) is the “FiberGeometry” mode that tells
   the program which fiber geometries to simulate in NEURON ([NEURON Fiber Models](../../Running_ASCENT/Info.md#implementation-of-neuron-fiber-models)). Required.
+  %TODO add link to docs for pyfibers
+  %TODO update description here for pyfibers
 
   - As listed in [Enums](../../Code_Hierarchy/Python.md#enums), known modes include
 
@@ -763,22 +761,6 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     (String) to prompt the program to save the state variables at
     all segments (unmyelinated) and sections (myelinated). Required.
 
-- `“end_ap_times”`:
-
-  - `“loc_min”`: The value (Double) tells the program at which location to save
-    times at which V<sub>m</sub> passes the threshold voltage (defined below)
-    with a positive slope. The value must be between 0 and 1, and less than the
-    value for `“loc_max”`. Be certain not to record from the end section (i.e., 0)
-    if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
-    z=length of proximal domain. Required if this JSON object (which is optional) is included.
-
-  - `“loc_max”`: The value (Double) tells the program at which location to save
-    times at which V<sub>m</sub> passes the threshold voltage (defined below)
-    with a positive slope. The value must be between 0 and 1, and greater than the
-    value for `“loc_min”`. Be certain not to record from the end section (i.e., 1)
-    if it is passive. A value 0 corresponds to z=0, and a value of 1 corresponds to
-    z=length of proximal domain. Required if this JSON object (which is optional) is included.
-
 - `“runtimes”`: The value (Boolean), if true, tells the program to save
   the NEURON runtime for either the finite amplitude or bisection search for
   threshold simulation. If this key-value pair is omitted, the default
@@ -912,69 +894,6 @@ simulation for an AP and exit the simulation. Optional.
 
 <!-- end list -->
 
-- `“termination_criteria”`: Required for threshold finding protocols
-  (i.e., `“ACTIVATION_THRESHOLDS”` and `“BLOCK_THRESHOLDS”`) ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols)).
-
-  - `“mode”`: The value (String) is the `“TerminationCriteriaMode”` that
-    tells the program when the upper and lower bound have converged
-    on a solution of appropriate precision. Required.
-
-    - As listed in Enums ([Enums](../../Code_Hierarchy/Python.md#enums)), known `“TerminationCriteriaModes”`
-      include:
-
-      - `“ABSOLUTE_DIFFERENCE”`: If the upper bound and lower
-        bound in the bisection search are within a fixed
-        “tolerance” amount (e.g., 0.001 mA), the upper bound
-        value is threshold.
-
-        - `“tolerance”`: The value (Double) is the absolute
-          difference between upper and lower bound in the
-          bisection search for finding threshold (unit: mA).
-          Required.
-
-      - `“PERCENT_DIFFERENCE”`: If the upper bound and lower
-        bound in the bisection search are within a relative
-        “percent” amount (e.g., 1%), the upper bound value is
-        threshold. This mode is generally recommended as the
-        `ABSOLUTE_DIFFERENCE` approach requires adjustment of the
-        “tolerance” to be suitable for different threshold
-        magnitudes.
-
-        - `“percent”`: The value (Double) is the percent
-          difference between upper and lower bound in the
-          bisection search for finding threshold (e.g., 1 is 1%).
-          Required.
-
-`“supersampled_bases”`: Optional. Required only for either generating or
-reusing super-sampled bases. This can be a memory efficient process by
-eliminating the need for long-term storage of the bases/ COMSOL `*.mph`
-files. Control of `“supersampled_bases”` belongs in **_Sim_** because the
-(x,y)-fiber locations in the nerve are determined by **_Sim_**. The
-potentials are sampled densely along the length of the nerve at
-(x,y)-fiber locations once so that in a future pipeline run different
-fiber types can be simulated at the same location in the nerve cross-section without loading COMSOL files into memory.
-
-- `“generate”`: The value (Boolean) indicates if the program will create
-  super-sampled fiber coordinates and super-sampled bases (i.e.,
-  sampled potentials from COMSOL). Required only if generating
-  `ss_bases/`.
-
-- `“use”`: The value (Boolean) if true directs the program to
-  interpolate the super-sampled bases to create the extracellular
-  potential inputs for NEURON. If false, the program will sample along
-  the length of the COMSOL FEM at the coordinates explicitly required
-  by “fibers”. Required only if generating `ss_bases/`.
-
-- `“dz”`: The value (Double, units: micrometer) is the spatial sampling
-  of the super-sampled bases. Required only if generating `ss_bases/`.
-
-- `“source_sim”`: The value (Integer) is the **_Sim_** index that
-  contains the super-sampled bases. If the user sets both “generate”
-  and “use” to true, then the user should indicate the index of the
-  current **_Sim_** here. Required only if generating `ss_bases/`.
-
-<!-- end list -->
-
 - `"termination_criteria"`: Required for threshold finding protocols
   (i.e., `"ACTIVATION_THRESHOLDS"` and `"BLOCK_THRESHOLDS"`) ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols)).
 
@@ -1044,7 +963,3 @@ fiber types can be simulated at the same location in the nerve cross-section wit
 .. include:: ../../../../config/templates/sim.json
    :code: javascript
 ```
-
-[f2]: https://chart.apis.google.com/chart?cht=tx&chl=V_{e}=(amplitude)*potentials
-[f3]: https://chart.apis.google.com/chart?cht=tx&chl=potentials=(weight_{1})*bases_{1}(x,y,z)%2B(weight_{2})*bases_{2}(x,y,z)
-[f4]: https://chart.apis.google.com/chart?cht=tx&chl=potentials=(1)*bases_{1}(x,y,z)%2B(-1)*bases_{2}(x,y,z)
