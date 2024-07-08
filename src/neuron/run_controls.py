@@ -10,8 +10,7 @@ import json
 import sys
 import time
 
-from pyfibers import FiberModel, ScaledStim, _Fiber, build_fiber
-from pyfibers.enums import BoundsSearchMode, TerminationMode, ThresholdCondition
+from pyfibers import BoundsSearchMode, Fiber, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
 from saving import Saving
 
 
@@ -97,15 +96,21 @@ def main(
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop)
 
     # attach intracellular stimulation
-    istim_configs = sim_configs['intracellular_stim']
-    stimulation.set_intracellular_stim(
-        delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
-        pw=istim_configs['times']['pw'],
-        dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
-        freq=istim_configs['pulse_repetition_freq'],
-        amp=istim_configs['amp'],
-        ind=istim_configs['ind'],
-    )
+    # TODO change to use fiber.add_intrinsic_activity
+    try:
+        istim_configs = sim_configs['intrinsic_activity']
+    except KeyError:
+        import warnings
+
+        warnings.warn('For now PyFibers ignores ASCENT intracellular stimulation params, need to update')
+    # stimulation.set_intracellular_stim(
+    #     delay=istim_configs['times']['IntraStim_PulseTrain_delay'],
+    #     pw=istim_configs['times']['pw'],
+    #     dur=istim_configs['times']['IntraStim_PulseTrain_dur'],
+    #     freq=istim_configs['pulse_repetition_freq'],
+    #     amp=istim_configs['amp'],
+    #     ind=istim_configs['ind'],
+    # )
 
     # create saving object
     saving_configs = sim_configs['saving']
@@ -182,7 +187,7 @@ def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimula
 
 
 def handle_saving(
-    fiber: _Fiber, fiber_ind: int, inner_ind: int, saving_configs: dict, sim_path: str, time_step: float
+    fiber: Fiber, fiber_ind: int, inner_ind: int, saving_configs: dict, sim_path: str, time_step: float
 ) -> Saving:
     """Create an instance of the Saving class.
 

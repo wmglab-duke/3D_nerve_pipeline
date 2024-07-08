@@ -554,7 +554,7 @@ def make_fiber_tasks(submission_list, submission_context):
 
             start_path = f"{start_path_base}{fiber_data['job_number']}{'.sh' if OS == 'UNIX-LIKE' else '.bat'}"
 
-            potentials_path = os.path.join(sim_path, 'data', 'inputs', f'inner{inner_ind}_fiber{fiber_ind}.dat')
+            potentials_path = os.path.join(sim_path, 'data', 'inputs', f'src_inner{inner_ind}_fiber{fiber_ind}.dat')
             waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
             n_sim = sim_name.split('_')[-1]
             make_task(
@@ -759,16 +759,16 @@ def get_installed_packages():
 def main():
     """Prepare fiber submissions and run NEURON sims.
 
-    :raises ImportError: if wmglab_neuron is not installed
+    :raises ImportError: If PyFibers is not installed.
     """
-    # check for wmglab_neuron
+    # check for PyFibers
     try:
-        import wmglab_neuron
+        import pyfibers
     except ImportError:
-        raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
-    assert wmglab_neuron.__version__ in ['0.0.2', '0.0.3'], (
-        'wmglab_neuron version 0.0.2 or 0.0.3 required, your version is ' + wmglab_neuron.__version__
-    )
+        sys.exit('Error: PyFibers is not installed. Please install it to run this script.')
+    # check version
+    if pyfibers.__version__ != '0.1.0':
+        raise ImportError(f'Error: PyFibers version is {pyfibers.__version__}, but version 0.1.0 is required.')
 
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()

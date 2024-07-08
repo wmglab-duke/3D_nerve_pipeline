@@ -24,18 +24,11 @@ def run(args):
     """Run the pipeline.
 
     :param args: The command line arguments.
-    :raises ImportError: If PyFibers is not installed.
+    :raises Exception: If the Python version is not 3.10 or newer.
     """
     # test
-    if not (sys.version_info.major == 3 and sys.version_info.minor >= 7):
-        print(f'You are running Python {sys.version_info.major}.{sys.version_info.minor}, but 3.7 or later required')
-        sys.exit()
-
-    try:
-        import pyfibers
-    except ImportError:
-        raise ImportError('PyFibers not installed. Please install PyFibers and try again.')
-    assert pyfibers.__version__ in ['0.1.0'], 'PyFibers version 0.1.0 required, your version is ' + pyfibers.__version__
+    if not (sys.version_info.major == 3 and sys.version_info.minor >= 10):
+        raise Exception('Python 3.10 or newer is required to run this script.')
 
     # create bin/ directory for storing compiled Java files if it does not yet exist
     if not (os.path.exists('bin')):

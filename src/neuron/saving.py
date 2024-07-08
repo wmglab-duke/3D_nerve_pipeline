@@ -9,7 +9,7 @@ https://github.com/wmglab-duke/ascent
 import os
 
 import pandas as pd
-from wmglab_neuron import ScaledStim, _Fiber
+from pyfibers import Fiber, ScaledStim
 
 
 class Saving:
@@ -249,12 +249,12 @@ class Saving:
             vm_time_header = self.handle_header(save_type='time', var_type='vm', dt=stimulation.dt, units='mV')
             vm_time_data.to_csv(vm_time_path, header=vm_time_header, sep='\t', float_format='%.6f', index=False)
 
-    def save_space_gating(self, all_gating_data: list, amp_ind: int, fiber: _Fiber, dt: float):
+    def save_space_gating(self, all_gating_data: list, amp_ind: int, fiber: Fiber, dt: float):
         """Save gating data as function of space to file.
 
         :param all_gating_data: list of lists containing float values for h, m, mp, and s gating parameters
         :param amp_ind: index of amplitude in finite amplitudes protocol
-        :param fiber: instance of _Fiber class
+        :param fiber: instance of Fiber class
         :param dt: time step of simulation (ms)
         """
         if self.space_gating:
@@ -278,7 +278,7 @@ class Saving:
         """Save membrane potential data as function of space to file.
 
         :param amp_ind: index of amplitude in finite amplitudes protocol
-        :param fiber: instance of _Fiber class
+        :param fiber: instance of Fiber class
         :param vm_data: list of float values for membrane potential as a function of time (mV)
         :param dt: time step of stimulation (ms)
         """
@@ -295,11 +295,11 @@ class Saving:
 
             vm_space_data.to_csv(vm_space_path, header=vm_space_header, sep='\t', float_format='%.6f', index=False)
 
-    def save_aploctime(self, amp_ind: int, fiber: _Fiber):
+    def save_aploctime(self, amp_ind: int, fiber: Fiber):
         """Save time when last NoR AP was detected for each node to file.
 
         :param amp_ind: index of amplitude in finite amplitudes protocol
-        :param fiber: instance of _Fiber class
+        :param fiber: instance of Fiber class
         """
         if self.ap_loctime:
             aploctime_path = os.path.join(
@@ -312,11 +312,11 @@ class Saving:
                     else:
                         file.write(f"{fiber.apc[node_ind].time}\n")
 
-    def save_apendtimes(self, amp_ind: int, fiber: _Fiber):
+    def save_apendtimes(self, amp_ind: int, fiber: Fiber):
         """Save time that AP last propagated at two specified indices to file.
 
         :param amp_ind: index of amplitude in finite amplitudes protocol
-        :param fiber: instance of _Fiber class
+        :param fiber: instance of Fiber class
         """
         if self.ap_end_times:
             ap_end_times_path = os.path.join(
