@@ -23,7 +23,6 @@ the following syntax:
   "modes": {
     "rho_perineurium": String,
     "cuff_shift": String,
-    "fiber_z": String,
     "use_ci": Boolean
   },
   "medium": {
@@ -47,8 +46,11 @@ the following syntax:
   "inner_interp_tol": Double,
   "outer_interp_tol": Double,
   "nerve_interp_tol": Double,
-  "cuff": {
+
+  // EXAMPLE for modeling a single stimulation cuff
+  "cuff": [{
     "preset": String,
+    "index": Integer, // The cuff_index in sim.json defines cuff type between stimulating or recording.
     "rotate": {
       "pos_ang": Double,
       "add_ang": Double
@@ -58,7 +60,38 @@ the following syntax:
       "y": Double,
       "z": Double
     }
-  },
+  }],
+
+  // EXAMPLE for modeling a stimulation and recording cuff
+  "cuff": [
+    {
+      "preset": String,
+      "index": Integer, // The cuff_index in sim.json defines cuff type between stimulating or recording.
+      "rotate": {
+        "pos_ang": Double,
+        "add_ang": Double
+      },
+      "shift": {
+        "x": Double,
+        "y": Double,
+        "z": Double
+      }
+    },
+    {
+      "preset": String,
+      "index": Integer,
+      "rotate": {
+        "pos_ang": Double,
+        "add_ang": Double
+      },
+      "shift": {
+        "x": Double,
+        "y": Double,
+        "z": Double
+      }
+    }
+  ]
+
   "min_radius_enclosing_circle": Double,
   "mesh": {
   "quality_measure": String,
@@ -179,10 +212,6 @@ users to better keep track of the purpose of each configuration file. Optional.
     - `“NONE”`: Program keeps both the nerve centroid and cuff
       centered at (x,y) =(0,0) and no cuff rotation is performed ([Creating Custom Cuffs](../../Primitives_and_Cuffs/Custom_Cuffs) and [Cuff Placement on the Nerve](../../Running_ASCENT/Info.md#cuff-placement-on-nerve)). Note: This mode will ignore any supplied orientation image (`a.tif`).
 
-- `“fiber_z”`: The value (String) is the `“FiberZMode”` that tells the
-  program how to seed the NEURON fibers along the length of the FEM.
-  In the current implementation of the pipeline, this value must be
-  “EXTRUSION”. Required.
 
 - `“use_ci”`: The value (Boolean), if true, tells the program whether
   to model fascicles (outer) that have a single inner as a sheet
@@ -248,11 +277,9 @@ in the range of 0.001-0.005 to be appropriate, but the user should check that th
 interpolation tolerance is set correctly for their input nerve sample
 morphology. See the [COMSOL Documentation](https://doc.comsol.com/5.5/doc/com.comsol.help.comsol/comsol_ref_geometry.14.038.html) for more info. Required.
 
-`“cuff”`: The cuff JSON Object contains key-value pairs that define which
+`“cuff”`: The cuff list containing JSON Objects with key-value pairs that define which
 cuff to model on the nerve in addition to how it is placed on the nerve
-(i.e., rotation and translation). If the user would like to loop over
-preset cuff designs, then they must create a **_Model_** (model index)
-for each cuff preset. Required.
+(i.e., rotation and translation). Up to two cuffs can be modeled with unique "index" values indicating whether the cuff is used for stimulation or recording. If the user would like to loop over preset cuff designs for each cuff, then they must create a **_Model_** (model index) for each cuff preset. Required.
 
 - `“preset”`: The value (String) indicates which cuff to model, selected
   from the list of filenames of the “preset” cuffs in
@@ -282,6 +309,8 @@ for each cuff preset. Required.
     if monofascicular), and shift in z-direction is along the
     proximal medium’s (i.e., the nerve’s) length relative to the
     cuff “Center” (defined in preset JSON file).
+
+- `“index”`: The value (Integer) is used to identify each cuff by a number. This parameter will correspond to the "cuff_index" parameter in **_Simulation_** to define the given cuffs weights and if the cuff is used for stimulation (index matched with `"cuff_index"` in `"active_srcs"`) or recording (index matched with `"cuff_index"` in `"active_recs"`) . Each cuff should have a unique index value. The current implementation has only been tested for up to two cuffs. Required.
 
 `“min_radius_enclosing_circle”`: The value (Double, units: micrometer)
 is automatically defined in the program with the radius of the minimum

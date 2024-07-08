@@ -247,6 +247,12 @@ def get_deltaz(fiber_model, diameter):
         else:
             delta_z = eval(delta_z_str["diameter_less_5.643um"])
 
+    elif fiber_model_info.get("geom_determination_method") == 2:  # SMALL_MRG_INTERPOLATION_V1 fiber
+        paranodal_length_2_str, delta_z_str, inter_length_str = (
+            fiber_model_info[key] for key in ('paranodal_length_2', 'delta_z', 'inter_length')
+        )
+        delta_z = eval(delta_z_str)
+
     elif fiber_model_info.get("neuron_flag") == 3:  # C Fiber
         delta_z = fiber_model_info["delta_zs"]
 
@@ -544,7 +550,7 @@ def make_fiber_tasks(submission_list, submission_context):
             ensure_dir(cur_dir)
 
         for fiber_data in runfibers:
-            inner_ind, fiber_ind = fiber_data['inner'], fiber_data['fiber']
+            cuff_type, inner_ind, fiber_ind = fiber_data['cuff_type'], fiber_data['inner'], fiber_data['fiber']
 
             start_path = f"{start_path_base}{fiber_data['job_number']}{'.sh' if OS == 'UNIX-LIKE' else '.bat'}"
 
@@ -599,11 +605,15 @@ def make_run_sub_list(run_number: int):
                     n_sim = sim_name.split('_')[-1]
                     sim_config = load(os.path.join(sim_path, f'{n_sim}.json'))
 
-                    fibers_files = [x for x in os.listdir(fibers_path) if re.match('inner[0-9]+_fiber[0-9]+\\.dat', x)]
+                    fibers_files = [
+                        x for x in os.listdir(fibers_path) if re.match('(?:(src)_)?inner[0-9]+_fiber[0-9]+\\.dat', x)
+                    ]  # First regex group with ? is optional - for backwards compatibility
 
                     for i, fiber_filename in enumerate(fibers_files):
                         master_fiber_name = str(fiber_filename.split('.')[0])
-                        inner_name, fiber_name = tuple(master_fiber_name.split('_'))
+                        *cuff_type, inner_name, fiber_name = tuple(
+                            master_fiber_name.split('_')
+                        )  # not backwards compatible
                         inner_ind = int(inner_name.split('inner')[-1])
                         fiber_ind = int(fiber_name.split('fiber')[-1])
 
@@ -616,7 +626,7 @@ def make_run_sub_list(run_number: int):
                         else:
                             search_path = os.path.join(
                                 output_path,
-                                f"thresh_inner{inner_ind}_fiber{fiber_ind}.dat",
+                                f'thresh_inner{inner_ind}_fiber{fiber_ind}.dat',
                             )
 
                         if os.path.exists(search_path):
@@ -625,7 +635,9 @@ def make_run_sub_list(run_number: int):
                                 time.sleep(1)
                             continue
 
-                        submit_list[sim_name].append({"job_number": i, "inner": inner_ind, "fiber": fiber_ind})
+                        submit_list[sim_name].append(
+                            {"job_number": i, "cuff_type": cuff_type, "inner": inner_ind, "fiber": fiber_ind}
+                        )
                     # save_submit list as csv
                     pd.DataFrame(submit_list[sim_name]).to_csv(os.path.join(sim_path, 'out_err_key.csv'), index=False)
 
@@ -660,7 +672,7 @@ def confirm_submission(n_fibers, rundata, submission_context):
 
 
 def get_submission_list(run_inds):
-    """Get the list of simulations to be submitte for all runs.
+    """Get the list of simulations to be submitted for all runs.
 
     :param run_inds: the list of run indices
     :return: summary of runs, a list of all simulations to be submitted

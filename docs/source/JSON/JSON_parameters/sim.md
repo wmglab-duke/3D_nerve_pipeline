@@ -24,7 +24,11 @@ following syntax:
   "n_dimensions": Integer,
   "active_srcs": {
     "CorTec300.json": [[Double, Double]], // for example
-    "default": [[1, -1]]
+    "cuff_index": Integer // Correlates with cuff index assigned to cuff configs in model.json
+  },
+  "active_recs": {
+    "cyl_MicroLeads_300t.json":[[Double, Double, Double]], // for example
+    "cuff_index": Integer
   },
   "fibers": {
     "mode": String,
@@ -55,6 +59,8 @@ following syntax:
         "seed": Integer
       },
 
+      "mode": String,
+      "fiber_z_shift": Integer,
       "min": Double,
       "max": Double,
       "full_nerve_length": Boolean,
@@ -88,6 +94,12 @@ following syntax:
     // EXAMPLE XY Parameters for EXPLICIT
     "xy_parameters": {
       "mode": "EXPLICIT",
+      "explicit_fiberset_index" : Integer
+    },
+
+    // EXAMPLE XY Parameters for EXPLICIT_3D
+    "xy_parameters": {
+      "mode": "EXPLICIT_3D",
       "explicit_fiberset_index" : Integer
     },
 
@@ -140,8 +152,7 @@ following syntax:
       "digits": Integer
     },
 
-    // EXAMPLE WAVEFORM for
-    BIPHASIC_PULSE_TRAIN_Q_BALANCED_UNEVEN_PW
+    // EXAMPLE WAVEFORM for BIPHASIC_PULSE_TRAIN_Q_BALANCED_UNEVEN_PW
     "BIPHASIC_PULSE_TRAIN_Q_BALANCED_UNEVEN_PW": {
       "pulse_width_1": Double,
       "pulse_width_2": Double,
@@ -184,7 +195,8 @@ following syntax:
       "loc_min": Double,
       "loc_max": Double,
     }
-    "runtimes": Boolean
+    "runtimes": Boolean,
+    "3D_fiber_intermediate_data": Boolean
   },
 
   // EXAMPLE PROTOCOL for FINITE_AMPLITUDES
@@ -262,18 +274,16 @@ creating unintended NEURON simulations. The pipeline will only loop over
 the first n-dimensions. Required.
 
 `“active_srcs”`: The value is a JSON Object containing key-value pairs of
-contact weightings for preset cuffs. Each value (`List[List[Double]]`)
+contact weightings for preset stimulation cuffs. Each value (`List[List[Double]]`)
 is the contact weighting used to make extracellular potentials inputs
 to NEURON simulations. The order of weights matches the order of parts
 containing point current sources. The values should not exceed +/-1 in magnitude,
 otherwise an error is thrown. For monopolar cuff electrodes, the value
 should be either +1 or -1. For cuff electrodes with more than one
-contact (2+), the sum of weightings should be +1, -1, or 0. If the
-preset cuff is not a key in `active_srcs`, the list of contact weightings
-for the “default” key is used. Required. The potentials/ for a single
-fiber are calculated in the following way for the default weighting:
+contact (2+), the sum of weightings should be +1, -1, or 0. Required. The potentials/ for a single
+fiber are calculated in the following way for an example weighting:
 
-`"default": [[1, -1]]` // [[weight<sub>1</sub> (for src 1 on),
+`"example_cuff_preset.json": [[1, -1]]` // [[weight<sub>1</sub> (for src 1 on),
 weight<sub>2</sub> (for src 2 on)]]
 
 ![f2]
@@ -285,6 +295,14 @@ multiplied by the stimulation amplitude, which is either from a list of
 finite amplitudes or a bisection search for thresholds ([Simulation Protocols](../../Running_ASCENT/Info.md#simulation-protocols))
 
 ![f4]
+
+- `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
+  stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
+
+`“active_recs”`: The JSON Object value serves the same purpose as `active_srcs`, but provides contact weightings for preset cuffs used for recording. Only required when modeling a recording cuff in the Model configurations.
+
+- `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
+  stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
 
 `“fibers”`: The value is a JSON Object containing key-value pairs that
 define how potentials are sampled in the FEM for application as
@@ -301,6 +319,8 @@ length of the fiber). Required.
 
     - `“MRG_INTERPOLATION”` (interpolates the discrete diameters
       from published MRG fiber models)
+
+    - `SMALL_MRG_INTERPOLATION_V1` (interpolates diameters from published literature data on small myelinated fibers; used by {cite:p}`Pena2024` to model myelinated fibers with >1.011 um diameter; uses the same ion channels as MRG_DISCRETE and MRG_INTERPLOATION, but decreases the maximum conductance of sodium ion channels and increases the maximum conductance of potassium ion channels to ensure one action potential per stimulus pulse.)
 
     - `“TIGERHOLM”` (published C-fiber model)
 
@@ -319,7 +339,7 @@ length of the fiber). Required.
 
 - `“xy_trace_buffer”`: The value (Double, units: micrometer) indicates
   the minimum required distance between the (x,y)-coordinates of a
-  given fiber and the inner’s boundary. Since the domain boundaries
+  given fiber and the fascicle's inner boundary. Since the domain boundaries
   are modeled in COMSOL as an interpolation curve, the exact
   morphology boundary coordinates read into COMSOL will be very close
   to (but not exactly equal to) those used in Python to seed fiber
@@ -347,6 +367,16 @@ length of the fiber). Required.
         - `“upper”`: The value (Double, units micrometer) is the upper limit on the distribution of diameters. Required.
         - `“lower”`: The value (Double, units micrometer) is the lower limit on the distribution of diameters. Required.
         - `“seed”`: The value (Integer) seeds the random number generator before sampling fiber diameters.
+
+  - `“mode”`: The value (String) is the `“FiberZMode”` that tells the program how to seed fiber z-locations along the length of the FEM model. Required.
+
+    As listed in [Enums](../../Code_Hierarchy/Python.md#enums), implemented modes include
+
+    - `“EXTRUSION”`: Creates straight fibers along the length of the model by extruding the xy- fiber locations defined by `“FiberXYMode”`.
+
+    - `“EXPLICIT”`: Creates curved fibers within a 2D extrusion model by importing explicit 3D fiber coordinates from a file. When this mode is used, `"FiberXYMode"` must be `"EXPLICIT_3D"`.
+
+      - `“fiber_z_shift"`: The value (Integer) specifies the longitudinal shift of the fiber coordinates from the model's center. This is shift is only applicable if the fibers are shorter than the model and are being extruded; the fiber_z_shift must be equal to or less than the extrusion length, such that all user-provided fiber coordinates remain within the model length. (optional)
 
   - `“min”`: the value (Double or List\[Double\], units: micrometer)
     is the distal extent of the seeded fiber along the length of the
@@ -385,11 +415,11 @@ length of the fiber). Required.
 
 - `“xy_parameters”`: The value is a JSON Object containing key-value
   pairs to instruct the system in seeding fiber locations at which to
-  sample potentials inside inners in the nerve cross-section ([Fig 3B](https://doi.org/10.1371/journal.pcbi.1009285.g003)). Include only _one_ version of this block in your `sim.json`
+  sample potentials inside fascicle inners in the nerve cross-section ([Fig 3B](https://doi.org/10.1371/journal.pcbi.1009285.g003)). Include only _one_ version of this block in your `sim.json`
   file. Required.
 
   `“mode”`: The value (String) is the `“FiberXYMode”` that tells the
-  program how to seed fiber locations inside each inner in the nerve
+  program how to seed fiber locations inside each fascicle inner in the nerve
   cross-section. Required.
 
 - As listed in [Enums](../../Code_Hierarchy/Python.md#enums), known modes include
@@ -436,7 +466,16 @@ length of the fiber). Required.
       degrees. If false, the program interprets `“angle_offset”` in
       radians. Required.
 
-  - `“EXPLICIT”`: The mode looks for a `“<explicit_index>.txt”` file in the user created directory (`samples/<sample_index>/explicit_fibersets`) for user-specified fiber (x,y)-coordinates (see `config/templates/explicit.txt`). Note, this file is only required if the user is using the `“EXPLICIT”` `“FiberXYMode”`. An error is thrown if any explicitly defined coordinates are not inside any inners.
+  - `“EXPLICIT”`: The mode looks for a `“<explicit_index>.txt”` file in the user-created directory (`input/<input sample name>/explicit_fibersets`, where `<input sample name>` is the `sample` parameter in **_Sample_**) for user-specified fiber (x,y)-coordinates (see `config/templates/explicit.txt`). Note, this file is only required if the user is using the `“EXPLICIT”` `“FiberXYMode”`. An error is thrown if any explicitly defined coordinates are not inside any fascicle inner boundaries.
+
+    - `“explicit_fiberset_index”`: The value (Integer) indicates which explicit index file to use.
+
+  - `“EXPLICIT_3D”`: The mode looks for a `“<explicit_index>.npy”` file in the user-created directory
+    (`input/<input sample name>/explicit_fibersets`, where `<input sample name>` is the `sample` parameter in **_Sample_**) for user-specified fiber (x,y,z)-coordinates in microns (see `config/templates/explicit_3D.npy`). Note, this file is only required if the user is using the `“EXPLICIT_3D”` `“FiberXYMode”`. The explicit coordinates data structure in the pickled `.npy` file must be a numpy array of fibers, where each index contains a 2D np.array of fiber xyz-points (e.g., np.array(np.array(fiber 1 xyz-coords), ..., np.array(fiber N xyz-coords)). The lengths fibers may be differ. An error is thrown if any explicitly defined coordinates are not inside any fascicle inner boundaries. If the fibers are shorter than the length of the model, the whole population of the provided fiber coordinates is centered longitudinally by default, and each fiber is individually extruded to the length of the model.
+
+    To visualize the `explicit_3D.npy` template, open a command-line window and change directories to `config/templates/`. Enter `python` to start an interactive python session and enter `import numpy as np`. Then run the `np.load('explicit_3D.npy', allow_pickle=True)` to load and print the file contents to the consol. The template file contains two short fibers of varying lengths, and is compatible with the ascent tutorial.
+
+    To generate a 3D coordinate file: Create a python list of fibers, where each index is a 2D np.array of xyz values. To save a python list of np.arrays of varying lengths to a .npy file, use `np.save('<file name>.npy', np.array(<list of fiber arrays>, dtype=object), allow_pickle=True)`.)
 
     - `“explicit_fiberset_index”`: The value (Integer) indicates which explicit index file to use.
 
@@ -744,6 +783,14 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
   the NEURON runtime for either the finite amplitude or bisection search for
   threshold simulation. If this key-value pair is omitted, the default
   behavior is False.
+
+- `"3D_fiber_intermediate_data"`: The value (Boolean), if true, tells the program to save the fiber lengths and longitudinal coordinate compartment spacings for sampled potentials into directories within the sample called `tracto_lengths/`, `tracto_coords/`, `3D_tracto_fiberset/` respectively.
+
+- `“cap_recording”`:
+
+  - `“Imembrane_matrix”`: The value (Boolean), if true, tells the program to save the
+    transmembrane current matrix for each fiber. These are memory-intensive matrices that contain the transmembrane currents for all fiber compartments across all time points. The matrices are required if the user aims to later generate current templates using the `examples\analysis\generate_templates.py` script. Default: False. Optional.
+
 
 `“protocol”`:
 

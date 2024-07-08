@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.7
-
 """Returns thresholds from the selected sample/model/sim combos as a dataframe.
 
 The copyrights of this software are owned by Duke University.
@@ -10,14 +8,12 @@ Use argument meanify=True to instead get the mean threshold for each nsim with s
 RUN THIS FROM REPOSITORY ROOT
 """
 
-
 # %% imports
 import os
 import sys
 
-from src.core.query import Query
-
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
+from src.core.query import Query
 
 # %% metadata
 samples = [670, 672]

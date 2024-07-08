@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.7
-
 """Use this script to run a convergence study.
 
 The copyrights of this software are owned by Duke University.
@@ -10,9 +8,10 @@ Threshold error will be calculated for each model and sample with respect to the
 RUN THIS FROM REPOSITORY ROOT
 """
 
-
 import os
 import sys
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,9 +19,6 @@ import pandas as pd
 import seaborn as sb
 
 from src.core.query import Query
-
-sys.path.append(os.path.sep.join([os.getcwd(), '']))
-
 
 samples = [1000, 10, 20]
 models = [0, 1, 2, 10, 11, 20, 21, 30]
