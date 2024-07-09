@@ -87,20 +87,10 @@ class FiberSet(Configurable, Saveable):
         # Load fiber xy and z modes
         xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
         self.xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
-        try:
-            fiber_z_mode_name: str = self.search(Config.SIM, 'fibers', 'z_parameters', 'mode')
-            # If fiber z mode is in SIM file, cast to Enum FiberZMode object to maintain enum code consistency
-            # (eventhough this can easily be done without enums & using string equality).
-            self.z_mode: FiberZMode = [mode for mode in FiberZMode if str(mode).split('.')[-1] == fiber_z_mode_name][0]
-        except KeyError:  # Backwards compatibility.
-            # If fiber z mode doesn't exist in new position under Sim > fibers > z_parameters > mode,
-            # look for it where it use to be located (in model.json) in previous ascent versions
-            warnings.warn(
-                'No fiber_z mode specified in sim.json under "fibers" > "z_parameters" > "mode". '
-                'Proceeding with fiber_z mode from location in model.json.',
-                stacklevel=2,
-            )
-            self.z_mode = self.search_mode(FiberZMode, Config.MODEL)
+        fiber_z_mode_name: str = self.search(Config.SIM, 'fibers', 'z_parameters', 'mode')
+        # If fiber z mode is in SIM file, cast to Enum FiberZMode object to maintain enum code consistency
+        # (eventhough this can easily be done without enums & using string equality).
+        self.z_mode: FiberZMode = [mode for mode in FiberZMode if str(mode).split('.')[-1] == fiber_z_mode_name][0]
 
         # Generate fibers accordingly depending on fiber z mode.
         if self.z_mode == FiberZMode.EXTRUSION:
