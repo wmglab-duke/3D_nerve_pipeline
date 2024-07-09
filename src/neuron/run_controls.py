@@ -94,7 +94,6 @@ def main(
         potentials = np.array([float(i) for i in file_lines]) * 1000  # Need to convert to V -> mV
 
     # create fiber object
-    sim_configs['fibers']['mode'] = 'SMALL_MRG_INTERPOLATION'
     model = getattr(FiberModel, sim_configs['fibers']['mode'])
     diameter = sim_configs['fibers']['z_parameters']['diameter']
     fiber = build_fiber(diameter=diameter, fiber_model=model, temperature=temperature, n_sections=axontotal)
