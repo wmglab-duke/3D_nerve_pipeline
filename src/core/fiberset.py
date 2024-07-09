@@ -87,7 +87,10 @@ class FiberSet(Configurable, Saveable):
         # Load fiber xy and z modes
         xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
         self.xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
-        fiber_z_mode_name: str = self.search(Config.SIM, 'fibers', 'z_parameters', 'mode')
+
+        fiber_z_mode_name: str = (
+            self.search(Config.SIM, 'fibers', 'z_parameters', 'mode', optional=True) or FiberZMode.EXTRUSION.name
+        )
         # If fiber z mode is in SIM file, cast to Enum FiberZMode object to maintain enum code consistency
         # (eventhough this can easily be done without enums & using string equality).
         self.z_mode: FiberZMode = [mode for mode in FiberZMode if str(mode).split('.')[-1] == fiber_z_mode_name][0]
