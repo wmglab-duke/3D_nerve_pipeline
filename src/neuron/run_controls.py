@@ -67,6 +67,7 @@ def main(
     :raises NotImplementedError: for deprecated features
     """
     start_time = time.time()  # Starting time of simulation
+    stimamp_top, stimamp_bottom = float(stimamp_top), float(stimamp_bottom)
 
     # Read in <sim_index>.json file as dictionary
     with open(f'{sim_path}/{n_sim}.json') as file:
@@ -111,12 +112,15 @@ def main(
     # determine protocol
     protocol_configs = sim_configs['protocol']
     t_init_ss, dt_init_ss = protocol_configs['initSS'], protocol_configs['dt_initSS']
+    ap_detect_location = protocol_configs['threshold']['ap_detect_location']
 
     # create stimulation object
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop, t_init_ss=t_init_ss, dt_init_ss=dt_init_ss)
 
     if protocol_configs['mode'] != 'FINITE_AMPLITUDES':  # threshold search
-        amp = threshold_protocol(fiber, protocol_configs, sim_configs, stimulation, stimamp_top, stimamp_bottom)
+        amp = threshold_protocol(
+            fiber, protocol_configs, sim_configs, stimulation, stimamp_top, stimamp_bottom, ap_detect_location
+        )
         save_thresh(saving_params, amp)  # Save threshold value to file
         save_variables(saving_params, fiber, stimulation)  # Save user-specified variables
         save_runtime(saving_params, time.time() - start_time)  # Save runtime of simulation
@@ -127,7 +131,7 @@ def main(
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
-            n_aps, _ = stimulation.run_sim(stimamp=amp, fiber=fiber)
+            n_aps, _ = stimulation.run_sim(stimamp=amp, fiber=fiber, ap_detect_location=ap_detect_location)
             time_individual = time.time() - start_time - time_total
             save_variables(saving_params, fiber, stimulation, amp_ind)  # Save user-specified variables
             save_activation(saving_params, n_aps, amp_ind)  # Save number of APs triggered
@@ -137,7 +141,13 @@ def main(
 
 
 def threshold_protocol(
-    fiber, protocol_configs: dict, sim_configs: dict, stimulation: ScaledStim, stimamp_top: float, stimamp_bottom: float
+    fiber,
+    protocol_configs: dict,
+    sim_configs: dict,
+    stimulation: ScaledStim,
+    stimamp_top: float,
+    stimamp_bottom: float,
+    ap_detect_location: float,
 ) -> float:
     """Prepare for bisection threshold search.
 
@@ -147,6 +157,7 @@ def threshold_protocol(
     :param stimulation: instance of ScaledStim class
     :param stimamp_top: top stimamp to start bounds search
     :param stimamp_bottom: bottom stimamp to start bounds search
+    :param ap_detect_location: location to detect APs for threshold search
     :return: returns threshold amplitude (nA)
     """
     if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
@@ -170,6 +181,7 @@ def threshold_protocol(
         stimamp_bottom=stimamp_bottom,
         max_iterations=max_iterations,
         exit_t_shift=exit_t_shift,
+        ap_detect_location=ap_detect_location,
     )
     print(f'Threshold found! {amp} mA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
     return amp
