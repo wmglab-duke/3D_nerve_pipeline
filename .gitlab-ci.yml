@@ -128,3 +128,4 @@ pages:
       - public
   only:
     - master
+  when: always
