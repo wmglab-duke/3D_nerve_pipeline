@@ -347,6 +347,8 @@ def make_task(
     sim_p: str,
     inner_ind: int,
     fiber_ind: int,
+    stimamp_top: float,
+    stimamp_bottom: float,
     potentials_path: str,
     waveform_path: str,
     n_sim: int,
@@ -360,6 +362,8 @@ def make_task(
     :param sim_p: the string path to the sim_dir
     :param inner_ind: the index of the inner this fiber is in
     :param fiber_ind: the index of the fiber this simulation is for
+    :param stimamp_top: top stimamp to start bounds search
+    :param stimamp_bottom: bottom stimamp to start bounds search
     :param potentials_path: the string path to the potentials text file
     :param waveform_path: the string path to the waveform text file
     :param n_sim: the index of the n_sim
@@ -370,6 +374,8 @@ def make_task(
             f'python -u run_controls.py '
             f'\"{inner_ind}\" '
             f'\"{fiber_ind}\" '
+            f'\"{stimamp_top}\" '
+            f'\"{stimamp_bottom}\" '
             f'\"{potentials_path}\" '
             f'\"{waveform_path}\" '
             f'\"{sim_p}\" ',
@@ -564,6 +570,9 @@ def make_fiber_tasks(submission_list, submission_context):
                 potentials_path = os.path.join(sim_path, 'data', 'inputs', f'src_inner{inner_ind}_fiber{fiber_ind}.dat')
             waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
             n_sim = sim_name.split('_')[-1]
+
+            stimamp_top, stimamp_bottom = get_thresh_bounds(sim_dir, sim_name, inner_ind)
+            assert stimamp_top is not None and stimamp_bottom is not None, 'Stimamps cannot be None'
             make_task(
                 OS,
                 submission_context,
@@ -571,6 +580,8 @@ def make_fiber_tasks(submission_list, submission_context):
                 sim_path,
                 inner_ind,
                 fiber_ind,
+                stimamp_top,
+                stimamp_bottom,
                 potentials_path,
                 waveform_path,
                 n_sim,
