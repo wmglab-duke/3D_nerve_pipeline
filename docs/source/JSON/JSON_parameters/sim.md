@@ -678,36 +678,10 @@ waveform parameters among the lists (i.e., the Cartesian product).
     “off” to accommodate for any extra time after the number of
     period repeats and before “off”. Required.
 
-`“intracellular_stim”`: The value (JSON Object) contains key-value pairs
-to define the settings of the monophasic pulse train of the
-intracellular stimulus ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
-
-- `“times”`: The key-value pairs define the time durations
-  characteristic of the intracellular stimulation. Required.
-
-  - `“pw”`: The value (Double, units: milliseconds) defines the pulse
-    duration of the intracellular stimulation. Required.
-
-  - `“IntraStim_PulseTrain_delay”`: The value (Double, units:
-    milliseconds) defines the delay from the start of the simulation
-    (i.e., t=0) to the onset of the intracellular stimulation.
-    Required.
-
-  - `“IntraStim_PulseTrain_dur”`: The value (Double, units:
-    milliseconds) defines the duration from the start of the
-    simulation (i.e., t=0) to the end of the intracellular
-    stimulation. Required.
-
-- `“pulse_repetition_freq”`: The value (Double, units: Hz) defines the
-  intracellular stimulation frequency. Required.
-
-- `“amp”`: The value (Double, units: nA) defines the intracellular
-  stimulation amplitude. Required.
-
-- `“ind”`: The value (Integer) defines the section index (unmyelinated)
-  or node of Ranvier number (myelinated) receiving the intracellular
-  stimulation. The number of sections/nodes of Ranvier is indexed from
-  0 and starts at the end of the fiber closest to z = 0. Required.
+`"intrinsic_activity"`: The value (JSON Object) contains key-value pairs
+to define intrinsic activity for the fiber ([NEURON Scripts](../../Code_Hierarchy/NEURON)).
+Optional, though required if searching for block thresholds.
+The key-value pairs are passed to [PyFibers: Fiber.add_intrinsic_activity()](<<link>>).
 
 `“saving”`: The value (JSON Object) contains key-value pairs to define
 which state variables NEURON will save during its simulations and at
