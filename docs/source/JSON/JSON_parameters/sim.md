@@ -168,15 +168,8 @@ following syntax:
       "period_repeats ": Integer
     }
   },
-  "intracellular_stim": {
-    "times": {
-      "pw": Double,
-      "IntraStim_PulseTrain_delay": Double,
-      "IntraStim_PulseTrain_dur": Double
-    },
-    "pulse_repetition_freq": Double,
-    "amp": Double,
-    "ind": Integer
+  "instrinsic_activity": {
+    "argument": object, // See PyFibers documentation for arguments
   },
   "saving": {
     "aploctime": Boolean,
@@ -204,6 +197,9 @@ following syntax:
     "threshold": {
       "value": Double,
       "ap_detect_location": Double
+    },
+    "run_sim_kws": {
+        "argument": object // See PyFibers documentation for arguments
     }
   },
 
@@ -225,6 +221,9 @@ following syntax:
     "termination_criteria": {
       "mode": "ABSOLUTE_DIFFERENCE",
       "percent": Double
+    },
+    "find_threshold_kws": {
+        "argument": object // See PyFibers documentation for arguments
     }
   },
 
@@ -246,6 +245,9 @@ following syntax:
     "termination_criteria": {
       "mode": String,
       "percent": Double
+    },
+    "find_threshold_kws": {
+        "argument": object // See PyFibers documentation for arguments
     }
   },
   "supersampled_bases": {
@@ -759,6 +761,31 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     - `“ACTIVATION_THRESHOLDS”`
     - `“BLOCK_THRESHOLDS”`
     - `“FINITE_AMPLITUDES”`
+
+- `"run_sim_kws"`: Additional keyword arguments to pass to PyFibers `ScaledStim.run_sim()` method. Optional.
+  Only used if protocol is `“FINITE_AMPLITUDES”`. For threshold search protocols, these should be included in `"find_threshold_kws"`.
+  See [PyFibers ScaledStim.run_sim()](<<link>>) for more information.
+  Note: you should not include in this json object any keyword arguments already set by other parameters within sim.json, or parameters set by ASCENT. This includes:
+  - `"stimamp"`
+  - `"ap_detect_location"`
+
+
+- `"find_threshold_kws"`: Additional keyword arguments to pass to PyFibers `ScaledStim.find_threshold()` method. Optional.
+  Only used if protocol is `“ACTIVATION_THRESHOLDS”` or `“BLOCK_THRESHOLDS”`.
+  Since `find_threshold()` passes extra arguments to `run_sim()`, you may also include keyword arguments for `run_sim()` here.
+  See [PyFibers ScaledStim.find_threshold()](<<link>>) and [PyFibers ScaledStim.run_sim()](<<link>>) for more information.
+  Note: you should not include in this json object any keyword arguments already set by other parameters within sim.json, or parameters set by ASCENT. This includes:
+    - `"condition"`
+    - `"bounds_search_mode"`
+    - `"bounds_search_step"`
+    - `"termination_mode"`
+    - `"termination_tolerance"`
+    - `"stimamp_top"`
+    - `"stimamp_bottom"`
+    - `"max_iterations"`
+    - `"block_delay"`
+    - any parameters listed as "do not include" for `run_sim_kws` above.
+    - any parameters which use imported enums (e.g., `"bisection_mean"`)
 
 - `“initSS”`: The value (Double, hint: should be negative or zero,
   units: milliseconds) is the time allowed for the system to reach

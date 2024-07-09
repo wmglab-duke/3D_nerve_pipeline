@@ -98,7 +98,6 @@ def main(
     fiber.potentials = potentials
 
     # attach intracellular stimulation
-    # TODO change all references to istim in docs and code
     istim_configs = sim_configs.get('intrinsic_activity', {})
     if istim_configs:
         fiber.add_intrinsic_activity(**istim_configs)  # Add to docs to look at pyfiber docs for this
@@ -118,8 +117,16 @@ def main(
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop, t_init_ss=t_init_ss, dt_init_ss=dt_init_ss)
 
     if protocol_configs['mode'] != 'FINITE_AMPLITUDES':  # threshold search
+        find_threshold_kws = protocol_configs['find_threshold_kws']
         amp = threshold_protocol(
-            fiber, protocol_configs, sim_configs, stimulation, stimamp_top, stimamp_bottom, ap_detect_location
+            fiber,
+            protocol_configs,
+            sim_configs,
+            stimulation,
+            stimamp_top,
+            stimamp_bottom,
+            ap_detect_location,
+            find_threshold_kws,
         )
         save_thresh(saving_params, amp)  # Save threshold value to file
         save_variables(saving_params, fiber, stimulation)  # Save user-specified variables
@@ -128,10 +135,13 @@ def main(
     else:  # finite amplitudes protocol
         time_total = 0
         amps = protocol_configs['amplitudes']
+        run_sim_kws = protocol_configs['run_sim_kws']
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
-            n_aps, _ = stimulation.run_sim(stimamp=amp, fiber=fiber, ap_detect_location=ap_detect_location)
+            n_aps, _ = stimulation.run_sim(
+                stimamp=amp, fiber=fiber, ap_detect_location=ap_detect_location, **run_sim_kws
+            )
             time_individual = time.time() - start_time - time_total
             save_variables(saving_params, fiber, stimulation, amp_ind)  # Save user-specified variables
             save_activation(saving_params, n_aps, amp_ind)  # Save number of APs triggered
@@ -148,6 +158,7 @@ def threshold_protocol(
     stimamp_top: float,
     stimamp_bottom: float,
     ap_detect_location: float,
+    find_threshold_kws: dict,
 ) -> float:
     """Prepare for bisection threshold search.
 
@@ -158,16 +169,20 @@ def threshold_protocol(
     :param stimamp_top: top stimamp to start bounds search
     :param stimamp_bottom: bottom stimamp to start bounds search
     :param ap_detect_location: location to detect APs for threshold search
+    :param find_threshold_kws: dictionary containing keyword arguments for find_threshold
     :return: returns threshold amplitude (nA)
     """
+    block_delay = 0
     if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
         condition = ThresholdCondition.ACTIVATION
     elif protocol_configs['mode'] == 'BLOCK_THRESHOLD':
         condition = ThresholdCondition.BLOCK
+        assert fiber.stim is not None, 'Fiber must have intrinsic activity for block threshold search'
+        block_delay = fiber.stim.start
+
     # determine termination protocols for binary search
     termination_mode, termination_tolerance = handle_termination(protocol_configs)
     bounds_search_mode, bounds_search_step, max_iterations = handle_bounds_search(protocol_configs['bounds_search'])
-    exit_t_shift = protocol_configs.get('exit_t_shift', 5)
 
     # submit fiber for simulation
     amp, _ = stimulation.find_threshold(
@@ -180,8 +195,9 @@ def threshold_protocol(
         stimamp_top=stimamp_top,
         stimamp_bottom=stimamp_bottom,
         max_iterations=max_iterations,
-        exit_t_shift=exit_t_shift,
         ap_detect_location=ap_detect_location,
+        block_delay=block_delay,
+        **find_threshold_kws,
     )
     print(f'Threshold found! {amp} mA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
     return amp
