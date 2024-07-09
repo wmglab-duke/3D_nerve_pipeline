@@ -32,7 +32,7 @@ def handle_termination(protocol_configs: dict) -> (int, float):
     return termination_mode, termination_tolerance
 
 
-def handle_bounds_search(bounds_search_configs: dict) -> (str, float, float, float, int):
+def handle_bounds_search(bounds_search_configs: dict) -> (str, float, int):
     """Handle bounds search configs for simulation.
 
     :param bounds_search_configs: dictionary containing information about bounds search for simulation
@@ -40,15 +40,15 @@ def handle_bounds_search(bounds_search_configs: dict) -> (str, float, float, flo
     """
     bounds_search_mode = getattr(BoundsSearchMode, bounds_search_configs['mode'])
     bounds_search_step = bounds_search_configs['step']
-    stimamp_top = bounds_search_configs['top']
-    stimamp_bottom = bounds_search_configs['bottom']
     max_iterations = bounds_search_configs.get("max_steps", 100)
-    return bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations
+    return bounds_search_mode, bounds_search_step, max_iterations
 
 
 def main(
     inner_ind: int,
     fiber_ind: int,
+    stimamp_top: float,
+    stimamp_bottom: float,
     potentials_path: str,
     waveform_path: str,
     sim_path: str,
@@ -58,6 +58,8 @@ def main(
 
     :param inner_ind: inner index
     :param fiber_ind: fiber index
+    :param stimamp_top: top stimamp to start bounds search
+    :param stimamp_bottom: bottom stimamp to start bounds search
     :param potentials_path: path to potentials file
     :param waveform_path: path to waveform file
     :param sim_path: path to n_sim directory
@@ -65,6 +67,7 @@ def main(
     :raises NotImplementedError: for deprecated features
     """
     start_time = time.time()  # Starting time of simulation
+    stimamp_top, stimamp_bottom = float(stimamp_top), float(stimamp_bottom)
 
     # Read in <sim_index>.json file as dictionary
     with open(f'{sim_path}/{n_sim}.json') as file:
@@ -94,11 +97,7 @@ def main(
     fiber = build_fiber(diameter=diameter, fiber_model=model, temperature=temperature, n_sections=axontotal)
     fiber.potentials = potentials
 
-    # create stimulation object
-    stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop)
-
     # attach intracellular stimulation
-    # TODO change all references to istim in docs and code
     istim_configs = sim_configs.get('intrinsic_activity', {})
     if istim_configs:
         fiber.add_intrinsic_activity(**istim_configs)  # Add to docs to look at pyfiber docs for this
@@ -107,15 +106,28 @@ def main(
         raise NotImplementedError('Intracellular stimulation is deprecated, use intrinsic_activity instead')
 
     # initialize saving parameters
-    saving_params = initialize_saving(
-        sim_configs.get('saving', {}), fiber, fiber_ind, inner_ind, sim_path, stimulation.dt
-    )
+    saving_params = initialize_saving(sim_configs.get('saving', {}), fiber, fiber_ind, inner_ind, sim_path, dt)
 
     # determine protocol
     protocol_configs = sim_configs['protocol']
+    t_init_ss, dt_init_ss = protocol_configs['initSS'], protocol_configs['dt_initSS']
+    ap_detect_location = protocol_configs['threshold']['ap_detect_location']
+
+    # create stimulation object
+    stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop, t_init_ss=t_init_ss, dt_init_ss=dt_init_ss)
 
     if protocol_configs['mode'] != 'FINITE_AMPLITUDES':  # threshold search
-        amp = threshold_protocol(fiber, protocol_configs, sim_configs, stimulation)
+        find_threshold_kws = protocol_configs['find_threshold_kws']
+        amp = threshold_protocol(
+            fiber,
+            protocol_configs,
+            sim_configs,
+            stimulation,
+            stimamp_top,
+            stimamp_bottom,
+            ap_detect_location,
+            find_threshold_kws,
+        )
         save_thresh(saving_params, amp)  # Save threshold value to file
         save_variables(saving_params, fiber, stimulation)  # Save user-specified variables
         save_runtime(saving_params, time.time() - start_time)  # Save runtime of simulation
@@ -123,10 +135,13 @@ def main(
     else:  # finite amplitudes protocol
         time_total = 0
         amps = protocol_configs['amplitudes']
+        run_sim_kws = protocol_configs['run_sim_kws']
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
-            n_aps = stimulation.run_sim(stimamp=amp, fiber=fiber)
+            n_aps, _ = stimulation.run_sim(
+                stimamp=amp, fiber=fiber, ap_detect_location=ap_detect_location, **run_sim_kws
+            )
             time_individual = time.time() - start_time - time_total
             save_variables(saving_params, fiber, stimulation, amp_ind)  # Save user-specified variables
             save_activation(saving_params, n_aps, amp_ind)  # Save number of APs triggered
@@ -135,34 +150,39 @@ def main(
             time_total += time_individual
 
 
-def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimulation: ScaledStim):
+def threshold_protocol(
+    fiber,
+    protocol_configs: dict,
+    sim_configs: dict,
+    stimulation: ScaledStim,
+    stimamp_top: float,
+    stimamp_bottom: float,
+    ap_detect_location: float,
+    find_threshold_kws: dict,
+) -> float:
     """Prepare for bisection threshold search.
 
     :param fiber: fiber object
     :param protocol_configs: dictionary containing protocol configs from <sim_index>.json
     :param sim_configs: dictionary containing simulation configs from <sim_index>.json
     :param stimulation: instance of ScaledStim class
+    :param stimamp_top: top stimamp to start bounds search
+    :param stimamp_bottom: bottom stimamp to start bounds search
+    :param ap_detect_location: location to detect APs for threshold search
+    :param find_threshold_kws: dictionary containing keyword arguments for find_threshold
     :return: returns threshold amplitude (nA)
     """
+    block_delay = 0
     if protocol_configs['mode'] == 'ACTIVATION_THRESHOLD':
         condition = ThresholdCondition.ACTIVATION
     elif protocol_configs['mode'] == 'BLOCK_THRESHOLD':
         condition = ThresholdCondition.BLOCK
+        assert fiber.stim is not None, 'Fiber must have intrinsic activity for block threshold search'
+        block_delay = fiber.stim.start
+
     # determine termination protocols for binary search
     termination_mode, termination_tolerance = handle_termination(protocol_configs)
-    if 'bounds_search' not in protocol_configs:
-        bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations = (
-            BoundsSearchMode.PERCENT_INCREMENT,
-            10,
-            -1,
-            -0.01,
-            100,
-        )
-    else:
-        bounds_search_mode, bounds_search_step, stimamp_top, stimamp_bottom, max_iterations = handle_bounds_search(
-            protocol_configs['bounds_search']
-        )
-    exit_t_shift = protocol_configs.get('exit_t_shift', 5)
+    bounds_search_mode, bounds_search_step, max_iterations = handle_bounds_search(protocol_configs['bounds_search'])
 
     # submit fiber for simulation
     amp, _ = stimulation.find_threshold(
@@ -175,7 +195,9 @@ def threshold_protocol(fiber, protocol_configs: dict, sim_configs: dict, stimula
         stimamp_top=stimamp_top,
         stimamp_bottom=stimamp_bottom,
         max_iterations=max_iterations,
-        exit_t_shift=exit_t_shift,
+        ap_detect_location=ap_detect_location,
+        block_delay=block_delay,
+        **find_threshold_kws,
     )
     print(f'Threshold found! {amp} mA for a fiber with diameter {sim_configs["fibers"]["z_parameters"]["diameter"]}')
     return amp

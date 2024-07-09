@@ -168,15 +168,8 @@ following syntax:
       "period_repeats ": Integer
     }
   },
-  "intracellular_stim": {
-    "times": {
-      "pw": Double,
-      "IntraStim_PulseTrain_delay": Double,
-      "IntraStim_PulseTrain_dur": Double
-    },
-    "pulse_repetition_freq": Double,
-    "amp": Double,
-    "ind": Integer
+  "instrinsic_activity": {
+    "argument": object, // See PyFibers documentation for arguments
   },
   "saving": {
     "aploctime": Boolean,
@@ -204,6 +197,9 @@ following syntax:
     "threshold": {
       "value": Double,
       "ap_detect_location": Double
+    },
+    "run_sim_kws": {
+        "argument": object // See PyFibers documentation for arguments
     }
   },
 
@@ -225,6 +221,9 @@ following syntax:
     "termination_criteria": {
       "mode": "ABSOLUTE_DIFFERENCE",
       "percent": Double
+    },
+    "find_threshold_kws": {
+        "argument": object // See PyFibers documentation for arguments
     }
   },
 
@@ -246,6 +245,9 @@ following syntax:
     "termination_criteria": {
       "mode": String,
       "percent": Double
+    },
+    "find_threshold_kws": {
+        "argument": object // See PyFibers documentation for arguments
     }
   },
   "supersampled_bases": {
@@ -678,36 +680,10 @@ waveform parameters among the lists (i.e., the Cartesian product).
     “off” to accommodate for any extra time after the number of
     period repeats and before “off”. Required.
 
-`“intracellular_stim”`: The value (JSON Object) contains key-value pairs
-to define the settings of the monophasic pulse train of the
-intracellular stimulus ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
-
-- `“times”`: The key-value pairs define the time durations
-  characteristic of the intracellular stimulation. Required.
-
-  - `“pw”`: The value (Double, units: milliseconds) defines the pulse
-    duration of the intracellular stimulation. Required.
-
-  - `“IntraStim_PulseTrain_delay”`: The value (Double, units:
-    milliseconds) defines the delay from the start of the simulation
-    (i.e., t=0) to the onset of the intracellular stimulation.
-    Required.
-
-  - `“IntraStim_PulseTrain_dur”`: The value (Double, units:
-    milliseconds) defines the duration from the start of the
-    simulation (i.e., t=0) to the end of the intracellular
-    stimulation. Required.
-
-- `“pulse_repetition_freq”`: The value (Double, units: Hz) defines the
-  intracellular stimulation frequency. Required.
-
-- `“amp”`: The value (Double, units: nA) defines the intracellular
-  stimulation amplitude. Required.
-
-- `“ind”`: The value (Integer) defines the section index (unmyelinated)
-  or node of Ranvier number (myelinated) receiving the intracellular
-  stimulation. The number of sections/nodes of Ranvier is indexed from
-  0 and starts at the end of the fiber closest to z = 0. Required.
+`"intrinsic_activity"`: The value (JSON Object) contains key-value pairs
+to define intrinsic activity for the fiber ([NEURON Scripts](../../Code_Hierarchy/NEURON)).
+Optional, though required if searching for block thresholds.
+The key-value pairs are passed to [PyFibers: Fiber.add_intrinsic_activity()](<<link>>).
 
 `“saving”`: The value (JSON Object) contains key-value pairs to define
 which state variables NEURON will save during its simulations and at
@@ -785,6 +761,31 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     - `“ACTIVATION_THRESHOLDS”`
     - `“BLOCK_THRESHOLDS”`
     - `“FINITE_AMPLITUDES”`
+
+- `"run_sim_kws"`: Additional keyword arguments to pass to PyFibers `ScaledStim.run_sim()` method. Optional.
+  Only used if protocol is `“FINITE_AMPLITUDES”`. For threshold search protocols, these should be included in `"find_threshold_kws"`.
+  See [PyFibers ScaledStim.run_sim()](<<link>>) for more information.
+  Note: you should not include in this json object any keyword arguments already set by other parameters within sim.json, or parameters set by ASCENT. This includes:
+  - `"stimamp"`
+  - `"ap_detect_location"`
+
+
+- `"find_threshold_kws"`: Additional keyword arguments to pass to PyFibers `ScaledStim.find_threshold()` method. Optional.
+  Only used if protocol is `“ACTIVATION_THRESHOLDS”` or `“BLOCK_THRESHOLDS”`.
+  Since `find_threshold()` passes extra arguments to `run_sim()`, you may also include keyword arguments for `run_sim()` here.
+  See [PyFibers ScaledStim.find_threshold()](<<link>>) and [PyFibers ScaledStim.run_sim()](<<link>>) for more information.
+  Note: you should not include in this json object any keyword arguments already set by other parameters within sim.json, or parameters set by ASCENT. This includes:
+    - `"condition"`
+    - `"bounds_search_mode"`
+    - `"bounds_search_step"`
+    - `"termination_mode"`
+    - `"termination_tolerance"`
+    - `"stimamp_top"`
+    - `"stimamp_bottom"`
+    - `"max_iterations"`
+    - `"block_delay"`
+    - any parameters listed as "do not include" for `run_sim_kws` above.
+    - any parameters which use imported enums (e.g., `"bisection_mean"`)
 
 - `“initSS”`: The value (Double, hint: should be negative or zero,
   units: milliseconds) is the time allowed for the system to reach
