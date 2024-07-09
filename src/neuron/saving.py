@@ -167,7 +167,7 @@ def save_data(
         )
         if save_type == 'space':
             data = data[params['time_inds']]  # save data only at user-specified times
-            data.insert(0, 'Node#', [*range(0, len(fiber.nodes))])
+            data.insert(0, 'Node#', list(range(0, len(fiber.nodes))))
         elif save_type == 'time':
             data = data.T[params['node_inds']]  # save data only at user-specified locations
             data.insert(0, 'Time', stimulation.time)
@@ -222,7 +222,7 @@ def space_header(params: dict, var_type: str, dt: float, units: str = None) -> l
     header = ['Node#']
     suffix = f'({units})' if units else ''
     for time in params['time_inds']:
-        header.append(f'{var_type}_time{(float(time) * float(dt))}ms{suffix}')
+        header.append(f'time{(float(time) * float(dt))}ms{suffix}')
     return header
 
 
@@ -238,7 +238,7 @@ def time_header(params: dict, var_type: str, units: str = None) -> list[str]:
     suffix = f'({units})' if units else ''
     if var_type != 'istim':
         for node in params['node_inds']:
-            header.append(f'{var_type}_node{node}{suffix}')
+            header.append(f'node{node}{suffix}')
     elif var_type == 'istim':
         header.append(f'Istim({units})')
     return header
