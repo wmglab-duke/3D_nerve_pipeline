@@ -303,14 +303,6 @@ $$potentials=(1)*bases_{1}(x,y,z)+(-1)*bases_{2}(x,y,z)$$
 - `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
   stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
 
-- `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
-  stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
-
-`“active_recs”`: The JSON Object value serves the same purpose as `active_srcs`, but provides contact weightings for preset cuffs used for recording. Only required when modeling a recording cuff in the Model configurations.
-
-- `“cuff_index”`: The value (Integer) used to designate which cuff will be used for
-  stimulation and which cuff will be used for recording. The index value must correspond to the “index” value in the Model "cuff" configuration. Required.
-
 `“fibers”`: The value is a JSON Object containing key-value pairs that
 define how potentials are sampled in the FEM for application as
 extracellular potentials in NEURON (i.e., the Cartesian coordinates of

@@ -7,6 +7,7 @@ https://github.com/wmglab-duke/ascent
 """
 
 import json
+import os
 import sys
 import time
 import warnings
@@ -107,7 +108,9 @@ def main(
         raise NotImplementedError('Intracellular stimulation is deprecated, use intrinsic_activity instead')
 
     # initialize saving parameters
-    saving_params = initialize_saving(sim_configs.get('saving', {}), fiber, fiber_ind, inner_ind, sim_path, dt)
+    saving_params = initialize_saving(
+        sim_configs.get('saving', {}), fiber, fiber_ind, inner_ind, sim_path, dt, sfap='active_recs' in sim_configs
+    )
 
     # determine protocol
     protocol_configs = sim_configs['protocol']
@@ -153,11 +156,7 @@ def main(
 
     # TODO: do recording here?
     # If recording cuff is present, record sfap
-    import os
-
-    import pd
-
-    if sim_configs.contains['active_recs']:
+    if 'active_recs' in sim_configs:
         rec_potentials_path = os.path.dirname(potentials_path) + f'rec_inner{inner_ind}_fiber{fiber_ind}.dat'
         with open(rec_potentials_path) as rec_potentials_file:
             axontotal = int(rec_potentials_file.readline())

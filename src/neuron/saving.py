@@ -14,7 +14,7 @@ from pyfibers import Fiber, ScaledStim
 
 
 def initialize_saving(
-    saving_configs: dict, fiber: Fiber, fiber_ind: int, inner_ind: int, sim_path: str, dt: float
+    saving_configs: dict, fiber: Fiber, fiber_ind: int, inner_ind: int, sim_path: str, dt: float, sfap: bool = False
 ) -> dict:
     """Initialize saving parameters.
 
@@ -24,6 +24,7 @@ def initialize_saving(
     :param inner_ind: index of inner in list of inners
     :param sim_path: path to simulation directory
     :param dt: time step of stimulation (ms)
+    :sfap: whether sfap recordings will be generated
     :return: dictionary containing saving parameters
     """
     # Determine optional saving configurations and set fiber saving properties
@@ -32,6 +33,8 @@ def initialize_saving(
         fiber.set_save_vm()
     if saving_configs['space']['gating'] or saving_configs['time']['gating']:
         fiber.set_save_gating()
+    if sfap or saving_configs['space']['imembrane'] or saving_configs['time']['imembrane']:
+        fiber.set_save_imembrane()
 
     space_times = saving_configs['space']['times']
     locs = saving_configs['time']['locs']
