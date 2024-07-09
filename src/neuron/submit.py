@@ -247,7 +247,7 @@ def get_deltaz(fiber_model, diameter):
         else:
             delta_z = eval(delta_z_str["diameter_less_5.643um"])
 
-    elif fiber_model_info.get("geom_determination_method") == 2:  # SMALL_MRG_INTERPOLATION_V1 fiber
+    elif fiber_model_info.get("geom_determination_method") == 2:  # SMALL_MRG_INTERPOLATION fiber
         paranodal_length_2_str, delta_z_str, inter_length_str = (
             fiber_model_info[key] for key in ('paranodal_length_2', 'delta_z', 'inter_length')
         )
@@ -555,19 +555,14 @@ def make_fiber_tasks(submission_list, submission_context):
         ]:
             ensure_dir(cur_dir)
 
-        for (
-            fiber_data
-        ) in runfibers:  # TODO cuff type seems pointless here.. would always be src or empty for potentials_path...
-            cuff_type, inner_ind, fiber_ind = fiber_data['cuff_type'], fiber_data['inner'], fiber_data['fiber']
+        for fiber_data in runfibers:
+
+            inner_ind, fiber_ind = fiber_data['inner'], fiber_data['fiber']
 
             start_path = f"{start_path_base}{fiber_data['job_number']}{'.sh' if OS == 'UNIX-LIKE' else '.bat'}"
 
-            if cuff_type:
-                potentials_path = os.path.join(
-                    sim_path, 'data', 'inputs', f'{cuff_type[0]}_inner{inner_ind}_fiber{fiber_ind}.dat'
-                )
-            else:  # Backwards compatibility
-                potentials_path = os.path.join(sim_path, 'data', 'inputs', f'src_inner{inner_ind}_fiber{fiber_ind}.dat')
+            potentials_path = os.path.join(sim_path, 'data', 'inputs', f'src_inner{inner_ind}_fiber{fiber_ind}.dat')
+
             waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
             n_sim = sim_name.split('_')[-1]
 

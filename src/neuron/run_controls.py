@@ -13,8 +13,8 @@ import time
 import warnings
 
 import numpy as np
-from pyfibers import BoundsSearchMode, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
-from saving import initialize_saving, save_activation, save_runtime, save_thresh, save_variables
+from pyfibers import BoundsSearchMode, Fiber, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
+from saving import initialize_saving, save_activation, save_matrix, save_runtime, save_sfap, save_thresh, save_variables
 
 
 def handle_termination(protocol_configs: dict) -> (int, float):
@@ -94,6 +94,7 @@ def main(
         potentials = np.array([float(i) for i in file_lines]) * 1000  # Need to convert to V -> mV
 
     # create fiber object
+    sim_configs['fibers']['mode'] = 'SMALL_MRG_INTERPOLATION'
     model = getattr(FiberModel, sim_configs['fibers']['mode'])
     diameter = sim_configs['fibers']['z_parameters']['diameter']
     fiber = build_fiber(diameter=diameter, fiber_model=model, temperature=temperature, n_sections=axontotal)
@@ -111,6 +112,7 @@ def main(
     saving_params = initialize_saving(
         sim_configs.get('saving', {}), fiber, fiber_ind, inner_ind, sim_path, dt, sfap='active_recs' in sim_configs
     )
+    # TODO add deprecation warning for ap_end_times
 
     # determine protocol
     protocol_configs = sim_configs['protocol']
@@ -118,7 +120,6 @@ def main(
     ap_detect_location = protocol_configs['threshold']['ap_detect_location']
 
     # create stimulation object
-    # TODO: if stim cuff is present
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop, t_init_ss=t_init_ss, dt_init_ss=dt_init_ss)
 
     if protocol_configs['mode'] != 'FINITE_AMPLITUDES':  # threshold search
@@ -134,8 +135,12 @@ def main(
             find_threshold_kws,
         )
         save_thresh(saving_params, amp)  # Save threshold value to file
+        if 'active_recs' in sim_configs:
+            calculate_save_sfap(sim_configs, fiber, saving_params, potentials_path, inner_ind, fiber_ind, 0, axontotal)
         save_variables(saving_params, fiber, stimulation)  # Save user-specified variables
-        save_runtime(saving_params, time.time() - start_time)  # Save runtime of simulation
+        save_runtime(
+            saving_params, time.time() - start_time
+        )  # Save runtime of simulation #TODO modify original ASCENT runtime to save after alll export
 
     else:  # finite amplitudes protocol
         time_total = 0
@@ -147,31 +152,55 @@ def main(
             n_aps, _ = stimulation.run_sim(
                 stimamp=amp, fiber=fiber, ap_detect_location=ap_detect_location, **run_sim_kws
             )
-            time_individual = time.time() - start_time - time_total
+            save_activation(saving_params, int(n_aps), amp_ind)  # Save number of APs triggered
+            if 'active_recs' in sim_configs:
+                calculate_save_sfap(
+                    sim_configs, fiber, saving_params, potentials_path, inner_ind, fiber_ind, amp_ind, axontotal
+                )
             save_variables(saving_params, fiber, stimulation, amp_ind)  # Save user-specified variables
-            save_activation(saving_params, n_aps, amp_ind)  # Save number of APs triggered
+            time_individual = time.time() - start_time - time_total
+
             save_runtime(saving_params, time_individual, amp_ind)  # Save runtime of inidividual run
 
             time_total += time_individual
 
-    # TODO: do recording here?
+
+def calculate_save_sfap(
+    sim_configs: dict,
+    fiber: Fiber,
+    saving_params: dict,
+    potentials_path: str,
+    inner_ind: int,
+    fiber_ind: int,
+    amp_ind: int,
+    axontotal: int,
+):
     # If recording cuff is present, record sfap
     if 'active_recs' in sim_configs:
-        rec_potentials_path = os.path.dirname(potentials_path) + f'rec_inner{inner_ind}_fiber{fiber_ind}.dat'
+        # TODO move this param to saving init
+        downsample = sim_configs.get('saving', {}).get('cap_recording', {}).get('downsample', 1)  # TODO update docs
+        # TODO move this param to saving init
+        save_adjusted_im = (
+            sim_configs.get('saving', {}).get('cap_recording', {}).get('save_adjusted_im', False)
+        )  # TODO update docs
+
+        # generate and save sfap
+        rec_potentials_path = os.path.join(
+            os.path.dirname(potentials_path), f'rec_inner{inner_ind}_fiber{fiber_ind}.dat'
+        )
         with open(rec_potentials_path) as rec_potentials_file:
-            axontotal = int(rec_potentials_file.readline())
-            file_lines = rec_potentials_file.read().splitlines()
-            rec_potentials = [float(i) * 1000 for i in file_lines]  # Need to convert to V -> mV
-        fiber.rec_potentials = rec_potentials
+            axontotal_rec = int(rec_potentials_file.readline())
+            assert axontotal_rec == axontotal, 'Number of axons in rec_potentials file does not match potentials file'
+            rec_potentials = 1000 * np.array(
+                [float(i) for i in rec_potentials_file.read().splitlines()]
+            )  # Need to convert to V -> mV
 
         # generate and save single fiber action potential, and I_membrane_current if applicable.
-        sfap = fiber.record_SFAP(stimulation.time)
-        saving.save_sfap(sfap)  # TODO: write the save_sfap method
-        if saving.imembrane_matrix:
-            if hasattr(fiber, 'membrane_current'):
-                saving.save_imembrane_matrix(fiber.membrane_current)
-            else:
-                print("WARNING: NO MEMBRANE CURRENT MATRIX GENERATED TO SAVE...")
+        membrane_currents, downsampled_time = fiber.membrane_currents(downsample)
+        sfap = fiber.sfap(membrane_currents, rec_potentials)
+        save_sfap(saving_params, sfap, downsampled_time, amp_ind)
+        if save_adjusted_im:
+            save_matrix(saving_params, membrane_currents, amp_ind)
 
 
 def threshold_protocol(

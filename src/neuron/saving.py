@@ -7,8 +7,9 @@ https://github.com/wmglab-duke/ascent
 """
 
 import os
-from operator import index
+import warnings
 
+import numpy as np
 import pandas as pd
 from pyfibers import Fiber, ScaledStim
 
@@ -27,14 +28,26 @@ def initialize_saving(
     :sfap: whether sfap recordings will be generated
     :return: dictionary containing saving parameters
     """
+    # set defaults and then load in saving configurations
+    space_configs = {'vm': False, 'imembrane': False, 'gating': False, 'times': []}
+    time_configs = {'vm': False, 'imembrane': False, 'gating': False, 'istim': False, 'locs': []}
+    space_configs.update(saving_configs.get('space', {}))
+    time_configs.update(saving_configs.get('time', {}))
+
     # Determine optional saving configurations and set fiber saving properties
-    # TODO make saving and all sub arguments optional
-    if saving_configs['space']['vm'] or saving_configs['time']['vm']:
+    if space_configs['vm'] or time_configs['vm']:
         fiber.set_save_vm()
-    if saving_configs['space']['gating'] or saving_configs['time']['gating']:
+    if space_configs['gating'] or time_configs['gating']:
         fiber.set_save_gating()
-    if sfap or saving_configs['space']['imembrane'] or saving_configs['time']['imembrane']:
-        fiber.set_save_imembrane()
+    if sfap:
+        fiber.set_save_im(allsec=True)
+        if space_configs['imembrane'] or time_configs['imembrane']:
+            # Could be changed to support both if could save im for allsec and regular independently
+            warnings.warn('saving i_membrane is not supported for sfap generation, setting to False.')
+            space_configs['imembrane'] = time_configs['imembrane'] = False
+    else:
+        if space_configs['imembrane'] or time_configs['imembrane']:
+            fiber.set_save_im()
 
     space_times = saving_configs['space']['times']
     locs = saving_configs['time']['locs']
@@ -46,18 +59,17 @@ def initialize_saving(
     node_inds.sort()
     output_path = os.path.join(sim_path, 'data', 'outputs')
     os.makedirs(output_path, exist_ok=True)
-    # TODO self.imembrane_matrix = imembrane_matrix
-    # TODO support saving both kinds of imemmbrane
-
     return {
         'inner_ind': inner_ind,
         'fiber_ind': fiber_ind,
-        'space_vm': saving_configs['space']['vm'],
-        'space_gating': saving_configs['space']['gating'],
+        'space_vm': space_configs['vm'],
+        'space_im': space_configs['imembrane'],
+        'space_gating': space_configs['gating'],
         'time_inds': time_inds,
-        'time_vm': saving_configs['time']['vm'],
-        'time_gating': saving_configs['time']['gating'],
-        'istim': saving_configs['time']['istim'],
+        'time_vm': time_configs['vm'],
+        'time_im': time_configs['imembrane'],
+        'time_gating': time_configs['gating'],
+        'istim': time_configs['istim'],
         'node_inds': node_inds,
         'ap_loctime': saving_configs.get('aploctime', False),
         'runtime': saving_configs.get('runtimes', False),
@@ -93,29 +105,25 @@ def save_runtime(params: dict, runtime: float, amp_ind: int = 0):
             runtime_file.write(f'{runtime:.3f}')
 
 
-def save_sfap(self, sfap: list):
+def save_sfap(params: dict, sfap: list, downsampled_time: list, amp_ind: int = 0):
     """Save sfap from NEURON simulation to file.
 
     :param sfap: single fiber action potential from NEURON simulation
     """
-    # save threshold to submit/n_sims/#/data/outputs/thresh_inner#_fiber#.dat
-    sfap_path = os.path.join(self.output_path, f'SFAP_inner{self.inner_ind}_fiber{self.fiber_ind}.dat')
-    with open(sfap_path, 'w') as sfap_file:
-        sfap_file.write(f"{sfap:.6f}")
+    sfap_path = os.path.join(
+        params['output_path'], f'SFAP_time_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
+    )
+    # create a dataframe of downsampled time and sfap
+    sfap_df = pd.DataFrame({'Time (ms)': downsampled_time, 'SFAP (uV)': sfap})
+    sfap_df.to_csv(sfap_path, sep=' ', float_format='%.6f', index=False)
 
 
-def save_imembrane_matrix(self, imembrane_matrix: list):
-    """Fill in."""  # TODO
-
-    if self.imembrane_matrix:
-        i_mem_path = os.path.join(
-            self.output_path, f'Imembrane_inner{self.inner_ind}_fiber{self.fiber_ind}_amp{amp_ind}.dat'
-        )
-
-        i_mem_data = pd.DataFrame(imembrane_matrix)
-        i_mem_data.to_csv(
-            i_mem_path, header=['Time [s]', 'I_membrane [V]'], sep='\t', float_format='%.6f', index=False
-        )  # TODO check this.
+def save_matrix(params: dict, Imembrane_matrix: np.ndarray, amp_ind: int = 0):
+    adj_im_path = os.path.join(
+        params['output_path'],
+        f'adjusted_imembrane_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat',
+    )
+    np.savetxt(adj_im_path, Imembrane_matrix)
 
 
 def save_activation(params: dict, n_aps: int, amp_ind: int):
@@ -145,8 +153,18 @@ def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind:
         target_len = max(len(vm) for vm in fiber.vm if vm is not None)
         vm_data = pd.DataFrame(list(vm) if vm is not None else [None] * target_len for vm in fiber.vm)
         vm_data = vm_data.fillna(0)
-        save_data(params, amp_ind, fiber, vm_data, stimulation.dt, 'vm', 'space', stimulation, 'mV')
-        save_data(params, amp_ind, fiber, vm_data, stimulation.dt, 'vm', 'time', stimulation, 'mV')
+        if params['space_vm']:
+            save_data(params, amp_ind, fiber, vm_data, stimulation.dt, 'vm', 'space', stimulation, 'mV')
+        if params['time_vm']:
+            save_data(params, amp_ind, fiber, vm_data, stimulation.dt, 'vm', 'time', stimulation, 'mV')
+    if fiber.im is not None:
+        target_len = max(len(im) for im in fiber.im if im is not None)
+        im_data = pd.DataFrame(list(im) if im is not None else [None] * target_len for im in fiber.im)
+        im_data = im_data.fillna(0)
+        if params['space_im']:
+            save_data(params, amp_ind, fiber, im_data, stimulation.dt, 'imembrane', 'space', stimulation, 'nA')
+        if params['time_im']:
+            save_data(params, amp_ind, fiber, im_data, stimulation.dt, 'imembrane', 'time', stimulation, 'nA')
     if fiber.gating is not None:
         all_gating_data = {}
         for gating_parameter, gating_data in fiber.gating.items():
@@ -155,13 +173,10 @@ def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind:
                 [list(g) if g is not None else [None] * target_len for g in gating_data]
             )
             all_gating_data[gating_parameter] = all_gating_data[gating_parameter].fillna(0)
-        save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'space', stimulation)
-        save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'time', stimulation)
-    # TODO support saving membrane currents
-    # if hasattr(fiber, 'membrane_current'):
-    #     imem_matrix_data = pd.DataFrame([list(imem) for imem in fiber.membrane_current if imem is not None])
-    #     self.save_imembrane_matrix(imem_matrix_data)
-
+        if params['space_gating']:
+            save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'space', stimulation)
+        if params['time_gating']:
+            save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'time', stimulation)
     if params['istim']:
         istim_data = pd.DataFrame(list(stimulation.istim_record))
         save_data(params, amp_ind, fiber, istim_data, stimulation.dt, 'istim', 'time', stimulation, 'nA')
@@ -192,23 +207,18 @@ def save_data(
     :param stimulation: instance of ScaledStim class
     :param units: units of variable (mV, nA)
     """
-    if (
-        (save_type == 'space' and params['space_vm'])
-        or (save_type == 'time' and params['time_vm'])
-        or (var_type == 'istim' and params['istim'])
-    ):
-        file_path = os.path.join(
-            params['output_path'],
-            f'{var_type}_{save_type}_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat',
-        )
-        if save_type == 'space':
-            data = data[params['time_inds']]  # save data only at user-specified times
-            data.insert(0, 'Node#', list(range(0, len(fiber.nodes))))
-        elif save_type == 'time':
-            data = data.T[params['node_inds']]  # save data only at user-specified locations
-            data.insert(0, 'Time', stimulation.time)
-        header = handle_header(params, save_type=save_type, var_type=var_type, dt=dt, units=units)
-        data.to_csv(file_path, header=header, sep=' ', float_format='%.6f', index=False)
+    file_path = os.path.join(
+        params['output_path'],
+        f'{var_type}_{save_type}_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat',
+    )
+    if save_type == 'space':
+        data = data[params['time_inds']]  # save data only at user-specified times
+        data.insert(0, 'Node#', list(range(0, len(fiber.nodes))))
+    elif save_type == 'time':
+        data = data.T[params['node_inds']]  # save data only at user-specified locations
+        data.insert(0, 'Time', stimulation.time)
+    header = handle_header(params, save_type=save_type, var_type=var_type, dt=dt, units=units)
+    data.to_csv(file_path, header=header, sep=' ', float_format='%.6f', index=False)
 
 
 def save_gating_data(

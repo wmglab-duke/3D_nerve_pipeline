@@ -105,7 +105,6 @@ This documentation is an adaptation and update of the supplements associated wit
    Primitives_and_Cuffs/index
    Modeling_Neural_Recording
    Convergence_Example
-   Troubleshooting-Guide
 
 .. toctree::
    :maxdepth: 2

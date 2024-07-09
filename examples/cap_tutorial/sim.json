@@ -6,16 +6,20 @@
     "cuff_index": 0,
     "cyl_MicroLeads_300b.json": [[1, -1]]
   },
+  "active_recs": {
+    "CorTec300.json": [1, -1],
+    "cuff_index": 1,
+    "cyl_MicroLeads_300t.json": [[1, 0, 0]]
+  },
   "fibers": {
-    "mode": "SMALL_MRG_INTERPOLATION_V1",
+    "mode": "SMALL_MRG_INTERPOLATION",
     "xy_trace_buffer": 5,
     "z_parameters": {
       "diameter": [
         1.012706, 1.024754, 1.036945, 1.049281, 1.061764, 2.010853, 3.006143, 4.0403, 5.058253,
         6.040083, 7.043896, 8.022517000000001, 9.029676, 9.809011999999999
       ],
-      "min": 0,
-      "max": 30000,
+      "full_nerve_length": true,
       "offset": 0,
       "seed": 123
     },
@@ -27,9 +31,9 @@
   "waveform": {
     "global": {
       "dt": 0.0025,
-      "on": 2,
+      "on": 1,
       "off": 49,
-      "stop": 65
+      "stop": 50
     },
     "BIPHASIC_PULSE_TRAIN": {
       "pulse_width": 0.05,
@@ -37,16 +41,6 @@
       "pulse_repetition_freq": 1.45,
       "digits": 1
     }
-  },
-  "intracellular_stim": {
-    "times": {
-      "pw": 0,
-      "IntraStim_PulseTrain_delay": 0,
-      "IntraStim_PulseTrain_dur": 0
-    },
-    "pulse_repetition_freq": 0,
-    "amp": 0,
-    "ind": 2
   },
   "saving": {
     "space": {
@@ -67,7 +61,10 @@
     },
     "runtimes": true,
     "aploctime": false,
-    "Imembrane_matrix": true
+    "cap_recording": {
+      "save_adjusted_im": true,
+      "downsample": 1
+    }
   },
   "protocol": {
     "mode": "FINITE_AMPLITUDES",
@@ -96,10 +93,5 @@
     "use": false,
     "dz": 1,
     "source_sim": 1009
-  },
-  "active_recs": {
-    "CorTec300.json": [1, -1],
-    "cuff_index": 1,
-    "cyl_MicroLeads_300t.json": [[1, 0, 0]]
   }
 }
