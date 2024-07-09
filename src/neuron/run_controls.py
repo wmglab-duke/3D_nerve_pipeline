@@ -117,7 +117,7 @@ def main(
     stimulation = ScaledStim(waveform=waveform, dt=dt, tstop=tstop, t_init_ss=t_init_ss, dt_init_ss=dt_init_ss)
 
     if protocol_configs['mode'] != 'FINITE_AMPLITUDES':  # threshold search
-        find_threshold_kws = protocol_configs['find_threshold_kws']
+        find_threshold_kws = protocol_configs.get('find_threshold_kws', {})
         amp = threshold_protocol(
             fiber,
             protocol_configs,
@@ -135,7 +135,7 @@ def main(
     else:  # finite amplitudes protocol
         time_total = 0
         amps = protocol_configs['amplitudes']
-        run_sim_kws = protocol_configs['run_sim_kws']
+        run_sim_kws = protocol_configs.get('run_sim_kws', {})
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
