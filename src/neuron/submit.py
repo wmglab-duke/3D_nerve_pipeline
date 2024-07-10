@@ -200,67 +200,6 @@ def ensure_dir(directory):
     os.makedirs(directory, exist_ok=True)
 
 
-def get_diameter(my_inner_fiber_diam_key, my_inner_ind, my_fiber_ind):
-    """Get the diameter of the fiber from the inner fiber diameter key.
-
-    :param my_inner_fiber_diam_key: the key for the fiber diameters
-    :param my_inner_ind: the index of the inner
-    :param my_fiber_ind: the index of the fiber within the inner
-    :return: the diameter for this fiber
-    """
-    for item in my_inner_fiber_diam_key:
-        if item[0] == my_inner_ind and item[1] == my_fiber_ind:
-            my_diameter = item[2]
-            break
-        else:
-            continue
-    if isinstance(my_diameter, list) and len(my_diameter) == 1:
-        my_diameter = my_diameter[0]
-
-    return my_diameter
-
-
-def get_deltaz(fiber_model, diameter):
-    """Get the deltaz (node spacing) for a given fiber model and diameter.
-
-    :param fiber_model: the string name of the fiber model
-    :param diameter: the diameter of the fiber in microns
-    :return: the deltaz for this fiber, the neuron flag for the fiber model
-    """
-    fiber_z_config = load(os.path.join('config', 'system', 'fiber_z.json'))
-    fiber_model_info: dict = fiber_z_config['fiber_type_parameters'][fiber_model]
-
-    if fiber_model_info.get("geom_determination_method") == 0:
-        diameters, delta_zs, paranodal_length_2s = (
-            fiber_model_info[key] for key in ('diameters', 'delta_zs', 'paranodal_length_2s')
-        )
-        diameter_index = diameters.index(diameter)
-        delta_z = delta_zs[diameter_index]
-
-    elif fiber_model_info.get("geom_determination_method") == 1:
-        paranodal_length_2_str, delta_z_str, inter_length_str = (
-            fiber_model_info[key] for key in ('paranodal_length_2', 'delta_z', 'inter_length')
-        )
-
-        if diameter >= 5.643:
-            delta_z = eval(delta_z_str["diameter_greater_or_equal_5.643um"])
-        else:
-            delta_z = eval(delta_z_str["diameter_less_5.643um"])
-
-    elif fiber_model_info.get("geom_determination_method") == 2:  # SMALL_MRG_INTERPOLATION_V1 fiber
-        paranodal_length_2_str, delta_z_str, inter_length_str = (
-            fiber_model_info[key] for key in ('paranodal_length_2', 'delta_z', 'inter_length')
-        )
-        delta_z = eval(delta_z_str)
-
-    elif fiber_model_info.get("neuron_flag") == 3:  # C Fiber
-        delta_z = fiber_model_info["delta_zs"]
-
-    neuron_flag = fiber_model_info.get("neuron_flag")
-
-    return delta_z, neuron_flag
-
-
 def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
     """Get threshold bounds (upper and lower) for this simulation.
 
@@ -556,11 +495,13 @@ def make_fiber_tasks(submission_list, submission_context):
             ensure_dir(cur_dir)
 
         for fiber_data in runfibers:
-            cuff_type, inner_ind, fiber_ind = fiber_data['cuff_type'], fiber_data['inner'], fiber_data['fiber']
+
+            inner_ind, fiber_ind = fiber_data['inner'], fiber_data['fiber']
 
             start_path = f"{start_path_base}{fiber_data['job_number']}{'.sh' if OS == 'UNIX-LIKE' else '.bat'}"
 
             potentials_path = os.path.join(sim_path, 'data', 'inputs', f'src_inner{inner_ind}_fiber{fiber_ind}.dat')
+
             waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
             n_sim = sim_name.split('_')[-1]
 

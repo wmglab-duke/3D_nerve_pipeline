@@ -64,7 +64,8 @@ class FiberSet(Configurable, Saveable):
             SetupMode.NEW,
             Config.FIBER_Z,
             os.path.join('config', 'system', 'fiber_z.json'),
-        )  # todo: remove fiber_z.json and replace completely with fiber_z.py in wmglab_neuron
+        )
+        # Note: eventually all fiber creation code here should be replaced with PyFibers code
 
     def init_post_config(self):
         """Make sure Model and Simulation are configured.
@@ -704,13 +705,12 @@ class FiberSet(Configurable, Saveable):
                 )
                 paranodal_length_2 = eval(paranodal_length_2_str)
 
-                if fiber_geometry_mode_name == FiberGeometry.SMALL_MRG_INTERPOLATION_V1.value:
+                if fiber_geometry_mode_name == FiberGeometry.SMALL_MRG_INTERPOLATION.value:
                     delta_z = eval(delta_z_str)
                     inter_length = eval(inter_length_str)
                     if diameter > 16.0 or diameter < 1.011:
                         raise ValueError(
-                            "Diameter entered for SMALL_MRG_INTERPOLATION_V1 must be"
-                            "between 1.011 and 16.0 (inclusive)."
+                            "Diameter entered for SMALL_MRG_INTERPOLATION must be" "between 1.011 and 16.0 (inclusive)."
                         )
                 elif fiber_geometry_mode_name == FiberGeometry.MRG_INTERPOLATION.value:
                     if diameter > 16.0 or diameter < 2.0:
@@ -876,6 +876,10 @@ class FiberSet(Configurable, Saveable):
         )
 
         fiber_geometry_mode_name: str = self.search(Config.SIM, 'fibers', 'mode')
+        if fiber_geometry_mode_name == "SMALL_MRG_INTERPOLATION_V1":
+            raise ValueError(
+                "the name SMALL_MRG_INTERPOLATION_V1 is deprecated. Please use SMALL_MRG_INTERPOLATION instead."
+            )
 
         # use key from above to get myelination mode from fiber_z
         diameter = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'diameter')

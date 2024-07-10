@@ -404,7 +404,7 @@ class Query(Configurable, Saveable):
                                             'active_src_index': active_src_index,
                                             'active_rec_index': active_rec_index,
                                             'SFAP_times': row[0],
-                                            'SFAP0': row[1],
+                                            'SFAP': row[1],
                                         }
                                     )
 
@@ -808,22 +808,25 @@ class Query(Configurable, Saveable):
         imembrane_file_name = os.path.join(
             os.getcwd(),
             f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
-            f"{nsim}/data/outputs/Imembrane_axon0_fiber0_amp0.dat",
+            f"{nsim}/data/outputs/adjusted_imembrane_inner0_fiber0_amp0.dat",
         )
+        current_matrix = np.loadtxt(imembrane_file_name)
+        tstop = np.nan  # TODO: Implement tstop
+        time_vector = np.nan  # TODO: Implement time_vector
 
-        with open(imembrane_file_name, 'rb') as file:
-            alldata = file.read()
-            # Currently it is in native format, might need to be in standard format.
-            _, _, tstop, _, _, dt, _, _, axon_num, vector_size, _ = struct.unpack(
-                "@iidiidiidii", alldata[:56]  # 56 is the total number of bytes correlating with the format
-            )
-            current_matrix = np.array(struct.unpack_from(f"{vector_size}d", alldata[56:]))
-        file.close()
+        # with open(imembrane_file_name, 'rb') as file:
+        #     alldata = file.read()
+        #     # Currently it is in native format, might need to be in standard format.
+        #     _, _, tstop, _, _, dt, _, _, axon_num, vector_size, _ = struct.unpack(
+        #         "@iidiidiidii", alldata[:56]  # 56 is the total number of bytes correlating with the format
+        #     )
+        #     current_matrix = np.array(struct.unpack_from(f"{vector_size}d", alldata[56:]))
+        # file.close()
 
-        # Build current matrix and time vectors from file data
-        current_matrix = current_matrix.reshape(
-            ((int)(vector_size / axon_num), -1), order='F'
-        )  # Matlab and Fortran ('F order') both use column-major layout as the default
-        time_vector = np.arange(0, dt * (vector_size / axon_num), dt)
+        # # Build current matrix and time vectors from file data
+        # current_matrix = current_matrix.reshape(
+        #     ((int)(vector_size / axon_num), -1), order='F'
+        # )  # Matlab and Fortran ('F order') both use column-major layout as the default
+        # time_vector = np.arange(0, dt * (vector_size / axon_num), dt)
 
         return tstop, time_vector, current_matrix
