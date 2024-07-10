@@ -10,7 +10,6 @@ import json
 import os
 import sys
 import time
-import warnings
 
 import numpy as np
 from pyfibers import BoundsSearchMode, Fiber, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
@@ -164,7 +163,7 @@ def main(
             time_total += time_individual
 
 
-def calculate_save_sfap(
+def calculate_save_sfap(  # TODO: does it even make sense to calc sfap with a threshold search?
     sim_configs: dict,
     fiber: Fiber,
     saving_params: dict,
@@ -174,6 +173,18 @@ def calculate_save_sfap(
     amp_ind: int,
     axontotal: int,
 ):
+    """Calculate and save single fiber action potential (sfap) and membrane currents if applicable.
+
+    :param sim_configs: dictionary containing simulation configs from <sim_index>.json
+    :param fiber: fiber object
+    :param saving_params: dictionary containing saving parameters
+    :param potentials_path: path to potentials file
+    :param inner_ind: inner index
+    :param fiber_ind: fiber index
+    :param amp_ind: amplitude index
+    :param axontotal: total number of axons in fiber
+    """
+    raise NotImplementedError('calculate_save_sfap does not produce correct results at present.')  # TODO
     # If recording cuff is present, record sfap
     if 'active_recs' in sim_configs:
         # TODO move this param to saving init

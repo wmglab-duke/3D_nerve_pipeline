@@ -41,6 +41,7 @@ def initialize_saving(
         fiber.set_save_gating()
     if sfap:
         fiber.set_save_im(allsec=True)
+        fiber.set_save_vext()
         if space_configs['imembrane'] or time_configs['imembrane']:
             # Could be changed to support both if could save im for allsec and regular independently
             warnings.warn('saving i_membrane is not supported for sfap generation, setting to False.')
@@ -118,12 +119,12 @@ def save_sfap(params: dict, sfap: list, downsampled_time: list, amp_ind: int = 0
     sfap_df.to_csv(sfap_path, sep=' ', float_format='%.6f', index=False)
 
 
-def save_matrix(params: dict, Imembrane_matrix: np.ndarray, amp_ind: int = 0):
+def save_matrix(params: dict, imembrane_matrix: np.ndarray, amp_ind: int = 0):
     adj_im_path = os.path.join(
         params['output_path'],
         f'adjusted_imembrane_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat',
     )
-    np.savetxt(adj_im_path, Imembrane_matrix)
+    np.savetxt(adj_im_path, imembrane_matrix)
 
 
 def save_activation(params: dict, n_aps: int, amp_ind: int):
@@ -178,8 +179,11 @@ def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind:
         if params['time_gating']:
             save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'time', stimulation)
     if params['istim']:
+        raise NotImplementedError('Saving of istim is not yet implemented.')  # TODO
         istim_data = pd.DataFrame(list(stimulation.istim_record))
-        save_data(params, amp_ind, fiber, istim_data, stimulation.dt, 'istim', 'time', stimulation, 'nA')
+        save_data(
+            params, amp_ind, fiber, istim_data, stimulation.dt, 'istim', 'time', stimulation, 'nA'
+        )  # TODO fix istim
     if params['ap_loctime']:
         save_aploctime(params, amp_ind, fiber)
 
