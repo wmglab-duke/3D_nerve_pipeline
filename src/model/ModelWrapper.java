@@ -2208,42 +2208,12 @@ public class ModelWrapper {
                 JSONObject currentIDs = imdata.getJSONObject("currentIDs");
                 basesValid = new boolean[currentIDs.length()];
                 for (int cu = 0; cu < currentIDs.length(); cu++) {
-                    if ((currentIDs.getJSONObject(Integer.toString(cu + 1))).length()== 1) {
-                        // If currentID has one element, means that im.json was generated with old version of ascent before multi-cuffs.
-                        // Update to current structure (containing pcs, name, and cuff_index) if the bases do exist.
-                        File basisFile = new File(bases_directory + "/" + cu + ".mph");
-                        if (basisFile.exists()) {
-                            // Update im.json
-                            JSONObject current_object = currentIDs.getJSONObject(Integer.toString(cu + 1));
-                            String key = current_object.keys().next();
-                            current_object.put("pcs", current_object.get(key));
-                            current_object.put("name", cu + "_Cuff 0_" + key);
-                            current_object.put("cuff_index", "0");
-                            current_object.remove(key);
-                            String cuffNameIdPseudonym = imdata.getJSONObject("identifierPseudonyms").getString(key);
-                            imdata.getJSONObject("identifierPseudonyms").put(cu+"_Cuff 0_"+key, cuffNameIdPseudonym);
-                            imdata.getJSONObject("identifierPseudonyms").remove(key);
-                            currentIDs.put(Integer.toString(cu + 1), current_object);
-                            imdata.put("currentIDs", currentIDs);
-                            JSONio.write(imFile, imdata); // write to file
-
-                            // Rename bases files.
-                            File newBasisFile = new File(bases_directory + "/" + current_object.get("name") + ".mph");
-                            basisFile.renameTo(newBasisFile);
-                            basesValid[cu] = newBasisFile.exists();
-                        }
-                        else{
-                            basesValid = new boolean[] { false };
-                        }
-                    }
-                    else {
-                        // Check bases as you would for multi-cuffs.
-                        String bases_name = currentIDs
-                            .getJSONObject(Integer.toString(cu + 1))
-                            .getString("name");
-                        File basisFile = new File(bases_directory + "/" + cu + "_" + bases_name + ".mph");
-                        basesValid[cu] = basisFile.exists();
-                    }
+                    // Check bases as you would for multi-cuffs.
+                    String bases_name = currentIDs
+                        .getJSONObject(Integer.toString(cu + 1))
+                        .getString("name");
+                    File basisFile = new File(bases_directory + "/" +cu+"_"+bases_name + ".mph");
+                    basesValid[cu] = basisFile.exists();
                 }
             }
             catch (FileNotFoundException e) {

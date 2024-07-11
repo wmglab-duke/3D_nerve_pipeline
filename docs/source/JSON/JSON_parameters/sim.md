@@ -176,16 +176,22 @@ following syntax:
     "space": {
       "vm": Boolean,
       "gating": Boolean,
+      "i_membrane": Boolean,
       "times": [Double],
     },
     "time": {
       "vm": Boolean,
       "gating": Boolean,
       "istim": Boolean,
+      "i_membrane": Boolean,
       "locs": [Double] OR String
     },
     "runtimes": Boolean,
-    "3D_fiber_intermediate_data": Boolean
+    "3D_fiber_intermediate_data": Boolean,
+    "cap_recording": {
+      "save_adjusted_im": Boolean,
+      "downsample": Double
+    }
   },
 
   // EXAMPLE PROTOCOL for FINITE_AMPLITUDES
@@ -305,13 +311,12 @@ $$potentials=(1)*bases_{1}(x,y,z)+(-1)*bases_{2}(x,y,z)$$
 `“fibers”`: The value is a JSON Object containing key-value pairs that
 define how potentials are sampled in the FEM for application as
 extracellular potentials in NEURON (i.e., the Cartesian coordinates of
-the midpoint for each compartment (i.e., section or segment) along the
+the midpoint for each compartment (i.e., section) along the
 length of the fiber). Required.
 
 - `“mode”`: The value (String) is the “FiberGeometry” mode that tells
   the program which fiber geometries to simulate in NEURON ([NEURON Fiber Models](../../Running_ASCENT/Info.md#implementation-of-neuron-fiber-models)). Required.
-  %TODO add link to docs for pyfibers
-  %TODO update description here for pyfibers
+  %TODO add link to docs for pyfibers once published and to package
 
   - As listed in [Enums](../../Code_Hierarchy/Python.md#enums), known modes include
 
@@ -320,7 +325,8 @@ length of the fiber). Required.
     - `“MRG_INTERPOLATION”` (interpolates the discrete diameters
       from published MRG fiber models)
 
-    - `SMALL_MRG_INTERPOLATION_V1` (interpolates diameters from published literature data on small myelinated fibers; used by {cite:p}`Pena2024` to model myelinated fibers with >1.011 um diameter; uses the same ion channels as MRG_DISCRETE and MRG_INTERPLOATION, but decreases the maximum conductance of sodium ion channels and increases the maximum conductance of potassium ion channels to ensure one action potential per stimulus pulse.)
+    - `SMALL_MRG_INTERPOLATION` (interpolates diameters from published literature data on small myelinated fibers; used by
+      {cite:p}`Pena2024` to model myelinated fibers with >1.011 um diameter; uses the same ion channels as MRG_DISCRETE and MRG_INTERPLOATION, but decreases the maximum conductance of sodium ion channels and increases the maximum conductance of potassium ion channels to ensure one action potential per stimulus pulse.)
 
     - `“TIGERHOLM”` (published C-fiber model)
 
@@ -394,11 +400,11 @@ length of the fiber). Required.
   - `full_nerve_length`: (Boolean) Optional. If true, suppresses the warning message associated with using the full length nerve when `"min"` and `"max"` are not defined. Must be false or not defined if `"min"` and `"max"` are defined.
 
   - `“offset”`: The value (Double or String) is the fraction
-    of the node-node length (myelinated fibers) or segment length
+    of the node-node length (myelinated fibers) or section length
     (unmyelinated fibers) that the center coordinate of the fiber is
     shifted along the z-axis from the longitudinal center of the
     proximal medium. If the value is "random", the offset will
-    be randomly selected between +/- 0.5 section/segment length; to
+    be randomly selected between +/- 0.5 internodal length; to
     avoid the randomized longitudinal placement, set the offset
     value to ‘0’ for no offset.
 
@@ -699,19 +705,23 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
 - `“space”`:
 
   - `“vm”`: The value (Boolean), if true, tells the program to save
-    the transmembrane potential at all segments (unmyelinated) and
-    sections (myelinated) at the time stamps defined in “times” (see
+    the transmembrane potential at all sections (unmyelinated) /
+    nodes (myelinated) at the time stamps defined in “times” (see
     below). Required.
 
   - `“gating”`: The value (Boolean), if true, tells the program to
-    save channel gating parameters at all segments (unmyelinated)
-    and sections (myelinated) at the time values defined in “times”
-    (see below). Note: Only implemented for MRG fibers. Required.
+    save channel gating parameters at all sections (unmyelinated) /
+    nodes (myelinated) at the time values defined in “times”
+    (see below). Required.
+
+  - `"i_membrane"`: The value (Boolean), if true, tells the program to
+  save the transmembrane current at all  sections (unmyelinated) /
+    nodes (myelinated) at the time values defined in “times” (see below). Required.
 
   - `“times”`: The value (List\[Double\], units: milliseconds) contains the
     times in the simulation at which to save the values of the state
     variables (i.e., “gating” or “vm”) that the user has selected to
-    save for all segments (unmyelinated) and sections (myelinated).
+    save for all  sections (unmyelinated) / nodes (myelinated) .
     Required.
 
 - `“time”`:
@@ -722,8 +732,11 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
 
   - `“gating”`: The value (Boolean), if true, tells the program to
     save the channel gating parameters at each time step at the
-    locations defined in “locs” (see below). Note: Only implemented
-    for MRG fibers. Required.
+    locations defined in “locs” (see below). Required.
+
+  - `"i_membrane"`: The value (Boolean), if true, tells the program to
+    save the transmembrane current at each time step at the locations
+    defined in “locs” (see below). Required.
 
   - `“istim”`: The value (Boolean), if true, tells the program to save
     the applied intracellular stimulation at each time step.
@@ -735,7 +748,7 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
     state variables that the user has selected to save for all
     timesteps. Alternatively, the user can use the value “all”
     (String) to prompt the program to save the state variables at
-    all segments (unmyelinated) and sections (myelinated). Required.
+     all sections (unmyelinated) / nodes (myelinated). Required.
 
 - `“runtimes”`: The value (Boolean), if true, tells the program to save
   the NEURON runtime for either the finite amplitude or bisection search for
@@ -744,11 +757,11 @@ which times/locations ([NEURON Scripts](../../Code_Hierarchy/NEURON)). Required.
 
 - `"3D_fiber_intermediate_data"`: The value (Boolean), if true, tells the program to save the fiber lengths and longitudinal coordinate compartment spacings for sampled potentials into directories within the sample called `tracto_lengths/`, `tracto_coords/`, `3D_tracto_fiberset/` respectively.
 
-- `“cap_recording”`:
+- `"cap_recording"`: Controls associated with generation of single fiber action potentials and compound action potentials. Optional.
 
-  - `“Imembrane_matrix”`: The value (Boolean), if true, tells the program to save the
-    transmembrane current matrix for each fiber. These are memory-intensive matrices that contain the transmembrane currents for all fiber compartments across all time points. The matrices are required if the user aims to later generate current templates using the `examples\analysis\generate_templates.py` script. Default: False. Optional.
+  - `"save_adjusted_im"`: The value (Boolean), if true, tells the program to save, for each fiber, a matrix of extracellular currents *adjusted for periaxonal current*. This is distinct from the transmembrane current (if the user wishes to save transmembrane current, see `"i_membrane"` saving above). Each sections current is adjusted based on the perixanoal current in the extracellular space in order to accurately calculate a recorded signal. Therefore, this parameter is only considered if a model contains a recording cuff, and will be ignored if no recording cuff is present. These are memory-intensive matrices that contain the current for all sections, for all time points. The matrices are required if the user aims to later generate current templates using the `examples\analysis\generate_templates.py` script. Default: False. Optional.
 
+  - `"downsample"`: The value (Double), if provided, instructs the program to downsample in time by the provided factor before calculating periaxonal-adjusted currents and single fiber action potentials. This is useful for reducing the memory footprint of the simulation. Must be greater than or equal to 1. Default: 1. Optional.
 
 `“protocol”`:
 

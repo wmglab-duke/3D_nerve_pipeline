@@ -1,13 +1,13 @@
 # NEURON Files
-
+%TODO Read through and check that content is okay
 ## NEURON simulations
-All NEURON simulations are handled using the `wmglab-neuron` PyPI package (Github: _link_).
+All NEURON simulations are handled using the `PyFibers` Python package ([PyPi](<<link>>), [GitHub](<<link>>)).
 
 ### Create fiber model
 
 Based on the "fiber_model" (associated by the "fiber/modes" type parameter
  in `<sim_index>.json` ([Sim Parameters](../JSON/JSON_parameters/sim))),
-`run_controls.py` builds an instance of the fiber model using the `wmglab-neuron` package.
+`run_controls.py` builds an instance of the fiber model using the `PyFibers` package.
 For all fiber types, the segments created and connected in NEURON have lengths that correspond to
 the coordinates of the input potentials.
 
@@ -27,7 +27,7 @@ stimulation amplitude should be set to zero.
 ### Extracellular stimulus
 
 To simulate response of individual fibers to electrical stimulation, we
-use NEURON’s extracellular mechanisms in the `wmglab-neuron` package
+use NEURON’s extracellular mechanisms in the `PyFibers` package
 to apply the electric potential from COMSOL at each segment of the
 cable model as a time-varying signal.
 `run_controls.py` loads in the stimulation waveform from a `n_sim’s` `data/inputs/`.
@@ -44,12 +44,12 @@ for all times and/or at discrete times for all spatial locations (i.e.,
 nodes of Ranvier for myelinated fibers or sections for unmyelinated
 fibers) for applied extracellular potential, intracellular stimulation
 amplitude, transmembrane potential, and gating parameters using
-the `wmglab-neuron` package. The recording tools are particularly useful for
+the `PyFibers` package. The recording tools are particularly useful for
 generating data to troubleshoot and visualize simulations.
 
 ### Running a simulation & different protocols
 
-The `wmglab-neuron` package is responsible for simulating the response of the
+The `PyFibers` package is responsible for simulating the response of the
 model fiber to intracellular and extracellular stimulation. Similarly, the package handles
 various simulation protocols ([Simulation Protocols](../Running_ASCENT/Info.md#simulation-protocols)).
 
@@ -90,4 +90,4 @@ bisection search, and threshold resolution for the bisection search from
 and an exception configuration. The file automatically loads the `fiber_z.json` configuration
 file which contains all associated flags, parameters, and rules for
 defining a fiber’s geometry and channel mechanisms in NEURON, all of which is handled in the
-`wmglab-neuron` package.
+`PyFibers` package.

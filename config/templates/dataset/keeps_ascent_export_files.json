@@ -35,7 +35,6 @@
           "n_sims": {
             "<n_sim_index>": {
               "<n_sim_index>.json": true,
-              "launch.hoc": true,
               "data": {
                 "inputs": {
                   "<ve_files>": true,
