@@ -598,7 +598,7 @@ class FiberSet(Configurable, Saveable):
             **scatter_kws,
         )
 
-    def _generate_longitudinal(  # noqa: C901
+    def _generate_longitudinal(  # noqa: C901 #TODO this should be replaced with pyfibers code
         self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False
     ) -> np.ndarray:
         """Generate the 1D longitudinal coordinates of the fibers.
