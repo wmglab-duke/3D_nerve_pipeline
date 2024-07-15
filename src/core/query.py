@@ -10,7 +10,6 @@ repository: https://github.com/wmglab-duke/ascent
 
 import os
 import pickle
-import struct
 import warnings
 from typing import List, Union
 
@@ -305,261 +304,6 @@ class Query(Configurable, Saveable):
 
         return True
 
-    def sfap_data(self, fiber_indices: List[int] = None, all_fibers: bool = False, ignore_missing: bool = False):
-        """Obtain SFAP data as a pandas DataFrame for user-defined fiber indices or all fibers.
-
-        :param fiber_indices: list of fiber indexes to pull SFAP data for. Default: single fiber 0.
-        :param all_fibers: If True, all fiber's SFAP data will be pulled. If False, only fiber_indices will be pulled.
-        :param ignore_missing: if True, missing threshold data will not cause an error.
-        :raises LookupError: If no results (called before Query.run())
-        :return: pandas DataFrame of SFAP data.
-        """
-        if self._result is None:
-            raise LookupError("No query results, Query.run() must be called before calling analysis methods.")
-        if fiber_indices is None:
-            fiber_indices = [0]
-        [samples, models, sims] = list(self.configs['criteria']['indices'].values())
-
-        # Note: simplify/clean this function. Inspired by threshold_data for first quick approach.
-        sample_results: dict
-        for sample_results in self._result.get('samples', []):
-            sample_index = sample_results['index']
-            sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
-            slide: Slide = sample_object.slides[0]
-            n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
-
-            # loop models
-            for model_results in sample_results.get('models', []):
-                model_index = model_results['index']
-
-                for sim_index in sims:
-                    sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
-
-                    # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
-                    # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
-                    # indices as if they were the nsim indices
-                    #   Better optimized method: loop over master_indices to only obtain data for desired fibers.
-                    #       Need to find another way to obtain nsim_index...
-                    master_indices = []
-                    for i in sim_object.master_product_indices:
-                        if i[0] in fiber_indices:
-                            master_indices.append(i)
-
-                    # init SFAP container for this model, sim, nsim
-                    sfap_data: List[float] = []
-                    for nsim_index, (
-                        potentials_product_index,
-                        waveform_index,
-                    ) in enumerate(sim_object.master_product_indices):
-                        (
-                            active_src_index,
-                            active_rec_index,
-                            fiberset_index,
-                        ) = sim_object.potentials_product[potentials_product_index]
-                        # fetch outer->inner->fiber and out->inner maps
-                        out_in_fib, out_in = sim_object.fiberset_map_pairs[fiberset_index]
-
-                        # build base dirs for fetching SFAPs
-                        sim_dir = self.build_path(
-                            Object.SIMULATION,
-                            [sample_index, model_index, sim_index],
-                            just_directory=True,
-                        )
-                        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
-
-                        # fetch all SFAPs
-                        for inner in range(n_inners):
-                            outer = [index for index, inners in enumerate(out_in) if inner in inners][0]
-
-                            for local_fiber_index, _ in enumerate(out_in_fib[outer][out_in[outer].index(inner)]):
-                                master_index = sim_object.indices_n_to_fib(fiberset_index, inner, local_fiber_index)
-
-                                sfap_path = os.path.join(
-                                    n_sim_dir,
-                                    'data',
-                                    'outputs',
-                                    f'SFAP_time_inner{inner}_fiber{local_fiber_index}_amp0.dat',
-                                )
-                                if ignore_missing:
-                                    try:
-                                        sfap = np.loadtxt(sfap_path, skiprows=1)
-                                    except OSError:
-                                        sfap = np.array([[np.nan, np.nan]])
-                                        warnings.warn('Missing SFAP, but continuing.', stacklevel=2)
-                                else:
-                                    sfap = np.loadtxt(sfap_path, skiprows=1)
-
-                                for row in sfap:
-                                    sfap_data.append(
-                                        {
-                                            'sample': sample_results['index'],
-                                            'model': model_results['index'],
-                                            'sim': sim_index,
-                                            'nsim': nsim_index,
-                                            'inner': inner,
-                                            'fiber': local_fiber_index,
-                                            'index': master_index,
-                                            'fiberset_index': fiberset_index,
-                                            'waveform_index': waveform_index,
-                                            'active_src_index': active_src_index,
-                                            'active_rec_index': active_rec_index,
-                                            'SFAP_times': row[0],
-                                            'SFAP': row[1],
-                                        }
-                                    )
-
-        sfap_data = pd.DataFrame(sfap_data)
-        output = sfap_data.loc[sfap_data['index'].isin(fiber_indices)] if not all_fibers else sfap_data
-        return output
-
-    def threshold_data(
-        self,
-        sim_indices: List[int] = None,
-        ignore_missing=False,
-        meanify=False,
-    ):
-        """Obtain threshold data as a pandas DataFrame.
-
-        Waveform, fiberset, and active_src indices are per your sim configuration file.
-
-        :param sim_indices: list of simulation indices to include in the threshold data.
-        :param ignore_missing: if True, missing threshold data will not cause an error.
-        :param meanify: if True, the threshold data will be returned as a mean of each nsim.
-        :raises LookupError: If no results (called before Query.run())
-        :return: pandas DataFrame of thresholds.
-        """
-        # quick helper class for storing data values
-
-        # validation
-        if self._result is None:
-            raise LookupError("No query results, Query.run() must be called before calling analysis methods.")
-
-        if sim_indices is None:
-            sim_indices = self.search(Config.CRITERIA, 'indices', 'sim')
-
-        alldat = []
-
-        # loop samples
-        sample_results: dict
-        for sample_results in self._result.get('samples', []):
-            sample_index = sample_results['index']
-            sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
-            slide: Slide = sample_object.slides[0]
-            n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
-
-            # loop models
-            for model_results in sample_results.get('models', []):
-                model_index = model_results['index']
-
-                for sim_index in sim_indices:
-                    sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
-
-                    # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
-                    # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
-                    # indices as if they were the nsim indices
-                    for nsim_index, (
-                        potentials_product_index,
-                        waveform_index,
-                    ) in enumerate(sim_object.master_product_indices):
-                        (
-                            active_src_index,
-                            *active_rec_index,
-                            fiberset_index,
-                        ) = sim_object.potentials_product[potentials_product_index]
-                        # fetch outer->inner->fiber and out->inner maps
-                        out_in_fib, out_in = sim_object.fiberset_map_pairs[fiberset_index]
-
-                        # build base dirs for fetching thresholds
-                        sim_dir = self.build_path(
-                            Object.SIMULATION,
-                            [sample_index, model_index, sim_index],
-                            just_directory=True,
-                        )
-                        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
-
-                        # init thresholds container for this model, sim, nsim
-                        thresholds: List[float] = []
-
-                        # fetch all thresholds
-                        for inner in range(n_inners):
-                            outer = [index for index, inners in enumerate(out_in) if inner in inners][0]
-
-                            for local_fiber_index, _ in enumerate(out_in_fib[outer][out_in[outer].index(inner)]):
-                                master_index = sim_object.indices_n_to_fib(fiberset_index, inner, local_fiber_index)
-
-                                thresh_path = os.path.join(
-                                    n_sim_dir,
-                                    'data',
-                                    'outputs',
-                                    f'thresh_inner{inner}_fiber{local_fiber_index}.dat',
-                                )
-                                if ignore_missing:
-                                    try:
-                                        threshold = np.loadtxt(thresh_path)
-                                    except OSError:
-                                        threshold = np.array(np.nan)
-                                        warnings.warn('Missing threshold, but continuing.', stacklevel=2)
-                                else:
-                                    threshold = np.loadtxt(thresh_path)
-
-                                if threshold.size > 1:
-                                    threshold = threshold[-1]
-                                if meanify is True:
-                                    thresholds.append(abs(threshold))
-                                else:
-                                    alldat.append(
-                                        {
-                                            'sample': sample_results['index'],
-                                            'model': model_results['index'],
-                                            'sim': sim_index,
-                                            'nsim': nsim_index,
-                                            'inner': inner,
-                                            'fiber': local_fiber_index,
-                                            'index': master_index,
-                                            'fiberset_index': fiberset_index,
-                                            'waveform_index': waveform_index,
-                                            'active_src_index': active_src_index,  # Note: only report src or rec
-                                            'active_rec_index': active_rec_index,  # Doesn't make sense to do both
-                                            'threshold': abs(threshold),
-                                        }
-                                    )
-
-                        if meanify is True:
-                            if len(thresholds) == 0:
-                                alldat.append(
-                                    {
-                                        'sample': sample_results['index'],
-                                        'model': model_results['index'],
-                                        'sim': sim_index,
-                                        'nsim': nsim_index,
-                                        'fiberset_index': fiberset_index,
-                                        'waveform_index': waveform_index,
-                                        'active_src_index': active_src_index,
-                                        'active_rec_index': active_rec_index,
-                                        'mean': np.nan,
-                                    }
-                                )
-                            else:
-                                thresholds: np.ndarray = np.array(thresholds)
-
-                                alldat.append(
-                                    {
-                                        'sample': sample_results['index'],
-                                        'model': model_results['index'],
-                                        'sim': sim_index,
-                                        'nsim': nsim_index,
-                                        'fiberset_index': fiberset_index,
-                                        'waveform_index': waveform_index,
-                                        'active_src_index': active_src_index,
-                                        'active_rec_index': active_rec_index,
-                                        'mean': np.mean(thresholds),
-                                        'std': np.std(thresholds, ddof=1),
-                                        'sem': stats.sem(thresholds),
-                                    }
-                                )
-
-        return pd.DataFrame(alldat)
-
     def excel_output(
         self,
         filepath: str,
@@ -794,7 +538,7 @@ class Query(Configurable, Saveable):
         # add to sim sheet
         sims[str(sim_index)].append(row)
 
-    def import_tm_current_matrix(self, nsim):
+    def import_tm_current_matrix(self, nsim):  # TODO move to common data extraction
         """Extract current amplitude, number of axons, time vector, and transmembrane current matrix from a binary file.
 
         :param nsim: nsim index to pull data from
@@ -813,21 +557,6 @@ class Query(Configurable, Saveable):
         current_matrix = np.loadtxt(imembrane_file_name)
         tstop = np.nan  # TODO: Implement tstop
         time_vector = np.nan  # TODO: Implement time_vector
-
-        # with open(imembrane_file_name, 'rb') as file:
-        #     alldata = file.read()
-        #     # Currently it is in native format, might need to be in standard format.
-        #     _, _, tstop, _, _, dt, _, _, axon_num, vector_size, _ = struct.unpack(
-        #         "@iidiidiidii", alldata[:56]  # 56 is the total number of bytes correlating with the format
-        #     )
-        #     current_matrix = np.array(struct.unpack_from(f"{vector_size}d", alldata[56:]))
-        # file.close()
-
-        # # Build current matrix and time vectors from file data
-        # current_matrix = current_matrix.reshape(
-        #     ((int)(vector_size / axon_num), -1), order='F'
-        # )  # Matlab and Fortran ('F order') both use column-major layout as the default
-        # time_vector = np.arange(0, dt * (vector_size / axon_num), dt)
 
         return tstop, time_vector, current_matrix
 
@@ -919,10 +648,7 @@ class Query(Configurable, Saveable):
                         )
                         n_sim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
 
-                        # init thresholds container for this model, sim, nsim
-                        thresholds: List[float] = []
-
-                        # fetch all thresholds
+                        # fetch all data
                         for inner in range(n_inners):
                             outer = [index for index, inners in enumerate(out_in) if inner in inners][0]
 
@@ -968,8 +694,6 @@ class Query(Configurable, Saveable):
                                             self.retrieve_space_vm_data(data, n_sim_dir, alldat)
                                         elif data_type == 'aploctime':
                                             self.retrieve_aploctime_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'apendtimes':
-                                            self.retrieve_apendtimes_data(data, n_sim_dir, alldat)
                                         else:
                                             raise ValueError(f'Invalid data type: {data_type}')
         if not as_dataframe:
@@ -977,7 +701,7 @@ class Query(Configurable, Saveable):
         else:
             return pd.DataFrame(alldat)
 
-    def retrieve_sfap_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):
+    def retrieve_sfap_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
         sfap_path = os.path.join(
             n_sim_dir,
             'data',
@@ -995,10 +719,10 @@ class Query(Configurable, Saveable):
 
         for row in sfap:
             data['SFAP_times'] = row[0]
-            data['SFAP0'] = row[1]
+            data['SFAP'] = row[1]
             alldat.append(data.copy())
 
-    def retrieve_threshold_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):
+    def retrieve_threshold_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
         thresh_path = os.path.join(
             n_sim_dir,
             'data',
@@ -1020,7 +744,7 @@ class Query(Configurable, Saveable):
         data['threshold'] = threshold
         alldat.append(data)
 
-    def retrieve_runtime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+    def retrieve_runtime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         runtime_path = os.path.join(
             n_sim_dir,
             'data',
@@ -1044,6 +768,18 @@ class Query(Configurable, Saveable):
         data['n_aps'] = n_aps
         alldat.append(data)
 
+    def retrieve_aploctime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+        aploctime_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'ap_loctime_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+        )
+        with open(aploctime_path) as aploctime_file:
+            ap_loctime = float(aploctime_file.read())
+        data['ap_loctime'] = ap_loctime
+        alldat.append(data)
+
     def retrieve_istim_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
         istim_path = os.path.join(
             n_sim_dir,
@@ -1054,7 +790,7 @@ class Query(Configurable, Saveable):
         istim_data = pd.read_csv(istim_path, sep='\t')
         alldat.append(data)
 
-    def retrieve_time_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+    def retrieve_time_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         gating_params = ['h', 'm', 'mp', 's']
         for gating_param in gating_params:
             gating_time_path = os.path.join(
@@ -1076,7 +812,7 @@ class Query(Configurable, Saveable):
         vm_time_data = pd.read_csv(vm_time_path, sep='\t')
         alldat.append(data)
 
-    def retrieve_space_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+    def retrieve_space_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         gating_params = ['h', 'm', 'mp', 's']
         for gating_param in gating_params:
             gating_space_path = os.path.join(
@@ -1088,7 +824,7 @@ class Query(Configurable, Saveable):
             gating_space_data = pd.read_csv(gating_space_path, sep='\t')
             alldat.append(data)
 
-    def retrieve_space_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+    def retrieve_space_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         vm_space_path = os.path.join(
             n_sim_dir,
             'data',
@@ -1096,29 +832,4 @@ class Query(Configurable, Saveable):
             f'Vm_space_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
         )
         vm_space_data = pd.read_csv(vm_space_path, sep='\t')
-        alldat.append(data)
-
-    def retrieve_aploctime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
-        aploctime_path = os.path.join(
-            n_sim_dir,
-            'data',
-            'outputs',
-            f'ap_loctime_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
-        )
-        with open(aploctime_path) as aploctime_file:
-            ap_loctime = float(aploctime_file.read())
-        data['ap_loctime'] = ap_loctime
-        alldat.append(data)
-
-    def retrieve_apendtimes_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
-        ap_end_times_path = os.path.join(
-            n_sim_dir,
-            'data',
-            'outputs',
-            f'Aptimes_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
-        )
-        with open(ap_end_times_path) as ap_end_times_file:
-            ap_end_times = ap_end_times_file.read().split()
-        data['ap_end_time_1'] = float(ap_end_times[0])
-        data['ap_end_time_2'] = float(ap_end_times[1])
         alldat.append(data)

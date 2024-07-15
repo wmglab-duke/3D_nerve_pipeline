@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import time
+import warnings
 
 import numpy as np
 from pyfibers import BoundsSearchMode, Fiber, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
@@ -184,7 +185,7 @@ def calculate_save_sfap(  # TODO: does it even make sense to calc sfap with a th
     :param amp_ind: amplitude index
     :param axontotal: total number of axons in fiber
     """
-    raise NotImplementedError('calculate_save_sfap does not produce correct results at present.')  # TODO
+    raise warnings.warn('calculate_save_sfap does not produce correct results at present.')  # TODO
     # If recording cuff is present, record sfap
     if 'active_recs' in sim_configs:
         # TODO move this param to saving init
