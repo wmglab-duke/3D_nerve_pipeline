@@ -27,7 +27,7 @@ q = Query(
 ).run()
 
 # Get threshold data
-fdata = q.threshold_data()
+fdata = q.threshold_data()  # TODO update
 
 # Specify keyword arguments to pass to heatmaps()
 heatmap_kws = {'min_max_ticks': False}

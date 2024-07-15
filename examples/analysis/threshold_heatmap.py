@@ -28,7 +28,7 @@ q = Query(
 ).run()
 
 # Build heatmap
-heatmaps(data=q.threshold_data())
+heatmaps(data=q.threshold_data())  # TODO update
 plt.title('Activation threshold heatmap')
 
 save_directory = os.path.join('output', 'analysis')

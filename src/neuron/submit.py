@@ -723,7 +723,7 @@ def main():
     except ImportError:
         sys.exit('Error: PyFibers is not installed. Please install it to run this script.')
     # check version
-    if pyfibers.__version__ != '0.1.0':
+    if pyfibers.__version__ != '0.1.1':
         raise ImportError(f'Error: PyFibers version is {pyfibers.__version__}, but version 0.1.0 is required.')
 
     # pre submit setup
