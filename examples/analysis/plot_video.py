@@ -52,7 +52,7 @@ os.makedirs(outpath, exist_ok=True)
 if shutil.which('ffmpeg') is None:
     sys.exit('Please install ffmpeg and add to your PATH before continuing.')
 
-for sample in samples:
+for sample in samples:  # TODO update tose use get common data
     for model in models:
         for sim in sims:
             for n_sim in n_sims:

@@ -538,7 +538,9 @@ class Query(Configurable, Saveable):
         # add to sim sheet
         sims[str(sim_index)].append(row)
 
-    def import_tm_current_matrix(self, nsim):  # TODO move to common data extraction
+    def import_tm_current_matrix(
+        self, nsim
+    ):  # TODO move to common data extraction and allow for any amps/fibers/inners/so on
         """Extract current amplitude, number of axons, time vector, and transmembrane current matrix from a binary file.
 
         :param nsim: nsim index to pull data from
@@ -554,21 +556,29 @@ class Query(Configurable, Saveable):
             f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
             f"{nsim}/data/outputs/adjusted_imembrane_inner0_fiber0_amp0.dat",
         )
-        current_matrix = np.loadtxt(imembrane_file_name)
-        tstop = np.nan  # TODO: Implement tstop
-        time_vector = np.nan  # TODO: Implement time_vector
+        current_matrix = np.loadtxt(imembrane_file_name)  # should be columns=section and rows = time step
+        waveform_file = os.path.join(
+            os.getcwd(),
+            f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
+            f"{nsim}/data/inputs/waveform.dat",
+        )
+        wfdata = np.loadtxt(waveform_file)
+        sfap_file = os.path.join(
+            os.getcwd(),
+            f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
+            f"{nsim}/data/outputs/SFAP_time_inner0_fiber0_amp0.dat",
+        )
+        sfapdata = np.loadtxt(sfap_file, skiprows=1)
+        return wfdata[1], sfapdata[:, 0], current_matrix
 
-        return tstop, time_vector, current_matrix
-
-    def common_data_extraction(
+    def common_data_extraction(  # TODO add a wrapper function for single point data (data that is a single value per row)
         self,
         data_types: List[str],
         sim_indices: List[int] = None,
-        all_fibers: bool = False,
-        fiber_indices: List[int] = None,
+        fiber_indices: List[int] | str = 'all',
         ignore_missing: bool = False,
         as_dataframe=True,
-        amp_ind=0,
+        amp_indices: int | str = 'all',
     ) -> List[dict]:
         """Extracts data from a simulation for specified data types.
 
@@ -651,51 +661,65 @@ class Query(Configurable, Saveable):
                         # fetch all data
                         for inner in range(n_inners):
                             outer = [index for index, inners in enumerate(out_in) if inner in inners][0]
-
-                            for local_fiber_index, _ in enumerate(out_in_fib[outer][out_in[outer].index(inner)]):
+                            available_fiber_ind = out_in_fib[outer][out_in[outer].index(inner)]
+                            if fiber_indices == 'all':
+                                fiber_indices = available_fiber_ind
+                            for local_fiber_index, _ in enumerate(available_fiber_ind):
                                 master_index = sim_object.indices_n_to_fib(fiberset_index, inner, local_fiber_index)
 
-                                fiber_indices = fiber_indices or [0]
-                                if all_fibers or master_index in fiber_indices:
-                                    data = {
-                                        'sample': sample_results['index'],
-                                        'model': model_results['index'],
-                                        'sim': sim_index,
-                                        'nsim': nsim_index,
-                                        'inner': inner,
-                                        'fiber': local_fiber_index,
-                                        'index': master_index,
-                                        'fiberset_index': fiberset_index,
-                                        'waveform_index': waveform_index,
-                                        'active_src_index': active_src_index,
-                                        'active_rec_index': active_rec_index,
-                                    }
+                                if master_index in fiber_indices:
                                     # set index for finite amps
-                                    data['amp_ind'] = amp_ind
+                                    if sim_object.configs[Config.SIM.value]['protocol']['mode'] == 'FINITE_AMPLITUDES':
+                                        amp_indices = (
+                                            amp_indices
+                                            if amp_indices != 'all'
+                                            else range(
+                                                len(sim_object.configs[Config.SIM.value]['protocol']['amplitudes'])
+                                            )
+                                        )
+                                    else:
+                                        amp_indices = [0]
 
-                                    for data_type in data_types:
-                                        if data_type == 'sfap':
-                                            self.retrieve_sfap_data(data, n_sim_dir, ignore_missing, alldat)
-                                        elif data_type == 'threshold':
-                                            self.retrieve_threshold_data(data, n_sim_dir, ignore_missing, alldat)
-                                        elif data_type == 'runtime':
-                                            self.retrieve_runtime_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'activation':
-                                            self.retrieve_activation_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'istim':
-                                            self.retrieve_istim_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'time_gating':
-                                            self.retrieve_time_gating_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'time_vm':
-                                            self.retrieve_time_vm_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'space_gating':
-                                            self.retrieve_space_gating_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'space_vm':
-                                            self.retrieve_space_vm_data(data, n_sim_dir, alldat)
-                                        elif data_type == 'aploctime':
-                                            self.retrieve_aploctime_data(data, n_sim_dir, alldat)
-                                        else:
-                                            raise ValueError(f'Invalid data type: {data_type}')
+                                    for amp_ind in amp_indices:
+                                        data = {
+                                            'sample': sample_results['index'],
+                                            'model': model_results['index'],
+                                            'sim': sim_index,
+                                            'nsim': nsim_index,
+                                            'inner': inner,
+                                            'fiber': local_fiber_index,
+                                            'master_fiber_index': master_index,
+                                            'fiberset_index': fiberset_index,
+                                            'waveform_index': waveform_index,
+                                            'active_src_index': active_src_index,
+                                            'active_rec_index': active_rec_index,
+                                            'amp_ind': amp_ind,
+                                        }
+                                        for data_type in data_types:
+                                            if data_type == 'sfap':
+                                                self.retrieve_sfap_data(data, n_sim_dir, ignore_missing, alldat)
+                                            elif data_type == 'threshold':
+                                                self.retrieve_threshold_data(data, n_sim_dir, ignore_missing, alldat)
+                                            elif data_type == 'runtime':
+                                                self.retrieve_runtime_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'activation':
+                                                self.retrieve_activation_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'istim':
+                                                self.retrieve_istim_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'time_gating':
+                                                self.retrieve_time_gating_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'time_vm':
+                                                self.retrieve_time_vm_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'space_gating':
+                                                self.retrieve_space_gating_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'space_vm':
+                                                self.retrieve_space_vm_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'aploctime':
+                                                self.retrieve_aploctime_data(data, n_sim_dir, alldat)
+                                            else:
+                                                raise ValueError(f'Invalid data type: {data_type}')
+                                        # add the data to list
+                                        alldat.append(data.copy())
         if not as_dataframe:
             return alldat
         else:
@@ -718,9 +742,8 @@ class Query(Configurable, Saveable):
             sfap = np.loadtxt(sfap_path, skiprows=1)
 
         for row in sfap:
-            data['SFAP_times'] = row[0]
-            data['SFAP'] = row[1]
-            alldat.append(data.copy())
+            data['SFAP_times'] = sfap[:, 0]
+            data['SFAP'] = sfap[:, 1]
 
     def retrieve_threshold_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
         thresh_path = os.path.join(
@@ -742,7 +765,6 @@ class Query(Configurable, Saveable):
             threshold = threshold[-1]
 
         data['threshold'] = threshold
-        alldat.append(data)
 
     def retrieve_runtime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         runtime_path = os.path.join(
@@ -754,7 +776,6 @@ class Query(Configurable, Saveable):
         with open(runtime_path) as runtime_file:
             runtime = float(runtime_file.read().replace('s', ''))
         data['runtime'] = runtime
-        alldat.append(data)
 
     def retrieve_activation_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
         activation_path = os.path.join(
@@ -766,7 +787,6 @@ class Query(Configurable, Saveable):
         with open(activation_path) as activation_file:
             n_aps = int(activation_file.read())
         data['n_aps'] = n_aps
-        alldat.append(data)
 
     def retrieve_aploctime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         aploctime_path = os.path.join(
@@ -775,10 +795,8 @@ class Query(Configurable, Saveable):
             'outputs',
             f'ap_loctime_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
         )
-        with open(aploctime_path) as aploctime_file:
-            ap_loctime = float(aploctime_file.read())
+        ap_loctime = np.loadtxt(aploctime_path)
         data['ap_loctime'] = ap_loctime
-        alldat.append(data)
 
     def retrieve_istim_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
         istim_path = os.path.join(
@@ -788,10 +806,10 @@ class Query(Configurable, Saveable):
             f'Istim_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
         )
         istim_data = pd.read_csv(istim_path, sep='\t')
-        alldat.append(data)
 
     def retrieve_time_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         gating_params = ['h', 'm', 'mp', 's']
+        data['gating_time_data'] = {}
         for gating_param in gating_params:
             gating_time_path = os.path.join(
                 n_sim_dir,
@@ -799,8 +817,8 @@ class Query(Configurable, Saveable):
                 'outputs',
                 f'gating_{gating_param}_time_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
             )
-            gating_time_data = pd.read_csv(gating_time_path, sep='\t')
-            alldat.append(data)
+            gating_time_data = pd.read_csv(gating_time_path, sep=' ')
+            data['gating_time_data'][gating_param] = gating_time_data
 
     def retrieve_time_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
         vm_time_path = os.path.join(
@@ -809,11 +827,12 @@ class Query(Configurable, Saveable):
             'outputs',
             f'Vm_time_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
         )
-        vm_time_data = pd.read_csv(vm_time_path, sep='\t')
-        alldat.append(data)
+        vm_time_data = pd.read_csv(vm_time_path, sep=' ')
+        data['vm_time_data'] = vm_time_data
 
     def retrieve_space_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         gating_params = ['h', 'm', 'mp', 's']
+        data['gating_space_data'] = {}
         for gating_param in gating_params:
             gating_space_path = os.path.join(
                 n_sim_dir,
@@ -821,8 +840,8 @@ class Query(Configurable, Saveable):
                 'outputs',
                 f'gating_{gating_param}_space_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
             )
-            gating_space_data = pd.read_csv(gating_space_path, sep='\t')
-            alldat.append(data)
+            gating_space_data = pd.read_csv(gating_space_path, sep=' ')
+            data['gating_space_data'][gating_param] = gating_space_data
 
     def retrieve_space_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         vm_space_path = os.path.join(
@@ -831,5 +850,5 @@ class Query(Configurable, Saveable):
             'outputs',
             f'Vm_space_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
         )
-        vm_space_data = pd.read_csv(vm_space_path, sep='\t')
-        alldat.append(data)
+        vm_space_data = pd.read_csv(vm_space_path, sep=' ')
+        data['vm_space_data'] = vm_space_data

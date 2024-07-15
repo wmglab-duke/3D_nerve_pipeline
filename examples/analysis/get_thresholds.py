@@ -34,4 +34,4 @@ q = Query(
 ).run()
 
 # %% obtain thresholds
-data = q.threshold_data(meanify=False, ignore_missing=False)
+data = q.threshold_data(meanify=False, ignore_missing=False)  # TODO update

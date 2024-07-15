@@ -83,6 +83,8 @@ for nsim_index, (potentials_product_index, _) in enumerate(sim_object.master_pro
         fiberset_index,
     ) = sim_object.potentials_product[potentials_product_index]
     if fiberset_index == unique_fiberset_index:
+        tstop, time_vector, transmembrane_current_matrix = q.import_tm_current_matrix(nsim=nsim_index)
+
         unique_fiberset_index += 1
         diameter = sim_object.fiberset_product[fiberset_index][0]
         print(f"Constructing templates for nsim {nsim_index}: diameter = {diameter}")

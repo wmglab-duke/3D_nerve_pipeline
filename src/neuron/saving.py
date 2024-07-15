@@ -88,7 +88,7 @@ def save_thresh(params: dict, thresh: float):
         params['output_path'], f'thresh_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}.dat'
     )
     with open(thresh_path, 'w') as thresh_file:
-        thresh_file.write(f"{thresh:.6f}")
+        thresh_file.write(f"{thresh:.6f}")  # TODO change to np.savetxt
 
 
 def save_runtime(params: dict, runtime: float, amp_ind: int = 0):
@@ -103,7 +103,7 @@ def save_runtime(params: dict, runtime: float, amp_ind: int = 0):
             params['output_path'], f'runtime_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
         )
         with open(runtimes_path, 'w') as runtime_file:
-            runtime_file.write(f'{runtime:.3f}')
+            runtime_file.write(f'{runtime:.3f}')  # TODO change to np.savetxt
 
 
 def save_sfap(params: dict, sfap: list, downsampled_time: list, amp_ind: int = 0):
@@ -138,7 +138,7 @@ def save_activation(params: dict, n_aps: int, amp_ind: int):
         params['output_path'], f'activation_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
     )
     with open(output_file_path, 'w') as activation_file:
-        activation_file.write(f'{n_aps}')
+        activation_file.write(f'{n_aps}')  # TODO change to np.savetxt
 
 
 def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind: int = 0):
@@ -306,4 +306,4 @@ def save_aploctime(params: dict, amp_ind: int, fiber: Fiber):
     )
     with open(aploctime_path, 'w') as file:
         for node_ind, _ in enumerate(fiber.nodes):
-            file.write(f"{fiber.apc[node_ind].time:.6f}\n")
+            file.write(f"{fiber.apc[node_ind].time:.6f}\n")  # TODO Change this to use pandas
