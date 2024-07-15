@@ -17,4 +17,5 @@ seaborn
 setuptools
 shapely==1.8.*
 wheel
+# pyfibers # TODO: uncomment when PyPI package is available
 xlsxwriter

@@ -18,14 +18,15 @@ from scipy.io import savemat
 from scipy.signal import resample
 from scipy.stats import mode
 
+os.chdir('../..')
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 from src.core.query import Query  # noqa E402
 from src.utils import Config, Object, WaveformMode  # noqa E402
 
 # Please provide only one sample, model, and sim pairing at a time.
-sample = 0
+sample = 1
 model = 0
-sim = 0
+sim = 100
 
 q = Query(
     {
@@ -61,7 +62,7 @@ else:
 if fiber_type in [
     'MRG_DISCRETE',
     'MRG_INTERPOLATION',
-    'SMALL_MRG_INTERPOLATION_V1',
+    'SMALL_MRG_INTERPOLATION',
 ]:  # Myelinated types that ascent allows
     fiber_type = 'myelinated'
     common_time_bounds_ms = [-2.4, 36]

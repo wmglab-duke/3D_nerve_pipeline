@@ -65,6 +65,7 @@ class FiberSet(Configurable, Saveable):
             Config.FIBER_Z,
             os.path.join('config', 'system', 'fiber_z.json'),
         )
+        # Note: eventually all fiber creation code here should be replaced with PyFibers code
 
     def init_post_config(self):
         """Make sure Model and Simulation are configured.
@@ -87,20 +88,13 @@ class FiberSet(Configurable, Saveable):
         # Load fiber xy and z modes
         xy_mode_name: str = self.search(Config.SIM, 'fibers', 'xy_parameters', 'mode')
         self.xy_mode: FiberXYMode = [mode for mode in FiberXYMode if str(mode).split('.')[-1] == xy_mode_name][0]
-        try:
-            fiber_z_mode_name: str = self.search(Config.SIM, 'fibers', 'z_parameters', 'mode')
-            # If fiber z mode is in SIM file, cast to Enum FiberZMode object to maintain enum code consistency
-            # (eventhough this can easily be done without enums & using string equality).
-            self.z_mode: FiberZMode = [mode for mode in FiberZMode if str(mode).split('.')[-1] == fiber_z_mode_name][0]
-        except KeyError:  # Backwards compatibility.
-            # If fiber z mode doesn't exist in new position under Sim > fibers > z_parameters > mode,
-            # look for it where it use to be located (in model.json) in previous ascent versions
-            warnings.warn(
-                'No fiber_z mode specified in sim.json under "fibers" > "z_parameters" > "mode". '
-                'Proceeding with fiber_z mode from location in model.json.',
-                stacklevel=2,
-            )
-            self.z_mode = self.search_mode(FiberZMode, Config.MODEL)
+
+        fiber_z_mode_name: str = (
+            self.search(Config.SIM, 'fibers', 'z_parameters', 'mode', optional=True) or FiberZMode.EXTRUSION.name
+        )
+        # If fiber z mode is in SIM file, cast to Enum FiberZMode object to maintain enum code consistency
+        # (eventhough this can easily be done without enums & using string equality).
+        self.z_mode: FiberZMode = [mode for mode in FiberZMode if str(mode).split('.')[-1] == fiber_z_mode_name][0]
 
         # Generate fibers accordingly depending on fiber z mode.
         if self.z_mode == FiberZMode.EXTRUSION:
@@ -605,7 +599,7 @@ class FiberSet(Configurable, Saveable):
             **scatter_kws,
         )
 
-    def _generate_longitudinal(  # noqa: C901
+    def _generate_longitudinal(  # noqa: C901 #TODO this should be replaced with pyfibers code
         self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False
     ) -> np.ndarray:
         """Generate the 1D longitudinal coordinates of the fibers.
@@ -711,13 +705,12 @@ class FiberSet(Configurable, Saveable):
                 )
                 paranodal_length_2 = eval(paranodal_length_2_str)
 
-                if fiber_geometry_mode_name == FiberGeometry.SMALL_MRG_INTERPOLATION_V1.value:
+                if fiber_geometry_mode_name == FiberGeometry.SMALL_MRG_INTERPOLATION.value:
                     delta_z = eval(delta_z_str)
                     inter_length = eval(inter_length_str)
                     if diameter > 16.0 or diameter < 1.011:
                         raise ValueError(
-                            "Diameter entered for SMALL_MRG_INTERPOLATION_V1 must be"
-                            "between 1.011 and 16.0 (inclusive)."
+                            "Diameter entered for SMALL_MRG_INTERPOLATION must be" "between 1.011 and 16.0 (inclusive)."
                         )
                 elif fiber_geometry_mode_name == FiberGeometry.MRG_INTERPOLATION.value:
                     if diameter > 16.0 or diameter < 2.0:
@@ -883,6 +876,10 @@ class FiberSet(Configurable, Saveable):
         )
 
         fiber_geometry_mode_name: str = self.search(Config.SIM, 'fibers', 'mode')
+        if fiber_geometry_mode_name == "SMALL_MRG_INTERPOLATION_V1":
+            raise ValueError(
+                "the name SMALL_MRG_INTERPOLATION_V1 is deprecated. Please use SMALL_MRG_INTERPOLATION instead."
+            )
 
         # use key from above to get myelination mode from fiber_z
         diameter = self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'diameter')

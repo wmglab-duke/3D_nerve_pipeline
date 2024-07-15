@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
+os.chdir('../..')
 from src.core.query import Query  # noqa E402
 
 sns.set_style("whitegrid")
@@ -27,16 +28,16 @@ q = Query(
     {
         'partial_matches': False,
         'include_downstream': True,
-        'indices': {'sample': [0], 'model': [0], 'sim': [0]},
+        'indices': {'sample': [1], 'model': [0], 'sim': [100]},
     }
 ).run()
 data = q.sfap_data(fiber_indices, all_fibers=True)
 
 # CNAP = Summation of all fibers
-cnap = data.groupby(['fiber', 'SFAP_times'])['SFAP0'].sum().reset_index()
+cnap = data.groupby(['fiber', 'SFAP_times'])['SFAP'].sum().reset_index()
 
 # Generate plot
-sns.lineplot(data=cnap, x='SFAP_times', y='SFAP0', palette='deep')
+sns.lineplot(data=cnap, x='SFAP_times', y='SFAP', palette='deep')
 plt.title('Compound Neuron Action Potential')
 plt.xlabel('Time (ms)')
 plt.ylabel(r'signal (${\mu}V$)')

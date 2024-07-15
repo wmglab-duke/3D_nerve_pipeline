@@ -17,15 +17,19 @@ This documentation is an adaptation and update of the supplements associated wit
 
      **Musselman, E. D.**, **Cariello, J. E.**, Grill, W. M., & Pelot, N. A. (2021). ASCENT (Automated Simulations to Characterize Electrical Nerve Thresholds): A pipeline for sample-specific computational modeling of electrical stimulation of peripheral nerves. PLOS Computational Biology, 17(9), e1009285. https://doi.org/10.1371/journal.pcbi.1009285
 
+     **Peña, E.**, Pelot, N. A., & Grill, W. M. (2024). Computational models of compound nerve action potentials: Efficient filter-based methods to quantify effects of tissue conductivities, conduction distance, and nerve fiber parameters. PLoS computational biology, 20(3), e1011833. https://doi.org/10.1371/journal.pcbi.1011833
+
   .. details:: MLA
 
       Musselman, Eric D., et al. "ASCENT (Automated Simulations to Characterize Electrical Nerve Thresholds): A Pipeline for Sample-Specific Computational Modeling of Electrical Stimulation of Peripheral Nerves." PLOS Computational Biology, vol. 17, no. 9, Sept. 2021, p. e1009285. PLoS Journals, https://doi.org/10.1371/journal.pcbi.1009285.
+
+      Peña, Edgar et al. “Computational models of compound nerve action potentials: Efficient filter-based methods to quantify effects of tissue conductivities, conduction distance, and nerve fiber parameters.” PLoS computational biology vol. 20,3 e1011833. 1 Mar. 2024, doi:10.1371/journal.pcbi.1011833
 
   .. details:: BibTeX
 
     .. code-block:: BibTeX
 
-        @article{Musselman2021,
+         @article{Musselman2021,
           doi = {10.1371/journal.pcbi.1009285},
           url = {https://doi.org/10.1371/journal.pcbi.1009285},
           year = {2021},
@@ -39,6 +43,20 @@ This documentation is an adaptation and update of the supplements associated wit
           title = {{ASCENT} (Automated Simulations to Characterize Electrical Nerve Thresholds): A pipeline for sample-specific computational modeling of electrical stimulation of peripheral nerves},
           journal = {{PLOS} Computational Biology}
         }
+
+         @article{Pena2024,
+          doi = {10.1371/journal.pcbi.1011833},
+          author = {Peña, Edgar AND Pelot, Nicole A. AND Grill, Warren M.},
+          journal = {PLOS Computational Biology},
+          publisher = {Public Library of Science},
+          title = {Computational models of compound nerve action potentials: Efficient filter-based methods to quantify effects of tissue conductivities, conduction distance, and nerve fiber parameters},
+          year = {2024},
+          month = {03},
+          volume = {20},
+          url = {https://doi.org/10.1371/journal.pcbi.1011833},
+          pages = {1-35},
+          number = {3},
+         }
 
 * **Cite the code (use the DOI for the version of code used):** |doi|
 
@@ -87,7 +105,6 @@ This documentation is an adaptation and update of the supplements associated wit
    Primitives_and_Cuffs/index
    Modeling_Neural_Recording
    Convergence_Example
-   Troubleshooting-Guide
 
 .. toctree::
    :maxdepth: 2
