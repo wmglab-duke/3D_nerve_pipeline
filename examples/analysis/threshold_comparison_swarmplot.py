@@ -29,7 +29,7 @@ q = Query(
     }
 ).run()
 
-data = q.threshold_data()
+data = q.threshold_data()  # TODO update
 g = sns.swarmplot(data=data, x='model', y='threshold')
 plt.title('Threshold swarmplot comparison')
 

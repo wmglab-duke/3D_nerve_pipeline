@@ -31,7 +31,7 @@ q = Query(
         'indices': {'sample': [1], 'model': [0], 'sim': [100]},
     }
 ).run()
-data = q.sfap_data(fiber_indices, all_fibers=True)
+data = q.sfap_data(fiber_indices, all_fibers=True)  # TODO update
 
 # CNAP = Summation of all fibers
 cnap = data.groupby(['fiber', 'SFAP_times'])['SFAP'].sum().reset_index()

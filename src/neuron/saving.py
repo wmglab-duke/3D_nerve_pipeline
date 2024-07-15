@@ -25,7 +25,7 @@ def initialize_saving(
     :param inner_ind: index of inner in list of inners
     :param sim_path: path to simulation directory
     :param dt: time step of stimulation (ms)
-    :sfap: whether sfap recordings will be generated
+    :param sfap: whether sfap recordings will be generated
     :return: dictionary containing saving parameters
     """
     # set defaults and then load in saving configurations
@@ -44,7 +44,7 @@ def initialize_saving(
         fiber.set_save_vext()
         if space_configs['imembrane'] or time_configs['imembrane']:
             # Could be changed to support both if could save im for allsec and regular independently
-            warnings.warn('saving i_membrane is not supported for sfap generation, setting to False.')
+            warnings.warn('saving i_membrane is not supported for sfap generation, setting to False.', stacklevel=2)
             space_configs['imembrane'] = time_configs['imembrane'] = False
     else:
         if space_configs['imembrane'] or time_configs['imembrane']:
@@ -88,7 +88,7 @@ def save_thresh(params: dict, thresh: float):
         params['output_path'], f'thresh_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}.dat'
     )
     with open(thresh_path, 'w') as thresh_file:
-        thresh_file.write(f"{thresh:.6f}")
+        thresh_file.write(f"{thresh:.6f}")  # TODO change to np.savetxt
 
 
 def save_runtime(params: dict, runtime: float, amp_ind: int = 0):
@@ -103,13 +103,16 @@ def save_runtime(params: dict, runtime: float, amp_ind: int = 0):
             params['output_path'], f'runtime_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
         )
         with open(runtimes_path, 'w') as runtime_file:
-            runtime_file.write(f'{runtime:.3f}')
+            runtime_file.write(f'{runtime:.3f}')  # TODO change to np.savetxt
 
 
 def save_sfap(params: dict, sfap: list, downsampled_time: list, amp_ind: int = 0):
-    """Save sfap from NEURON simulation to file.
+    """Save single fiber action potential (sfap).
 
-    :param sfap: single fiber action potential from NEURON simulation
+    :param params: dictionary containing saving parameters
+    :param sfap: sfap signal
+    :param downsampled_time: time matching downsampling of sfap
+    :param amp_ind: index of amplitude in list of amplitudes for finite_amplitude protocol
     """
     sfap_path = os.path.join(
         params['output_path'], f'SFAP_time_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
@@ -120,6 +123,12 @@ def save_sfap(params: dict, sfap: list, downsampled_time: list, amp_ind: int = 0
 
 
 def save_matrix(params: dict, imembrane_matrix: np.ndarray, amp_ind: int = 0):
+    """Save matrix of transmembrane currents, adjusted for periaxonal current.
+
+    :param params: dictionary containing saving parameters
+    :param imembrane_matrix: the matrix, columns=sections, rows=time points
+    :param amp_ind: index of amplitude in list of amplitudes for finite_amplitude protocol
+    """
     adj_im_path = os.path.join(
         params['output_path'],
         f'adjusted_imembrane_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat',
@@ -138,7 +147,7 @@ def save_activation(params: dict, n_aps: int, amp_ind: int):
         params['output_path'], f'activation_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
     )
     with open(output_file_path, 'w') as activation_file:
-        activation_file.write(f'{n_aps}')
+        activation_file.write(f'{n_aps}')  # TODO change to np.savetxt
 
 
 def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind: int = 0):
@@ -179,11 +188,8 @@ def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind:
         if params['time_gating']:
             save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'time', stimulation)
     if params['istim']:
-        raise NotImplementedError('Saving of istim is not yet implemented.')  # TODO
-        istim_data = pd.DataFrame(list(stimulation.istim_record))
-        save_data(
-            params, amp_ind, fiber, istim_data, stimulation.dt, 'istim', 'time', stimulation, 'nA'
-        )  # TODO fix istim
+        istim_data = pd.DataFrame(np.array(fiber.syn_current))
+        save_data(params, amp_ind, fiber, istim_data, stimulation.dt, 'istim', 'time', stimulation, 'nA')
     if params['ap_loctime']:
         save_aploctime(params, amp_ind, fiber)
 
@@ -306,4 +312,4 @@ def save_aploctime(params: dict, amp_ind: int, fiber: Fiber):
     )
     with open(aploctime_path, 'w') as file:
         for node_ind, _ in enumerate(fiber.nodes):
-            file.write(f"{fiber.apc[node_ind].time:.6f}\n")
+            file.write(f"{fiber.apc[node_ind].time:.6f}\n")  # TODO Change this to use pandas

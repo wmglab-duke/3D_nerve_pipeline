@@ -29,7 +29,7 @@ q = Query(
     }
 ).run()
 
-data = q.threshold_data()
+data = q.threshold_data()  # TODO update
 g = sb.ecdfplot(data=data, x='threshold')
 plt.ylabel('Percent of fibers activated')
 plt.title('Dose-response curve')

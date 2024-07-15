@@ -30,15 +30,19 @@ q = Query(
     }
 ).run()
 
-data = q.sfap_data(fiber_indices=fiber_indices, all_fibers=True)
+data = q.common_data_extraction(data_types=['sfap'])  # TODO need to update
 print(data)
+plt.plot(data.SFAP_times[0], data.SFAP[0])
+# plt.plot(data.SFAP_times[1],data.SFAP[1])
 
-fig, ax = plt.subplots()
-sns.lineplot(data=data, x='SFAP_times', y='SFAP', hue='fiberset_index', palette='deep', ax=ax)
-sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-plt.xlim(left=0, right=10.0)
-plt.title('Single Fiber Action Potentials')
-plt.xlabel('Time (ms)')
-plt.ylabel(r'signal (${\mu}V$)')
-plt.ylim(-20, 20)
-plt.show()
+plt.ylim(-30, 30)
+
+# fig, ax = plt.subplots()
+# # sns.lineplot(data=data, x='SFAP_times', y='SFAP', hue='fiberset_index', palette='deep', ax=ax)
+# sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+# plt.xlim(left=0, right=10.0)
+# plt.title('Single Fiber Action Potentials')
+# plt.xlabel('Time (ms)')
+# plt.ylabel(r'signal (${\mu}V$)')
+# plt.ylim(-20, 20)
+# plt.show()
