@@ -16,6 +16,7 @@ scipy>=1.11.4
 seaborn
 setuptools
 shapely==1.8.*
+tqdm
 wheel
 # pyfibers # TODO: uncomment when PyPI package is available
 xlsxwriter

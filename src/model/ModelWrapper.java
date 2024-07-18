@@ -1828,11 +1828,11 @@ public class ModelWrapper {
                         boolean delSuccess = deleteDir(mesh_path);
                         if (delSuccess) {
                             System.out.println(
-                                "\tSuccessfully solved for /bases, therefore deleted /mesh directory."
+                                "\tSuccessfully solved for /bases, therefore deleted mesh.mph."
                             );
                         } else {
                             System.out.println(
-                                "\tSuccessfully solved for /bases; an issue occurred during deletion of mesh directory."
+                                "\tSuccessfully solved for /bases; an issue occurred during deletion of mesh.mph"
                             );
                         }
                     }
