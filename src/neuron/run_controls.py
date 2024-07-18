@@ -161,6 +161,8 @@ def main(
 
             time_total += time_individual
 
+    print('Total runtime:', time.time() - start_time)
+
 
 def calculate_save_sfap(  # TODO: does it even make sense to calc sfap with a threshold search?
     sim_configs: dict,

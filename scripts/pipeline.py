@@ -8,7 +8,7 @@ source code can be found on the following GitHub repository:
 https://github.com/wmglab-duke/ascent
 """
 
-
+import json
 import os
 import subprocess
 import sys
@@ -25,6 +25,8 @@ def run(args):
 
     :param args: The command line arguments.
     :raises Exception: If the Python version is not 3.10 or newer.
+    :raises FileNotFoundError: If the run group file is not found.
+    :raises ValueError: If run group inputs are invalid
     """
     # test
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 10):
@@ -33,6 +35,24 @@ def run(args):
     # create bin/ directory for storing compiled Java files if it does not yet exist
     if not (os.path.exists('bin')):
         os.mkdir('bin')
+
+    if args.run_group is None:  # TODO, update docs for this and provide example
+        if not args.run_indices:
+            raise ValueError('No run indices provided.')
+    else:
+        grouppath = os.path.join('config', 'user', 'rungroups.json')
+        if not os.path.exists(grouppath):
+            raise FileNotFoundError(f'Run group file not found: {grouppath}')
+        else:
+            with open(grouppath) as f:
+                rungroups = json.load(f)
+            if args.run_group not in rungroups:
+                raise ValueError(f'Run group not found: {args.run_group}')
+            else:
+                if args.run_indices:
+                    raise ValueError('Cannot provide both run group and run indices.')
+                else:
+                    args.run_indices = rungroups[args.run_group]
 
     for argument in args.run_indices:
         # START timer

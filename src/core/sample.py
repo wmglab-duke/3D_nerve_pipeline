@@ -29,6 +29,7 @@ from src.utils import (
     MaskError,
     MaskFileNames,
     MaskInputMode,
+    MaskSpaceMode,
     NerveMode,
     PerineuriumThicknessMode,
     ReshapeNerveMode,
@@ -303,12 +304,12 @@ class Sample(Configurable, Saveable):
         self.scale_input_mode = self.search_mode(ScaleInputMode, Config.SAMPLE, optional=True)
         self.sample_rotation = self.search(Config.SAMPLE, "rotation", optional=True)
         self.contour_mode = self.search_mode(ContourMode, Config.SAMPLE, optional=True)
+        self.mask_space_mode = self.search_mode(MaskSpaceMode, Config.SAMPLE, optional=True)
 
-        # For backwards compatibility, if scale mode is not specified assume a mask image is provided
-        if self.scale_input_mode is None:
-            self.scale_input_mode = ScaleInputMode.MASK
-        if self.contour_mode is None:
-            self.contour_mode = ContourMode.SIMPLE
+        # Set defaults for optional modes
+        self.scale_input_mode = self.scale_input_mode or ScaleInputMode.MASK
+        self.contour_mode = self.contour_mode or ContourMode.NONE
+        self.mask_space_mode = self.mask_space_mode or MaskSpaceMode.CARTESIAN
 
     @staticmethod
     def mask_exists(mask_file_name: MaskFileNames):
@@ -326,7 +327,10 @@ class Sample(Configurable, Saveable):
         :raises MaskError: If the mask has an invalid number of objects
         :return: Slide object
         """
-        img = np.flipud(cv2.imread(MaskFileNames.ORIENTATION.value, -1))
+        img = cv2.imread(MaskFileNames.ORIENTATION.value, -1)
+
+        if self.mask_space_mode != MaskSpaceMode.IMAGE:
+            img = np.flipud(img)
 
         if len(img.shape) > 2 and img.shape[2] > 1:
             img = img[:, :, 0]
@@ -413,7 +417,7 @@ class Sample(Configurable, Saveable):
                 outer_mask = None
 
         # generate fascicle objects from masks
-        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.contour_mode)
+        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.contour_mode, self.mask_space_mode)
         return fascicles
 
     def get_epineurium_from_mask(self):
@@ -429,7 +433,10 @@ class Sample(Configurable, Saveable):
         if len(img_nerve.shape) > 2 and img_nerve.shape[2] > 1:
             img_nerve = img_nerve[:, :, 0]
 
-        contour, _ = cv2.findContours(np.flipud(img_nerve), cv2.RETR_TREE, self.contour_mode.value)
+        if self.mask_space_mode != MaskSpaceMode.IMAGE:
+            img_nerve = np.flipud(img_nerve)
+
+        contour, _ = cv2.findContours(img_nerve, cv2.RETR_TREE, self.contour_mode.value)
         nerve = Nerve(
             Trace(
                 [point + [0] for point in contour[0][:, 0, :]],
@@ -594,8 +601,13 @@ class Sample(Configurable, Saveable):
         :raises ValueError: if deform mode is invalid
         :return: Slide object
         """
+        from copy import deepcopy
+
+        self.undeformed = deepcopy(slide)
+
         if self.deform_mode != DeformationMode.PHYSICS:
             raise ValueError("Invalid DeformationMode in Sample.")
+
         if 'morph_count' in self.search(Config.SAMPLE):
             morph_count = self.search(Config.SAMPLE, 'morph_count')
         else:
@@ -647,8 +659,9 @@ class Sample(Configurable, Saveable):
         ]
 
         for move, angle, fascicle in zip(movements, rotations, slide.fascicles):
-            fascicle.shift(list(move) + [0])
-            fascicle.rotate(angle)
+            fascicle.deformation = {"shift": list(move) + [0], "rotate": angle}
+            fascicle.shift(fascicle.deformation['shift'])
+            fascicle.rotate(fascicle.deformation['rotate'])
 
         if deform_ratio != 1 and partially_deformed_nerve is not None:
             partially_deformed_nerve.shift(-np.asarray(list(partially_deformed_nerve.centroid()) + [0]))
@@ -660,10 +673,12 @@ class Sample(Configurable, Saveable):
         if slide.nerve.area() != pre_area:
             slide.nerve.scale((pre_area / slide.nerve.area()) ** 0.5)
         else:
-            print(f'Note: nerve area before deformation was {pre_area}, post deformation is {self.nerve.area()}')
+            print(f'Note: nerve area before deformation was {pre_area}, post deformation is {slide.nerve.area()}')
 
         # shift slide about (0,0)
         slide.move_center(np.array([0, 0]))
+        from copy import deepcopy
+
         return slide
 
     def populate(self) -> 'Sample':
@@ -739,10 +754,10 @@ class Sample(Configurable, Saveable):
             # repositioning!
             for slide in self.slides:
                 self.deform_slide(slide)
+
         for slide in self.slides:
             # shift slide about (0,0)
             slide.move_center(np.array([0, 0]))
-
             # Rotate sample
             if self.sample_rotation is not None:
                 if slide.orientation_angle is not None:

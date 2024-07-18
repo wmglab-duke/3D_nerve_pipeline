@@ -600,25 +600,27 @@ class FiberSet(Configurable, Saveable):
         )
 
     def _generate_longitudinal(  # noqa: C901 #TODO this should be replaced with pyfibers code
-        self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False
+        self, fibers_xy: np.ndarray, override_length=None, super_sample: bool = False, override_shift: float = None
     ) -> np.ndarray:
         """Generate the 1D longitudinal coordinates of the fibers.
 
         :param fibers_xy: The xy coordinates of the fibers.
         :param override_length: The length of the fibers (forced).
         :param super_sample: Whether to use supersampling.
+        :param override_shift: The shift of the fibers (forced).
+        :raises ValueError: If the diameter is not within the valid range.
         :return: The longitudinal coordinates of the fibers.
         """
 
-        def clip(values: list, start, end, myel: bool, is_points: bool = False) -> list:
+        def clip(values: list, start, end, myel: bool, is_points: bool = False, zbuffer=5) -> list:
             step = 1
             if myel:
                 step = 11
 
             while 1:
-                if (start + 0.1) > (values[0] if not is_points else values[0][-1]):
+                if (start + zbuffer) > (values[0] if not is_points else values[0][-1]):
                     values = values[step:]
-                elif (end - 0.1) < (values[-1] if not is_points else values[-1][-1]):
+                elif (end - zbuffer) < (values[-1] if not is_points else values[-1][-1]):
                     values = values[:-step]
                 else:
                     break
@@ -635,7 +637,7 @@ class FiberSet(Configurable, Saveable):
 
             def _build_z(inter_length, node_length, paranodal_length_1, paranodal_length_2, delta_z):
                 z_steps: List = []
-                while (sum(z_steps) - model_length / 2) < 1:
+                while sum(z_steps) < model_length / 2:
                     z_steps += [
                         (node_length / 2) + (paranodal_length_1 / 2),
                         (paranodal_length_1 / 2) + (paranodal_length_2 / 2),
@@ -646,9 +648,13 @@ class FiberSet(Configurable, Saveable):
                         (paranodal_length_1 / 2) + (node_length / 2),
                     ]
                 # account for difference between last node z and half fiber length -> must shift extra distance
-                if shift is None:
+                if override_shift is not None:  # if override shift provided, use that
+                    modshift = (
+                        override_shift % delta_z
+                    )  # meaningless to shift by more than a node length, so mod by delta_z
+                elif shift is None:  # if no shift provided, use 0
                     modshift = 0
-                else:
+                else:  # finally if shifting and not overriding, use the shift
                     modshift = shift % delta_z
                 my_z_shift_to_center_in_fiber_range = model_length / 2 - sum(z_steps) + modshift
                 reverse_z_steps = z_steps.copy()
@@ -785,6 +791,7 @@ class FiberSet(Configurable, Saveable):
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'min'),
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'max'),
                 myel,
+                zbuffer=10 if not super_sample else 5,  # TODO: instead of fixed value make supersample dz
             )
 
             my_fiber = [(my_x, my_y, z) for z in z_offset]
@@ -1045,8 +1052,8 @@ class FiberSet(Configurable, Saveable):
             self.search(Config.MODEL, 'medium', 'proximal', 'length') if (override_length is None) else override_length
         )
         if (
-            'min' not in self.configs['sims']['fibers']['z_parameters'].keys()
-            or 'max' not in self.configs['sims']['fibers']['z_parameters'].keys()
+            'min' not in self.configs['sims']['fibers']['z_parameters']
+            or 'max' not in self.configs['sims']['fibers']['z_parameters']
             or override_length is not None
         ):
             fiber_length = model_length if override_length is None else override_length
