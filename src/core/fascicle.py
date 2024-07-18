@@ -18,7 +18,7 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.utils import MorphologyError, WriteMode
+from src.utils import MaskSpaceMode, MorphologyError, WriteMode
 
 from .nerve import Nerve
 from .trace import Trace
@@ -60,6 +60,10 @@ class Fascicle:
 
         :raises MorphologyError: if validation fails
         """
+        # check that inners are valid
+        if not self.outer.polygon().is_valid:
+            self.outer.make_valid()
+
         # ensure all inner Traces are actually inside outer Trace
         if any(not inner.within(self.outer) for inner in self.inners):
             raise MorphologyError("Not all inner Traces fall within outer Trace")
@@ -174,6 +178,8 @@ class Fascicle:
         outer_flag=True,
         inner_index_start: int = None,
         line_kws=None,
+        outer_color=None,
+        inners_flag=True,
     ):
         """Plot the fascicle.
 
@@ -184,13 +190,15 @@ class Fascicle:
         :param color: List of colors to plot the inners with. If None, inners are not filled in.
             The form of each item in the list should be a color specification acceptable to matplotlib.
         :param plot_format: outers automatically black, plot_format only affects inners
+        :param outer_color: color to fill outer trace
+        :param inners_flag: whether to plot the inner traces
         :raises ValueError: if color is not None and len(color) != len(inners)
         """
         if ax is None:
             ax = plt.gca()
 
         if outer_flag:
-            self.outer.plot(ax=ax, line_kws=line_kws)
+            self.outer.plot(ax=ax, line_kws=line_kws, color=outer_color)
 
         if color is not None:
             if len(self.inners) != len(color):
@@ -199,6 +207,10 @@ class Fascicle:
             color = [None] * len(self.inners)
 
         for i, (inner, c) in enumerate(zip(self.inners, color)):
+            if not inners_flag:
+                break
+            if 'linewidth' not in line_kws:
+                line_kws['linewidth'] = 2
             inner.plot(plot_format, color=c, ax=ax, line_kws=line_kws)
             if inner_index_start is not None:
                 ax.text(*inner.centroid(), s=str(i + inner_index_start), ha='center', va='center')
@@ -268,7 +280,7 @@ class Fascicle:
         self.inners = [self.outer.deepcopy()]
 
         # scale up outer trace
-        self.outer.offset(fit=fit)
+        self.outer.thickness = self.outer.offset(fit=fit)
 
         # check for any bad traces
         self.validate()
@@ -278,6 +290,7 @@ class Fascicle:
         inner_img_path: str,
         outer_img_path: str,
         contour_mode,
+        mask_space_mode,
         z: float = 0,
     ) -> List['Fascicle']:
         """Convert a set of inner and outer images to a list of fascicles.
@@ -287,6 +300,7 @@ class Fascicle:
             (stored as outers until perineurium is generated)
         :param inner_img_path: path to inner image
         :param contour_mode: contour mode to use for cv2.findContours
+        :param mask_space_mode: MaskSpaceMode to use for image processing
         :return: list of Fascicles derived from the image(s)
         """
 
@@ -295,7 +309,9 @@ class Fascicle:
             params = [cv2.RETR_TREE, contour_mode.value]
             # default findContours params
 
-            img = np.flipud(cv2.imread(path, -1))
+            img = cv2.imread(path, -1)
+            if mask_space_mode != MaskSpaceMode.IMAGE:  # TODO add documentation for this
+                img = np.flipud(img)
 
             if len(img.shape) > 2 and img.shape[2] > 1:
                 img = img[:, :, 0]
@@ -308,7 +324,12 @@ class Fascicle:
 
         if outer_img_path is None:
             # inners only case, set each inner as an outer
-            outers = np.array(build_traces(inner_img_path))
+            fixtrace = []
+            # check that each trace is valid, if not validate
+            for tr in build_traces(inner_img_path):
+                fixtrace.extend(tr.validate_polygon())
+            # convert back to traces
+            outers = np.array([Trace.from_polygon(tr) for tr in fixtrace])
         else:
             # build traces list for inner and outer image paths
             inners, outers = (np.array(build_traces(path)) for path in (inner_img_path, outer_img_path))

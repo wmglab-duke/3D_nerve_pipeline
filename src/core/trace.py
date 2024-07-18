@@ -19,8 +19,9 @@ import numpy as np
 import pyclipper
 import pymunk
 from shapely.affinity import rotate, scale
-from shapely.geometry import Point, Polygon
+from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import nearest_points
+from shapely.validation import make_valid
 
 from src.utils import DownSampleMode, MorphologyError, WriteMode
 
@@ -38,6 +39,7 @@ class Trace:
         :param points: nx3 iterable of points [x, y, z].
         """
         # These are private instance variables that are returned by getter
+        self.thickness = None
         self.__contour = None
         self.__polygon = None
         self.__centroid = None
@@ -50,6 +52,22 @@ class Trace:
 
         self.points = None  # must declare instance variable in __init__ at some point!
         self.append(points)
+
+    @classmethod
+    def from_polygon(cls, polygon):
+        """Create a Trace object from a Shapely Polygon object.
+
+        :param polygon: Shapely Polygon object
+        :raises ValueError: if input is not a Shapely Polygon object
+        :return: Trace object
+        """
+        if not isinstance(polygon, Polygon):
+            raise ValueError("Input must be a Shapely Polygon object.")
+
+        assert polygon.is_valid, "Input polygon must be valid."
+
+        trace_points = np.array(polygon.exterior.coords.xy).T.tolist()
+        return cls(trace_points)
 
     # %% public, MUTATING methods
     def append(self, points):
@@ -82,6 +100,7 @@ class Trace:
         :param fit: dictionary of parameters for a linear fit of distance to offset based off area.
         :param distance: used to scale by a discrete distance
         :raises ValueError: if fit and distance are both None
+        :return: resultant offset distance
         """
         # create clipper offset object
         pco = pyclipper.PyclipperOffset()
@@ -109,11 +128,14 @@ class Trace:
         self.__update()
         pco.Clear()
 
-    def smooth(self, distance, area_compensation=True):
+        return distance
+
+    def smooth(self, distance, area_compensation=True, as_ratio=False):
         """Smooth a contour using a dilation followed by erosion.
 
         :param distance: amount to use for dilation and erosion, in whatever units the trace is using
         :param area_compensation: if True, after smoothing, scale each trace to match its original area
+        :param as_ratio: if True, distance is a ratio of the effective circular diameter (ECD)
         :raises ValueError: if distance is not a positive number
         :raises MorphologyError: if the pre-smoothing area cannot be maintained
         """
@@ -121,6 +143,8 @@ class Trace:
             raise ValueError("Smoothing value cannot be negative (Sample.json)")
         if distance == 0:
             return
+        if as_ratio:
+            distance = distance * self.ecd()
         pre_area = self.area()
         self.offset(fit=None, distance=distance)
         self.offset(fit=None, distance=-distance)
@@ -152,6 +176,15 @@ class Trace:
         self.append([list(coord[:2]) + [0] for coord in scaled_polygon.boundary.coords])
         self.__update()
 
+    def scale_to_area(self, target_area, center: Union[List[float], str] = 'centroid'):
+        """Scale the trace to a target area.
+
+        :param target_area: target area to scale to
+        :param center: passed to scale method
+        """
+        factor = np.sqrt(target_area) / np.sqrt(self.area())
+        self.scale(factor=factor, center=center)
+
     def rotate(self, angle: float, center: Union[List[float], str] = 'centroid'):
         """Rotate the trace by a given angle.
 
@@ -169,6 +202,11 @@ class Trace:
 
         self.points = None
         self.append([list(coord[:2]) + [0] for coord in rotated_polygon.boundary.coords])
+        self.__update()
+
+    def center(self):
+        """Center the trace at the origin."""
+        self.shift([-x for x in self.centroid()] + [0])
         self.__update()
 
     def shift(self, vector):
@@ -278,6 +316,14 @@ class Trace:
         :return: True if within other Trace, else False
         """
         return self.polygon().within(outer.polygon())
+
+    def contains(self, other) -> bool:
+        """Check if the trace contains another Shapely object (typically a point).
+
+        :param other: other Trace to check
+        :return: True if containing other Trace, else False
+        """
+        return self.polygon().contains(other)
 
     def intersects(self, other: 'Trace') -> bool:
         """Check if the trace intersects another trace.
@@ -404,7 +450,7 @@ class Trace:
         return self.__ellipse_object(u, v, a, b, angle * 2 * np.pi / 360)
 
     def to_circle(self, buffer: float = 0.0):
-        """Get best fit circle from the trace.
+        """Get a best-fit circle from the Trace.
 
         :param buffer: buffer to add to the circle
         :return: returns circle object for best-fit circle
@@ -456,13 +502,11 @@ class Trace:
         plot_format: str = 'k-',
         color: Tuple[float, float, float, float] = None,
         ax: plt.Axes = None,
-        linewidth=1,
         line_kws: dict = None,
     ):
         """Plot the trace.
 
         :param line_kws: Additional keyword arguments to matplotlib.pyplot.plot
-        :param linewidth: Width of the line
         :param ax: Axes to plot on
         :param color: Color to fill the trace with, if None, no fill
         :param plot_format: the plt.plot format spec (see matplotlib docs)
@@ -476,7 +520,7 @@ class Trace:
         if color is not None:
             ax.fill(points[:, 0], points[:, 1], color=color)
 
-        ax.plot(points[:, 0], points[:, 1], plot_format, linewidth=linewidth, **{} if line_kws is None else line_kws)
+        ax.plot(points[:, 0], points[:, 1], plot_format, **{} if line_kws is None else line_kws)
 
     def plot_centroid(self, plot_format: str = 'k*'):
         """Plot the centroid of the trace.
@@ -553,8 +597,7 @@ class Trace:
         mass = 1
         radius = 1
         vertices = [tuple(point[:2]) for point in copy.points]
-        inertia = pymunk.moment_for_poly(mass, vertices)
-        body = pymunk.Body(mass, inertia)
+        body = pymunk.Body(mass, 1)
         body.position = self.centroid()  # position is tracked from trace centroid
         shape = pymunk.Poly(body, vertices, radius=radius)
         shape.density = 0.01  # all fascicles have same density so this value does not matter
@@ -752,6 +795,43 @@ class Trace:
         :return: twice the signed area of the triangle defined by (x0, y0), (x1, y1), (x2, y2)
         """
         return (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0)
+
+    def validate_polygon(self):
+        """Make polygon valid.
+
+        :return: list of valid polygons
+        """
+        input_polygon = self.polygon()
+
+        if input_polygon.is_valid:
+            # If the input polygon is already valid, return it
+            return [input_polygon]
+        else:
+            # If the input polygon is invalid, use make_valid() to fix it
+            valid_polygons = list(make_valid(input_polygon))
+
+            # List to store valid polygons
+            result_polygons = []
+
+            for geom in valid_polygons:
+                if isinstance(geom, Polygon):
+                    # If it's a polygon, add it to the result list
+                    result_polygons.append(geom)
+                elif isinstance(geom, MultiPolygon):
+                    # If it's a multipolygon, add all contained polygons to the result list
+                    result_polygons.extend(list(geom))
+
+            # Return the list of valid polygons
+            return result_polygons
+
+    def make_valid(self):
+        """Make the trace valid."""
+        polyout = make_valid(self.polygon())
+        assert isinstance(polyout, Polygon)
+        self.points = self.from_polygon(polyout).points
+        self.__update()
+        assert self.from_polygon(polyout).polygon().is_valid
+        assert self.polygon().is_valid
 
     # %% private utility methods
     def __update(self):

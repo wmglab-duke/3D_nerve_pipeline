@@ -114,7 +114,6 @@ class _HeatmapPlotter:
         :param color: Color passed in by seaborn when using FacetGrid. Not used.
         """
         # add variables to self from input args
-        self.min_thresh = self.max_thresh = None
         self.mappable = None
         self.fiber_colors = self.inner_colors = None
         self.sample_index = self.sim_index = self.model_index = self.n_sim_index = None
@@ -143,6 +142,7 @@ class _HeatmapPlotter:
         self.get_objects()
         self.create_cmap()
         self.determine_colors(data)
+        self.data = data
 
     def plot(self, ax):
         """Make heatmap plot.
@@ -218,12 +218,17 @@ class _HeatmapPlotter:
         def _mapthresh(thresh):
             return tuple(self.cmap((thresh - self.min_thresh) / (self.max_thresh - self.min_thresh)))
 
+        inner_count = 0
+        for fascicle in self.sample.slides[0].fascicles:
+            for _inner in fascicle.inners:
+                inner_count += 1
+
         inner_color_list = []
         fiber_color_list = []
-        for inner in pd.unique(threshdf.inner):
+        for inner in range(inner_count):
             # get inner threshold and add the appropriate color to the list
             innerthresh = np.mean(threshdf.query(f'inner=={inner}').threshold)
-            if innerthresh is np.nan:
+            if innerthresh is np.nan and self.mode in ['inners', 'inners_on_off']:
                 inner_color_list.append(self.missing_color)
                 warnings.warn(
                     'Missing at least one fiber threshold, color will appear as missing color (defaults to red).',
@@ -237,10 +242,10 @@ class _HeatmapPlotter:
                 )
             else:
                 inner_color_list.append(None)
-        for fiber_index in pd.unique(threshdf['index']):
+        for fiber_index in pd.unique(threshdf['master_fiber_index']):
             # get fiber threshold and add the appropriate color to the list
-            fiberthresh = np.mean(threshdf.query(f'index=={fiber_index}').threshold)
-            if fiberthresh is np.nan:
+            fiberthresh = np.mean(threshdf.query(f'master_fiber_index=={fiber_index}').threshold)
+            if fiberthresh is np.nan and self.mode in ['fibers', 'fibers_on_off']:
                 warnings.warn(
                     'Missing fiber threshold, color will appear as missing color (defaults to red).', stacklevel=2
                 )
@@ -283,7 +288,7 @@ class _HeatmapPlotter:
 
         :param data: DataFrame of thresholds.
         """
-        assert self.mode in ['fibers', 'inners', 'fibers_on_off', 'inners_on_off']
+        assert self.mode in ['fibers', 'inners', 'fibers_on_off', 'inners_on_off'], 'Invalid mode'
         if self.mode in ['fibers_on_off', 'inners_on_off']:
             assert self.cutoff_thresh is not None, 'Must provide cutoff threshold for on/off mode.'
         # make sure only one sample, model, sim, and nsim for this plot
@@ -297,6 +302,7 @@ class _HeatmapPlotter:
         """Plot the orientation of the cuff.
 
         :param ax: axis to plot on
+        :raises ValueError: If orientation angle was not defined in the slide.
         """
         # calculate orientation point location (i.e., contact location)
         # get radius of sample
@@ -305,7 +311,9 @@ class _HeatmapPlotter:
         except AttributeError:
             r = self.sample.slides[0].fascicles[0].outer.mean_radius()
         # get orientation angle from slide
-        theta = self.sample.slides[0].orientation_angle if self.sample.slides[0].orientation_angle is not None else 0
+        if self.sample.slides[0].orientation_angle is None:
+            raise ValueError("Cannot plot orientation if orientation angle was not defined in the slide.")
+        theta = self.sample.slides[0].orientation_angle
         # load add_ang from model.json cofiguration file
         with open(Query.build_path(Config.MODEL, [self.sample_index, self.model_index])) as f:
             model_config = json.load(f)

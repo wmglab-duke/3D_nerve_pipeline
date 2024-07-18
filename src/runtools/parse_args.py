@@ -31,7 +31,7 @@ pipeline_parser = subparsers.add_parser('pipeline', help='main ASCENT pipeline')
 pipeline_parser.add_argument(
     'run_indices',
     type=int,
-    nargs='+',
+    nargs='*',
     help='Space separated indices to run the pipeline over',
 )
 pipeline_parser.add_argument(
@@ -48,6 +48,7 @@ pipeline_parser.add_argument(
         "pre_mesh_proximal",
         "post_mesh_proximal",
         "pre_solve",
+        "post_java",
     ],
     help='Point in pipeline to exit and continue to next run',
 )
@@ -56,6 +57,12 @@ pipeline_parser.add_argument(
     '--wait-for-license',
     type=float,
     help="Wait the specified number of hours for a comsol license to become available.",
+)
+pipeline_parser.add_argument(
+    '-R',
+    '--run-group',
+    type=str,
+    help="Use a list of runs from rungroups.json. Any additional run indices passed will be appended.",
 )
 pipeline_parser.add_argument(
     '-P',
@@ -102,12 +109,19 @@ prog_group.add_argument(
 )
 # add parser for tidy samples
 ts_parser = subparsers.add_parser('tidy_samples', help='Remove specified files from Sample directories')
-ts_parser.add_argument('sample_indices', nargs='+', type=int, help='Space separated sample indices to tidy')
+ts_parser.add_argument('sample_indices', nargs='*', type=int, help='Space separated sample indices to tidy')
 ts_parser.add_argument('-f', '--filename', type=str, help='Filename to clear')
+ts_parser.add_argument('-A', '--all', action='store_true', help='Run on all samples')
 
 # add parser for import n sims
 nsims_parser = subparsers.add_parser('import_n_sims', help='Move NEURON outputs into ASCENT directories for analysis')
 nsims_parser.add_argument('run_indices', nargs='+', type=int, help='Space separated run indices to import')
+nsims_parser.add_argument(
+    '-v',
+    '--verbose',
+    action='store_true',
+    help='Print specific files which are missing',
+)
 nsims_group = nsims_parser.add_mutually_exclusive_group()
 nsims_group.add_argument(
     '-f',
