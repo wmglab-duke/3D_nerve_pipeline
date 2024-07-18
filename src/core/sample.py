@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import binary_fill_holes
 from skimage import morphology
+
 from src.core import Deformable, Fascicle, Map, Nerve, Slide, Trace
 from src.utils import (
     Config,
@@ -212,10 +213,7 @@ class Sample(Configurable, Saveable):
         :raises ValueError: If more than one slide provided
         :return: self
         """
-        scale_input_mode = self.search_mode(ScaleInputMode, Config.SAMPLE, optional=True)
-        # For backwards compatibility, if scale mode is not specified assume a mask image is provided
-        if scale_input_mode is None:
-            scale_input_mode = ScaleInputMode.MASK
+        scale_input_mode = self.search_mode(ScaleInputMode, Config.SAMPLE)
 
         sample_index = self.search(Config.RUN, 'sample')
 
@@ -516,23 +514,20 @@ class Sample(Configurable, Saveable):
         else:
             sys.exit('Temporarily disallowing shrinkage correction')
         if s_mode is None:
-            print(
-                'WARNING: ShrinkageMode in Config.Sample is not defined or mode provided is not a known option. '
-                'Proceeding with backwards compatible (i.e., original default functionality) of LENGTH_FORWARDS'
-                ' shrinkage correction.\n'
-            )
+            print('No ShrinkageMode in Config.Sample, defaulting to LENGTH_FORWARDS shrinkage correction. ')
             shrinkage_correction = 1 + s_pre
+            s_mode = ShrinkageMode.LENGTH_FORWARDS
+
+        if s_mode == ShrinkageMode.LENGTH_BACKWARDS:
+            shrinkage_correction = 1 / (1 - s_pre)
+        elif s_mode == ShrinkageMode.LENGTH_FORWARDS:
+            shrinkage_correction = s_pre + 1
+        elif s_mode == ShrinkageMode.AREA_BACKWARDS:
+            shrinkage_correction = 1 / np.sqrt(1 - s_pre)
+        elif s_mode == ShrinkageMode.AREA_FORWARDS:
+            shrinkage_correction = np.sqrt(1 + s_pre)
         else:
-            if s_mode == ShrinkageMode.LENGTH_BACKWARDS:
-                shrinkage_correction = 1 / (1 - s_pre)
-            elif s_mode == ShrinkageMode.LENGTH_FORWARDS:
-                shrinkage_correction = s_pre + 1
-            elif s_mode == ShrinkageMode.AREA_BACKWARDS:
-                shrinkage_correction = 1 / np.sqrt(1 - s_pre)
-            elif s_mode == ShrinkageMode.AREA_FORWARDS:
-                shrinkage_correction = np.sqrt(1 + s_pre)
-            else:
-                raise ValueError("Invalid ShrinkageMode defined in sample.json")
+            raise ValueError("Invalid ShrinkageMode defined in sample.json")
 
         if shrinkage_correction < 1:
             raise ValueError(

@@ -23,7 +23,8 @@ from nd_line.nd_line import nd_line
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
 from shapely.geometry import Point
-from src.core import Sample, Simulation
+
+from src.core import Sample, Simulation, Slide
 from src.utils import Config, Configurable, Object, Saveable, SetupMode
 
 
@@ -1109,3 +1110,318 @@ class Query(Configurable, Saveable):
             ]
         # add to sim sheet
         sims[str(sim_index)].append(row)
+
+    def import_tm_current_matrix(
+        self, nsim
+    ):  # TODO move to common data extraction and allow for any amps/fibers/inners/so on
+        """Extract current amplitude, number of axons, time vector, and transmembrane current matrix from a binary file.
+
+        :param nsim: nsim index to pull data from
+        :return: time_vector: time points correlating with transmembrane currents
+        :return: current_matrix: transmembrane current matrix
+        """
+        sample_results = self._result.get('samples', [])[0]
+        model_results = sample_results.get('models', [])[0]
+        sim = model_results.get('sims', [])[0]
+        # Pulls data from first fiber in each nsim.
+        imembrane_file_name = os.path.join(
+            os.getcwd(),
+            f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
+            f"{nsim}/data/outputs/adjusted_imembrane_inner0_fiber0_amp0.dat",
+        )
+        current_matrix = np.loadtxt(imembrane_file_name)  # should be columns=section and rows = time step
+        waveform_file = os.path.join(
+            os.getcwd(),
+            f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
+            f"{nsim}/data/inputs/waveform.dat",
+        )
+        wfdata = np.loadtxt(waveform_file)
+        sfap_file = os.path.join(
+            os.getcwd(),
+            f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
+            f"{nsim}/data/outputs/SFAP_time_inner0_fiber0_amp0.dat",
+        )
+        sfapdata = np.loadtxt(sfap_file, skiprows=1)
+        return wfdata[1], sfapdata[:, 0], current_matrix
+
+    def common_data_extraction(  # TODO add a wrapper function for single point data (data that is a single value per row)
+        self,
+        data_types: List[str],
+        sim_indices: List[int] = None,
+        fiber_indices: List[int] | str = 'all',
+        ignore_missing: bool = False,
+        as_dataframe=True,
+        amp_indices: int | str = 'all',
+    ) -> List[dict]:
+        """Extracts data from a simulation for specified data types.
+
+        This method extracts common data from a simulation for each specified data type and returns
+        a list of dictionaries containing the extracted data.
+
+        Options for data types include:
+            - 'sfap': SFAP data
+            - 'threshold': Threshold data
+            - 'runtime': Runtime data
+            - 'activation': Activation data
+            - 'istim': Istim data
+            - 'time_gating': Time gating data
+            - 'time_vm': Time voltage data
+            - 'space_gating': Space gating data
+            - 'space_vm': Space voltage data
+            - 'aploctime': AP location time data
+            - 'apendtimes': AP end times data
+
+
+        :param sample_results: A dictionary containing the results for a sample.
+        :param fiber_indices: A list of fiber indices to include.
+        :param sim_indices: A list of simulation indices to include.
+        :param all_fibers: If True, data for all fibers will be included.
+        :param ignore_missing: If True, missing data will not cause an error.
+        :param data_types: A list of strings representing the data types to extract.
+        :return: A list of dictionaries containing the extracted data.
+        """
+        # assert that data_types is a list
+        if not isinstance(data_types, list):
+            raise TypeError('data_types must be a list of strings.')
+
+        # validation
+        if self._result is None:
+            raise LookupError("No query results, Query.run() must be called before calling analysis methods.")
+
+        if sim_indices is None:
+            sim_indices = self.search(Config.CRITERIA, 'indices', 'sim')
+
+        alldat = []
+
+        # loop samples
+        sample_results: dict
+        for sample_results in self._result.get('samples', []):
+            sample_index = sample_results['index']
+            sample_object: Sample = self.get_object(Object.SAMPLE, [sample_index])
+            slide: Slide = sample_object.slides[0]
+            n_inners = sum(len(fasc.inners) for fasc in slide.fascicles)
+
+            # loop models
+            for model_results in sample_results.get('models', []):
+                model_index = model_results['index']
+
+                for sim_index in sim_indices:
+                    sim_object = self.get_object(Object.SIMULATION, [sample_index, model_index, sim_index])
+
+                    # whether the comparison key is for 'fiber' or 'wave', the nsims will always be in order!
+                    # this realization allows us to simply loop through the factors in sim.factors[key] and treat the
+                    # indices as if they were the nsim indices
+                    for nsim_index, (
+                        potentials_product_index,
+                        waveform_index,
+                    ) in enumerate(sim_object.master_product_indices):
+                        (
+                            active_src_index,
+                            *active_rec_index,
+                            fiberset_index,
+                        ) = sim_object.potentials_product[potentials_product_index]
+                        # fetch outer->inner->fiber and out->inner maps
+                        out_in_fib, out_in = sim_object.fiberset_map_pairs[fiberset_index]
+
+                        # build base dirs for fetching thresholds
+                        sim_dir = self.build_path(
+                            Object.SIMULATION,
+                            [sample_index, model_index, sim_index],
+                            just_directory=True,
+                        )
+                        n_sim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
+
+                        # fetch all data
+                        for inner in range(n_inners):
+                            outer = [index for index, inners in enumerate(out_in) if inner in inners][0]
+                            available_fiber_ind = out_in_fib[outer][out_in[outer].index(inner)]
+                            if fiber_indices == 'all':
+                                fiber_indices = available_fiber_ind
+                            for local_fiber_index, _ in enumerate(available_fiber_ind):
+                                master_index = sim_object.indices_n_to_fib(fiberset_index, inner, local_fiber_index)
+
+                                if master_index in fiber_indices:
+                                    # set index for finite amps
+                                    if sim_object.configs[Config.SIM.value]['protocol']['mode'] == 'FINITE_AMPLITUDES':
+                                        amp_indices = (
+                                            amp_indices
+                                            if amp_indices != 'all'
+                                            else range(
+                                                len(sim_object.configs[Config.SIM.value]['protocol']['amplitudes'])
+                                            )
+                                        )
+                                    else:
+                                        amp_indices = [0]
+
+                                    for amp_ind in amp_indices:
+                                        data = {
+                                            'sample': sample_results['index'],
+                                            'model': model_results['index'],
+                                            'sim': sim_index,
+                                            'nsim': nsim_index,
+                                            'inner': inner,
+                                            'fiber': local_fiber_index,
+                                            'master_fiber_index': master_index,
+                                            'fiberset_index': fiberset_index,
+                                            'waveform_index': waveform_index,
+                                            'active_src_index': active_src_index,
+                                            'active_rec_index': active_rec_index,
+                                            'amp_ind': amp_ind,
+                                        }
+                                        for data_type in data_types:
+                                            if data_type == 'sfap':
+                                                self.retrieve_sfap_data(data, n_sim_dir, ignore_missing, alldat)
+                                            elif data_type == 'threshold':
+                                                self.retrieve_threshold_data(data, n_sim_dir, ignore_missing, alldat)
+                                            elif data_type == 'runtime':
+                                                self.retrieve_runtime_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'activation':
+                                                self.retrieve_activation_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'istim':
+                                                self.retrieve_istim_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'time_gating':
+                                                self.retrieve_time_gating_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'time_vm':
+                                                self.retrieve_time_vm_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'space_gating':
+                                                self.retrieve_space_gating_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'space_vm':
+                                                self.retrieve_space_vm_data(data, n_sim_dir, alldat)
+                                            elif data_type == 'aploctime':
+                                                self.retrieve_aploctime_data(data, n_sim_dir, alldat)
+                                            else:
+                                                raise ValueError(f'Invalid data type: {data_type}')
+                                        # add the data to list
+                                        alldat.append(data.copy())
+        if not as_dataframe:
+            return alldat
+        else:
+            return pd.DataFrame(alldat)
+
+    def retrieve_sfap_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
+        sfap_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'SFAP_time_inner{data["inner"]}_fiber{data["fiber"]}_amp0.dat',
+        )
+        if ignore_missing:
+            try:
+                sfap = np.loadtxt(sfap_path, skiprows=1)
+            except OSError:
+                sfap = np.array([[np.nan, np.nan]])
+                warnings.warn('Missing SFAP, but continuing.', stacklevel=2)
+        else:
+            sfap = np.loadtxt(sfap_path, skiprows=1)
+
+        for row in sfap:
+            data['SFAP_times'] = sfap[:, 0]
+            data['SFAP'] = sfap[:, 1]
+
+    def retrieve_threshold_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
+        thresh_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'thresh_inner{data["inner"]}_fiber{data["fiber"]}.dat',
+        )
+        if ignore_missing:
+            try:
+                threshold = np.loadtxt(thresh_path)
+            except OSError:
+                threshold = np.array(np.nan)
+                warnings.warn('Missing threshold, but continuing.', stacklevel=2)
+        else:
+            threshold = np.loadtxt(thresh_path)
+
+        if threshold.size > 1:
+            threshold = threshold[-1]
+
+        data['threshold'] = threshold
+
+    def retrieve_runtime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+        runtime_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'runtime_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+        )
+        with open(runtime_path) as runtime_file:
+            runtime = float(runtime_file.read().replace('s', ''))
+        data['runtime'] = runtime
+
+    def retrieve_activation_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+        activation_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'activation_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+        )
+        with open(activation_path) as activation_file:
+            n_aps = int(activation_file.read())
+        data['n_aps'] = n_aps
+
+    def retrieve_aploctime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+        aploctime_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'ap_loctime_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+        )
+        ap_loctime = np.loadtxt(aploctime_path)
+        data['ap_loctime'] = ap_loctime
+
+    def retrieve_istim_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+        istim_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'Istim_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+        )
+        istim_data = pd.read_csv(istim_path, sep='\t')
+
+    def retrieve_time_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+        gating_params = ['h', 'm', 'mp', 's']
+        data['gating_time_data'] = {}
+        for gating_param in gating_params:
+            gating_time_path = os.path.join(
+                n_sim_dir,
+                'data',
+                'outputs',
+                f'gating_{gating_param}_time_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+            )
+            gating_time_data = pd.read_csv(gating_time_path, sep=' ')
+            data['gating_time_data'][gating_param] = gating_time_data
+
+    def retrieve_time_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+        vm_time_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'Vm_time_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+        )
+        vm_time_data = pd.read_csv(vm_time_path, sep=' ')
+        data['vm_time_data'] = vm_time_data
+
+    def retrieve_space_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+        gating_params = ['h', 'm', 'mp', 's']
+        data['gating_space_data'] = {}
+        for gating_param in gating_params:
+            gating_space_path = os.path.join(
+                n_sim_dir,
+                'data',
+                'outputs',
+                f'gating_{gating_param}_space_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+            )
+            gating_space_data = pd.read_csv(gating_space_path, sep=' ')
+            data['gating_space_data'][gating_param] = gating_space_data
+
+    def retrieve_space_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+        vm_space_path = os.path.join(
+            n_sim_dir,
+            'data',
+            'outputs',
+            f'Vm_space_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
+        )
+        vm_space_data = pd.read_csv(vm_space_path, sep=' ')
+        data['vm_space_data'] = vm_space_data

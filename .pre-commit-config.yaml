@@ -35,7 +35,7 @@ repos:
         args: ["--py37-plus", "--py36-plus"]
   # format python code
   - repo: https://github.com/psf/black
-    rev: 24.2.0
+    rev: 24.1.1
     hooks:
       - id: black
         language_version: python3
@@ -66,8 +66,7 @@ repos:
         args: ["--tab-width", "4", "--print-width", "100"]
   # lint python code
   - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0 # maintain at 5.0.4 until eradicate supports v6
-    #when flake8-eradicate supports flake8 6.0 change this rev to newest ver
+    rev: 7.0.0
     hooks:
       - id: flake8
         additional_dependencies:

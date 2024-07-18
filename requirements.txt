@@ -3,7 +3,7 @@ matplotlib
 mock
 nd_line
 numpy
-opencv-python==4.5.*
+opencv-python
 openpyxl
 pandas
 pathlib
@@ -15,11 +15,11 @@ pymunk
 pytest
 quantiphy
 scikit-image
-scipy
+scipy>=1.11.4
 seaborn
 setuptools
 shapely==1.8.*
 tifffile
 wheel
-# pyfibers # todo: uncomment when PyPI package is available
+# pyfibers # TODO: uncomment when PyPI package is available
 xlsxwriter

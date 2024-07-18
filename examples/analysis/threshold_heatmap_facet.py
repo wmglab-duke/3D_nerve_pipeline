@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.7
-
 """Generate heatmaps of activation thresholds, using Seaborn's FacetGrid.
 
 The copyrights of this software are owned by Duke University.
@@ -10,9 +8,13 @@ RUN THIS FROM REPOSITORY ROOT
 """
 
 import os
+import sys
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
@@ -25,7 +27,7 @@ q = Query(
 ).run()
 
 # Get threshold data
-fdata = q.threshold_data()
+fdata = q.threshold_data()  # TODO update
 
 # Specify keyword arguments to pass to heatmaps()
 heatmap_kws = {'min_max_ticks': False}
@@ -35,7 +37,7 @@ g = sns.FacetGrid(fdata, row='model', col='nsim', sharex=False, sharey=False)
 g.map(heatmaps, *fdata.columns, **heatmap_kws)
 
 # Title and clear axis labels
-plt.subplots_adjust(top=0.9)
+plt.subplots_adjust(top=0.8)
 plt.suptitle('Grid of activation threshold heatmaps')
 for ax in g.axes.ravel():
     ax.set_xlabel('')
