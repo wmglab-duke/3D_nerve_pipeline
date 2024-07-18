@@ -1842,7 +1842,7 @@ public class ModelWrapper {
                             );
                         } else {
                             System.out.println(
-                                "\tSuccessfully solved for /bases; an issue occurred during deletion of mesh directory."
+                                "\tSuccessfully solved for /bases; an issue occurred during deletion of mesh.mph"
                             );
                         }
                     }

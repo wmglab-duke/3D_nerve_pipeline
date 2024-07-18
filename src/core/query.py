@@ -898,6 +898,7 @@ class Query(Configurable, Saveable):
         :param: config_paths: Include column for each config path. Defaults to True.
         :param: column_width: Column width for Excel document. Defaults to None (system default).
         :param: console_output: Print progress to console. Defaults to True.
+        :param optional_keys: If True, check parameter presence in config files as optional. Defaults to False.
         """
         sims: dict = {}
         sample_keys: List[list] = sample_keys if sample_keys else []
@@ -1144,7 +1145,7 @@ class Query(Configurable, Saveable):
         sfapdata = np.loadtxt(sfap_file, skiprows=1)
         return wfdata[1], sfapdata[:, 0], current_matrix
 
-    def common_data_extraction(  # TODO add a wrapper function for single point data (data that is a single value per row)
+    def common_data_extraction(  # noqa C901
         self,
         data_types: List[str],
         sim_indices: List[int] = None,
@@ -1153,7 +1154,7 @@ class Query(Configurable, Saveable):
         as_dataframe=True,
         amp_indices: int | str = 'all',
     ) -> List[dict]:
-        """Extracts data from a simulation for specified data types.
+        """Extract data from a simulation for specified data types.
 
         This method extracts common data from a simulation for each specified data type and returns
         a list of dictionaries containing the extracted data.
@@ -1171,15 +1172,18 @@ class Query(Configurable, Saveable):
             - 'aploctime': AP location time data
             - 'apendtimes': AP end times data
 
-
-        :param sample_results: A dictionary containing the results for a sample.
-        :param fiber_indices: A list of fiber indices to include.
+        :param fiber_indices: A list of fiber indices to include. ('all' for all fibers)
         :param sim_indices: A list of simulation indices to include.
-        :param all_fibers: If True, data for all fibers will be included.
         :param ignore_missing: If True, missing data will not cause an error.
         :param data_types: A list of strings representing the data types to extract.
+        :param as_dataframe: If True, the data will be returned as a pandas DataFrame.
+        :param amp_indices: A list of amplitude indices to include. ('all' for all amplitudes)
+        :raises LookupError: If no results (i.e. Query.run() has not been called)
+        :raises TypeError: If data_types is not a list
+        :raises ValueError: If an invalid data type is provided
         :return: A list of dictionaries containing the extracted data.
         """
+        # TODO add a wrapper function for single point data (data that is a single value per row)
         # assert that data_types is a list
         if not isinstance(data_types, list):
             raise TypeError('data_types must be a list of strings.')
@@ -1314,9 +1318,8 @@ class Query(Configurable, Saveable):
         else:
             sfap = np.loadtxt(sfap_path, skiprows=1)
 
-        for row in sfap:
-            data['SFAP_times'] = sfap[:, 0]
-            data['SFAP'] = sfap[:, 1]
+        data['SFAP_times'] = sfap[:, 0]
+        data['SFAP'] = sfap[:, 1]
 
     def retrieve_threshold_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
         thresh_path = os.path.join(
@@ -1350,7 +1353,7 @@ class Query(Configurable, Saveable):
             runtime = float(runtime_file.read().replace('s', ''))
         data['runtime'] = runtime
 
-    def retrieve_activation_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+    def retrieve_activation_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         activation_path = os.path.join(
             n_sim_dir,
             'data',
@@ -1371,7 +1374,7 @@ class Query(Configurable, Saveable):
         ap_loctime = np.loadtxt(aploctime_path)
         data['ap_loctime'] = ap_loctime
 
-    def retrieve_istim_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+    def retrieve_istim_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         istim_path = os.path.join(
             n_sim_dir,
             'data',
@@ -1379,6 +1382,7 @@ class Query(Configurable, Saveable):
             f'Istim_inner{data["inner"]}_fiber{data["fiber"]}_amp{data["amp_ind"]}.dat',
         )
         istim_data = pd.read_csv(istim_path, sep='\t')
+        data['istim_data'] = istim_data
 
     def retrieve_time_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         gating_params = ['h', 'm', 'mp', 's']
@@ -1393,7 +1397,7 @@ class Query(Configurable, Saveable):
             gating_time_data = pd.read_csv(gating_time_path, sep=' ')
             data['gating_time_data'][gating_param] = gating_time_data
 
-    def retrieve_time_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):
+    def retrieve_time_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
         vm_time_path = os.path.join(
             n_sim_dir,
             'data',

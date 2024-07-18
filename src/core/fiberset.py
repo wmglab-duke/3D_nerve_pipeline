@@ -814,6 +814,8 @@ class FiberSet(Configurable, Saveable):
         :param fibers_xy: The xy coordinates of the fibers.
         :param override_length: The length of the fibers (forced).
         :param super_sample: Whether to use supersampling.
+        :param override_shift: The shift of the fibers (forced).
+        :raises ValueError: If the diameter is not within the valid range.
         :return: The longitudinal coordinates of the fibers.
         """
 
@@ -854,11 +856,13 @@ class FiberSet(Configurable, Saveable):
                     ]
 
                 # account for difference between last node z and half fiber length -> must shift extra distance
-                if override_shift is not None:
-                    modshift = override_shift % delta_z
-                elif shift is None:
+                if override_shift is not None:  # if override shift provided, use that
+                    modshift = (
+                        override_shift % delta_z
+                    )  # meaningless to shift by more than a node length, so mod by delta_z
+                elif shift is None:  # if no shift provided, use 0
                     modshift = 0
-                else:
+                else:  # finally if shifting and not overriding, use the shift
                     modshift = shift % delta_z
 
                 my_z_shift_to_center_in_fiber_range = model_length / 2 - sum(z_steps) + modshift
@@ -998,7 +1002,7 @@ class FiberSet(Configurable, Saveable):
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'min'),
                 self.search(Config.SIM, 'fibers', FiberZMode.parameters.value, 'max'),
                 myel,
-                zbuffer=10 if not super_sample else 5,  # todo instead of fixed value make supersample dz
+                zbuffer=10 if not super_sample else 5,  # TODO: instead of fixed value make supersample dz
             )
 
             my_fiber = [(my_x, my_y, z) for z in z_offset]

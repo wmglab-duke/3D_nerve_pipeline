@@ -25,6 +25,8 @@ def run(args):
 
     :param args: The command line arguments.
     :raises Exception: If the Python version is not 3.10 or newer.
+    :raises FileNotFoundError: If the run group file is not found.
+    :raises ValueError: If run group inputs are invalid
     """
     # test
     if not (sys.version_info.major == 3 and sys.version_info.minor >= 10):
@@ -34,7 +36,7 @@ def run(args):
     if not (os.path.exists('bin')):
         os.mkdir('bin')
 
-    if args.run_group is None:
+    if args.run_group is None:  # TODO, update docs for this and provide example
         if not args.run_indices:
             raise ValueError('No run indices provided.')
     else:

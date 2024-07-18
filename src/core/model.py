@@ -40,8 +40,10 @@ class Model(Configurable, Saveable):
     def compute_cuff_shift(self, slide: Slide, sample_config: dict, addl_cuff_buffer=0, ignore_uncentered=False):
         """Compute the Cuff Shift for single or multiple cuffs in a given model.
 
-        :param sample: Sample, sample object
+        :param slide: the slide to compute cuff shift around
         :param sample_config: dict, sample config
+        :param addl_cuff_buffer: additional amount of distance between cuff and nerve (in um)
+        :param ignore_uncentered: if False, error if slide is not centered on origin
         :raises ValueError: if deform_ratio is not between 0 and 1 (inclusive)
         :return: self
         """
@@ -102,6 +104,8 @@ class Model(Configurable, Saveable):
         :param deform_ratio: deformation ratio
         :param nerve_mode: whether the nerve is present. Flag from sample config file.
         :param sample_config: sample configuration variables
+        :param ignore_uncentered: if False, error if slide is not centered on origin
+        :param addl_cuff_buffer: additional amount of distance between cuff and nerve (in um)
         :raises ValueError: if deform_ratio is not between 0 and 1 (inclusive)
         :return: updated cuff dictionary
         """
@@ -220,6 +224,7 @@ class Model(Configurable, Saveable):
         :param nerve_copy: copied nerve object
         :param sample_config: sample configuration
         :param slide: slide object to shift cuff around
+        :param ignore_uncentered: whether to ignore uncentered slide
         :raises MorphologyError: if slide is not centered at origin
         :return: (cuff code, cuff r buffer, expandable, offset, r_bound, r_f, theta_c, theta_i, x, y)
         """

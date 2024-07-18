@@ -382,6 +382,7 @@ class _HeatmapPlotter:
         """Plot the orientation of the cuff.
 
         :param ax: axis to plot on
+        :raises ValueError: If orientation angle was not defined in the slide.
         """
         # calculate orientation point location (i.e., contact location)
         # get radius of sample

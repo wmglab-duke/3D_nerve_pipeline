@@ -15,7 +15,6 @@ import os
 import pickle
 import re
 import shutil
-import sys
 import warnings
 from typing import List, Tuple
 
@@ -515,6 +514,7 @@ class Simulation(Configurable, Saveable):
 
         :param sim_dir: directory of the simulation we are building n_sims for
         :param sim_num: index of the simulation we are building n_sims for
+        :raises Exception: if there is an error in the interpolation of potentials
         :return: self
         """
 
@@ -589,7 +589,6 @@ class Simulation(Configurable, Saveable):
                                     inner_index, fiber_index = self.indices_fib_to_n(fiberset_ind, master_fiber_index)
                                 else:
                                     inner_index, fiber_index = 0, master_fiber_index
-
                                 fiber_filename_dat = f'inner{inner_index}_fiber{fiber_index}.dat'
 
                                 if not do_supersample:
@@ -826,6 +825,8 @@ class Simulation(Configurable, Saveable):
         :param sim_obj_dir: Simulation object directory
         :param target: Target directory
         :param export_behavior: If the directory exists, what to do (i.e., override or error or skip
+        :raises FileExistsError: If export mode is error and the directory exists
+        :raises ValueError: If export mode is invalid
         """
         sim_dir = os.path.join(sim_obj_dir, str(sim), 'n_sims')
         sim_export_base = os.path.join(target, 'n_sims', f'{sample}_{model}_{sim}_')
@@ -845,7 +846,7 @@ class Simulation(Configurable, Saveable):
                     print(f'\tSkipping n_sim export for {target} because folder already exists.')
                     continue
                 else:
-                    sys.exit('Invalid export_behavior')
+                    raise ValueError(f"Invalid export behavior: {export_behavior}")
             else:
                 if check:
                     yield False
@@ -931,6 +932,7 @@ class Simulation(Configurable, Saveable):
         :param model: Model index
         :param sim: Sim index
         :param source: Source directory (where n_sims are located)
+        :param verbose: Print missing threshold file names
         :return: True if thresholds exist, False otherwise
         """
         allthresh = True
@@ -956,6 +958,7 @@ class Simulation(Configurable, Saveable):
         :param sim: Sim index
         :param source: Source directory (where n_sims are located)
         :param n_amps: Number of amplitudes that were simulated
+        :param verbose: Print missing file names
         :return: True if activations exist, False otherwise
         """
         allamp = True

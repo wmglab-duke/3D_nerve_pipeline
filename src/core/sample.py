@@ -307,11 +307,10 @@ class Sample(Configurable, Saveable):
         self.contour_mode = self.search_mode(ContourMode, Config.SAMPLE, optional=True)
         self.mask_space_mode = self.search_mode(MaskSpaceMode, Config.SAMPLE, optional=True)
 
-        # For backwards compatibility, if scale mode is not specified assume a mask image is provided
-        if self.scale_input_mode is None:
-            self.scale_input_mode = ScaleInputMode.MASK
-        if self.contour_mode is None:
-            self.contour_mode = ContourMode.NONE  # note changed default here for 3D
+        # Set defaults for optional modes
+        self.scale_input_mode = self.scale_input_mode or ScaleInputMode.MASK
+        self.contour_mode = self.contour_mode or ContourMode.NONE
+        self.mask_space_mode = self.mask_space_mode or MaskSpaceMode.CARTESIAN
 
     @staticmethod
     def mask_exists(mask_file_name: MaskFileNames):

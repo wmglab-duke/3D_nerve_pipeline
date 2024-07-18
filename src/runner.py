@@ -306,7 +306,7 @@ class Runner(Configurable):
 
         if source_xy_dict != xy_dict:
             if xy_dict['mode'] == 'EXPLICIT':
-                print('\t\tWarning: cannot verify supersampled xy match since fiber xy mode is EXPLICIT')
+                warnings.warn('Cannot verify supersampled xy match since fiber xy mode is EXPLICIT', stacklevel=2)
             else:
                 raise IncompatibleParametersError(
                     "Trying to use super-sampled potentials that do not match your Sim's xy_parameters perfectly"
@@ -387,7 +387,7 @@ class Runner(Configurable):
         # ensure run configuration is present
         Simulation.export_run(self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value])
 
-    def run(self, smart: bool = True):
+    def run(self, smart: bool = True):  # noqa C901
         """Run the pipeline.
 
         :param smart: bool telling the program whether to reprocess the sample or not if it already exists as sample.obj
@@ -529,15 +529,16 @@ class Runner(Configurable):
     def handoff(self, config_path, run_type=None, class_name='ModelWrapper', modelfolder="model"):
         """Handoff to Java.
 
-        :param run_number: int, run number
+        :param config_path: str, path to run configuration file
         :param class_name: str, class name of Java class to run
+        :param modelfolder: str, folder containing Java class
         :raises JavaError: if Java fails to run
         """
         comsol_path = os.environ[Env.COMSOL_PATH.value]
         jdk_path = os.environ[Env.JDK_PATH.value]
         project_path = os.environ[Env.PROJECT_PATH.value]
 
-        # Encode command line args as jason string, then encode to base64 for passing to java
+        # Encode command line args as json string, then encode to base64 for passing to java
         if run_type is None:
             argstring = json.dumps(self.configs[Config.CLI_ARGS.value])
             argbytes = argstring.encode('ascii')

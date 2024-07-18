@@ -18,6 +18,7 @@ import pymunk.pygame_util
 from pygame.colordict import THECOLORS
 from pygame.locals import DOUBLEBUF, HWSURFACE, K_ESCAPE, KEYDOWN, QUIT, RESIZABLE
 from shapely.geometry import LineString, Point
+
 from src.core import Slide, Trace
 from src.utils import ReshapeNerveMode
 
@@ -223,6 +224,7 @@ class Deformable:
         :param end: end trace
         :param count: number of morph steps
         :param deform_ratio: deform ratio
+        :raises RuntimeError: If no traces are generated for deformation steps.
         :return: list of morph steps
         """
         # Find point along old_nerve that is closest to major axis of best fit ellipse
@@ -279,7 +281,7 @@ class Deformable:
                 point += vectors[i] * ratio
             traces.append(trace)
         if len(traces) == 0:
-            raise RuntimeError("wut")
+            raise RuntimeError('No traces for deformation steps.')
         if deform_ratio != 0:
             def_traces = traces[: math.ceil((deform_ratio if deform_ratio is not None else 1) * count)]
         else:  # still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
