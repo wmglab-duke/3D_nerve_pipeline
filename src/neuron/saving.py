@@ -123,7 +123,8 @@ def save_matrix(params: dict, imembrane_matrix: np.ndarray, amp_ind: int = 0):
         params['output_path'],
         f'adjusted_imembrane_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat',
     )
-    np.savetxt(adj_im_path, imembrane_matrix)
+    # TODO consider using hdf5 for this and all large data, for now use np.save
+    np.save(adj_im_path, imembrane_matrix)
 
 
 def save_activation(params: dict, n_aps: int, amp_ind: int):
