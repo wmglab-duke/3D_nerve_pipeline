@@ -51,7 +51,7 @@ for sim in sims:
         }
     ).run()
 
-    data.append(q.threshold_data())  # TODO update (also check for all refs to threshold data)
+    data.append(q.common_data_extraction(data_types=['threshold']))
 data = pd.concat(data)
 
 # %% Calculate error values

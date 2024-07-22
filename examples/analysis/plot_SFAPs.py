@@ -18,7 +18,7 @@ sys.path.append(os.path.sep.join([os.getcwd(), '']))
 os.chdir('../..')
 from src.core.query import Query  # noqa E402
 
-sns.set_style("whitegrid")
+sns.set_style("white")
 
 fiber_indices = [0]
 
@@ -26,23 +26,21 @@ q = Query(
     {
         'partial_matches': False,
         'include_downstream': True,
-        'indices': {'sample': [1], 'model': [0], 'sim': [100]},
+        'indices': {'sample': [1], 'model': [0], 'sim': [113]},
     }
 ).run()
 
 data = q.common_data_extraction(data_types=['sfap'])  # TODO need to update
-print(data)
-plt.plot(data.SFAP_times[0], data.SFAP[0])
-# plt.plot(data.SFAP_times[1],data.SFAP[1])
+# We could iterate through each row, and plot each sfap. Or we could explode the data and plot all at once using seaborn.
+splode = data.explode(['SFAP_times', 'SFAP'], ignore_index=True)
 
-plt.ylim(-30, 30)
-
-# fig, ax = plt.subplots()
-# # sns.lineplot(data=data, x='SFAP_times', y='SFAP', hue='fiberset_index', palette='deep', ax=ax)
-# sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
-# plt.xlim(left=0, right=10.0)
-# plt.title('Single Fiber Action Potentials')
-# plt.xlabel('Time (ms)')
-# plt.ylabel(r'signal (${\mu}V$)')
+fig, ax = plt.subplots()
+sns.lineplot(data=splode, x='SFAP_times', y='SFAP', hue='fiberset_index', palette='viridis', ax=ax)
+sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+plt.xlim(left=0, right=30)
+plt.title('Single Fiber Action Potentials')
+plt.xlabel('Time (ms)')
+plt.ylabel(r'signal (${\mu}V$)')
 # plt.ylim(-20, 20)
-# plt.show()
+plt.axhline(0, c='k', ls='--')
+plt.show()

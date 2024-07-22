@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import time
+import warnings
 
 import numpy as np
 from pyfibers import BoundsSearchMode, Fiber, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
@@ -122,6 +123,11 @@ def main(
 
     if protocol_configs['mode'] != 'FINITE_AMPLITUDES':  # threshold search
         find_threshold_kws = protocol_configs.get('find_threshold_kws', {})
+        if not 'fail_on_end_excitation' in find_threshold_kws:
+            warnings.warn(
+                'fail_on_end_excitation not specified in find_threshold_kws, defaulting to False (warning upon end excitation)'
+            )
+            find_threshold_kws['fail_on_end_excitation'] = False
         amp = threshold_protocol(
             fiber,
             protocol_configs,
@@ -142,6 +148,13 @@ def main(
         time_total = 0
         amps = protocol_configs['amplitudes']
         run_sim_kws = protocol_configs.get('run_sim_kws', {})
+        if not 'fail_on_end_excitation' in run_sim_kws:
+            warnings.warn(
+                'fail_on_end_excitation not specified in run_sim_kws, defaulting to False (warning upon end excitation)'
+            )
+            run_sim_kws['fail_on_end_excitation'] = False
+            # TODO note that find_threshold_kws is ignored here, and run_sim_kws is ignored above
+
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
