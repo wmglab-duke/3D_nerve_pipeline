@@ -15,7 +15,7 @@ workflow:
     - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS #don't run duplicate pipelines for MR
       when: never
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH #run on main
-    - if: $CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS != "true" && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH #don't run on push if no MR for this branch
+    - if: $CI_PIPELINE_SOURCE == "push" && $CI_OPEN_MERGE_REQUESTS != "true" #don't run on push if no MR for this branch
       when: never
     - if: $CI_COMMIT_REF_PROTECTED #run on protected branches
 
