@@ -295,7 +295,7 @@ class Slide:
         scalebar_length: float = 1,
         scalebar_units: str = 'mm',
         line_kws=None,
-        colors_for_outers=True,
+        colors_for_outers=False,
         inners_flag=True,
     ):
         """Quick util for plotting the nerve and fascicles.

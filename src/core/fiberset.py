@@ -612,15 +612,16 @@ class FiberSet(Configurable, Saveable):
         :return: The longitudinal coordinates of the fibers.
         """
 
-        def clip(values: list, start, end, myel: bool, is_points: bool = False, zbuffer=5) -> list:
+        def clip(values: list, start, end, myel: bool, is_points: bool = False, zbuffer=1) -> list:
+            # TODO put zbuffer back to how it was in 3D pipeline
             step = 1
             if myel:
                 step = 11
 
             while 1:
-                if (start + zbuffer) > (values[0] if not is_points else values[0][-1]):
+                if (start + 0.1) > (values[0] if not is_points else values[0][-1]):
                     values = values[step:]
-                elif (end - zbuffer) < (values[-1] if not is_points else values[-1][-1]):
+                elif (end - 0.1) < (values[-1] if not is_points else values[-1][-1]):
                     values = values[:-step]
                 else:
                     break
@@ -637,7 +638,7 @@ class FiberSet(Configurable, Saveable):
 
             def _build_z(inter_length, node_length, paranodal_length_1, paranodal_length_2, delta_z):
                 z_steps: List = []
-                while sum(z_steps) < model_length / 2:
+                while (sum(z_steps) - model_length / 2) < 1:  # TODO put back to how it was in 3D pipeline
                     z_steps += [
                         (node_length / 2) + (paranodal_length_1 / 2),
                         (paranodal_length_1 / 2) + (paranodal_length_2 / 2),

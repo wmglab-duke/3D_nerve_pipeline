@@ -4,7 +4,7 @@ default_language_version:
   python: python3 # or python3
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       # checking for syntax
       - id: check-yaml
@@ -29,13 +29,13 @@ repos:
       - id: flynt
   # pyupgrade (migrate code to newer syntax)
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
+    rev: v3.16.0
     hooks:
       - id: pyupgrade
         args: ["--py37-plus", "--py36-plus"]
   # format python code
   - repo: https://github.com/psf/black
-    rev: 24.1.1
+    rev: 24.4.2
     hooks:
       - id: black
         language_version: python3
@@ -66,7 +66,7 @@ repos:
         args: ["--tab-width", "4", "--print-width", "100"]
   # lint python code
   - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
+    rev: 7.1.0
     hooks:
       - id: flake8
         additional_dependencies:
@@ -84,19 +84,19 @@ repos:
           - flake8-deprecated
   # format and lint markdown
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
+    rev: v0.41.0
     hooks:
       - id: markdownlint-fix
         args: ["--disable", "md013,md034,md033,md036"]
   # check config files
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.27.3
+    rev: 0.29.0
     hooks:
       - id: check-gitlab-ci
       - id: check-readthedocs
   # linting for rst files
   - repo: https://github.com/rstcheck/rstcheck
-    rev: v6.2.0
+    rev: v6.2.4
     hooks:
       - id: rstcheck
         additional_dependencies:
