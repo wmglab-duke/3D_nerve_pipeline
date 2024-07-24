@@ -9,7 +9,6 @@ repository: https://github.com/wmglab-duke/ascent
 """
 import itertools
 import os
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -31,7 +30,7 @@ class Slide:
 
     def __init__(
         self,
-        fascicles: List[Fascicle],
+        fascicles: list[Fascicle],
         nerve: Nerve,
         nerve_mode: NerveMode,
         will_reposition: bool = False,
@@ -48,7 +47,7 @@ class Slide:
         self.nerve_mode = nerve_mode
 
         self.nerve: Nerve = nerve
-        self.fascicles: List[Fascicle] = fascicles
+        self.fascicles: list[Fascicle] = fascicles
 
         if not will_reposition:
             self.validate()
@@ -56,8 +55,8 @@ class Slide:
             if self.nerve_mode == NerveMode.NOT_PRESENT:
                 raise ValueError("Cannot deform monofascicle")
 
-        self.orientation_point: Optional[Tuple[float, float]] = None
-        self.orientation_angle: Optional[float] = None
+        self.orientation_point: tuple[float, float] | None = None
+        self.orientation_angle: float | None = None
 
     def monofasc(self) -> bool:
         """Check if slide is monofascicular.
@@ -66,7 +65,7 @@ class Slide:
         """
         return self.nerve_mode == NerveMode.NOT_PRESENT and len(self.fascicles) == 1
 
-    def fascicle_centroid(self) -> Tuple[float, float]:
+    def fascicle_centroid(self) -> tuple[float, float]:
         """Calculate the centroid of all fascicles.
 
         :return: Tuple of x and y coordinates of centroid
@@ -264,7 +263,7 @@ class Slide:
         final: bool = True,
         inner_format: str = 'b-',
         fix_aspect_ratio: bool = True,
-        fascicle_colors: List[Tuple[float, float, float, float]] = None,
+        fascicle_colors: list[tuple[float, float, float, float]] = None,
         ax: plt.Axes = None,
         outers_flag: bool = True,
         inner_index_labels: bool = False,

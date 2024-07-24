@@ -15,7 +15,6 @@ import subprocess
 import sys
 import time
 import warnings
-from typing import List
 
 import numpy as np
 
@@ -371,8 +370,8 @@ class Runner(Configurable):
 
         all_configs = self.setup_run()
 
-        self.bases_potentials_exist: List[bool] = []  # if all of these are true, skip Java
-        self.ss_bases_exist: List[bool] = []  # if all of these are true, skip Java
+        self.bases_potentials_exist: list[bool] = []  # if all of these are true, skip Java
+        self.ss_bases_exist: list[bool] = []  # if all of these are true, skip Java
 
         sample, sample_num = self.generate_sample(all_configs, smart=smart)
 

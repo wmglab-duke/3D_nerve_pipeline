@@ -13,7 +13,6 @@ import os
 import random
 import shutil
 import warnings
-from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -174,7 +173,7 @@ class FiberSet(Configurable, Saveable):
 
         return self
 
-    def _generate_maps(self, fibers_xy) -> Tuple[List, List]:
+    def _generate_maps(self, fibers_xy) -> tuple[list, list]:
         """Generate the out-to-fascicle and out-to-inner maps.
 
         :param fibers_xy: xy coordinates of the fibers
@@ -253,7 +252,7 @@ class FiberSet(Configurable, Saveable):
 
         :return: xy coordinates of the fibers
         """
-        points: List[Tuple[float]] = []
+        points: list[tuple[float]] = []
         for fascicle in self.sample.slides[0].fascicles:
             for inner in fascicle.inners:
                 for _ in (0,):
@@ -272,7 +271,7 @@ class FiberSet(Configurable, Saveable):
         # case top_down is True: fetch target density and cap minimum axons if too low
         # case top_down is False: (i.e. bottom-up) find density from target number and smallest inner by area
         #   also cap the number at a maximum!
-        points: List[Tuple[float]] = []
+        points: list[tuple[float]] = []
         top_down: bool = self.search(Config.SIM, 'fibers', 'xy_parameters', 'top_down')
         if top_down:  # do top-down approach
             # get required parameters
@@ -314,7 +313,7 @@ class FiberSet(Configurable, Saveable):
         :param my_xy_seed: Seed for the random number generator.
         :return: The xy coordinates of the fibers.
         """
-        points: List[Tuple[float]] = []
+        points: list[tuple[float]] = []
         count: int = self.search(Config.SIM, 'fibers', 'xy_parameters', 'count')
         for fascicle in self.sample.slides[0].fascicles:
             for inner in fascicle.inners:
@@ -329,7 +328,7 @@ class FiberSet(Configurable, Saveable):
         :param buffer: Buffer required between the fibers and the fascicles.
         :return: The xy coordinates of the fibers.
         """
-        points: List[Tuple[float]] = []
+        points: list[tuple[float]] = []
         # get required parameters
         spoke_count: int = self.search(Config.SIM, 'fibers', 'xy_parameters', 'spoke_count')
         point_count: int = self.search(
@@ -382,7 +381,7 @@ class FiberSet(Configurable, Saveable):
                     )
 
                     # get scale vectors whose endpoints will be the desired points ([1:] to not include 0)
-                    scaled_vectors: List[LineString] = [
+                    scaled_vectors: list[LineString] = [
                         scale(trimmed_spoke_vector, *([factor] * 3), origin=trimmed_spoke_vector.coords[0])
                         for factor in np.linspace(0, 1, point_count + 2)[1:-1]
                     ]
@@ -640,7 +639,7 @@ class FiberSet(Configurable, Saveable):
             """
 
             def _build_z(inter_length, node_length, paranodal_length_1, paranodal_length_2, delta_z):
-                z_steps: List = []
+                z_steps: list = []
                 while (sum(z_steps) - model_length / 2) < 1:
                     z_steps += [
                         (node_length / 2) + (paranodal_length_1 / 2),

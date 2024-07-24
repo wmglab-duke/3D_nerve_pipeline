@@ -18,7 +18,6 @@ import re
 import shutil
 import sys
 import warnings
-from typing import List, Tuple
 
 import numpy as np
 import scipy.interpolate as sci
@@ -70,8 +69,8 @@ class Simulation(Configurable, Saveable):
         self.wave_key = []
         self.fiberset_product = []
         self.fiberset_key = []
-        self.fiberset_map_pairs: List[Tuple[List, List]] = []
-        self.ss_fiberset_map_pairs: List[Tuple[List, List]] = []
+        self.fiberset_map_pairs: list[tuple[list, list]] = []
+        self.ss_fiberset_map_pairs: list[tuple[list, list]] = []
         self.stim_product = []
         self.rec_product = []
         self.stim_key = []
@@ -690,7 +689,7 @@ class Simulation(Configurable, Saveable):
 
         return weighted_potentials
 
-    def indices_fib_to_n(self, fiberset_ind, fiber_ind) -> Tuple[int, int]:
+    def indices_fib_to_n(self, fiberset_ind, fiber_ind) -> tuple[int, int]:
         """Get inner and fiber indices from fiber index and fiberset_index.
 
         :param fiberset_ind: fiberset index
@@ -698,7 +697,7 @@ class Simulation(Configurable, Saveable):
         :return: (l, k) as in "inner<l>_fiber<k>.dat" for NEURON sim
         """
 
-        def search(arr, target) -> Tuple[int, int, int]:
+        def search(arr, target) -> tuple[int, int, int]:
             for a, outer in enumerate(arr):
                 for b, inner in enumerate(outer):
                     for c, fib in enumerate(inner):
@@ -709,7 +708,7 @@ class Simulation(Configurable, Saveable):
         i, j, k = search(out_fib, fiber_ind)
         return out_in[i][j], k
 
-    def indices_n_to_fib(self, fiberset_index, inner_index, local_fiber_index) -> Tuple[int, int]:
+    def indices_n_to_fib(self, fiberset_index, inner_index, local_fiber_index) -> tuple[int, int]:
         """Get fiber index from inner and local fiber indices.
 
         :param fiberset_index: fiberset index
@@ -718,7 +717,7 @@ class Simulation(Configurable, Saveable):
         :return: fiber index within fiberset
         """
 
-        def search(arr, target) -> Tuple[int, int]:
+        def search(arr, target) -> tuple[int, int]:
             for a, outer in enumerate(arr):
                 for b, inner in enumerate(outer):
                     if inner == target:
