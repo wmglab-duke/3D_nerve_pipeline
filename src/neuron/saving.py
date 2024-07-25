@@ -177,6 +177,8 @@ def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind:
             save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'space', stimulation)
         if params['time_gating']:
             save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'time', stimulation)
+    if params['ap_loctime']:
+        save_aploctime(params, amp_ind, fiber)
     if params['istim']:
         save_istim_as_time_function(params, fiber, stimulation)
 
