@@ -12,7 +12,7 @@ https://github.com/wmglab-duke/ascent
 import itertools
 import os
 from copy import deepcopy
-from typing import List, Tuple, Union
+from typing import Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -83,8 +83,8 @@ class Fascicle:
         """
         if isinstance(other, Fascicle):
             return self.outer.intersects(other.outer)
-        else:  # other must be a Nerve
-            return self.outer.intersects(other)
+        # otherwise must be a Nerve
+        return self.outer.intersects(other)
 
     def min_distance(self, other: Union['Fascicle', Nerve]) -> float | tuple:
         """Calculate the minimum distance between the fascicle and another fascicle or nerve boundary.
@@ -94,8 +94,8 @@ class Fascicle:
         """
         if isinstance(other, Fascicle):
             return self.outer.min_distance(other.outer)
-        else:  # other must be a Nerve
-            return self.outer.min_distance(other)
+        # otherwise must be a Nerve
+        return self.outer.min_distance(other)
 
     def centroid_distance(self, other: Union['Fascicle', Nerve]):
         """Calculate the distance between this fascicle's centroid and another centroid.
@@ -105,8 +105,8 @@ class Fascicle:
         """
         if isinstance(other, Fascicle):
             return self.outer.centroid_distance(other.outer)
-        else:  # other must be a Nerve
-            return self.outer.centroid_distance(other)
+        # otherwise must be a Nerve
+        return self.outer.centroid_distance(other)
 
     def within_nerve(self, nerve: Nerve) -> bool:
         """Check if the fascicle is within the nerve boundary.
@@ -167,8 +167,8 @@ class Fascicle:
         """
         if isinstance(other, Fascicle):
             return self.outer.angle_to(other.outer)
-        else:  # must be Nerve
-            return self.outer.angle_to(other)
+        # otherwise must be Nerve
+        return self.outer.angle_to(other)
 
     def plot(
         self,
@@ -370,24 +370,24 @@ class Fascicle:
 
         if not os.path.exists(path):
             raise OSError("Write directory does not exist.")
-        else:
-            # go to directory to write to
-            os.chdir(path)
 
-            # keep track of starting place
-            sub_start = os.getcwd()
+        # go to directory to write to
+        os.chdir(path)
 
-            # write outer and inners
-            for items, folder in [([self.outer], 'outer'), (self.inners, 'inners')]:
-                os.makedirs(folder, exist_ok=True)
-                os.chdir(folder)
+        # keep track of starting place
+        sub_start = os.getcwd()
 
-                # write all items (give filename as i (index) without the extension
-                for i, item in enumerate(items):
-                    item.write(mode, os.path.join(os.getcwd(), str(i)))
+        # write outer and inners
+        for items, folder in [([self.outer], 'outer'), (self.inners, 'inners')]:
+            os.makedirs(folder, exist_ok=True)
+            os.chdir(folder)
 
-                # change directory back to starting place
-                os.chdir(sub_start)
+            # write all items (give filename as i (index) without the extension
+            for i, item in enumerate(items):
+                item.write(mode, os.path.join(os.getcwd(), str(i)))
+
+            # change directory back to starting place
+            os.chdir(sub_start)
 
         os.chdir(start)
 

@@ -8,9 +8,7 @@ instructions. The source code can be found on the following GitHub
 repository: https://github.com/wmglab-duke/ascent
 """
 
-import math
 import sys
-from typing import List, Tuple
 
 import numpy as np
 import pygame
@@ -280,11 +278,9 @@ class Deformable:
             traces.append(trace)
         if len(traces) == 0:
             raise RuntimeError('No traces for deformation steps.')
-        if deform_ratio != 0:
-            def_traces = traces[: math.ceil((deform_ratio if deform_ratio is not None else 1) * count)]
-        else:  # still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
-            def_traces = [traces[0]]
-        return def_traces
+        if deform_ratio == 0:  # still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
+            return [traces[0]]
+        return traces[: int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
     def from_slide(slide: Slide, mode: ReshapeNerveMode, sep_nerve: float = None) -> 'Deformable':

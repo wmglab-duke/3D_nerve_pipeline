@@ -11,7 +11,6 @@ repository: https://github.com/wmglab-duke/ascent
 
 import random
 from copy import deepcopy
-from typing import List, Tuple, Union
 
 import cv2
 import matplotlib.pyplot as plt
@@ -240,7 +239,7 @@ class Trace:
         if mode == DownSampleMode.KEEP:
             pass  # nothing here; just showing the case for readability
         else:  # mode == DownSampleMode.REMOVE:
-            ii = [i for i in list(range(0, self.count())) if i not in ii]
+            ii = [i for i in list(range(self.count())) if i not in ii]
 
         self.points = self.points[ii, :]
 
@@ -640,8 +639,7 @@ class Trace:
         if len(points) < 2:
             if len(points) == 1:
                 return points[0][0], points[0][1], 0.0
-            else:
-                return None
+            return None  # Maybe error if no points?
         # OpenCV requires float32 input
         (cx, cy), r = cv2.minEnclosingCircle(np.array(points).astype(np.float32))
         return cx, cy, r
@@ -656,23 +654,23 @@ class Trace:
         if input_polygon.is_valid:
             # If the input polygon is already valid, return it
             return [input_polygon]
-        else:
-            # If the input polygon is invalid, use make_valid() to fix it
-            valid_polygons = list(make_valid(input_polygon))
 
-            # List to store valid polygons
-            result_polygons = []
+        # If the input polygon is invalid, use make_valid() to fix it
+        valid_polygons = list(make_valid(input_polygon))
 
-            for geom in valid_polygons:
-                if isinstance(geom, Polygon):
-                    # If it's a polygon, add it to the result list
-                    result_polygons.append(geom)
-                elif isinstance(geom, MultiPolygon):
-                    # If it's a multipolygon, add all contained polygons to the result list
-                    result_polygons.extend(list(geom))
+        # List to store valid polygons
+        result_polygons = []
 
-            # Return the list of valid polygons
-            return result_polygons
+        for geom in valid_polygons:
+            if isinstance(geom, Polygon):
+                # If it's a polygon, add it to the result list
+                result_polygons.append(geom)
+            elif isinstance(geom, MultiPolygon):
+                # If it's a multipolygon, add all contained polygons to the result list
+                result_polygons.extend(list(geom))
+
+        # Return the list of valid polygons
+        return result_polygons
 
     def make_valid(self):
         """Make the trace valid."""

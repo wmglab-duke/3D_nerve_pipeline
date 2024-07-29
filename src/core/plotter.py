@@ -7,7 +7,6 @@ import glob
 import json
 import os
 import warnings
-from typing import List
 
 import matplotlib.colorbar as cbar
 import matplotlib.colors as mplcolors

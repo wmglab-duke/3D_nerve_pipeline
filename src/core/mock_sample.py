@@ -14,7 +14,6 @@ import os
 import sys
 import warnings
 from io import BytesIO
-from typing import List
 
 import cv2
 import matplotlib.pyplot as plt

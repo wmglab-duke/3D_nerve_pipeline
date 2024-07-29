@@ -8,7 +8,6 @@ repository: https://github.com/wmglab-duke/ascent
 """
 
 import copy
-import distutils as du
 import itertools
 import json
 import os
@@ -16,7 +15,6 @@ import pickle
 import re
 import shutil
 import warnings
-from typing import List, Tuple
 
 import numpy as np
 import scipy.interpolate as sci
@@ -119,7 +117,7 @@ class Simulation(Configurable, Saveable):
             for key, value in dictionary.items():
                 if isinstance(value, list) and len(value) > 1:
                     self.factors[path + '->' + key] = value
-                elif isinstance(value, list) and len(value) <= 1:
+                elif isinstance(value, list) and len(value) <= 1:  # noqa: R506
                     print("ERROR:", key, "is a list, but has length", len(value))
                     raise ValueError(
                         "If type list, loopable sim parameters must have length greater than 1. "
@@ -201,8 +199,7 @@ class Simulation(Configurable, Saveable):
         :return: interpolated data vector at down-sampled coords
         """
         f = sci.interp1d(super_coords, data_vector)
-        output = f(down_coords)
-        return output
+        return f(down_coords)
 
     def write_waveforms(self, sim_directory: str) -> 'Simulation':
         """Write waveforms to files for each Waveform in the simulation. Create the waveform_product and waveform_keys.
@@ -459,8 +456,8 @@ class Simulation(Configurable, Saveable):
 
             if not os.path.exists(os.path.join(bases_path, file)):
                 raise ValueError(f"bases_path {os.path.join(bases_path, file)} does not exist")
-            else:
-                bases[basis_ind] = np.loadtxt(os.path.join(bases_path, file))[1:]
+
+            bases[basis_ind] = np.loadtxt(os.path.join(bases_path, file))[1:]
 
         return coords_path, bases
 
@@ -520,7 +517,6 @@ class Simulation(Configurable, Saveable):
             :param my_nsim_inputs_directory: directory of the neuron simulation inputs
             :param my_potentials_directory: directory of the potentials
             :param my_file: file we are making
-            :return: None
             """
             inner_fiber_diam_key = []
             diams = np.loadtxt(os.path.join(my_potentials_directory, my_file), unpack=True, ndmin=1)
@@ -535,8 +531,6 @@ class Simulation(Configurable, Saveable):
             with open(inner_fiber_diam_key_filename, 'wb') as f:
                 pickle.dump(inner_fiber_diam_key, f)
                 f.close()
-
-            return None
 
         supersampled_bases: dict = self.search(Config.SIM, 'supersampled_bases', optional=True)
         do_supersample: bool = supersampled_bases is not None and supersampled_bases.get('use') is True
@@ -677,9 +671,8 @@ class Simulation(Configurable, Saveable):
                     "Trying to use super-sampled potentials that do not exist. "
                     "(hint: check that if 'use' is true 'generate' was also true for the source Sim)."
                 )
-            else:
-                fibersrc = np.loadtxt(os.path.join(ss_bases_src_path, file))[1:]
-                ss_bases[basis_ind] = fibersrc
+            ss_bases[basis_ind] = np.loadtxt(os.path.join(ss_bases_src_path, file))[1:]
+
         return ss_fiberset_path, ss_bases
 
     def weight_bases(self, weights, bases):
@@ -715,7 +708,7 @@ class Simulation(Configurable, Saveable):
             for a, outer in enumerate(arr):
                 for b, inner in enumerate(outer):
                     for c, fib in enumerate(inner):
-                        if fib == target:
+                        if fib == target:  # noqa: R503
                             return a, b, c
 
         out_fib, out_in = self.fiberset_map_pairs[fiberset_ind]
@@ -734,7 +727,7 @@ class Simulation(Configurable, Saveable):
         def search(arr, target) -> tuple[int, int]:
             for a, outer in enumerate(arr):
                 for b, inner in enumerate(outer):
-                    if inner == target:
+                    if inner == target:  # noqa: R503
                         return a, b
 
         out_fib, out_in = self.fiberset_map_pairs[fiberset_index]
@@ -818,9 +811,9 @@ class Simulation(Configurable, Saveable):
             if os.path.exists(target):
                 if export_behavior == ExportMode.OVERWRITE.value:
                     shutil.rmtree(target)
-                elif export_behavior == ExportMode.ERROR.value:
+                elif export_behavior == ExportMode.ERROR.value:  # noqa: R506
                     raise FileExistsError(f"{target} exists")
-                elif export_behavior == ExportMode.SELECTIVE.value or export_behavior is None:
+                elif export_behavior == ExportMode.SELECTIVE.value or export_behavior is None:  # noqa R507
                     print(f'\tSkipping n_sim export for {target} because folder already exists.')
                     continue
                 else:
@@ -844,11 +837,12 @@ class Simulation(Configurable, Saveable):
 
         try:
             # neuron files
-            du.dir_util.copy_tree(
+            shutil.copytree(
                 os.path.join(os.environ[Env.PROJECT_PATH.value], 'src', 'neuron'),
                 target,
+                dirs_exist_ok=True,
             )
-        except du.errors.DistutilsFileError:
+        except shutil.Error:
             warnings.warn('Failed to copy neuron files, likely because they are in use.', stacklevel=2)
 
         submit_target = os.path.join(target, 'submit.py')
