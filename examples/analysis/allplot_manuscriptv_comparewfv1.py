@@ -166,7 +166,6 @@ newdefdat_allwf = []
 deftomatch = []
 allconcats = []
 for simNUM, stimtype in zip(['333', '3', '330'], ['Asymmetric Bipolar', 'Biphasic Bipolar', 'Asymmetric Monopolar']):
-
     gogo = "initial"
 
     cath_comparison = ["cathodic", "3D", 3]

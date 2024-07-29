@@ -934,6 +934,7 @@ class Simulation(Configurable, Saveable):
         :param verbose: Print missing threshold file names
         :return: True if thresholds exist, False otherwise
         """
+        print(1)
         allthresh = True
         for dirname in [f for f in os.listdir(source) if os.path.isdir(os.path.join(source, f))]:
             this_sample, this_model, this_sim, product_index = tuple(dirname.split('_'))

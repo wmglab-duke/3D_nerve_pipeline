@@ -28,7 +28,6 @@ sys.path.pop(-2)
 from src.core.plotter import datamatch_merge
 
 mpl.rcParams["figure.dpi"] = 400
-sns.set_style("whitegrid")
 pd.options.mode.chained_assignment = None
 
 
@@ -165,7 +164,10 @@ def rownames(g, row_template, **ylabel_kws):
 newdefdat_allwf = []
 deftomatch = []
 allconcats = []
-for simNUM, stimtype in zip(['333', '3', '330'], ['Asymmetric Bipolar', 'Biphasic Bipolar', 'Asymmetric Monopolar']):
+for simNUM, stimtype in zip(
+    ['333', '3', '330', '3'],
+    ['Asymmetric & Bipolar', 'Symmetric & Bipolar', 'Asymmetric & Monopolar', 'Symmetric & Bipolar (Selective)'],
+):
 
     gogo = "initial"
 
@@ -178,94 +180,11 @@ for simNUM, stimtype in zip(['333', '3', '330'], ['Asymmetric Bipolar', 'Biphasi
     pal2d3d = ["#d95f02", "#7570b3"]
 
     # code whole file to optionally run on 3 or 10 so that I can run all monpolar data
-    # %% set which comparison to run
-    print("threshload")
-    # base data
-    threshload = pd.read_csv(f"thresh_unmatched_sim{simNUM}_og.csv")
-    threshload["waveform"] = stimtype
-
-    center = threshload["sample"].astype(str).str[2] == "1"
-    threshload.loc[center, "contact"] = "center"
-    threedcontact = threshload["sample"].astype(str).str[2] == "3"
-    threshload.loc[threedcontact, "contact"] = "3D"
-    # set all inners and outers where 'type' is 3D to 0
-    threshload.loc[(threshload["type"] == "3D"), "inner"] = 0
-    threshload.loc[(threshload["type"] == "3D"), "outer"] = 0
-    # %% inners need to match the cathodic leading contact
-    # Query the rows with type '3D'
-    df_3d = threshload.query("type == '3D'")
-
-    # Query the rows with type '2D' and sample ending in '1'
-    df_2d = threshload.query(f"type == '2D' and contact in {main_comparison}")
-
-    # Merge the 3D and 2D data, keeping track of original row indices
-    merged_df = pd.merge(
-        df_3d,
-        df_2d,
-        on=["nerve_label", "master_fiber_index", "nsim"],
-        suffixes=("_3d", "_2d"),
-        how="left",
-    )  # TODO remove this how
-
-    # Update the 'inner', 'outer', and 'fiber' columns in the original DataFrame
-    threshload.loc[df_3d.index, "inner"] = merged_df["inner_2d"].values
-    threshload.loc[df_3d.index, "outer"] = merged_df["outer_2d"].values
-    threshload.loc[df_3d.index, "fiber"] = merged_df["fiber_2d"].values
-    # %%
-    if gogo == "initial":  # remove all where nerve_label length is >2
-        threshload = threshload[threshload["nerve_label"].str.len() < 3]
-    threshload["type"] = threshload["type"].replace({"2D": "extrusion", "3D": "true-3D"})
-    threshload = addpwfd(threshload, str(simNUM), infile="plotconfig_og")
-    threshload["fiber_diam"] = threshload["fiber_diam"].astype(int)
-    # elif gogo=="deformedasc": #remove all where nerve_label does not contain "asc"
-    #     threshload = threshload[threshload['nerve_label'].str.contains("asc")]
-    #     #check the third digit of the sample number is 2, in that case, "contact" is cathodic. If 0, anodic
-    threshload["contact"] = (
-        threshload["sample"].astype(str).str[2].replace({"0": "anodic", "2": "cathodic", "3": "3D", "1": "center"})
-    )
-    threshload.sort_values(by="sample")
-
-    # %%Setup
-    print("matched")
-    # true-3D and extrusion trhresholds as different col same row
-    matched = datamatch_merge(
-        threshload.query('type=="extrusion"'),
-        threshload.query('type=="true-3D"'),
-        "threshold",
-        merge_cols=["model", "sim", "nerve_label", "nsim", "master_fiber_index"],
-    ).drop(columns="type")
-    # for matched boxplots
-    repeated = matched.melt(
-        id_vars=[x for x in matched.columns if "threshold" not in x],
-        value_vars=["threshold3d", "threshold"],
-        var_name="type",
-        value_name="threshold",
-    )
-    repeated["type"] = repeated["type"].replace({"threshold": "extrusion", "threshold3d": "true-3D"})
-    repeated["type"] = pd.Categorical(repeated["type"], categories=["extrusion", "true-3D"], ordered=True)
-    # %%
-    print("dose-response")
-    # dose response
-    drdat = threshload.copy().rename(columns={"sample": "samplenum", "type": "modeltype"})
-    drdat = calculate_dose_response(
-        drdat,
-        "threshold",
-        "percent_activated",
-        grouping_columns=["modeltype", "samplenum", "fiber_diam", "sim"],
-    )
-    drdat.sort_values("modeltype", inplace=True)
-    drmatch = datamatch_merge(
-        drdat.query('modeltype=="extrusion"'),
-        drdat.query('modeltype=="true-3D"'),
-        "percent_activated",
-        merge_cols=["model", "sim", "nerve_label", "nsim", "master_fiber_index"],
-    ).drop(columns="modeltype")
-
     # %% BEGIN DEFORMATION ANALYSIS
     print("deformation")
     # match fascicle thresholds
     sns.set(font_scale=1.75)
-    sns.set_style("whitegrid")
+    sns.set_style("white")
     threshes = pd.concat(
         [
             pd.read_csv(f"thresh_unmatched_sim{simNUM}_og.csv"),
@@ -319,6 +238,52 @@ for simNUM, stimtype in zip(['333', '3', '330'], ['Asymmetric Bipolar', 'Biphasi
         newdefdat["nerve_label"], categories=["2L", "3R", "5R", "6R"], ordered=True
     )
     newdefdat["deformed"] = newdefdat["deformation"] != "Undeformed"
+    newdefdat.reset_index(inplace=True)
+
+    # plot thresholds in newdefdat by contact and deformation
+    sns.catplot(
+        data=newdefdat,
+        x="deformation",
+        y="threshold",
+        hue="contact",
+        col="nerve_label",
+        row='fiber_diam',
+        kind="box",
+        sharey=False,
+    )
+
+    if 'Fixed' in stimtype:
+        # Filter out cathodic and anodic data
+        cathodic_df = newdefdat[newdefdat['contact'] == 'cathodic']
+        anodic_df = newdefdat[newdefdat['contact'] == 'anodic']
+
+        # Perform a merge on the relevant columns to get corresponding anodic thresholds for cathodic rows
+        merged_df = cathodic_df.merge(
+            anodic_df,
+            on=['nerve_label', 'nsim', 'waveform', 'deformation', 'master_fiber_index'],
+            suffixes=('_cathodic', '_anodic'),
+        )
+
+        # Identify rows where cathodic threshold is greater than anodic threshold
+        condition = merged_df['threshold_cathodic'] > merged_df['threshold_anodic']
+
+        # Update the thresholds in the original DataFrame using the indices of the cathodic rows
+        cathodic_indices_to_update = merged_df.loc[condition, 'threshold_cathodic'].index
+
+        for idx in cathodic_indices_to_update:
+            newdefdat.loc[cathodic_df.index[idx], 'threshold'] = merged_df.loc[idx, 'threshold_anodic']
+
+        # plot thresholds in newdefdat by contact and deformation
+        sns.catplot(
+            data=newdefdat,
+            x="deformation",
+            y="threshold",
+            hue="contact",
+            col="nerve_label",
+            row='fiber_diam',
+            kind="box",
+            sharey=False,
+        )
 
     # all wf data
     newdefdat_allwf.append(newdefdat)
@@ -444,7 +409,8 @@ for simNUM, stimtype in zip(['333', '3', '330'], ['Asymmetric Bipolar', 'Biphasi
 newdefdat_allwf = pd.concat(newdefdat_allwf).query('fiber_diam in [3,13]')
 deftomatch = pd.concat(deftomatch)
 allconcats = pd.concat(allconcats)
-# sys.exit("prepdone")
+
+sys.exit("prepdone")
 # %% compare dose response across waveforms and deformation
 peses = []
 pemeans = []
@@ -570,7 +536,7 @@ for comparison in comparisons:
 
             onsets_sats[stringdat] = compiled_data
 
-sns.set(style="whitegrid", context="paper")
+sns.set(style="white", context="paper")
 allpes = pd.concat(peses)
 # allpes['level'].replace({
 #     'onset':'10','half':'50','saturation':'90'},inplace=True)
@@ -605,14 +571,28 @@ g.map_dataframe(
     y="pe_abs",
     marker="s",
     estimator="median",
+    errorbar=None,
+    dodge=0.5,
+    hue='wf',
+    palette=tc.tol_cset('muted'),
+)
+g.map_dataframe(
+    sns.swarmplot,
+    x="level",
+    y="pe_abs",
+    # marker="s",
+    # estimator="median",
     # errorbar=None,
     dodge=0.2,
     hue='wf',
     palette=tc.tol_cset('muted'),
+    edgecolor='lightgray',
+    linewidth=0.5,
+    s=4,
 )
 plt.gcf().set_size_inches(4, 2.5)
 g.set_titles(col_template="{col_name}", row_template="")
-rownames(g, row_template="APD (%)\n{row_name}")
+rownames(g, row_template="Absolute Percent Difference (%)\n{row_name}")
 for ax in g.axes.ravel():
     plt.sca(ax)
     # plt.xticks(rotation=20)
@@ -620,14 +600,19 @@ for ax in g.axes.ravel():
     ax.set_xticklabels(['10', '50', '90'])
 plt.subplots_adjust(hspace=0.1, wspace=0)
 plt.gcf().set_size_inches(4, 2)
-plt.ylim(None, 80)
+# plt.ylim(None, 80)
 plt.xlim(-0.5, 2.5)
-g.add_legend(title='')
-g.set_ylabels('APD (%)')
+g.add_legend(
+    title='',
+    ncol=4,
+    labels=['Asymmetric & Bipolar', 'Symmetric & Bipolar', 'Asymmetric & Monopolar', 'Symmetric & Bipolar (Selective)'],
+)  # ,ncol=2,bbox_to_anchor=[0.6,0.7], frameon=True,framealpha=1)
+g.set_ylabels('Absolute Percent Difference (%)')
+g.set_titles(col_template='D: {col_name} μm')
 
 # %% recruitment cost:
-sns.set(font_scale=1, context='paper', style='whitegrid')
-sns.set_style("whitegrid")
+sns.set(font_scale=1, context='paper', style='white')
+sns.set_style("white")
 datahere = deftomatch.query('deformation in ["Structural","Undeformed"]')
 mathere = allconcats.copy()
 scores = []
@@ -639,6 +624,7 @@ for comp in [center_comparison, cath_comparison, an_comparison]:
             for nerve in pd.unique(threshdat["nerve_label"]):
                 for n in [3, 13]:
                     shortdat = threshdat.query(f'nerve_label=="{nerve}" and fiber_diam=={n}')
+                    shortdat['percent_activated'] = np.nan
                     assert len(shortdat) > 0
                     data2d = shortdat.query('type=="extrusion"').sort_values("threshold").master_fiber_index
                     data3d = shortdat.query('type=="true-3D"').sort_values("threshold").master_fiber_index
@@ -651,6 +637,20 @@ for comp in [center_comparison, cath_comparison, an_comparison]:
                     data2d = concathere.threshold
                     data3d = concathere.threshold3d
                     ccc = concordance_correlation_coefficient(list(data2d), list(data3d))
+                    data2d = calculate_dose_response(
+                        shortdat.query('type=="extrusion"').sort_values("master_fiber_index"),
+                        'threshold',
+                        'percent_activated',
+                        grouping_columns=['deformation'],
+                    ).percent_activated
+
+                    data3d = calculate_dose_response(
+                        shortdat.query('type=="true-3D"').sort_values("master_fiber_index"),
+                        'threshold',
+                        'percent_activated',
+                        grouping_columns=['deformation'],
+                    ).percent_activated
+                    accc = concordance_correlation_coefficient(list(data2d), list(data3d))
                     scores.append(
                         {
                             "sample": nerve,
@@ -660,6 +660,7 @@ for comp in [center_comparison, cath_comparison, an_comparison]:
                             "slice": comp[0],
                             "CCC": ccc,
                             "wf": waveform,
+                            "aCCC": accc,
                         }
                     )
 scoredat = pd.DataFrame(scores)
@@ -672,7 +673,7 @@ scoredat = scoredat.query('slice=="cathodic" and deformation == "Structural"')
 g = sns.FacetGrid(data=scoredat, margin_titles=True)
 g.map_dataframe(
     sns.barplot,
-    y="score2d3d",
+    y="aCCC",
     x="fiber_diam",
     hue="wf",
     palette=tc.tol_cset('muted'),
@@ -682,7 +683,7 @@ g.map_dataframe(
 )
 g.map_dataframe(
     sns.stripplot,
-    y="score2d3d",
+    y="aCCC",
     x="fiber_diam",
     hue="wf",
     dodge=True,
@@ -691,22 +692,23 @@ g.map_dataframe(
     linewidth=0.5,
     legend=False,
 )
-plt.axhline(0.45, color='red', ls='--')
+# plt.axhline(0.45, color='red', ls='--')
+# plt.text(0, 0.47, 'random', color='red')
 
 # ax.set_xlabel('Fiber Diameter (μm)')
 plt.ylabel("Activation Reordering")
 g.set_titles(col_template="D: {col_name} μm")
-g.set_ylabels("Activation Reordering")
+g.set_ylabels("aCCC\n(extrusion vs true-3D)")
 # g.set_xlabels('D (μm)')
 # plt.title(f'{deformation} - {comp[0]}')
-plt.ylim(0, 0.6)
+plt.ylim(0, 1)
 print(scoredat.groupby(["deformation"]).median())
 # plt.subplots_adjust(wspace=0)
 # plt.xlim(-1,2)
 # g.fig.set_size_inches(8,4)
 for ax in g.axes.ravel():
     plt.sca(ax)
-    ax.set_xlabel("extrusion slice")
+    ax.set_xlabel("Fiber Diameter (μm)")
 handles, labs = plt.gca().get_legend_handles_labels()
 
 plt.gcf().set_size_inches(2, 2)
@@ -746,7 +748,7 @@ print(scoredat.groupby(["deformation"]).median())
 # plt.xlim(-1,2)
 for ax in g.axes.ravel():
     plt.sca(ax)
-    ax.set_xlabel("extrusion slice")
+    ax.set_xlabel("Fiber Diameter (μm)")
 handles, labs = plt.gca().get_legend_handles_labels()
 g.add_legend(title="", handles=handles[:3], labels=labs[:3])
 plt.gcf().set_size_inches(2, 2)
@@ -755,7 +757,7 @@ plt.gcf().set_size_inches(2, 2)
 for waveform in newdefdat_allwf.waveform.unique():
     print(waveform)
     plt.figure()
-    sns.set(font_scale=1.75, style="whitegrid")
+    sns.set(font_scale=1, style="white", context='paper')
     newthreshz = newdefdat_allwf.query("deformation=='Structural'")
     newthreshz["activation_zpos"] = newthreshz["activation_zpos"] / 10000
     fig, axs = plt.subplots(1, 2, sharex=False, sharey=True)
@@ -786,13 +788,66 @@ for waveform in newdefdat_allwf.waveform.unique():
     axs[0].plot([], [], color=sns.color_palette("binary")[5], label="3 μm", linewidth=2)
     axs[0].plot([], [], color=sns.color_palette("binary")[2], label="13 μm", linewidth=2)
     # put legenbd to right of figure
-    axs[0].axhspan(2.005, 2.205, color="blue", alpha=0.2, label="anode")
-    axs[1].axhspan(2.005, 2.205, color="blue", alpha=0.2, label="_")
     axs[0].axhspan(2.805, 3.005, color="red", alpha=0.2, label="cathode")
     axs[1].axhspan(2.805, 3.005, color="red", alpha=0.2, label="_")
+    axs[0].axhspan(2.005, 2.205, color="blue", alpha=0.2, label="anode")
+    axs[1].axhspan(2.005, 2.205, color="blue", alpha=0.2, label="_")
 
     axs[0].legend(loc="center left", bbox_to_anchor=(2.2, 0.5))
     axs[0].set_xlim(reversed(axs[0].get_xlim()))
-    axs[0].set_ylabel("Activation Location (cm)")
-    axs[0].set_title("extrusion-100%")
-    axs[1].set_title("true-3D-100%")
+    axs[0].set_ylabel("Activation Location (cm)\n(at threshold)")
+    axs[0].set_title("extrusion", pad=-10)
+    axs[1].set_title("true-3D", pad=-10)
+    plt.suptitle(f'{waveform}', y=1)
+    plt.gcf().set_size_inches(2, 2)
+    plt.subplots_adjust(wspace=0.1)
+# %% activation position
+for waveform in newdefdat_allwf.waveform.unique():
+    print(waveform)
+    plt.figure()
+    sns.set(font_scale=1.75, style="white")
+    newthreshz = newdefdat_allwf.query("deformation=='Structural'")
+    newthreshz["activation_zpos"] = newthreshz["activation_zpos"] / 10000
+    fig, axs = plt.subplots(1, 2, sharex=False, sharey=True)
+    for nerve_label in pd.unique(newthreshz.nerve_label):
+        for ax, modeltype in zip(axs, ["extrusion", "true-3D"]):
+            for fiber_diam in newthreshz.fiber_diam.unique():
+                color = {3: 'black', 13: 'red'}[fiber_diam]
+                lw = {3: 3, 13: 1.5}[fiber_diam]
+                g = sns.histplot(
+                    data=newthreshz.query(
+                        f"fiber_diam ==@fiber_diam and waveform==@waveform and contact in {main_comparison} and nerve_label=='{nerve_label}' and type=='{modeltype}'"
+                    ).rename(columns={"nerve_label": "Sample"}),
+                    y="activation_zpos",
+                    # hue="fiber_diam",
+                    # hue='Sample',
+                    # facet_kws={'sharex': False},
+                    # kind='kde',
+                    common_norm=False,
+                    # legend=False,
+                    # multiple="fill",
+                    color=color,
+                    lw=lw,
+                    # color='black',alpha=0.5,
+                    element="poly",
+                    fill=False,
+                    bins=np.arange(1.5, 3.6, 0.1),
+                    ax=ax,
+                )
+    # # delete both legends and remake my own
+    # for ax in axs:
+    #     ax.get_legend().remove()
+    # make my own legend
+    axs[0].plot([], [], color='k', label="3 μm", linewidth=1)
+    axs[0].plot([], [], color='k', label="13 μm", linewidth=3)
+    # put legenbd to right of figure
+    axs[0].axhspan(2.805, 3.005, color="red", alpha=0.2, label="cathode")
+    axs[1].axhspan(2.805, 3.005, color="red", alpha=0.2, label="_")
+    axs[0].axhspan(2.005, 2.205, color="blue", alpha=0.2, label="anode")
+    axs[1].axhspan(2.005, 2.205, color="blue", alpha=0.2, label="_")
+
+    axs[0].legend(loc="center left", bbox_to_anchor=(2.2, 0.5))
+    axs[0].set_xlim(reversed(axs[0].get_xlim()))
+    axs[0].set_ylabel("Activation Location (cm)\n(at threshold)")
+    axs[0].set_title("extrusion")
+    axs[1].set_title("true-3D")
