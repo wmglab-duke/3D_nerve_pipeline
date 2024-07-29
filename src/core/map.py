@@ -85,8 +85,8 @@ class Map(Configurable):
         if 'map_path' not in self.search(Config.SAMPLE).keys():
             self.mode = SetupMode.SYNTHETIC
 
-        if self.mode == SetupMode.NEW:
-            raise Exception('NOT IMPLEMENTED')
+        if self.mode == SetupMode.NEW:  # noqa R506
+            raise NotImplementedError("Map with SetupMode.NEW not yet implemented")
 
         elif self.mode == SetupMode.OLD:
             # source FILE

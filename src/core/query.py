@@ -261,7 +261,7 @@ class Query(Configurable, Saveable):
         if just_directory:
             result = os.path.join(*result.split(os.sep)[:-1])
 
-        return result
+        return result  # noqa: R504
 
     def _match(self, criteria: dict, data: dict) -> bool:
         for key in criteria.keys():
@@ -274,30 +274,29 @@ class Query(Configurable, Saveable):
             d_val = data[key]
 
             # now lots of control flow - dependent on the types of the variables
-
             # if c_val is a dict, recurse
-            if type(c_val) is dict:
+            if isinstance(c_val, dict):
                 if not self._match(c_val, d_val):
                     return False
 
             # neither c_val nor d_val are list
-            elif not any(type(v) is list for v in (c_val, d_val)):
+            elif not any(isinstance(v, list) for v in (c_val, d_val)):
                 if c_val != d_val:
                     return False
 
             # c_val IS list, d_val IS NOT list
-            elif type(c_val) is list and type(d_val) is not list:
+            elif isinstance(c_val, list) and not isinstance(d_val, list):
                 if d_val not in c_val:
                     return False
 
             # c_val IS NOT list, d_val IS list
-            elif type(c_val) is not list and type(d_val) is list:
+            elif not isinstance(c_val, list) and isinstance(d_val, list):
                 # "partial matches" indicates that other values may be present in d_val
                 if not self.search(Config.CRITERIA, 'partial_matches') or c_val not in d_val:
                     return False
 
             # both c_val and d_val are list
-            else:  # all([type(v) is list for v in (c_val, d_val)]):
+            else:  # all([isinstance(v, list) for v in (c_val, d_val)]):
                 # "partial matches" indicates that other values may be present in d_val
                 if not self.search(Config.CRITERIA, 'partial_matches') or not all(c_i in d_val for c_i in c_val):
                     return False
@@ -408,8 +407,7 @@ class Query(Configurable, Saveable):
                                     )
 
         sfap_data = pd.DataFrame(sfap_data)
-        output = sfap_data.loc[sfap_data['index'].isin(fiber_indices)] if not all_fibers else sfap_data
-        return output
+        return sfap_data.loc[sfap_data['index'].isin(fiber_indices)] if not all_fibers else sfap_data
 
     def threshold_data(
         self,

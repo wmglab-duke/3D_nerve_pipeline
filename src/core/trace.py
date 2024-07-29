@@ -201,7 +201,7 @@ class Trace:
         if mode == DownSampleMode.KEEP:
             pass  # nothing here; just showing the case for readability
         else:  # mode == DownSampleMode.REMOVE:
-            ii = [i for i in list(range(0, self.count())) if i not in ii]
+            ii = [i for i in list(range(self.count())) if i not in ii]
 
         self.points = self.points[ii, :]
 
@@ -596,8 +596,7 @@ class Trace:
         if len(points) < 2:
             if len(points) == 1:
                 return points[0][0], points[0][1], 0.0
-            else:
-                return None
+            return None  # Maybe error if no points?
         # OpenCV requires float32 input
         (cx, cy), r = cv2.minEnclosingCircle(np.array(points).astype(np.float32))
         return cx, cy, r

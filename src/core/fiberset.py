@@ -215,22 +215,20 @@ class FiberSet(Configurable, Saveable):
         if self.xy_mode not in FiberXYMode:
             raise NotImplementedError("Invalid FiberXYMode in Sim.")
 
-        elif self.xy_mode == FiberXYMode.CENTROID:
-            points = self.generate_centroid_points()
+        if self.xy_mode == FiberXYMode.CENTROID:  # noqa: R505
+            return self.generate_centroid_points()
 
         elif self.xy_mode == FiberXYMode.UNIFORM_DENSITY:
-            points = self.generate_uniform_density_points(buffer, my_xy_seed)
+            return self.generate_uniform_density_points(buffer, my_xy_seed)
 
         elif self.xy_mode == FiberXYMode.UNIFORM_COUNT:
-            points = self.generate_uniform_count_points(buffer, my_xy_seed)
+            return self.generate_uniform_count_points(buffer, my_xy_seed)
 
         elif self.xy_mode == FiberXYMode.WHEEL:
-            points = self.generate_wheel_points(buffer)
+            return self.generate_wheel_points(buffer)
 
         elif self.xy_mode == FiberXYMode.EXPLICIT:
-            points = self.load_explicit_coords(sim_directory)
-
-        return points
+            return self.load_explicit_coords(sim_directory)
 
     def _generate_xyz(self, sim_directory: str) -> np.ndarray:
         """Generate the xyz coordinates of the fibers.
@@ -239,13 +237,11 @@ class FiberSet(Configurable, Saveable):
         :raises NotImplementedError: If a mode is not supported.
         :return: xy coordinates of the fibers
         """
-        if self.xy_mode == FiberXYMode.EXPLICIT_3D:
-            points = self.load_explicit_coords(sim_directory, is_3d=True)
-        else:
+        if self.xy_mode != FiberXYMode.EXPLICIT_3D:
             raise NotImplementedError(
                 "Invalid FiberXYMode in Sim. FiberXYMode must be 'EXPLICIT_3D' when FiberZMode is 'EXPLICIT'."
             )
-        return points
+        return self.load_explicit_coords(sim_directory, is_3d=True)
 
     def generate_centroid_points(self):
         """Create the xy coordinates of the fibers using the centroid of the fascicles.
@@ -472,7 +468,8 @@ class FiberSet(Configurable, Saveable):
                 'or the "fibers">"z_parameters">"min"/"max" variables in sim.json.)'
                 'Please extend your model length, or shorten your fibers.'
             )
-        elif np.any(provided_fiber_lengths < desired_fiber_length):
+
+        if np.any(provided_fiber_lengths < desired_fiber_length):
             warnings.warn(
                 'Extruding explicit 3d fiber lengths. At least one fiber is shorter than desired fiber length '
                 '(provided by either the proximal medium length by default, '
@@ -520,8 +517,7 @@ class FiberSet(Configurable, Saveable):
                 points[fib_idx][:, 2] = np.array(z_extruded)  # Update z points with extruded coordinates
 
         # Transform from list of arrays to 3D array now that all fibers are the same length
-        points = np.stack(points)
-        return points
+        return np.stack(points)
 
     def plot_fibers_on_sample(self, sim_directory, z_index=0):
         """Plot the xy coordinates of the fibers on the sample.
@@ -891,12 +887,10 @@ class FiberSet(Configurable, Saveable):
         )
 
         if myelinated and not super_sample:  # MYELINATED
-            fibers = generate_z_myelinated(diams)
+            return generate_z_myelinated(diams)
 
-        else:  # UNMYELINATED
-            fibers = generate_z_unmyel(diams)
-
-        return fibers
+        # else UNMYELINATED
+        return generate_z_unmyel(diams)
 
     def _generate_3d_longitudinal(  # noqa: C901
         self, fibers_xyz: np.ndarray, sim_directory: str, super_sample: bool = False
@@ -1140,5 +1134,5 @@ class FiberSet(Configurable, Saveable):
 
         if split_xy:
             return list(zip(*points))[0], list(zip(*points))[1]
-        else:
-            return points
+
+        return points

@@ -275,11 +275,9 @@ class Deformable:
             for i, point in enumerate(trace.points):
                 point += vectors[i] * ratio
             traces.append(trace)
-        if deform_ratio != 0:
-            def_traces = traces[: int((deform_ratio if deform_ratio is not None else 1) * count)]
-        else:  # still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
-            def_traces = [traces[0]]
-        return def_traces
+        if deform_ratio == 0:  # still need fascicle sep physics with deform_ratio = 0, so pass starting trace only
+            return [traces[0]]
+        return traces[: int((deform_ratio if deform_ratio is not None else 1) * count)]
 
     @staticmethod
     def from_slide(slide: Slide, mode: ReshapeNerveMode, sep_nerve: float = None) -> 'Deformable':
