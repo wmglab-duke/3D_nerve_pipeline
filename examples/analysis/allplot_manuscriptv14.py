@@ -77,9 +77,7 @@ def corrcalc(data, comparison):
         corr = {}
         for sample in pd.unique(data["sample"]):
             thisdat = data[(data["nsim"] == nsim) & (data["sample"] == sample)]
-            corr[sample] = round(
-                pearsonr(thisdat[comparison[0]], thisdat[comparison[1]])[0], 3
-            )
+            corr[sample] = round(pearsonr(thisdat[comparison[0]], thisdat[comparison[1]])[0], 3)
         corrs.append(corr)
     return corrs
 
@@ -132,11 +130,7 @@ def compute_reorder_cost(order1, order2):
         distance = abs(order1.index(item) - order2.index(item))
         sumdist += distance
     if len(order1) % 2 == 0:
-        maxlen = (
-            sum(range(len(order1))[int(math.ceil(0.5 * len(order1))) :])
-            * 2
-            / len(order1)
-        )
+        maxlen = sum(range(len(order1))[int(math.ceil(0.5 * len(order1))) :]) * 2 / len(order1)
     else:
         maxlen = (
             range(len(order1))[int(math.floor(0.5 * len(order1)))]
@@ -223,10 +217,7 @@ threshload["fiber_diam"] = threshload["fiber_diam"].astype(int)
 #     threshload = threshload[threshload['nerve_label'].str.contains("asc")]
 #     #check the third digit of the sample number is 2, in that case, "contact" is cathodic. If 0, anodic
 threshload["contact"] = (
-    threshload["sample"]
-    .astype(str)
-    .str[2]
-    .replace({"0": "anodic", "2": "cathodic", "3": "3D", "1": "center"})
+    threshload["sample"].astype(str).str[2].replace({"0": "anodic", "2": "cathodic", "3": "3D", "1": "center"})
 )
 threshload.sort_values(by="sample")
 
@@ -246,12 +237,8 @@ repeated = matched.melt(
     var_name="type",
     value_name="threshold",
 )
-repeated["type"] = repeated["type"].replace(
-    {"threshold": "extrusion", "threshold3d": "true-3D"}
-)
-repeated["type"] = pd.Categorical(
-    repeated["type"], categories=["extrusion", "true-3D"], ordered=True
-)
+repeated["type"] = repeated["type"].replace({"threshold": "extrusion", "threshold3d": "true-3D"})
+repeated["type"] = pd.Categorical(repeated["type"], categories=["extrusion", "true-3D"], ordered=True)
 # %%
 print("dose-response")
 # dose response
@@ -282,17 +269,9 @@ threshes = pd.concat(
     ]
 )
 # remove all rows where nerve label contains "asc" and "sample" contains "3"
-threshes = threshes[
-    ~(
-        (threshes["nerve_label"].str.contains("asc"))
-        & (threshes["sample"].astype(str).str[2] == "3")
-    )
-]
+threshes = threshes[~((threshes["nerve_label"].str.contains("asc")) & (threshes["sample"].astype(str).str[2] == "3"))]
 # duplicate all samples where nerve label contains "def" and "sample" contains "3"
-defdat = threshes[
-    (threshes["nerve_label"].str.contains("def"))
-    & (threshes["sample"].astype(str).str[2] == "3")
-]
+defdat = threshes[(threshes["nerve_label"].str.contains("def")) & (threshes["sample"].astype(str).str[2] == "3")]
 # replacee all "1" with "9" in sample column
 defdat["sample"] = defdat["sample"].astype(str).str.replace("1", "9").astype(int)
 # replace all "def" with "asc" in nerve label column
@@ -307,9 +286,7 @@ threshes.loc[threshes["nerve_label"].str.contains("asc"), "deformation"] = "ASCE
 # else deformation is "none"
 threshes.loc[threshes["deformation"].isna(), "deformation"] = "Undeformed"
 # strip "def" and "asc" from nerve labels
-threshes["nerve_label"] = (
-    threshes["nerve_label"].str.replace("def", "").str.replace("asc", "")
-)
+threshes["nerve_label"] = threshes["nerve_label"].str.replace("def", "").str.replace("asc", "")
 
 newdefdat = threshes.copy()
 
@@ -322,10 +299,7 @@ newdefdat = addpwfd(newdefdat, simNUM, infile="plotconfig_og")
 newdefdat["fiber_diam"] = newdefdat["fiber_diam"].astype(int)
 # contact is cathodic if the third digit of sample int is 2, anodic if 0
 newdefdat["contact"] = (
-    newdefdat["sample"]
-    .astype(str)
-    .str[2]
-    .replace({"2": "cathodic", "1": "center", "0": "anodic", "3": "3D"})
+    newdefdat["sample"].astype(str).str[2].replace({"2": "cathodic", "1": "center", "0": "anodic", "3": "3D"})
 )
 
 # set deformation as ordered categorical
@@ -334,9 +308,7 @@ newdefdat["deformation"] = pd.Categorical(
     categories=["Undeformed", "ASCENT", "Structural"],
     ordered=True,
 )
-newdefdat["nerve_label"] = pd.Categorical(
-    newdefdat["nerve_label"], categories=["2L", "3R", "5R", "6R"], ordered=True
-)
+newdefdat["nerve_label"] = pd.Categorical(newdefdat["nerve_label"], categories=["2L", "3R", "5R", "6R"], ordered=True)
 newdefdat["deformed"] = newdefdat["deformation"] != "Undeformed"
 deftomatch = newdefdat.copy()
 
@@ -380,9 +352,7 @@ for deftype in ["Undeformed", "Structural"]:
     matchednow["deformation"] = deftype
     concats.append(matchednow)
 concats = pd.concat(concats)
-concats["deformation"] = pd.Categorical(
-    concats["deformation"], categories=["Undeformed", "Structural"], ordered=True
-)
+concats["deformation"] = pd.Categorical(concats["deformation"], categories=["Undeformed", "Structural"], ordered=True)
 
 # %% dose-response
 print("deformdr")
@@ -517,12 +487,8 @@ rownames(g, row_template="{row_name}-slice\nProportion fibers active")
 for stringdat in ["Undeformed", "Structural"]:
     # deformstate = deformation!="Undeformed"
     thisdat = datamatch_merge(
-        newdefdat.query(
-            f'type=="extrusion" and deformation=="{stringdat}" and contact in {main_comparison}'
-        ),
-        newdefdat.query(
-            f'type=="true-3D" and deformation=="{stringdat}" and contact in {main_comparison}'
-        ),
+        newdefdat.query(f'type=="extrusion" and deformation=="{stringdat}" and contact in {main_comparison}'),
+        newdefdat.query(f'type=="true-3D" and deformation=="{stringdat}" and contact in {main_comparison}'),
         "threshold",
         merge_cols=["model", "sim", "nerve_label", "nsim", "master_fiber_index"],
     ).drop(columns="type")
@@ -628,9 +594,7 @@ for comparison in [an_comparison, center_comparison, cath_comparison]:
     # set fiber_diam to category
     compiled_data.type = compiled_data.type.astype("category")
     # add a units column with unique number for each combination of fiber_diam and level
-    compiled_data["units"] = compiled_data.groupby(
-        ["fiber_diam", "level", "nerve_label"]
-    ).ngroup()
+    compiled_data["units"] = compiled_data.groupby(["fiber_diam", "level", "nerve_label"]).ngroup()
     compiled_data["fiber_diam"] = compiled_data["fiber_diam"].astype(int)
     compiled_data.dropna(inplace=True)
     compiled_data["contact"] = comparison[0]
@@ -653,9 +617,7 @@ compmatch = datamatch_merge(
 ).drop(columns="type")
 
 g = sns.relplot(
-    data=compmatch.query("fiber_diam in [3,13]").rename(
-        columns={"nerve_label": "Sample"}
-    ),
+    data=compmatch.query("fiber_diam in [3,13]").rename(columns={"nerve_label": "Sample"}),
     kind="scatter",
     row="contact",
     col="fiber_diam",
@@ -676,9 +638,7 @@ for ax in g.axes.ravel():
     # add correlation to plot
     # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
     # ax.set_title(f'{diam} μm')
-    ax.plot(
-        [0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1
-    )  # ax.set_aspect('equal', 'box')
+    ax.plot([0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1)  # ax.set_aspect('equal', 'box')
     # ax.apply_aspect()
     ax.set_xlim([0, lim])
     ax.set_ylim([0, lim])
@@ -703,9 +663,7 @@ sns.catplot(
     errorbar=None,
 )
 g = sns.relplot(
-    data=compmatch.query('contact=="cathodic" and fiber_diam in [3,13]').rename(
-        columns={"nerve_label": "Sample"}
-    ),
+    data=compmatch.query('contact=="cathodic" and fiber_diam in [3,13]').rename(columns={"nerve_label": "Sample"}),
     kind="scatter",
     row="contact",
     col="fiber_diam",
@@ -726,9 +684,7 @@ for ax in g.axes.ravel():
     # add correlation to plot
     # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
     # ax.set_title(f'{diam} μm')
-    ax.plot(
-        [0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1
-    )  # ax.set_aspect('equal', 'box')
+    ax.plot([0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1)  # ax.set_aspect('equal', 'box')
     # ax.apply_aspect()
     ax.set_xlim([0, lim])
     ax.set_ylim([0, lim])
@@ -742,9 +698,7 @@ peses = []
 pemeans = []
 onsets_sats = {}
 for stringdat in ["Undeformed", "Structural", "ASCENT"]:
-    subdat = newdefdat.query(
-        f"deformation=='{stringdat}' and contact in {cath_comparison}"
-    )
+    subdat = newdefdat.query(f"deformation=='{stringdat}' and contact in {cath_comparison}")
     sns.set(font_scale=1.75)
     sns.set_style("whitegrid")
     plt.figure()
@@ -797,9 +751,7 @@ for stringdat in ["Undeformed", "Structural", "ASCENT"]:
     # set fiber_diam to category
     compiled_data.type = compiled_data.type.astype("category")
     # add a units column with unique number for each combination of fiber_diam and level
-    compiled_data["units"] = compiled_data.groupby(
-        ["fiber_diam", "level", "nerve_label"]
-    ).ngroup()
+    compiled_data["units"] = compiled_data.groupby(["fiber_diam", "level", "nerve_label"]).ngroup()
     compiled_data["fiber_diam"] = compiled_data["fiber_diam"].astype(int)
     compiled_data.dropna(inplace=True)
 
@@ -834,12 +786,12 @@ for stringdat in ["Undeformed", "Structural", "ASCENT"]:
     pemean = []
     for level in ["onset", "half", "saturation"]:
         for fiber_diam in compiled_data.fiber_diam.unique():
-            a = compiled_data.query(
-                f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}"
-            )["threshold"].values
-            b = compiled_data.query(
-                f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}"
-            )["threshold"].values
+            a = compiled_data.query(f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}")[
+                "threshold"
+            ].values
+            b = compiled_data.query(f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}")[
+                "threshold"
+            ].values
             pe_res = pe_noabs(np.median(b), np.median(a), doabs=True)
             pemean.append({"level": level, "fiber_diam": fiber_diam, "pe": pe_res})
 
@@ -881,17 +833,9 @@ for handle in g.legend.legend_handles:
     handle.set_markersize(10)
 g.legend
 plt.ylim(0, 20)
-allpescat = (
-    allpes.query("fiber_diam in [3,13]")
-    .groupby(["level", "fiber_diam", "deformation"])
-    .max()
-)
+allpescat = allpes.query("fiber_diam in [3,13]").groupby(["level", "fiber_diam", "deformation"]).max()
 pemeancat = pd.concat(pemeans).query("fiber_diam in [3,13]")
-allpesmin = (
-    allpes.query("fiber_diam in [3,13]")
-    .groupby(["level", "fiber_diam", "deformation"])
-    .min()
-)
+allpesmin = allpes.query("fiber_diam in [3,13]").groupby(["level", "fiber_diam", "deformation"]).min()
 for ax in g.axes.ravel():
     ax.axhline(0, color="blue", linestyle="--", alpha=0.5)
 # %% dose-response onset sat deformed
@@ -899,9 +843,7 @@ peses = []
 pemeans = []
 onsets_sats = {}
 for stringdat in ["Undeformed", "Structural", "ASCENT"]:
-    subdat = newdefdat.query(
-        f"deformation=='{stringdat}' and contact in {cath_comparison}"
-    )
+    subdat = newdefdat.query(f"deformation=='{stringdat}' and contact in {cath_comparison}")
     sns.set(font_scale=1.75)
     sns.set_style("whitegrid")
     plt.figure()
@@ -954,9 +896,7 @@ for stringdat in ["Undeformed", "Structural", "ASCENT"]:
     # set fiber_diam to category
     compiled_data.type = compiled_data.type.astype("category")
     # add a units column with unique number for each combination of fiber_diam and level
-    compiled_data["units"] = compiled_data.groupby(
-        ["fiber_diam", "level", "nerve_label"]
-    ).ngroup()
+    compiled_data["units"] = compiled_data.groupby(["fiber_diam", "level", "nerve_label"]).ngroup()
     compiled_data["fiber_diam"] = compiled_data["fiber_diam"].astype(int)
     compiled_data.dropna(inplace=True)
 
@@ -991,12 +931,12 @@ for stringdat in ["Undeformed", "Structural", "ASCENT"]:
     pemean = []
     for level in ["onset", "half", "saturation"]:
         for fiber_diam in compiled_data.fiber_diam.unique():
-            a = compiled_data.query(
-                f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}"
-            )["threshold"].values
-            b = compiled_data.query(
-                f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}"
-            )["threshold"].values
+            a = compiled_data.query(f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}")[
+                "threshold"
+            ].values
+            b = compiled_data.query(f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}")[
+                "threshold"
+            ].values
             pe_res = pe_noabs(np.median(b), np.median(a), doabs=True)
             pemean.append({"level": level, "fiber_diam": fiber_diam, "pe": pe_res})
 
@@ -1039,17 +979,9 @@ for handle in g.legend.legend_handles:
     handle.set_markersize(10)
 g.legend
 # plt.ylim(0,20)
-allpescat = (
-    allpes.query("fiber_diam in [3,13]")
-    .groupby(["level", "fiber_diam", "deformation"])
-    .max()
-)
+allpescat = allpes.query("fiber_diam in [3,13]").groupby(["level", "fiber_diam", "deformation"]).max()
 pemeancat = pd.concat(pemeans).query("fiber_diam in [3,13]")
-allpesmin = (
-    allpes.query("fiber_diam in [3,13]")
-    .groupby(["level", "fiber_diam", "deformation"])
-    .min()
-)
+allpesmin = allpes.query("fiber_diam in [3,13]").groupby(["level", "fiber_diam", "deformation"]).min()
 for ax in g.axes.ravel():
     ax.axhline(0, color="blue", linestyle="--", alpha=0.5)
 # %% dose-response onset sat deformed
@@ -1059,9 +991,7 @@ onsets_sats = {}
 for comparison in comparisons:
     for stringdat in ["Undeformed", "Structural", "ASCENT"]:
         thiscontact = comparison[0]
-        subdat = newdefdat.query(
-            f"deformation=='{stringdat}' and contact in {comparison}"
-        )
+        subdat = newdefdat.query(f"deformation=='{stringdat}' and contact in {comparison}")
         levels = {
             "onset": 10,
             "half": 50,
@@ -1088,9 +1018,7 @@ for comparison in comparisons:
                 ]
             }
         )
-        analysis.columns = [
-            "_".join(col_name).rstrip("_") for col_name in analysis.columns
-        ]
+        analysis.columns = ["_".join(col_name).rstrip("_") for col_name in analysis.columns]
         analysis.rename(
             columns={
                 "threshold_<lambda_0>": "onset",
@@ -1121,9 +1049,7 @@ for comparison in comparisons:
         # set fiber_diam to category
         compiled_data.type = compiled_data.type.astype("category")
         # add a units column with unique number for each combination of fiber_diam and level
-        compiled_data["units"] = compiled_data.groupby(
-            ["fiber_diam", "level", "nerve_label"]
-        ).ngroup()
+        compiled_data["units"] = compiled_data.groupby(["fiber_diam", "level", "nerve_label"]).ngroup()
         compiled_data["fiber_diam"] = compiled_data["fiber_diam"].astype(int)
         compiled_data.dropna(inplace=True)
 
@@ -1160,12 +1086,12 @@ for comparison in comparisons:
         pemean = []
         for level in ["onset", "half", "saturation"]:
             for fiber_diam in compiled_data.fiber_diam.unique():
-                a = compiled_data.query(
-                    f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}"
-                )["threshold"].values
-                b = compiled_data.query(
-                    f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}"
-                )["threshold"].values
+                a = compiled_data.query(f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}")[
+                    "threshold"
+                ].values
+                b = compiled_data.query(f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}")[
+                    "threshold"
+                ].values
                 pe_res = pe_noabs(np.median(b), np.median(a), doabs=True)
                 pemean.append({"level": level, "fiber_diam": fiber_diam, "pe": pe_res})
 
@@ -1186,19 +1112,13 @@ allpes = pd.concat(peses)
 #     'ASCENT':'ASCENT','Structural':'Structural','Undeformed':'Undef.'},inplace=True)
 # allpes['comb'] = allpes['level'].astype(str) + '\n' + allpes['deformation']
 # allpes.sort_values(by=['deformation','level'])
-allpes["level"] = pd.Categorical(
-    allpes.level, categories=["onset", "half", "saturation"], ordered=True
-)
+allpes["level"] = pd.Categorical(allpes.level, categories=["onset", "half", "saturation"], ordered=True)
 allpes["deformation"] = pd.Categorical(
     allpes.deformation, categories=["Undeformed", "Structural", "ASCENT"], ordered=True
 )
-allpes["contact"] = pd.Categorical(
-    allpes.contact, categories=["anodic", "center", "cathodic"], ordered=True
-)
+allpes["contact"] = pd.Categorical(allpes.contact, categories=["anodic", "center", "cathodic"], ordered=True)
 allpes.sort_values(by=["contact", "deformation"], inplace=True)
-allpes["comb"] = (
-    allpes["deformation"].astype(str) + "\n" + allpes["contact"].astype(str)
-)
+allpes["comb"] = allpes["deformation"].astype(str) + "\n" + allpes["contact"].astype(str)
 
 # rewrite the above with map dataframe
 g = sns.FacetGrid(
@@ -1353,9 +1273,7 @@ peses = []
 pemeans = []
 onsets_sats = {}
 for stringdat in ["Undeformed", "Structural", "ASCENT"]:
-    subdat = newdefdat.query(
-        f"deformation=='{stringdat}' and contact in {cath_comparison}"
-    )
+    subdat = newdefdat.query(f"deformation=='{stringdat}' and contact in {cath_comparison}")
     sns.set(font_scale=1.75)
     sns.set_style("whitegrid")
     plt.figure()
@@ -1408,9 +1326,7 @@ for stringdat in ["Undeformed", "Structural", "ASCENT"]:
     # set fiber_diam to category
     compiled_data.type = compiled_data.type.astype("category")
     # add a units column with unique number for each combination of fiber_diam and level
-    compiled_data["units"] = compiled_data.groupby(
-        ["fiber_diam", "level", "nerve_label"]
-    ).ngroup()
+    compiled_data["units"] = compiled_data.groupby(["fiber_diam", "level", "nerve_label"]).ngroup()
     compiled_data["fiber_diam"] = compiled_data["fiber_diam"].astype(int)
     compiled_data.dropna(inplace=True)
 
@@ -1445,12 +1361,12 @@ for stringdat in ["Undeformed", "Structural", "ASCENT"]:
     pemean = []
     for level in ["onset", "half", "saturation"]:
         for fiber_diam in compiled_data.fiber_diam.unique():
-            a = compiled_data.query(
-                f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}"
-            )["threshold"].values
-            b = compiled_data.query(
-                f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}"
-            )["threshold"].values
+            a = compiled_data.query(f"level == '{level}' and type == 'extrusion' and fiber_diam == {fiber_diam}")[
+                "threshold"
+            ].values
+            b = compiled_data.query(f"level == '{level}' and type == 'true-3D' and fiber_diam == {fiber_diam}")[
+                "threshold"
+            ].values
             pe_res = pe_noabs(np.median(b), np.median(a), doabs=True)
             pemean.append({"level": level, "fiber_diam": fiber_diam, "pe": pe_res})
 
@@ -1525,17 +1441,9 @@ for handle in g.legend.legend_handles:
     handle.set_markersize(10)
 g.legend
 plt.ylim(0, 20)
-allpescat = (
-    allpes.query("fiber_diam in [3,13]")
-    .groupby(["level", "fiber_diam", "deformation"])
-    .max()
-)
+allpescat = allpes.query("fiber_diam in [3,13]").groupby(["level", "fiber_diam", "deformation"]).max()
 pemeancat = pd.concat(pemeans).query("fiber_diam in [3,13]")
-allpesmin = (
-    allpes.query("fiber_diam in [3,13]")
-    .groupby(["level", "fiber_diam", "deformation"])
-    .min()
-)
+allpesmin = allpes.query("fiber_diam in [3,13]").groupby(["level", "fiber_diam", "deformation"]).min()
 for ax in g.axes.ravel():
     ax.axhline(0, color="blue", linestyle="--", alpha=0.5)
 # %% change in threshold after deformation
@@ -1667,19 +1575,9 @@ for comp in [center_comparison, cath_comparison, an_comparison]:
         threshdat = datahere.query(f"contact in {comp} and deformation==@deformation")
         for nerve in pd.unique(threshdat["nerve_label"]):
             for n in [3, 13]:
-                shortdat = threshdat.query(
-                    f'nerve_label=="{nerve}" and fiber_diam=={n}'
-                )
-                data2d = (
-                    shortdat.query('type=="extrusion"')
-                    .sort_values("threshold")
-                    .master_fiber_index
-                )
-                data3d = (
-                    shortdat.query('type=="true-3D"')
-                    .sort_values("threshold")
-                    .master_fiber_index
-                )
+                shortdat = threshdat.query(f'nerve_label=="{nerve}" and fiber_diam=={n}')
+                data2d = shortdat.query('type=="extrusion"').sort_values("threshold").master_fiber_index
+                data3d = shortdat.query('type=="true-3D"').sort_values("threshold").master_fiber_index
                 rc = compute_reorder_cost(list(data2d), list(data3d))
                 concathere = mathere.query(
                     f'nerve_label=="{nerve}" and fiber_diam=={n}and contact in {comp} and deformation==@deformation'
@@ -1703,19 +1601,9 @@ for comp in [center_comparison, cath_comparison, an_comparison]:
         threshdat = datahere.query(f"contact in {comp} and deformation==@deformation")
         for n in [3, 13]:
             shortdat = threshdat.query(f"fiber_diam=={n}")
-            data2d = (
-                shortdat.query('type=="extrusion"')
-                .sort_values("threshold")
-                .master_fiber_index
-            )
-            data3d = (
-                shortdat.query('type=="true-3D"')
-                .sort_values("threshold")
-                .master_fiber_index
-            )
-            concathere = mathere.query(
-                f"fiber_diam=={n}and contact in {comp} and deformation==@deformation"
-            )
+            data2d = shortdat.query('type=="extrusion"').sort_values("threshold").master_fiber_index
+            data3d = shortdat.query('type=="true-3D"').sort_values("threshold").master_fiber_index
+            concathere = mathere.query(f"fiber_diam=={n}and contact in {comp} and deformation==@deformation")
             data2d = concathere.threshold
             data3d = concathere.threshold3d
             ccc = concordance_correlation_coefficient(list(data2d), list(data3d))
@@ -1729,15 +1617,9 @@ for comp in [center_comparison, cath_comparison, an_comparison]:
                 }
             )
 scoredat = pd.DataFrame(scores)
-scoredat["slice"] = scoredat["slice"].replace(
-    {"cathodic": "cathodic", "anodic": "anodic", "center": "center"}
-)
-scoredat["slice"] = pd.Categorical(
-    scoredat["slice"], categories=["cathodic", "center", "anodic"], ordered=True
-)
-scoredat["fiber_diam"] = pd.Categorical(
-    scoredat["fiber_diam"].astype(int), categories=[3, 13], ordered=True
-)
+scoredat["slice"] = scoredat["slice"].replace({"cathodic": "cathodic", "anodic": "anodic", "center": "center"})
+scoredat["slice"] = pd.Categorical(scoredat["slice"], categories=["cathodic", "center", "anodic"], ordered=True)
+scoredat["fiber_diam"] = pd.Categorical(scoredat["fiber_diam"].astype(int), categories=[3, 13], ordered=True)
 g = sns.FacetGrid(data=scoredat, margin_titles=True, col="fiber_diam")
 g.map_dataframe(
     sns.scatterplot,
@@ -1808,14 +1690,10 @@ for ax in g.axes.ravel():
     plt.sca(ax)
     ax.set_xlabel("extrusion slice")
 handles, labs = plt.gca().get_legend_handles_labels()
-plt.legend(
-    title="", handles=handles[2:], labels=labs[2:], bbox_to_anchor=[0.5, 1.4], ncol=2
-)
+plt.legend(title="", handles=handles[2:], labels=labs[2:], bbox_to_anchor=[0.5, 1.4], ncol=2)
 # barplot
 g = sns.FacetGrid(data=scoredat, margin_titles=True, col="fiber_diam")
-g.map_dataframe(
-    sns.barplot, y="CCC", x="slice", hue="deformation", errorbar="se", palette="binary"
-)
+g.map_dataframe(sns.barplot, y="CCC", x="slice", hue="deformation", errorbar="se", palette="binary")
 g.map_dataframe(
     sns.stripplot,
     y="CCC",
@@ -1842,9 +1720,7 @@ for ax in g.axes.ravel():
     plt.sca(ax)
     ax.set_xlabel("extrusion slice")
 handles, labs = plt.gca().get_legend_handles_labels()
-plt.legend(
-    title="", handles=handles[2:], labels=labs[2:], bbox_to_anchor=[0.5, 1.4], ncol=2
-)
+plt.legend(title="", handles=handles[2:], labels=labs[2:], bbox_to_anchor=[0.5, 1.4], ncol=2)
 # %%plot FASR
 thiscomp = cath_comparison
 
@@ -1888,9 +1764,9 @@ FASRS = []
 for deformation in definnermatch.deformation.unique():
     for nerve in pd.unique(definnermatch["nerve_label"]):
         for n in definnermatch.fiber_diam.unique():
-            fasrdatto = definnermatch.query(
-                f"contact in {thiscomp} and deformation==@deformation"
-            ).query(f'nerve_label=="{nerve}" and fiber_diam=={n}')
+            fasrdatto = definnermatch.query(f"contact in {thiscomp} and deformation==@deformation").query(
+                f'nerve_label=="{nerve}" and fiber_diam=={n}'
+            )
             for typ in fasrdatto.type.unique():
                 FASRS.extend(recruitment_cost_more(fasrdatto.query("type==@typ")))
 
@@ -1916,9 +1792,7 @@ fasnew = datamatch_merge(
     merge_cols=["inner", "nerve_label", "deformation", "fiber_diam"],
 ).drop(columns="type")
 fasnew["FASR-diff"] = fasnew["FASR3d"] - fasnew["FASR"]
-sns.violinplot(
-    data=fasnew, y="FASR-diff", x="fiber_diam", fill=True, linecolor="k", color="w"
-)
+sns.violinplot(data=fasnew, y="FASR-diff", x="fiber_diam", fill=True, linecolor="k", color="w")
 sns.swarmplot(data=fasnew, y="FASR-diff", x="fiber_diam", color="k", s=2)
 plt.ylim(-1, 1)
 plt.xlabel("D (μm)")
@@ -1926,9 +1800,7 @@ plt.ylabel("FASR difference\n(true-3D minus extrusion)")
 
 # %%
 g = sns.FacetGrid(data=pd.DataFrame(nervescores), margin_titles=True, col="fiber_diam")
-g.map_dataframe(
-    sns.barplot, y="CCC", x="slice", hue="deformation", errorbar="se", palette="binary"
-)
+g.map_dataframe(sns.barplot, y="CCC", x="slice", hue="deformation", errorbar="se", palette="binary")
 
 # ax.set_xlabel('Fiber Diameter (μm)')
 plt.ylabel("CCC")
@@ -1945,9 +1817,7 @@ for ax in g.axes.ravel():
     plt.sca(ax)
     ax.set_xlabel("extrusion slice")
 handles, labs = plt.gca().get_legend_handles_labels()
-plt.legend(
-    title="", handles=handles[2:], labels=labs[2:], bbox_to_anchor=[0.5, 1.4], ncol=2
-)
+plt.legend(title="", handles=handles[2:], labels=labs[2:], bbox_to_anchor=[0.5, 1.4], ncol=2)
 
 # %% threshold variances and coefficient of variation intrafascicle and inter
 sns.set(font_scale=1.25, style="whitegrid")
@@ -1979,9 +1849,7 @@ plt.xlabel("")
 sns.set(font_scale=1.75, style="whitegrid")
 vardat = threshload.query(f"contact in {main_comparison}")
 grouped = vardat.groupby(["contact", "sample", "fiber_diam", "type", "inner"])
-analysis = grouped.agg({"peak_second_diff": [np.var, np.mean, variation]}).sort_values(
-    "type"
-)
+analysis = grouped.agg({"peak_second_diff": [np.var, np.mean, variation]}).sort_values("type")
 analysis.columns = ["_".join(col_name).rstrip("_") for col_name in analysis.columns]
 analysis.reset_index(inplace=True)
 analysis.dropna(inplace=True)
@@ -2057,9 +1925,7 @@ sns.reset_orig()
 sns.set_style("whitegrid")
 sns.set(font_scale=1.5, style="whitegrid")
 # apply pe to all rows of dataframe matched, with threshold3d as the correct value and threshold as the estimated value
-deffinalmatch["pe"] = deffinalmatch.apply(
-    lambda row: pe(row["threshold3d"], row["threshold"]), axis=1
-)
+deffinalmatch["pe"] = deffinalmatch.apply(lambda row: pe(row["threshold3d"], row["threshold"]), axis=1)
 plt.figure()
 sns.barplot(
     data=deffinalmatch,
@@ -2115,11 +1981,7 @@ alldf = []
 for name in comparecols:
     # Calculate correlation for each column with the "threshold" column based on the grouping variables
     correlation_df = (
-        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[
-            [name, "threshold"]
-        ]
-        .corr()
-        .reset_index()
+        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[[name, "threshold"]].corr().reset_index()
     )
     correlation_df["name"] = name
     alldf.append(correlation_df.query("threshold!=1"))
@@ -2127,9 +1989,7 @@ alldf = pd.concat(alldf)
 alldf.threshold = alldf.threshold**2
 # Plot each column as a separate line in the line plot
 g = sns.FacetGrid(data=alldf, col="type", row="fiber_diam", margin_titles=True)
-g.map_dataframe(
-    sns.pointplot, dodge=0.3, y="threshold", x="deformed", hue="name", palette="Set2"
-)
+g.map_dataframe(sns.pointplot, dodge=0.3, y="threshold", x="deformed", hue="name", palette="Set2")
 leg = plt.legend(bbox_to_anchor=(1.4, -0.4))
 new_labs = [
     "Peak Second Difference",
@@ -2166,11 +2026,7 @@ alldf = []
 for name in comparecols:
     # Calculate correlation for each column with the "threshold" column based on the grouping variables
     correlation_df = (
-        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[
-            [name, "threshold"]
-        ]
-        .corr()
-        .reset_index()
+        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[[name, "threshold"]].corr().reset_index()
     )
     correlation_df["name"] = name
     alldf.append(correlation_df.query("threshold!=1"))
@@ -2178,9 +2034,7 @@ alldf = pd.concat(alldf)
 alldf.threshold = alldf.threshold**2
 # Plot each column as a separate line in the line plot
 g = sns.FacetGrid(data=alldf, col="type", row="fiber_diam", margin_titles=True)
-g.map_dataframe(
-    sns.pointplot, dodge=0.3, y="threshold", x="deformed", hue="name", palette="Set2"
-)
+g.map_dataframe(sns.pointplot, dodge=0.3, y="threshold", x="deformed", hue="name", palette="Set2")
 leg = plt.legend(bbox_to_anchor=(1.4, -0.4))
 new_labs = [
     "Peak Second Difference",
@@ -2223,9 +2077,7 @@ for name in comparecols:
         sharey=False,
         sharex=False,
     )
-    g.map_dataframe(
-        sns.scatterplot, y="threshold", x=name, hue="nerve_label", palette="Set2"
-    )
+    g.map_dataframe(sns.scatterplot, y="threshold", x=name, hue="nerve_label", palette="Set2")
     # now plot with log scale x
     g = sns.FacetGrid(
         data=thisdef,
@@ -2235,9 +2087,7 @@ for name in comparecols:
         sharey=False,
         sharex=False,
     )
-    g.map_dataframe(
-        sns.scatterplot, y="threshold", x=name, hue="deformed", palette="Set2"
-    )
+    g.map_dataframe(sns.scatterplot, y="threshold", x=name, hue="deformed", palette="Set2")
     for ax in g.axes.flat:
         ax.set_xscale("log")
         ax.set_yscale("log")
@@ -2245,9 +2095,7 @@ for name in comparecols:
     thisdef["log_threshold"] = np.log10(thisdef["threshold"])
     thisdef["log_" + name] = np.log10(thisdef[name])
     correlation_df = (
-        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[
-            ["log_" + name, "log_threshold"]
-        ]
+        thisdef.groupby(["type", "deformed", "fiber_diam", "nerve_label"])[["log_" + name, "log_threshold"]]
         .corr()
         .reset_index()
     )
@@ -2300,9 +2148,7 @@ minthresh = minthresh.merge(
 sns.set(font_scale=1.75)
 sns.set_style("whitegrid")
 
-nsimdata = minthresh.query(
-    "fiber_diam in [3]"
-)  # TODO replace all cath comparison with non
+nsimdata = minthresh.query("fiber_diam in [3]")  # TODO replace all cath comparison with non
 g = sns.relplot(
     data=nsimdata.rename(columns={"nerve_label": "Sample"}),
     kind="scatter",
@@ -2319,9 +2165,7 @@ g = sns.relplot(
     alpha=1,
 )
 # TODO Clean up this calc
-for diam, pos, ax, deformation in zip(
-    [3, 3], (0.2, 0.8, 0.2, 0.8), g.axes.ravel(), ["Undeformed", "Structural"]
-):
+for diam, pos, ax, deformation in zip([3, 3], (0.2, 0.8, 0.2, 0.8), g.axes.ravel(), ["Undeformed", "Structural"]):
     rdata = nsimdata.query(f'fiber_diam=={diam} and deformation=="{deformation}"')
     r = concordance_correlation_coefficient(rdata.threshold3d, rdata.threshold)
     perc = sum(rdata.threshold > rdata.threshold3d) / len(rdata.threshold)
@@ -2535,12 +2379,8 @@ plt.ylabel("True-3D Threshold")
 plt.xlabel("Extrusion threshold")
 # %% activation order fiberdiam
 newdefdr = defdr.copy()
-newdefdr = newdefdr.query("'6R' in nerve_label and deformation!='ASCENT'").sort_values(
-    "modeltype"
-)
-newdefdr["deformation"] = pd.Categorical(
-    newdefdr["deformation"], categories=["Undeformed", "Structural"]
-)
+newdefdr = newdefdr.query("'6R' in nerve_label and deformation!='ASCENT'").sort_values("modeltype")
+newdefdr["deformation"] = pd.Categorical(newdefdr["deformation"], categories=["Undeformed", "Structural"])
 sns.set(font_scale=1.5)
 sns.set_style("whitegrid")
 newdefdr["percent_activated3"] = np.nan
@@ -2560,9 +2400,7 @@ plt.figure()
 g = sns.catplot(
     kind="swarm",
     # row='deformation',
-    data=newdefdr.query(
-        f"fiber_diam in [3,13] and contact in {cath_comparison} and deformation=='Structural'"
-    ),
+    data=newdefdr.query(f"fiber_diam in [3,13] and contact in {cath_comparison} and deformation=='Structural'"),
     y="percent_activated",
     x="fiber_diam",
     units="nerve_label",
@@ -2617,15 +2455,9 @@ scores = []
 for nerve in pd.unique(threshdat["nerve_label"]):
     for deformtype in ["Undeformed", "Structural"]:
         for contact in ["3D", "cathodic", "center", "anodic"]:
-            shortdat = threshdat.query(
-                f'nerve_label=="{nerve}" and deformation ==@deformtype and contact in @contact'
-            )
-            datasmol = (
-                shortdat.query("nsim==0").sort_values("threshold").master_fiber_index
-            )
-            databeeg = (
-                shortdat.query("nsim==5").sort_values("threshold").master_fiber_index
-            )
+            shortdat = threshdat.query(f'nerve_label=="{nerve}" and deformation ==@deformtype and contact in @contact')
+            datasmol = shortdat.query("nsim==0").sort_values("threshold").master_fiber_index
+            databeeg = shortdat.query("nsim==5").sort_values("threshold").master_fiber_index
             rc = compute_reorder_cost(list(datasmol), list(databeeg))
             scores.append(
                 {
@@ -2647,9 +2479,7 @@ sns.stripplot(
     linewidth=0.5,
     edgecolor="white",
 )
-sns.barplot(
-    data=scoredat, y="scoresmolbeeg", x="slice", hue="deformation", palette="binary"
-)
+sns.barplot(data=scoredat, y="scoresmolbeeg", x="slice", hue="deformation", palette="binary")
 plt.ylabel("Activation Reordering")
 plt.ylim(0, 0.6)
 # plt.xlim(-1,2)
@@ -2666,9 +2496,7 @@ plt.xlabel("model")
 sns.reset_orig()
 sns.set(font_scale=1.5, style="white")
 # apply pe to all rows of dataframe matched, with threshold3d as the correct value and threshold as the estimated value
-deffinalmatch["pe"] = deffinalmatch.apply(
-    lambda row: pe(row["threshold3d"], row["threshold"]), axis=1
-)
+deffinalmatch["pe"] = deffinalmatch.apply(lambda row: pe(row["threshold3d"], row["threshold"]), axis=1)
 plt.figure()
 sns.barplot(
     data=deffinalmatch,
@@ -2721,17 +2549,9 @@ outdata.columns = ["_".join(col_name).rstrip("_") for col_name in outdata.column
 outdata.reset_index(inplace=True)
 outdata.dropna(inplace=True)
 # calculate percent difference for mean, std, and median
-outdata["mean_diff"] = (
-    (outdata.threshold_mean - outdata.threshold3d_mean) / outdata.threshold3d_mean * 100
-)
-outdata["std_diff"] = (
-    (outdata.threshold_std - outdata.threshold3d_std) / outdata.threshold3d_std * 100
-)
-outdata["median_diff"] = (
-    (outdata.threshold_median - outdata.threshold3d_median)
-    / outdata.threshold3d_median
-    * 100
-)
+outdata["mean_diff"] = (outdata.threshold_mean - outdata.threshold3d_mean) / outdata.threshold3d_mean * 100
+outdata["std_diff"] = (outdata.threshold_std - outdata.threshold3d_std) / outdata.threshold3d_std * 100
+outdata["median_diff"] = (outdata.threshold_median - outdata.threshold3d_median) / outdata.threshold3d_median * 100
 # plot percent difference
 sns.set(font_scale=1.75)
 sns.set_style("whitegrid")
@@ -2824,13 +2644,9 @@ minthresh = minthresh.merge(
 sns.set(font_scale=1.75)
 sns.set_style("whitegrid")
 
-nsimdata = concats.query(
-    "fiber_diam in [3]"
-)  # TODO replace all cath comparison with non
+nsimdata = concats.query("fiber_diam in [3]")  # TODO replace all cath comparison with non
 g = sns.relplot(
-    data=nsimdata.rename(columns={"nerve_label": "Sample"}).query(
-        "deformation==@deformation"
-    ),
+    data=nsimdata.rename(columns={"nerve_label": "Sample"}).query("deformation==@deformation"),
     kind="scatter",
     x="threshold",
     y="threshold3d",
@@ -2851,9 +2667,7 @@ perc = sum(rdata.threshold > rdata.threshold3d) / len(rdata.threshold)
 # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
 print(f"{diam} {deformation} μm CCC: {r ** 2:.2f}")
 # ax.set_title(f'{diam} μm')
-ax.plot(
-    [0, lim[deformation]], [0, lim[deformation]], "--k", linewidth=2, label="unity line"
-)
+ax.plot([0, lim[deformation]], [0, lim[deformation]], "--k", linewidth=2, label="unity line")
 # ax.set_aspect('equal', 'box')
 # ax.apply_aspect()
 ax.set_xlim([0, lim[deformation]])
@@ -2911,16 +2725,12 @@ addln = True
 imdata = pd.read_csv("thresh_unmatched_sim121_MCT.csv")
 imdata = addpwfd(imdata, "121", infile="plotconfig_MCT")
 imdata["type"] = imdata["type"].replace({"2D": "extrusion", "3D": "true-3D"})
-imdata["nerve_label"] = imdata["nerve_label"].replace(
-    {"2L_MCT": "2L", "3R_MCT": "3R", "5R_MCT": "5R", "6R_MCT": "6R"}
-)
+imdata["nerve_label"] = imdata["nerve_label"].replace({"2L_MCT": "2L", "3R_MCT": "3R", "5R_MCT": "5R", "6R_MCT": "6R"})
 imdata["active_src_index"] = imdata["active_src_index"].astype(str)
 if (
     addln
 ):  # TODO figure out how to get this comparison working  - looks like centers of the two are slightly off and thus causing a disagree in fascicles?
-    lndata = newdefdat.query(
-        'contact in @cath_comparison and deformation=="Structural" and fiber_diam in [3,13]'
-    )
+    lndata = newdefdat.query('contact in @cath_comparison and deformation=="Structural" and fiber_diam in [3,13]')
     contname = "LN"
     lndata["active_src_index"] = contname
     imdata = pd.concat([imdata, lndata])
@@ -3014,18 +2824,14 @@ elcdata = pd.DataFrame(elceeceecee)
 
 # plot
 plt.figure()
-g = sns.lineplot(
-    data=elcdata, style="fiber_diam", y="value", x="contact", hue="sample", marker="o"
-)
+g = sns.lineplot(data=elcdata, style="fiber_diam", y="value", x="contact", hue="sample", marker="o")
 plt.ylabel("ccc")
 plt.xlabel("active contact")
 sns.move_legend(g, [1.05, 0])
 plt.ylim(0, 1)
 
 plt.figure()
-g = sns.barplot(
-    data=elcdata, hue="fiber_diam", y="value", x="contact", palette="binary"
-)
+g = sns.barplot(data=elcdata, hue="fiber_diam", y="value", x="contact", palette="binary")
 plt.ylabel("ccc")
 plt.xlabel("active contact")
 plt.legend(title="D (μm)", loc="lower left")
@@ -3065,18 +2871,14 @@ for row in newim.itertuples():
     val = thisdat.percent_activated.values[0]
     assert not val is np.nan
     newim.loc[row.Index, "percent_activated3d"] = val
-newim["type"] = pd.Categorical(
-    newim["type"], ordered=True, categories=["true-3D", "extrusion"]
-)
+newim["type"] = pd.Categorical(newim["type"], ordered=True, categories=["true-3D", "extrusion"])
 
 # %% plot
 sns.set(font_scale=1.5, style="whitegrid")
 for nerve_label in pd.unique(newim.nerve_label):
     plt.figure()
     g = sns.swarmplot(
-        data=newim.query(
-            'type=="extrusion" and fiber_diam==3 and nerve_label==@nerve_label'
-        ),
+        data=newim.query('type=="extrusion" and fiber_diam==3 and nerve_label==@nerve_label'),
         y="percent_activated",
         x="active_src_index",
         palette="plasma",
@@ -3108,19 +2910,9 @@ for cc in sorted(imdata["active_src_index"].unique()):
     shortdat = imdata.query(f'active_src_index=="{cc}"')
     for nerve_label in pd.unique(shortdat["nerve_label"]):
         for fiber_diam in shortdat.fiber_diam.unique():
-            finallythedat = shortdat.query(
-                f'nerve_label=="{nerve_label}" and fiber_diam==@fiber_diam'
-            )
-            data2d = (
-                finallythedat.query('type=="extrusion"')
-                .sort_values("threshold")
-                .master_fiber_index
-            )
-            data3d = (
-                finallythedat.query('type=="true-3D"')
-                .sort_values("threshold")
-                .master_fiber_index
-            )
+            finallythedat = shortdat.query(f'nerve_label=="{nerve_label}" and fiber_diam==@fiber_diam')
+            data2d = finallythedat.query('type=="extrusion"').sort_values("threshold").master_fiber_index
+            data3d = finallythedat.query('type=="true-3D"').sort_values("threshold").master_fiber_index
             rc = compute_reorder_cost(list(data2d), list(data3d))
             scores.append(
                 {
@@ -3159,9 +2951,7 @@ sns.set(font_scale=1.5, style="whitegrid")
 for nerve_label in pd.unique(newim.nerve_label):
     plt.figure()
     g = sns.scatterplot(
-        data=newim.query(
-            'type=="extrusion" and fiber_diam==3 and nerve_label==@nerve_label'
-        ),
+        data=newim.query('type=="extrusion" and fiber_diam==3 and nerve_label==@nerve_label'),
         y="percent_activated",
         x="active_src_index",
         palette="plasma",
@@ -3267,9 +3057,7 @@ for nerve_label in pd.unique(imdrmatch["nerve_label"]):
     axs[0].set_ylabel("Proportion fibers activated\nNerve: " + nerve_label)
     plt.subplots_adjust(wspace=0)
     levels = {"onset": 10, "half": 50, "saturation": 90}
-    grouped = thisplotdata.groupby(
-        ["nerve_label", "fiber_diam", "modeltype", "active_src_index"]
-    )
+    grouped = thisplotdata.groupby(["nerve_label", "fiber_diam", "modeltype", "active_src_index"])
     analysis = grouped.agg(
         {
             "threshold": [
@@ -3302,9 +3090,7 @@ for nerve_label in pd.unique(imdrmatch["nerve_label"]):
     # set fiber_diam to category
     compiled_data.modeltype = compiled_data.modeltype.astype("category")
     # add a units column with unique number for each combination of fiber_diam and level
-    compiled_data["units"] = compiled_data.groupby(
-        ["fiber_diam", "level", "active_src_index"]
-    ).ngroup()
+    compiled_data["units"] = compiled_data.groupby(["fiber_diam", "level", "active_src_index"]).ngroup()
     compiled_data["fiber_diam"] = compiled_data["fiber_diam"].astype(int)
     compiled_data.dropna(inplace=True)
 
@@ -3316,9 +3102,7 @@ for nerve_label in pd.unique(imdrmatch["nerve_label"]):
     ).drop(columns="modeltype")
 
     g = sns.relplot(
-        data=compmatch.query("fiber_diam in [3,13]").rename(
-            columns={"nerve_label": "Sample"}
-        ),
+        data=compmatch.query("fiber_diam in [3,13]").rename(columns={"nerve_label": "Sample"}),
         kind="scatter",
         col="fiber_diam",
         x="threshold",
@@ -3338,9 +3122,7 @@ for nerve_label in pd.unique(imdrmatch["nerve_label"]):
         # add correlation to plot
         # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
         # ax.set_title(f'{diam} μm')
-        ax.plot(
-            [0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1
-        )  # ax.set_aspect('equal', 'box')
+        ax.plot([0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1)  # ax.set_aspect('equal', 'box')
         # ax.apply_aspect()
         ax.set_xlim([0, lim])
         ax.set_ylim([0, lim])
@@ -3356,15 +3138,11 @@ for nerve_label in pd.unique(imdrmatch["nerve_label"]):
     alldrcomp.append(compmatch)
 
 alldfcomp = pd.concat(alldrcomp)
-alldfcomp["active_src_index"].replace(
-    {str(i): "MultiContact" for i in range(4)}, inplace=True
-)
+alldfcomp["active_src_index"].replace({str(i): "MultiContact" for i in range(4)}, inplace=True)
 sns.set(style="white", font_scale=1.5)
 alldfcomp.rename(columns={"active_src_index": "cuff"}, inplace=True)
 g = sns.relplot(
-    data=alldfcomp.query("fiber_diam in [3,13]").rename(
-        columns={"nerve_label": "Sample"}
-    ),
+    data=alldfcomp.query("fiber_diam in [3,13]").rename(columns={"nerve_label": "Sample"}),
     kind="scatter",
     col="fiber_diam",
     x="threshold",
@@ -3387,9 +3165,7 @@ for ax in g.axes.ravel():
     # add correlation to plot
     # ax.text(0.02, 0.91, f'$R^2={r**2:.2f}$', transform=ax.transAxes)
     # ax.set_title(f'{diam} μm')
-    ax.plot(
-        [0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1
-    )  # ax.set_aspect('equal', 'box')
+    ax.plot([0, lim], [0, lim], "--k", linewidth=2, label="unity line", zorder=-1)  # ax.set_aspect('equal', 'box')
     # ax.apply_aspect()
     ax.set_xlim([0, lim])
     ax.set_ylim([0, lim])
@@ -3672,9 +3448,7 @@ for nerve in pd.unique(imdata["nerve_label"]):
 # rewrite the above with map dataframe
 sns.set(style="whitegrid", context="paper", font_scale=1.5)
 alldfcomp = pd.concat(alldrcomp)
-alldfcomp["pe"] = alldfcomp.apply(
-    lambda row: pe(row["threshold3d"], row["threshold"]), axis=1
-)
+alldfcomp["pe"] = alldfcomp.apply(lambda row: pe(row["threshold3d"], row["threshold"]), axis=1)
 g = sns.FacetGrid(
     data=alldfcomp.query("fiber_diam==3"),
     palette=defpal,
@@ -3877,15 +3651,11 @@ for nerve_label, samplenum, r_cuff_in_pre_MCT in zip(
     for i in range(4):
         ang_contactcenter_pre_MCT = 90
         ang_cuffseam_pre_MCT = 45
-        ang_contactcenter_MCT = ang_contactcenter_pre_MCT * (
-            r_cuff_in_pre_MCT / R_in_MCT
-        )
+        ang_contactcenter_MCT = ang_contactcenter_pre_MCT * (r_cuff_in_pre_MCT / R_in_MCT)
         ang_cuffseam_MCT = ang_cuffseam_pre_MCT * (r_cuff_in_pre_MCT / R_in_MCT)
         contactpos = np.radians(ang_cuffseam_MCT + i * ang_contactcenter_MCT)
         contactspan = np.radians(10)
-        contactheta = np.linspace(
-            contactpos - contactspan, contactpos + contactspan, 100
-        )
+        contactheta = np.linspace(contactpos - contactspan, contactpos + contactspan, 100)
         r = 100 + slide.nerve.ecd() / 2
         x = r * np.cos(contactheta)
         y = r * np.sin(contactheta)
@@ -3974,17 +3744,11 @@ for nerve_label, samplenum, r_cuff_in_pre_MCT in zip(
                         f'active_src_index == "{contact_config}" and fiber_diam == {fiber_diam} and type == "{t}" and nerve_label=="{nerve_label}"'
                     )
                     imdatain["topo"] = imdatain.apply(
-                        lambda row: (
-                            "on_target" if row["inner"] in ontarget else "off_target"
-                        ),
+                        lambda row: ("on_target" if row["inner"] in ontarget else "off_target"),
                         axis=1,
                     )
                     imdatain["percent_ontarget"] = percent_ontarget
-                    imdatfasr.extend(
-                        recruitment_cost(
-                            imdatain, activated=percent_ontarget, targetcol="topo"
-                        )
-                    )
+                    imdatfasr.extend(recruitment_cost(imdatain, activated=percent_ontarget, targetcol="topo"))
     imdatfasr = pd.DataFrame(imdatfasr)
     # now new plot, copy as above where extrusion and true-3D are plotted on the same graph with different markers, and the pointplot is added
     ax = axs[1]
@@ -4095,9 +3859,7 @@ estimator, errorbar = "mean", ("se", 1)
 from scipy.stats import variation
 
 sns.set(font_scale=1.75, style="whitegrid")
-vardat = repeated_deformation.query(
-    'sim==3 and contact=="cathodic" and deformation=="Structural"'
-)
+vardat = repeated_deformation.query('sim==3 and contact=="cathodic" and deformation=="Structural"')
 grouped = vardat.groupby(["contact", "fiber_diam", "type", "inner", "sample"])
 analysis = grouped.agg({"threshold": [np.var, np.mean, variation]})
 analysis.columns = ["_".join(col_name).rstrip("_") for col_name in analysis.columns]
@@ -4148,9 +3910,7 @@ plt.ylim(0, None)
 
 # threshold variances for whole nerve
 sns.set(font_scale=1.75, style="whitegrid")
-vardat = repeated_deformation.query(
-    'sim==3 and contact=="cathodic" and deformation=="Structural"'
-)
+vardat = repeated_deformation.query('sim==3 and contact=="cathodic" and deformation=="Structural"')
 grouped = vardat.groupby(["contact", "fiber_diam", "sim", "type", "sample"])
 analysis = grouped.agg({"threshold": [np.var, np.mean, variation]})
 analysis.columns = ["_".join(col_name).rstrip("_") for col_name in analysis.columns]
@@ -4286,9 +4046,7 @@ drthis = defdr.query(
 )
 
 g = sns.FacetGrid(
-    data=defdr.query(
-        f"fiber_diam in [3] and contact in {cath_comparison} and deformation=='Structural'"
-    ),
+    data=defdr.query(f"fiber_diam in [3] and contact in {cath_comparison} and deformation=='Structural'"),
     # col='modeltype',
     col="nerve_label",
     hue="modeltype",
@@ -4321,9 +4079,7 @@ def rangecalc(data):
 
 
 sns.set(font_scale=1.75, style="whitegrid")
-vardat = repeated_deformation.query(
-    'sim==3 and contact=="cathodic" and deformation=="Structural"'
-)
+vardat = repeated_deformation.query('sim==3 and contact=="cathodic" and deformation=="Structural"')
 grouped = vardat.groupby(["contact", "fiber_diam", "type", "inner", "sample"])
 analysis = grouped.agg({"threshold": [np.mean, rangecalc]})
 analysis.columns = ["_".join(col_name).rstrip("_") for col_name in analysis.columns]

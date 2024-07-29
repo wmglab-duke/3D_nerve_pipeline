@@ -813,6 +813,7 @@ class Simulation(Configurable, Saveable):
         :param source: Source directory (where n_sims are located)
         :return: True if thresholds exist, False otherwise
         """
+        print(1)
         allthresh = True
         for dirname in [f for f in os.listdir(source) if os.path.isdir(os.path.join(source, f))]:
             this_sample, this_model, this_sim, product_index = tuple(dirname.split('_'))

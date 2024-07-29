@@ -7,8 +7,11 @@ import re
 import sys
 
 import cv2
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 from shapely.ops import unary_union
 
 sys.path.append('../../..')
@@ -22,6 +25,7 @@ root = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
 ascentdir = r'D:\threed_final\input\slides'
 
 os.makedirs(ascentdir, exist_ok=True)
+mpl.rcParams['figure.dpi'] = 400
 
 
 def get_sorted_image_list(path, pattern):
@@ -79,6 +83,7 @@ fmaps = {}
 morphdir = os.path.join(root, 'morphology')
 os.makedirs(morphdir, exist_ok=True)
 fasccounts = {}
+diamcounts = {}
 
 for sample_index, sample in enumerate(samples):
     config3d_path = os.path.join(root, 'config', f'{sample}.json')
@@ -184,10 +189,10 @@ for sample_index, sample in enumerate(samples):
     fmaps[sample].generate_map()
     # %%
     if detailed:
-        import seaborn as sns
+        areanum, nervediamnum, fascdiamnum, fasccountnum, mergesplitnum = range(5)
 
-        sns.reset_orig()
-        fig, axs = plt.subplots(1, 4, sharey=True)
+        sns.set(font_scale=1, style='ticks', context='paper')
+        fig, axs = plt.subplots(1, 5, sharey=True)
         plt.subplots_adjust(wspace=0.2)
         i_a = []
         n_a = []
@@ -217,38 +222,71 @@ for sample_index, sample in enumerate(samples):
             for y in ys:
                 xs.append(i * 20 / 1000)
 
-        axs[0].set_ylabel('Nerve Position (mm)')
-        axs[1].scatter(np.array(yds) * 1e-3, xs, marker='+', color='k')
+        diamcounts[f'{sample}'] = []
+        for i in range(len(slides))[::1]:
+            ys = [inner.ecd() for f in slides[i].fascicles for inner in f.inners]
+            diamcounts[f'{sample}'].extend(ys)
+
+        axs[0].set_ylabel('Position along nerve (cm)')
+        axs[fascdiamnum].scatter(np.array(yds) / 1000, xs, marker='+', color='k')
         # axs[0].set_xscale('log')
-        axs[1].set_xlabel('Fascicle Diameter\n(every 2 mm)')
-        axs[2].plot(np.array(n_a) * 1e-6, xpos, color='k', label='Whole Nerve')
-        axs[0].plot(i_n, xpos, color='k')
-        axs[0].set_xlabel('Fascicle Count')
-        axs[2].plot(np.array(i_a) * 1e-6, xpos, color='k', ls=':', label='Endoneurium')
-        axs[2].set_xlabel('Area (mm2)')
-        axs[2].legend()
-        axs[3].eventplot(branches, orientation='vertical', color=['k'])
-        fig.set_size_inches(10, 6)
+        axs[fascdiamnum].set_xlabel('Fascicle diameter\n(mm)')
+        axs[areanum].plot(np.array(n_a) * 1e-6, xpos, color='k', label='Whole Nerve')
+        axs[fasccountnum].plot(i_n, xpos, color='k')
+        axs[nervediamnum].set_xlabel('Nerve diameter\n(mm)')
+        axs[nervediamnum].plot(np.sqrt(np.array(n_a) / np.pi) * 2e-3, xpos, color='k')
+        axs[fasccountnum].set_xlabel('Fascicle count')
+        axs[areanum].plot(np.array(i_a) * 1e-6, xpos, color='k', ls=':', label='Endoneurium')
+        axs[areanum].set_xlabel(r'Area ($\mathrm{mm^2}$)')
+        # axs[areanum].legend()
+        axs[mergesplitnum].eventplot(branches, orientation='vertical', color=['k'])
+        fig.set_size_inches(14, 6)
+        # print(ax.get_xlim())
+        axs[mergesplitnum].set_xticks([0, 1])
+        axs[mergesplitnum].set_xlim([-1, 2])
+        axs[mergesplitnum].set_xticklabels(["merge", "split"], rotation=0)
+        # axs[4].legend(labels=['merges','splits'],bbox_to_anchor=[2.5,1])
+        # plt.suptitle(f"Morphological Data for {sample[:2]}")
+        # plt.subplots_adjust(hspace=0, wspace=0.3)
+        fig.set_size_inches(8, 3, forward=True)
+        fig.subplots_adjust(top=0.9)
+        # fig.savefig(os.path.join(morphdir, 'detailed.png'), dpi=400, bbox_inches='tight')
+        plt.ylim(reversed(plt.ylim()))
+        plt.yticks(np.arange(0, 60, 10), [int(x) for x in reversed(np.arange(0, 60, 10) / 10)])
+        sns.despine()
         for ax in axs[:-1]:
             ax.set_xlim([0, None])
             difftick = np.diff(ax.get_xticks())[0]
             modtick = np.diff(ax.get_xlim())[0] % difftick
             ax.set_xlim([None, ax.get_xlim()[1] + difftick - modtick])
-            # print(ax.get_xlim())
-        axs[3].set_xticks([0, 1])
-        axs[3].set_xlim([-1, 2])
-        axs[3].set_xticklabels(["merge", "split"], rotation=-45)
-        # axs[4].legend(labels=['merges','splits'],bbox_to_anchor=[2.5,1])
-        plt.suptitle(f"Morphological Data for {sample[:2]}")
-        # plt.subplots_adjust(hspace=0, wspace=0.3)
-        fig.set_size_inches(10, 4, forward=True)
-        fig.subplots_adjust(top=0.9)
-        fig.savefig(os.path.join(morphdir, 'detailed.png'), dpi=400, bbox_inches='tight')
+
+        # Add text with arrows
+        axs[areanum].annotate(
+            'Endoneurium',
+            xy=(0.15, 1),
+            xytext=(0.15, 1.3),
+            xycoords='axes fraction',
+            textcoords='axes fraction',
+            arrowprops=dict(arrowstyle='->', lw=1.5, color='k'),
+            ha='center',
+            va='center',
+        )
+        axs[areanum].annotate(
+            'Whole\nnerve',
+            xy=(0.45, 1),
+            xytext=(0.45, 1.15),
+            xycoords='axes fraction',
+            textcoords='axes fraction',
+            arrowprops=dict(arrowstyle='->', lw=1.5, color='k'),
+            ha='center',
+            va='center',
+        )
+    # sys.exit()
 # %% new plots
 
 import seaborn as sns
 
-sns.set(font_scale=1.25, style='white')
+sns.set(font_scale=1, style='white', context='paper')
 import matplotlib as mpl
 
 mpl.rcParams['figure.dpi'] = 400
@@ -265,17 +303,75 @@ plt.ylabel('Branch count')
 m, b = np.polyfit(mf, bc, 1)
 plt.plot(mf, m * np.array(mf) + b, color='black', label=f'$R^2$={np.corrcoef(mf,bc)[0,1]**2:.2f}')
 plt.legend()
+plt.gcf().set_size_inches(3, 2)
 plt.savefig(os.path.join(morphdir, 'bcounts.png'), dpi=400)
 # %%
-sns.reset_orig()
+# sns.reset_orig()
 plt.figure()
-import pandas as pd
+
 
 fc = pd.DataFrame(fasccounts)
 maxcount = np.amax(np.amax(fc))
+# remove DS5 from each column name
+fc.columns = [col.replace('DS5', '') for col in fc.columns]
 
-sns.histplot(fc, element='poly', bins=range(maxcount + 1), palette='colorblind', fill=False)
+g = sns.histplot(fc, element='poly', bins=range(maxcount + 1), palette='colorblind', fill=False, legend=False)
 plt.xlim([0, 20])
-plt.xlabel('Fascicle Count')
-plt.ylabel('Frequency')
+plt.xlabel('Number of fascicles')
+plt.ylabel('Count')
 plt.xticks([0, 5, 10, 15, 20])
+# remove legend title
+# hand,lab = g.get_legend_handles_labels()
+# sns.move_legend(g,[1,0.3],title='Nerve',ncol=1,frameon=False)
+plt.gcf().set_size_inches(3, 2)
+sns.despine()
+# change dataframe to long form for seaborn
+fcnew = fc.stack().reset_index()
+fcnew.columns = ['slice', 'sample', 'count']
+# plot with y axis as slice, x axis as count, and color as sample
+plt.figure()
+sns.lineplot(data=fcnew, y='count', x='slice', hue='sample', palette='colorblind')
+plt.ylabel('Fascicle Count')
+plt.xlabel('Slice')
+plt.yticks([0, 10, 20])
+plt.gca().get_legend().set_title('')
+plt.gcf().set_size_inches(4, 3)
+plt.legend(ncol=3)
+
+# redo using matplotlib with x axis as slice, y axis as count, and color as sample
+plt.figure()
+# get seaborn colorblind palette
+palette = sns.color_palette('colorblind')
+for sample in fc.columns:
+    plt.plot(fc[sample], np.array(fc.index) * 20e-3, label=sample, color=palette[fc.columns.get_loc(sample)])
+plt.ylabel('Position (mm)')
+plt.xlabel('Fascicle Count')
+plt.legend()
+plt.gcf().set_size_inches(3, 4)
+plt.xticks([0, 10, 20])
+
+# %%
+# diamcounts is a dict of lists of sizes foreach sample. Each sample has different number of sizes
+# convert to long form for seaborn (so each row is a size and a sample)
+alldata = []
+for sample in diamcounts.keys():
+    for size in diamcounts[sample]:
+        alldata.append([sample, size])
+fs = pd.DataFrame(alldata)
+fs.columns = ['nerve', 'sizes']
+fs.nerve = fs.nerve.str.replace('DS5', '')
+plt.figure()
+g = sns.histplot(
+    fs,
+    x='sizes',
+    hue='nerve',
+    element='poly',
+    palette='colorblind',
+    fill=False,
+    legend=True,
+    bins=np.arange(0, 1600, 100),
+)
+sns.move_legend(g, [1.1, 0.1], title='')
+plt.xlabel('Fascicle Diameter (μm)')
+plt.gcf().set_size_inches(3, 2)
+sns.despine()

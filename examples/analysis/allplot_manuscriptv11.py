@@ -994,7 +994,6 @@ for comp in [main_comparison, cath_comparison, an_comparison]:
         threshdat = datahere.query(f'contact in {comp} and deformation==@deformation')
         for nerve in pd.unique(threshdat['nerve_label']):
             for n in [3, 13]:
-
                 shortdat = threshdat.query(f'nerve_label=="{nerve}" and fiber_diam=={n}')
                 data2d = shortdat.query('type=="extrusion"').sort_values('threshold').master_fiber_index
                 data3d = shortdat.query('type=="true-3D"').sort_values('threshold').master_fiber_index
@@ -2998,7 +2997,6 @@ import statsmodels.formula.api as smf
 for deformation in ["Structural", "Undeformed"]:
     for modeltype in ['extrusion', 'true-3D']:
         for sample in pd.unique(thisdef['nerve_label']):
-
             print(deformation, modeltype, sample)
             model = smf.glm(
                 formula="threshold ~ " + ' + '.join(comparecols),

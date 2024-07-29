@@ -430,7 +430,7 @@ repeated_deformation["type"] = repeated_deformation["type"].replace(
 repeated_deformation["type"] = pd.Categorical(
     repeated_deformation["type"], categories=["extrusion", "true-3D"], ordered=True
 )
-sys.exit("prepdone")
+# sys.exit("prepdone")
 # %% dose-response
 sns.set(font_scale=1, style="whitegrid", context='poster')
 

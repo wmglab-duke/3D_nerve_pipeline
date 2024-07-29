@@ -21,10 +21,10 @@ from src.core.plotter import heatmaps
 from src.core.query import Query
 from src.utils import Object
 
-samp2d = 3721
+samp2d = 5701
 model = 0
-simint = 333
-samp3d = 3731
+simint = 330
+samp3d = 5731
 
 
 q = Query(
@@ -47,7 +47,7 @@ dat3d = q3.data(source_sample=samp2d, thresh_only=True)
 dat3d["threed"] = True
 sample_obj = q.get_object(Object.SAMPLE, [samp2d])
 sim_obj = q.get_object(Object.SIMULATION, [samp2d, model, simint])
-threshdat = pd.concat([dat2d, dat3d]).query("fiberset_index==5")
+threshdat = pd.concat([dat2d, dat3d]).query("fiberset_index==1")
 # %%
 g = sns.FacetGrid(threshdat, row="active_src_index", col="sample", sharex=False, sharey=False, margin_titles=True)
 g.map(heatmaps, *threshdat.columns, sample_object=sample_obj, sim_object=sim_obj, scatter_kws={"s": 25})

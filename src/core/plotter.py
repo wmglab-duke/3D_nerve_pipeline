@@ -398,7 +398,7 @@ class _HeatmapPlotter:
         ax.scatter(r * 1.2 * np.cos(theta), r * 1.2 * np.sin(theta), 300, 'red', 'o')
 
 
-def ap_loctime(
+def ap_loctime(  # delete
     query_object: Query,
     n_sim_filter: List[int] = None,
     plot: bool = False,
