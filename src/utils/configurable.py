@@ -24,7 +24,7 @@ class Configurable:
         self,
         mode: SetupMode = None,
         key: Config = None,
-        config: Union[str, dict, list] = None,
+        config: str | dict | list = None,
     ):
         """Initilize the configurable class.
 
@@ -40,7 +40,7 @@ class Configurable:
         if len([item for item in [mode, key, config] if item is None]) == 0:
             self.add(mode, key, config)
 
-    def add(self, mode: SetupMode, key: Config, config: Union[str, dict]):
+    def add(self, mode: SetupMode, key: Config, config: str | dict):
         """Add a config to self.configs.
 
         :param mode: OLD (data already loaded in the form of a dict) or NEW (data is in a file, loading from path)
@@ -131,7 +131,7 @@ class Configurable:
             return json.load(handle)
 
     @staticmethod
-    def write(data: Union[list, dict], dest_path):
+    def write(data: list | dict, dest_path):
         """Write JSON object to file.
 
         :param data: The data to write.
@@ -140,7 +140,7 @@ class Configurable:
         with open(dest_path, "w") as handle:
             handle.write(json.dumps(data, indent=2))
 
-    def search_mode(self, mode: Type[Enum], key: Config, optional: bool = False):
+    def search_mode(self, mode: type[Enum], key: Config, optional: bool = False):
         """Search for a single mode.
 
         :param mode: an Enum mode that is being searched. it MUST have variable config, which is the name
@@ -154,8 +154,8 @@ class Configurable:
     def search_multi_mode(
         self,
         key: Config,
-        mode: Type[Enum] = None,
-        modes: List[Type[Enum]] = None,
+        mode: type[Enum] = None,
+        modes: list[type[Enum]] = None,
         count: int = None,
         optional: bool = False,
     ) -> list:

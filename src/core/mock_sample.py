@@ -38,7 +38,7 @@ class MockSample(Configurable):
         # Initializes superclasses
         Configurable.__init__(self)
 
-        self.fascicles: List[shapely.geometry.Point] = []
+        self.fascicles: list[shapely.geometry.Point] = []
         self.nerve = shapely.geometry.Point
 
     @staticmethod

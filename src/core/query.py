@@ -26,7 +26,7 @@ class Query(Configurable, Saveable):
     IMPORTANT: MUST BE RUN FROM PROJECT LEVEL
     """
 
-    def __init__(self, criteria: Union[str, dict]):
+    def __init__(self, criteria: str | dict):
         """Set up Query object.
 
         :param criteria: dictionary of search criteria
@@ -191,7 +191,7 @@ class Query(Configurable, Saveable):
 
         return self._result
 
-    def get_config(self, mode: Config, indices: List[int]) -> dict:
+    def get_config(self, mode: Config, indices: list[int]) -> dict:
         """Load .json config file for given mode and indices.
 
         :param mode: Config enum (e.g. Config.SAMPLE)
@@ -202,7 +202,7 @@ class Query(Configurable, Saveable):
         return self.load(self.build_path(mode, indices))
 
     @staticmethod
-    def get_object(mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
+    def get_object(mode: Object, indices: list[int]) -> Sample | Simulation:
         """Load pickled object for given mode and indices.
 
         :param mode: mode of object (e.g. Object.SAMPLE)
@@ -215,8 +215,8 @@ class Query(Configurable, Saveable):
 
     @staticmethod
     def build_path(
-        mode: Union[Config, Object],
-        indices: List[int] = None,
+        mode: Config | Object,
+        indices: list[int] = None,
         just_directory: bool = False,
     ) -> str:
         """Build path to config or object file for given mode and indices.
@@ -330,9 +330,9 @@ class Query(Configurable, Saveable):
         :param optional_keys: If True, check parameter presence in config files as optional. Defaults to False.
         """
         sims: dict = {}
-        sample_keys: List[list] = sample_keys if sample_keys else []
-        model_keys: List[list] = model_keys if model_keys else []
-        sim_keys: List[list] = sim_keys if sim_keys else []
+        sample_keys: list[list] = sample_keys if sample_keys else []
+        model_keys: list[list] = model_keys if model_keys else []
+        sim_keys: list[list] = sim_keys if sim_keys else []
 
         # SAMPLE
         sample_results: dict
@@ -422,9 +422,9 @@ class Query(Configurable, Saveable):
         console_output: bool,
         sims: dict,
         config_paths: str,
-        sample_keys: List[int] = None,
-        model_keys: List[int] = None,
-        sim_keys: List[int] = None,
+        sample_keys: list[int] = None,
+        model_keys: list[int] = None,
+        sim_keys: list[int] = None,
         individual_indices: bool = True,
     ):
         sim_config_path = self.build_path(Config.SIM, indices=[sim_index])
@@ -484,16 +484,16 @@ class Query(Configurable, Saveable):
         nsim_index: int,
         sim_object: Simulation,
         potentials_product_index: int,
-        sample_keys: List,
-        model_keys: List,
-        sim_keys: List,
+        sample_keys: list,
+        model_keys: list,
+        sim_keys: list,
         sample_index: int,
         model_index: int,
         sim_index: int,
         individual_indices: bool,
         waveform_index: int,
         config_paths: bool,
-        sims: List[str],
+        sims: list[str],
         sample_config_path: str,
         model_config_path: str,
         sim_config_path: str,
@@ -576,13 +576,13 @@ class Query(Configurable, Saveable):
 
     def common_data_extraction(  # noqa C901
         self,
-        data_types: List[str],
-        sim_indices: List[int] = None,
-        fiber_indices: List[int] | str = 'all',
+        data_types: list[str],
+        sim_indices: list[int] = None,
+        fiber_indices: list[int] | str = 'all',
         ignore_missing: bool = False,
         as_dataframe=True,
         amp_indices: int | str = 'all',
-    ) -> List[dict]:
+    ) -> list[dict]:
         """Extract data from a simulation for specified data types.
 
         This method extracts common data from a simulation for each specified data type and returns
@@ -731,7 +731,7 @@ class Query(Configurable, Saveable):
         else:
             return pd.DataFrame(alldat)
 
-    def retrieve_sfap_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
+    def retrieve_sfap_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: list[dict]):  # noqa: D
         sfap_path = os.path.join(
             n_sim_dir,
             'data',
@@ -750,7 +750,7 @@ class Query(Configurable, Saveable):
         data['SFAP_times'] = sfap[:, 0]
         data['SFAP'] = sfap[:, 1]
 
-    def retrieve_threshold_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: List[dict]):  # noqa: D
+    def retrieve_threshold_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: list[dict]):  # noqa: D
         thresh_path = os.path.join(
             n_sim_dir,
             'data',
@@ -771,7 +771,7 @@ class Query(Configurable, Saveable):
 
         data['threshold'] = threshold
 
-    def retrieve_runtime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_runtime_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         runtime_path = os.path.join(
             n_sim_dir,
             'data',
@@ -782,7 +782,7 @@ class Query(Configurable, Saveable):
             runtime = float(runtime_file.read().replace('s', ''))
         data['runtime'] = runtime
 
-    def retrieve_activation_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_activation_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         activation_path = os.path.join(
             n_sim_dir,
             'data',
@@ -793,7 +793,7 @@ class Query(Configurable, Saveable):
             n_aps = int(activation_file.read())
         data['n_aps'] = n_aps
 
-    def retrieve_aploctime_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_aploctime_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         aploctime_path = os.path.join(
             n_sim_dir,
             'data',
@@ -803,7 +803,7 @@ class Query(Configurable, Saveable):
         ap_loctime = np.loadtxt(aploctime_path)
         data['ap_loctime'] = ap_loctime
 
-    def retrieve_istim_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_istim_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         istim_path = os.path.join(
             n_sim_dir,
             'data',
@@ -813,7 +813,7 @@ class Query(Configurable, Saveable):
         istim_data = pd.read_csv(istim_path, sep='\t')
         data['istim_data'] = istim_data
 
-    def retrieve_time_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_time_gating_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         gating_params = ['h', 'm', 'mp', 's']
         data['gating_time_data'] = {}
         for gating_param in gating_params:
@@ -826,7 +826,7 @@ class Query(Configurable, Saveable):
             gating_time_data = pd.read_csv(gating_time_path, sep=' ')
             data['gating_time_data'][gating_param] = gating_time_data
 
-    def retrieve_time_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_time_vm_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         vm_time_path = os.path.join(
             n_sim_dir,
             'data',
@@ -836,7 +836,7 @@ class Query(Configurable, Saveable):
         vm_time_data = pd.read_csv(vm_time_path, sep=' ')
         data['vm_time_data'] = vm_time_data
 
-    def retrieve_space_gating_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_space_gating_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         gating_params = ['h', 'm', 'mp', 's']
         data['gating_space_data'] = {}
         for gating_param in gating_params:
@@ -849,7 +849,7 @@ class Query(Configurable, Saveable):
             gating_space_data = pd.read_csv(gating_space_path, sep=' ')
             data['gating_space_data'][gating_param] = gating_space_data
 
-    def retrieve_space_vm_data(self, data: dict, n_sim_dir: str, alldat: List[dict]):  # noqa: D
+    def retrieve_space_vm_data(self, data: dict, n_sim_dir: str, alldat: list[dict]):  # noqa: D
         vm_space_path = os.path.join(
             n_sim_dir,
             'data',

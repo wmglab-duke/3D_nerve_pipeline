@@ -91,7 +91,7 @@ def to_json(output_path: str, my_dict: dict):
     return None
 
 
-def handoff(comsol_files: List[str], env: dict, my_dataset_index: int):
+def handoff(comsol_files: list[str], env: dict, my_dataset_index: int):
     """Handoff the comsol files to the comsol server.
 
     :param comsol_files: list of comsol files to handoff for clearing

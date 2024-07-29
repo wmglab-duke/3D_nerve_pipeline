@@ -64,7 +64,7 @@ class Sample(Configurable, Saveable):
         self.reshape_nerve_mode = None
         self.nerve_mode = None
         self.mask_input_mode = None
-        self.slides: List[Slide] = []
+        self.slides: list[Slide] = []
 
         # Set instance variable map
         self.map = None

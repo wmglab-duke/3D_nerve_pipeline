@@ -384,8 +384,8 @@ class Runner(Configurable):
         if 'models' not in all_configs:
             print('NO MODELS TO MAKE IN Config.RUN - killing process')
             return
-        self.bases_potentials_exist: List[bool] = []  # if all of these are true, skip Java
-        self.ss_bases_exist: List[bool] = []  # if all of these are true, skip Java
+        self.bases_potentials_exist: list[bool] = []  # if all of these are true, skip Java
+        self.ss_bases_exist: list[bool] = []  # if all of these are true, skip Java
 
         sample, sample_num = self.generate_sample(all_configs, smart=smart)
         for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
