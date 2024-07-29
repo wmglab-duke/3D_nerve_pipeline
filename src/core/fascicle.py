@@ -17,7 +17,6 @@ from typing import List, Tuple, Union
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-
 from src.utils import MaskSpaceMode, MorphologyError, WriteMode
 
 from .nerve import Nerve

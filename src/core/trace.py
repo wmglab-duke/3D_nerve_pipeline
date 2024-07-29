@@ -22,7 +22,6 @@ from shapely.affinity import rotate, scale
 from shapely.geometry import MultiPolygon, Point, Polygon
 from shapely.ops import nearest_points
 from shapely.validation import make_valid
-
 from src.utils import DownSampleMode, MorphologyError, WriteMode
 
 

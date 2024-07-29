@@ -16,7 +16,6 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from quantiphy import Quantity
 from shapely.ops import unary_union
-
 from src.utils import MethodError, MorphologyError, NerveMode, ReshapeNerveMode, WriteMode
 
 from .fascicle import Fascicle

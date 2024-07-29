@@ -24,7 +24,6 @@ from shapely.affinity import scale
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
-
 from src.utils import (
     Config,
     Configurable,

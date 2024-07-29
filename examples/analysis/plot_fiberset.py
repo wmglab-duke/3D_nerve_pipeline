@@ -13,7 +13,6 @@ import sys
 sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
-
 from src.core import Sample, Simulation
 from src.core.query import Query
 from src.utils import Object

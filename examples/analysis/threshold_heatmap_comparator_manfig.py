@@ -111,9 +111,7 @@ for samp2d, samp3d, pairname, slidename in zip(samp2ds, samp3ds, pairnames, slid
             "threed == @row.threed and samplenum == @row.samplenum and fiber_diam == @row.fiber_diam and sim == @row.sim"
         )
         # percent is number of thresholds less than or equal to this threshold divided by total number of thresholds
-        drdat.loc[i, "percent_activated"] = len(
-            thisdat.query("threshold <= @row.threshold")
-        ) / len(thisdat)
+        drdat.loc[i, "percent_activated"] = len(thisdat.query("threshold <= @row.threshold")) / len(thisdat)
     drdat = drdat.rename(columns={"samplenum": "sample"})
 
     # %%plot heatmaps
@@ -153,9 +151,7 @@ for samp2d, samp3d, pairname, slidename in zip(samp2ds, samp3ds, pairnames, slid
     # load contact coordinates
     dire = rf"D:\threed_final\input\contact_coords\{slidename}"
     for i in [1]:
-        contact_coords = np.loadtxt(dire + r"\pcs" + str(i + 1) + ".txt", skiprows=8)[
-            :, :2
-        ]
+        contact_coords = np.loadtxt(dire + r"\pcs" + str(i + 1) + ".txt", skiprows=8)[:, :2]
         for ax in g.axes.ravel():
             ax.scatter(
                 contact_coords[:, 0],
@@ -194,9 +190,7 @@ for samp2d, samp3d, pairname, slidename in zip(samp2ds, samp3ds, pairnames, slid
     # load contact coordinates
     dire = rf"D:\threed_final\input\contact_coords\{slidename}"
     for i in [1]:
-        contact_coords = np.loadtxt(dire + r"\pcs" + str(i + 1) + ".txt", skiprows=8)[
-            :, :2
-        ]
+        contact_coords = np.loadtxt(dire + r"\pcs" + str(i + 1) + ".txt", skiprows=8)[:, :2]
         for ax in g.axes.ravel():
             ax.scatter(
                 contact_coords[:, 0],

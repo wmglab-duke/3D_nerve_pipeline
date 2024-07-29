@@ -22,7 +22,6 @@ import numpy as np
 import scipy.stats as stats
 import shapely.affinity
 from shapely.geometry.point import Point
-
 from src.utils import Config, Configurable, IncompatibleParametersError, MorphologyError, PopulateMode
 
 

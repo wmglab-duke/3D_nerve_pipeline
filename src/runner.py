@@ -19,7 +19,6 @@ import warnings
 from typing import List
 
 import numpy as np
-
 from src.core import Model, Sample, Simulation
 from src.utils import (
     Config,

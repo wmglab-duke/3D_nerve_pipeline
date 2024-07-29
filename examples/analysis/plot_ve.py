@@ -14,7 +14,6 @@ sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 from src.core.query import Query
 from src.utils import Object
 
