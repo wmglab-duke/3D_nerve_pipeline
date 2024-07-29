@@ -398,25 +398,19 @@ class FiberSet(Configurable, Saveable):
         explicit_index = self.search(Config.SIM, 'fibers', 'xy_parameters', 'explicit_fiberset_index')
         # 3D fiber file format is stored in .npy pickled files; can't be stored in .txt file.
         file_extension = 'npy' if is_3d else 'txt'
-        if explicit_index is not None:
-            input_sample_name = self.sample.configs['sample']['sample']
-            explicit_source = os.path.join(
-                'input', input_sample_name, 'explicit_fibersets', f'{explicit_index}.{file_extension}'
-            )
-            explicit_dest = os.path.join(sim_directory, f'explicit.{file_extension}')
-            shutil.copyfile(explicit_source, explicit_dest)
-        else:
-            print(
-                '\t\tWARNING: Explicit fiberset index not specified.'
-                '\n\t\tProceeding with backwards compatible check for explicit.txt in:'
-                f'\n\t\t{sim_directory}'
-            )
-        if not os.path.exists(os.path.join(sim_directory, f'explicit.{file_extension}')):
+        input_sample_name = self.sample.configs['sample']['sample']
+        explicit_source = os.path.join(
+            'input', input_sample_name, 'explicit_fibersets', f'{explicit_index}.{file_extension}'
+        )
+        explicit_dest = os.path.join(sim_directory, f'explicit.{file_extension}')
+
+        if not os.file.exists(explicit_source):
             raise FileNotFoundError(
-                f"FiberXYMode is EXPLICIT or EXPLICIT_3D in Sim, but no explicit.{file_extension} file with "
-                "coordinates is in the Sim directory. See config/system/templates/explicit.txt for example "
-                "of this file's required format."
+                f"FiberXYMode is EXPLICIT or EXPLICIT_3D in Sim, but did not find the file {explicit_source}. "
+                "See config/templates/advanced/explicit.txt or config/templates/advanced/explicit_3d.npy for examples."
             )
+
+        shutil.copyfile(explicit_source, explicit_dest)
 
         if is_3d:
             points = np.load(explicit_dest, allow_pickle=True)

@@ -20,6 +20,5 @@
     "reshape_nerve": "NONE",
     "shrinkage_definition": "LENGTH_FORWARDS",
     "contour_approximation": "SIMPLE"
-  },
-  "Morphology": null
+  }
 }

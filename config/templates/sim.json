@@ -1,5 +1,5 @@
 {
-  "pseudonym": "template sim",
+  "pseudonym": "give_me_a_name",
   "n_dimensions": 1,
   "active_srcs": {
     "CorTec300.json": [[1, -1]],
@@ -39,16 +39,6 @@
       "digits": 1
     }
   },
-  "intracellular_stim": {
-    "times": {
-      "pw": 0,
-      "IntraStim_PulseTrain_delay": 0,
-      "IntraStim_PulseTrain_dur": 0
-    },
-    "pulse_repetition_freq": 0,
-    "amp": 0,
-    "ind": 2
-  },
   "saving": {
     "space": {
       "vm": false,
@@ -60,11 +50,6 @@
       "gating": false,
       "istim": false,
       "locs": [0]
-    },
-    "end_ap_times": {
-      "loc_min": 0.1,
-      "loc_max": 0.9,
-      "threshold": -30
     },
     "runtimes": false,
     "aploctime": false

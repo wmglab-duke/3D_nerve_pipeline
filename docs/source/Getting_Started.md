@@ -54,7 +54,7 @@ After confirming that you are in the correct directory, the script will install 
      - ASCENT_JDK_PATH: Path to the JDK 1.8 installation, ending in `bin`, as seen in the template and [JSON Overview](JSON/JSON_overview). Hint: This is the correct path if the directory contains many executables (for Windows: java.exe, etc.; MacOS/Linux: java, etc.).
      - ASCENT_PROJECT_PATH: Path to the root directory of the pipeline, as chosen for step 1.
      - ASCENT_NSIM_EXPORT_PATH: Path to the export location for NEURON "simulation" directories. This path only depends on the user's desired file system organization.
-   - Manual Setup: Copy the file `config/templates/env.json` into `config/system/env.json` (new file). This file holds important paths for software used by the pipeline (see env.json in [Enums](Code_Hierarchy/Python.md#enums) and [JSON Overview](JSON/JSON_overview)). Then, edit each of the four values as specified below. Use `\\` in Windows and `/` in macOS/Linux operating systems. Note that the file separators are operating system dependent, so even if you installed in step 2 with Unix-like command environment on a Windows machine (e.g., using [Git Bash](https://gitforwindows.org/), [Cygwin](https://www.cygwin.com/), or a VM with [Ubuntu](https://ubuntu.com/)), you will still need to choose the proper file separator for Windows, i.e., `\\`). See example env.json files for both macOS and Windows ([Environment Parameters](JSON/JSON_parameters/env)).
+   - Manual Setup: Copy the file `config/templates/windows_env.json` or `config/templates/unix_env.json` (depending on your operating system) into `config/system/env.json` (new file). This file holds important paths for software used by the pipeline (see env.json in [Enums](Code_Hierarchy/Python.md#enums) and [JSON Overview](JSON/JSON_overview)). Then, edit each of the four values as specified below. Use `\\` in Windows and `/` in macOS/Linux operating systems. Note that the file separators are operating system dependent, so even if you installed in step 2 with Unix-like command environment on a Windows machine (e.g., using [Git Bash](https://gitforwindows.org/), [Cygwin](https://www.cygwin.com/), or a VM with [Ubuntu](https://ubuntu.com/)), you will still need to choose the proper file separator for Windows, i.e., `\\`). See example env.json files for both macOS and Windows ([Environment Parameters](JSON/JSON_parameters/env)).
    - Automatic setup: Upon the initiation of your first run, you will be prompted to enter the above four paths if you did not choose to complete the manual setup. Enter them as prompted, following the guidelines detailed above and exemplified in [JSON Overview](JSON/JSON_overview). Note that you may at any time update paths with `python run env_setup` to rewrite this file if the information should change.
 
 ## Metadata required to model an in vivo experiment using the ASCENT pipeline
@@ -227,7 +227,7 @@ use indices that are consistent with the indices of **_Sample_**,
 
    b. The `mock_morphology_generator.py` script ([Mock Morphology](MockSample)).
 
-   1. Copy `mock_sample.json` from `config/templates/` to
+   1. Copy `mock_sample.json` from `config/templates/advanced` to
       `config/user/mock_samples/` as `<mock_sample_index>.json`
       and update file contents, including the "NAME" parameter
       used to construct the destination path for the output binary

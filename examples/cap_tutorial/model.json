@@ -96,19 +96,6 @@
       "hmax": 1600,
       "hgrad": 2.5
     },
-    "stats": {
-      "mesh_times": {
-        "distal": 4031.2421,
-        "proximal": 25680.2748
-      },
-      "volume": 1.875e11,
-      "quality_measure_used": "vollength",
-      "min_quality": 0.1707,
-      "min_volume": 6.136,
-      "name": "COMSOL Multiphysics 6.1 (Build: 282)",
-      "number_elements": 2108991,
-      "mean_quality": 0.714
-    },
     "quality_measure": "vollength",
     "shape_order": "quadratic",
     "proximal": {

@@ -1,6 +1,6 @@
 {
   "sample": "Rat16-3",
-  "pseudonym": "template sample",
+  "pseudonym": "give_me_a_name",
   "sex": "M",
   "level": "Cervical",
   "scale": {
@@ -32,6 +32,5 @@
   },
   "morph_count": 36,
   "deform_ratio": 1,
-  "render_deform": false,
-  "Morphology": null
+  "render_deform": false
 }

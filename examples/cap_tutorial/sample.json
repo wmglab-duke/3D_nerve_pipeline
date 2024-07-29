@@ -30,6 +30,5 @@
   },
   "morph_count": 36,
   "deform_ratio": 1,
-  "render_deform": false,
-  "Morphology": null
+  "render_deform": false
 }

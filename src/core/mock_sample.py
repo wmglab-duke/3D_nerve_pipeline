@@ -388,7 +388,7 @@ class MockSample(Configurable):
                     '(i.e., analogous to circle diameter rather than radii). Make sure your values are set \n'
                     'appropriately. This change is new in v1.1.0 to be consistent with the ellipse parameters \n'
                     '(a,b) in Sample which are full width ellipse major/minor axes lengths.\n\n'
-                    'See config/templates/mock_sample.json for new template and avoid this message.\n'
+                    'See config/templates/advanced/mock_sample.json for new template and avoid this message.\n'
                     'Would you like to proceed with the values currently set for (a,b) as diameter? [y/N] '
                 )
                 .lower()

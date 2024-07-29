@@ -40,16 +40,6 @@
       "digits": 1
     }
   },
-  "intracellular_stim": {
-    "times": {
-      "pw": 0,
-      "IntraStim_PulseTrain_delay": 0,
-      "IntraStim_PulseTrain_dur": 0
-    },
-    "pulse_repetition_freq": 0,
-    "amp": 0,
-    "ind": 2
-  },
   "saving": {
     "space": {
       "vm": false,
