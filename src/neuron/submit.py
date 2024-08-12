@@ -21,6 +21,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from packaging.version import Version
 from tqdm import tqdm
 
 
@@ -727,7 +728,7 @@ def main():
         sys.exit('Error: PyFibers is not installed. Please install it to run this script.')
     # check version
     reqver = '0.1.1'
-    if pyfibers.__version__ != reqver:
+    if Version(pyfibers.__version__) < Version(reqver):
         raise ImportError(f'Error: PyFibers version is {pyfibers.__version__}, but version {reqver} is required.')
 
     # pre submit setup
