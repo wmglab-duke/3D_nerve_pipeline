@@ -144,6 +144,7 @@ data/tmp/
 data/*.pickle
 data/
 input/
+output/
 */user/*
 
 # samples
@@ -151,9 +152,6 @@ input/
 out/
 3d_outputs/
 */system/env.json
-
-# B-Fibers
-src/neuron/HOC_Files/CreateAxon_BFiber.hoc
 
 # temp files
 ~$master_index_key.xlsx

@@ -194,7 +194,22 @@ class Runner(Configurable):
         print(f'\tMODEL {model_num}', f'- {model_pseudonym}' if model_pseudonym is not None else '')
         if smart and os.path.exists(model_file):
             print(f"\tFound existing model {model_num} ({model_file})")
-            model = self.load_obj(model_file)
+            model: Model = self.load_obj(model_file)
+            if isinstance(
+                model.configs['models']['cuff'], dict
+            ):  # Indicates that model.obj was built before ascent had multi-cuff functionality
+                if "index" not in model.configs['models']['cuff']:  # If no cuff index is provided
+                    warnings.warn(
+                        'No "cuff" -> "index" provided in model.json. Assigning cuff index to 0.', stacklevel=2
+                    )
+                    model.configs['models']['cuff']['index'] = 0
+                # Update model cuffs with new list structure
+                model.configs['models']['cuff'] = [model.configs['models']['cuff']]  # cast to list
+
+                # Save to files for future runs
+                model.write(model_config_file)
+                model.save(model_file)
+
         else:
             model = Model()
             # use current model index to computer maximum cuff shift (radius) .. SAVES to file in method
@@ -290,7 +305,7 @@ class Runner(Configurable):
 
         if source_xy_dict != xy_dict:
             if xy_dict['mode'] == 'EXPLICIT':
-                print('\t\tWarning: cannot verify supersampled xy match since fiber xy mode is EXPLICIT')
+                warnings.warn('Cannot verify supersampled xy match since fiber xy mode is EXPLICIT', stacklevel=2)
             else:
                 raise IncompatibleParametersError(
                     "Trying to use super-sampled potentials that do not match your Sim's xy_parameters perfectly"
@@ -342,7 +357,7 @@ class Runner(Configurable):
                     check=True,
                 )
             )
-        except:
+        except Exception:
             check = [False]
         if np.all(check):
             print(f"SKIP BUILD AND EXPORT NSIMS - SIM {sim_num}")
@@ -371,7 +386,7 @@ class Runner(Configurable):
         # ensure run configuration is present
         Simulation.export_run(self.number, os.environ[Env.PROJECT_PATH.value], os.environ[Env.NSIM_EXPORT_PATH.value])
 
-    def run(self, smart: bool = True):
+    def run(self, smart: bool = True):  # noqa C901
         """Run the pipeline.
 
         :param smart: bool telling the program whether to reprocess the sample or not if it already exists as sample.obj
@@ -513,15 +528,16 @@ class Runner(Configurable):
     def handoff(self, config_path, run_type=None, class_name='ModelWrapper', modelfolder="model"):
         """Handoff to Java.
 
-        :param run_number: int, run number
+        :param config_path: str, path to run configuration file
         :param class_name: str, class name of Java class to run
+        :param modelfolder: str, folder containing Java class
         :raises JavaError: if Java fails to run
         """
         comsol_path = os.environ[Env.COMSOL_PATH.value]
         jdk_path = os.environ[Env.JDK_PATH.value]
         project_path = os.environ[Env.PROJECT_PATH.value]
 
-        # Encode command line args as jason string, then encode to base64 for passing to java
+        # Encode command line args as json string, then encode to base64 for passing to java
         if run_type is None:
             argstring = json.dumps(self.configs[Config.CLI_ARGS.value])
             argbytes = argstring.encode('ascii')

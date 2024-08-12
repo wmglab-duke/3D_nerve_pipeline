@@ -54,6 +54,12 @@ class Trace:
 
     @classmethod
     def from_polygon(cls, polygon):
+        """Create a Trace object from a Shapely Polygon object.
+
+        :param polygon: Shapely Polygon object
+        :raises ValueError: if input is not a Shapely Polygon object
+        :return: Trace object
+        """
         if not isinstance(polygon, Polygon):
             raise ValueError("Input must be a Shapely Polygon object.")
 
@@ -93,6 +99,7 @@ class Trace:
         :param fit: dictionary of parameters for a linear fit of distance to offset based off area.
         :param distance: used to scale by a discrete distance
         :raises ValueError: if fit and distance are both None
+        :return: resultant offset distance
         """
         # create clipper offset object
         pco = pyclipper.PyclipperOffset()
@@ -127,6 +134,7 @@ class Trace:
 
         :param distance: amount to use for dilation and erosion, in whatever units the trace is using
         :param area_compensation: if True, after smoothing, scale each trace to match its original area
+        :param as_ratio: if True, distance is a ratio of the effective circular diameter (ECD)
         :raises ValueError: if distance is not a positive number
         :raises MorphologyError: if the pre-smoothing area cannot be maintained
         """
@@ -168,9 +176,12 @@ class Trace:
         self.__update()
 
     def scale_to_area(self, target_area, center: Union[List[float], str] = 'centroid'):
-        """"""
-        factor = np.sqrt(target_area) / np.sqrt(self.area())
+        """Scale the trace to a target area.
 
+        :param target_area: target area to scale to
+        :param center: passed to scale method
+        """
+        factor = np.sqrt(target_area) / np.sqrt(self.area())
         self.scale(factor=factor, center=center)
 
     def rotate(self, angle: float, center: Union[List[float], str] = 'centroid'):
@@ -193,6 +204,7 @@ class Trace:
         self.__update()
 
     def center(self):
+        """Center the trace at the origin."""
         self.shift([-x for x in self.centroid()] + [0])
         self.__update()
 
@@ -305,6 +317,11 @@ class Trace:
         return self.polygon().within(outer.polygon())
 
     def contains(self, other) -> bool:
+        """Check if the trace contains another Shapely object (typically a point).
+
+        :param other: other Trace to check
+        :return: True if containing other Trace, else False
+        """
         return self.polygon().contains(other)
 
     def intersects(self, other: 'Trace') -> bool:
@@ -492,7 +509,6 @@ class Trace:
         """Plot the trace.
 
         :param line_kws: Additional keyword arguments to matplotlib.pyplot.plot
-        :param linewidth: Width of the line
         :param ax: Axes to plot on
         :param color: Color to fill the trace with, if None, no fill
         :param plot_format: the plt.plot format spec (see matplotlib docs)
@@ -783,6 +799,10 @@ class Trace:
         return (x1 - x0) * (y2 - y0) - (y1 - y0) * (x2 - x0)
 
     def validate_polygon(self):
+        """Make polygon valid.
+
+        :return: list of valid polygons
+        """
         input_polygon = self.polygon()
 
         if input_polygon.is_valid:
@@ -807,8 +827,7 @@ class Trace:
             return result_polygons
 
     def make_valid(self):
-        from shapely.validation import make_valid
-
+        """Make the trace valid."""
         polyout = make_valid(self.polygon())
         assert isinstance(polyout, Polygon)
         self.points = self.from_polygon(polyout).points

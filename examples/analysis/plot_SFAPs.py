@@ -1,0 +1,48 @@
+"""Plot single or multiple overlaid Single Fiber Action Potentials (SFAP).
+
+The recorded SFAPs are produced for every fiber when a model contains a
+recording cuff, identified within the model.json configuration file.
+
+The copyrights of this software are owned by Duke University.
+Please refer to the LICENSE and README.md files for licensing instructions.
+The source code can be found on the following GitHub repository: https://github.com/wmglab-duke/ascent.
+"""
+
+import os
+import sys
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
+os.chdir('../..')
+from src.core.query import Query  # noqa E402
+
+sns.set_style("whitegrid")
+
+fiber_indices = [0]
+
+q = Query(
+    {
+        'partial_matches': False,
+        'include_downstream': True,
+        'indices': {'sample': [1], 'model': [0], 'sim': [100]},
+    }
+).run()
+
+data = q.common_data_extraction(data_types=['sfap'])  # TODO need to update
+print(data)
+plt.plot(data.SFAP_times[0], data.SFAP[0])
+# plt.plot(data.SFAP_times[1],data.SFAP[1])
+
+plt.ylim(-30, 30)
+
+# fig, ax = plt.subplots()
+# # sns.lineplot(data=data, x='SFAP_times', y='SFAP', hue='fiberset_index', palette='deep', ax=ax)
+# sns.move_legend(ax, "upper left", bbox_to_anchor=(1, 1))
+# plt.xlim(left=0, right=10.0)
+# plt.title('Single Fiber Action Potentials')
+# plt.xlabel('Time (ms)')
+# plt.ylabel(r'signal (${\mu}V$)')
+# plt.ylim(-20, 20)
+# plt.show()

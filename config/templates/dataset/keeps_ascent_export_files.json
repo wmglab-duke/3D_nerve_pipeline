@@ -7,16 +7,14 @@
     "0": {
       "0": {
         "masks": true,
-        "sectionwise2d": {
-          "fascicles": false,
-          "nerve": false
-        }
+        "sectionwise2d": true
       }
     }
   },
   "models": {
     "<model_index>": {
       "model.json": true,
+      "model.obj": true,
       "debug_geom.mph": false,
       "bases": false,
       "mesh": {
@@ -26,7 +24,7 @@
       },
       "sims": {
         "<sim_index>": {
-          "sim.obj": false,
+          "sim.obj": true,
           "fibersets": false,
           "fibersets_bases": false,
           "potentials": false,
@@ -37,7 +35,6 @@
           "n_sims": {
             "<n_sim_index>": {
               "<n_sim_index>.json": true,
-              "launch.hoc": true,
               "data": {
                 "inputs": {
                   "<ve_files>": true,

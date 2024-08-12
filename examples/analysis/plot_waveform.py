@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.7
-
 """Plot the waveform used for stimulation.
 
 The copyrights of this software are owned by Duke University.
@@ -11,6 +9,9 @@ RUN THIS FROM REPOSITORY ROOT
 
 import json
 import os
+import sys
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
 from src.core import Simulation

@@ -206,61 +206,6 @@ def ensure_dir(directory):
     os.makedirs(directory, exist_ok=True)
 
 
-def get_diameter(my_inner_fiber_diam_key, my_inner_ind, my_fiber_ind):
-    """Get the diameter of the fiber from the inner fiber diameter key.
-
-    :param my_inner_fiber_diam_key: the key for the fiber diameters
-    :param my_inner_ind: the index of the inner
-    :param my_fiber_ind: the index of the fiber within the inner
-    :return: the diameter for this fiber
-    """
-    for item in my_inner_fiber_diam_key:
-        if item[0] == my_inner_ind and item[1] == my_fiber_ind:
-            my_diameter = item[2]
-            break
-        else:
-            continue
-    if isinstance(my_diameter, list) and len(my_diameter) == 1:
-        my_diameter = my_diameter[0]
-
-    return my_diameter
-
-
-def get_deltaz(fiber_model, diameter):
-    """Get the deltaz (node spacing) for a given fiber model and diameter.
-
-    :param fiber_model: the string name of the fiber model
-    :param diameter: the diameter of the fiber in microns
-    :return: the deltaz for this fiber, the neuron flag for the fiber model
-    """
-    fiber_z_config = load(os.path.join('config', 'system', 'fiber_z.json'))
-    fiber_model_info: dict = fiber_z_config['fiber_type_parameters'][fiber_model]
-
-    if fiber_model_info.get("geom_determination_method") == 0:
-        diameters, delta_zs, paranodal_length_2s = (
-            fiber_model_info[key] for key in ('diameters', 'delta_zs', 'paranodal_length_2s')
-        )
-        diameter_index = diameters.index(diameter)
-        delta_z = delta_zs[diameter_index]
-
-    elif fiber_model_info.get("geom_determination_method") == 1:
-        paranodal_length_2_str, delta_z_str, inter_length_str = (
-            fiber_model_info[key] for key in ('paranodal_length_2', 'delta_z', 'inter_length')
-        )
-
-        if diameter >= 5.643:
-            delta_z = eval(delta_z_str["diameter_greater_or_equal_5.643um"])
-        else:
-            delta_z = eval(delta_z_str["diameter_less_5.643um"])
-
-    elif fiber_model_info.get("neuron_flag") == 3:  # C Fiber
-        delta_z = fiber_model_info["delta_zs"]
-
-    neuron_flag = fiber_model_info.get("neuron_flag")
-
-    return delta_z, neuron_flag
-
-
 def get_thresh_bounds(sim_dir: str, sim_name: str, inner_ind: int):
     """Get threshold bounds (upper and lower) for this simulation.
 
@@ -347,6 +292,8 @@ def make_task(
     sim_p: str,
     inner_ind: int,
     fiber_ind: int,
+    stimamp_top: float,
+    stimamp_bottom: float,
     potentials_path: str,
     waveform_path: str,
     n_sim: int,
@@ -360,6 +307,8 @@ def make_task(
     :param sim_p: the string path to the sim_dir
     :param inner_ind: the index of the inner this fiber is in
     :param fiber_ind: the index of the fiber this simulation is for
+    :param stimamp_top: top stimamp to start bounds search
+    :param stimamp_bottom: bottom stimamp to start bounds search
     :param potentials_path: the string path to the potentials text file
     :param waveform_path: the string path to the waveform text file
     :param n_sim: the index of the n_sim
@@ -367,9 +316,11 @@ def make_task(
     with open(start_p, 'w+') as handle:
         lines = [
             'cd ../../\n',
-            f'python run_controls.py '
+            f'python -u run_controls.py '
             f'\"{inner_ind}\" '
             f'\"{fiber_ind}\" '
+            f'\"{stimamp_top}\" '
+            f'\"{stimamp_bottom}\" '
             f'\"{potentials_path}\" '
             f'\"{waveform_path}\" '
             f'\"{sim_p}\" ',
@@ -440,9 +391,9 @@ def submit_fibers(submission_context, submission_data):
                 print(f"Submitting locally to {cpus} CPUs")
 
             else:
-                cpus = multiprocessing.cpu_count() / 2
+                cpus = int(multiprocessing.cpu_count() / 2)
                 warnings.warn(
-                    f"You did not define number of cores to use (-n), so proceeding with cpu_core_count/2={cpus}",
+                    f"You did not define number of cores to use (-n), so proceeding with int(cpu_core_count/2)={cpus}",
                     stacklevel=2,
                 )
             os.chdir(sim_path)
@@ -550,13 +501,18 @@ def make_fiber_tasks(submission_list, submission_context):
             ensure_dir(cur_dir)
 
         for fiber_data in runfibers:
+
             inner_ind, fiber_ind = fiber_data['inner'], fiber_data['fiber']
 
             start_path = f"{start_path_base}{fiber_data['job_number']}{'.sh' if OS == 'UNIX-LIKE' else '.bat'}"
 
-            potentials_path = os.path.join(sim_path, 'data', 'inputs', f'inner{inner_ind}_fiber{fiber_ind}.dat')
+            potentials_path = os.path.join(sim_path, 'data', 'inputs', f'src_inner{inner_ind}_fiber{fiber_ind}.dat')
+
             waveform_path = os.path.join(sim_path, 'data', 'inputs', 'waveform.dat')
             n_sim = sim_name.split('_')[-1]
+
+            stimamp_top, stimamp_bottom = get_thresh_bounds(sim_dir, sim_name, inner_ind)
+            assert stimamp_top is not None and stimamp_bottom is not None, 'Stimamps cannot be None'
             make_task(
                 OS,
                 submission_context,
@@ -564,6 +520,8 @@ def make_fiber_tasks(submission_list, submission_context):
                 sim_path,
                 inner_ind,
                 fiber_ind,
+                stimamp_top,
+                stimamp_bottom,
                 potentials_path,
                 waveform_path,
                 n_sim,
@@ -605,11 +563,15 @@ def make_run_sub_list(run_number: int):
                     n_sim = sim_name.split('_')[-1]
                     sim_config = load(os.path.join(sim_path, f'{n_sim}.json'))
 
-                    fibers_files = [x for x in os.listdir(fibers_path) if re.match('inner[0-9]+_fiber[0-9]+\\.dat', x)]
+                    fibers_files = [
+                        x for x in os.listdir(fibers_path) if re.match('(?:(src)_)?inner[0-9]+_fiber[0-9]+\\.dat', x)
+                    ]  # First regex group with ? is optional - for backwards compatibility
 
                     for i, fiber_filename in enumerate(fibers_files):
                         master_fiber_name = str(fiber_filename.split('.')[0])
-                        inner_name, fiber_name = tuple(master_fiber_name.split('_'))
+                        *cuff_type, inner_name, fiber_name = tuple(
+                            master_fiber_name.split('_')
+                        )  # not backwards compatible
                         inner_ind = int(inner_name.split('inner')[-1])
                         fiber_ind = int(fiber_name.split('fiber')[-1])
 
@@ -622,7 +584,7 @@ def make_run_sub_list(run_number: int):
                         else:
                             search_path = os.path.join(
                                 output_path,
-                                f"thresh_inner{inner_ind}_fiber{fiber_ind}.dat",
+                                f'thresh_inner{inner_ind}_fiber{fiber_ind}.dat',
                             )
 
                         if os.path.exists(search_path) and not args.force_rerun:
@@ -635,7 +597,9 @@ def make_run_sub_list(run_number: int):
                             if args.verbose:
                                 print(f'Found {search_path} -->\t\tre-running inner ({inner_ind}) fiber ({fiber_ind})')
 
-                        submit_list[sim_name].append({"job_number": i, "inner": inner_ind, "fiber": fiber_ind})
+                        submit_list[sim_name].append(
+                            {"job_number": i, "cuff_type": cuff_type, "inner": inner_ind, "fiber": fiber_ind}
+                        )
                     # save_submit list as csv
                     pd.DataFrame(submit_list[sim_name]).to_csv(os.path.join(sim_path, 'out_err_key.csv'), index=False)
 
@@ -670,7 +634,7 @@ def confirm_submission(n_fibers, rundata, submission_context):
 
 
 def get_submission_list(run_inds):
-    """Get the list of simulations to be submitte for all runs.
+    """Get the list of simulations to be submitted for all runs.
 
     :param run_inds: the list of run indices
     :return: summary of runs, a list of all simulations to be submitted
@@ -734,6 +698,10 @@ def pre_submit_setup():
     else:
         submission_context = 'cluster' if shutil.which('sbatch') is not None else 'local'
 
+    # convert array_launch.slurm to UNIX format
+    subprocess.run(['dos2unix', 'array_launch.slurm'])
+    print('Converted array_launch.slurm to UNIX format')
+
     return run_inds, submission_context
 
 
@@ -757,16 +725,17 @@ def get_installed_packages():
 def main():
     """Prepare fiber submissions and run NEURON sims.
 
-    :raises ImportError: if wmglab_neuron is not installed
+    :raises ImportError: If PyFibers is not installed.
     """
-    # check for wmglab_neuron
+    # check for PyFibers
     try:
-        import wmglab_neuron
+        import pyfibers
     except ImportError:
-        raise ImportError('wmglab_neuron not installed. Please install wmglab_neuron and try again.')
-    assert wmglab_neuron.__version__ == '0.0.2', (
-        'wmglab_neuron version 0.0.2 required, your version is ' + wmglab_neuron.__version__
-    )
+        sys.exit('Error: PyFibers is not installed. Please install it to run this script.')
+    # check version
+    reqver = '0.1.1'
+    if pyfibers.__version__ != reqver:
+        raise ImportError(f'Error: PyFibers version is {pyfibers.__version__}, but version {reqver} is required.')
 
     # pre submit setup
     run_inds, submission_context = pre_submit_setup()

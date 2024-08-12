@@ -189,6 +189,8 @@ class Fascicle:
         :param color: List of colors to plot the inners with. If None, inners are not filled in.
             The form of each item in the list should be a color specification acceptable to matplotlib.
         :param plot_format: outers automatically black, plot_format only affects inners
+        :param outer_color: color to fill outer trace
+        :param inners_flag: whether to plot the inner traces
         :raises ValueError: if color is not None and len(color) != len(inners)
         """
         if ax is None:
@@ -297,6 +299,7 @@ class Fascicle:
             (stored as outers until perineurium is generated)
         :param inner_img_path: path to inner image
         :param contour_mode: contour mode to use for cv2.findContours
+        :param mask_space_mode: MaskSpaceMode to use for image processing
         :return: list of Fascicles derived from the image(s)
         """
 
@@ -306,7 +309,7 @@ class Fascicle:
             # default findContours params
 
             img = cv2.imread(path, -1)
-            if mask_space_mode != MaskSpaceMode.IMAGE:
+            if mask_space_mode != MaskSpaceMode.IMAGE:  # TODO add documentation for this
                 img = np.flipud(img)
 
             if len(img.shape) > 2 and img.shape[2] > 1:
