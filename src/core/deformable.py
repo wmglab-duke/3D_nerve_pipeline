@@ -10,7 +10,6 @@ repository: https://github.com/wmglab-duke/ascent
 
 import math
 import sys
-from typing import List, Tuple
 
 import numpy as np
 import pygame
@@ -18,6 +17,7 @@ import pymunk.pygame_util
 from pygame.colordict import THECOLORS
 from pygame.locals import DOUBLEBUF, HWSURFACE, K_ESCAPE, KEYDOWN, QUIT, RESIZABLE
 from shapely.geometry import LineString, Point
+
 from src.core import Slide, Trace
 from src.utils import ReshapeNerveMode
 
@@ -29,7 +29,7 @@ class Deformable:
         self,
         boundary_start: Trace,
         boundary_end: Trace,
-        contents: List[Trace],
+        contents: list[Trace],
     ):
         """Initialize the class.
 
@@ -44,10 +44,10 @@ class Deformable:
         self.contents = contents
 
         # init vector of start and end positions
-        self.start_positions: List[np.ndarray] = []
-        self.start_rotations: List[float] = []
-        self.end_positions: List[np.ndarray] = []
-        self.end_rotations: List[float] = []
+        self.start_positions: list[np.ndarray] = []
+        self.start_rotations: list[float] = []
+        self.end_positions: list[np.ndarray] = []
+        self.end_rotations: list[float] = []
 
     def setup_pygame_render(self):
         """Initialize the debug render mediated by pygame.
@@ -140,7 +140,7 @@ class Deformable:
         minimum_distance: float = 0.0,
         ratio: float = None,
         progress_bar: bool = True,
-    ) -> Tuple[List[tuple], List[float]]:
+    ) -> tuple[list[tuple], list[float]]:
         """Run the main deformation algorithm.
 
         :param morph_count: number of incremental traces including the start and end of boundary
@@ -216,7 +216,7 @@ class Deformable:
         end: Trace,
         count: int = 2,
         deform_ratio: float = 1.0,
-    ) -> List[Trace]:
+    ) -> list[Trace]:
         """Calculate morph steps between two traces.
 
         :param start: start trace

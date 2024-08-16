@@ -1,55 +1,63 @@
 {
-  "source_sim": 3,
   "sample_data": [
     {
-      "name": "2Lim",
+      "exsamples": [
+        2515
+      ],
       "index3d": 2535,
-      "exsamples": [2515]
+      "name": "2Lim"
     },
     {
-      "name": "2Lup",
+      "exsamples": [
+        2526
+      ],
       "index3d": 2536,
-      "exsamples": [2526]
+      "name": "2Lup"
     },
     {
-      "name": "2Ldown",
+      "exsamples": [
+        2524
+      ],
       "index3d": 2534,
-      "exsamples": [2524]
+      "name": "2Ldown"
     },
     {
-      "name": "2Lfine",
+      "exsamples": [
+        2520
+      ],
       "index3d": 2530,
-      "exsamples": [2520]
+      "name": "2Lfine"
     }
   ],
   "sim_data": {
     "3": {
       "nsim_key": {
         "0": {
-          "pulse_width": 0.25,
-          "fiber_diam": 3
+          "fiber_diam": 3,
+          "pulse_width": 0.25
         },
         "1": {
-          "pulse_width": 0.25,
-          "fiber_diam": 5
+          "fiber_diam": 5,
+          "pulse_width": 0.25
         },
         "2": {
-          "pulse_width": 0.25,
-          "fiber_diam": 7
+          "fiber_diam": 7,
+          "pulse_width": 0.25
         },
         "3": {
-          "pulse_width": 0.25,
-          "fiber_diam": 9
+          "fiber_diam": 9,
+          "pulse_width": 0.25
         },
         "4": {
-          "pulse_width": 0.25,
-          "fiber_diam": 11
+          "fiber_diam": 11,
+          "pulse_width": 0.25
         },
         "5": {
-          "pulse_width": 0.25,
-          "fiber_diam": 13
+          "fiber_diam": 13,
+          "pulse_width": 0.25
         }
       }
     }
-  }
+  },
+  "source_sim": 3
 }

@@ -1,63 +1,71 @@
 {
-  "source_sim": 3,
   "sample_data": [
     {
-      "name": "2L_MCT",
+      "exsamples": [
+        25212
+      ],
       "index3d": 25312,
-      "exsamples": [25212]
+      "name": "2L_MCT"
     },
     {
-      "name": "3R_MCT",
+      "exsamples": [
+        37212
+      ],
       "index3d": 37312,
-      "exsamples": [37212]
+      "name": "3R_MCT"
     },
     {
-      "name": "5R_MCT",
+      "exsamples": [
+        57212
+      ],
       "index3d": 57312,
-      "exsamples": [57212]
+      "name": "5R_MCT"
     },
     {
-      "name": "6R_MCT",
+      "exsamples": [
+        67212
+      ],
       "index3d": 67312,
-      "exsamples": [67212]
+      "name": "6R_MCT"
     }
   ],
   "sim_data": {
     "121": {
       "nsim_key": {
         "0": {
-          "pulse_width": 0.2,
-          "fiber_diam": 3
+          "fiber_diam": 3,
+          "pulse_width": 0.2
         },
         "1": {
-          "pulse_width": 0.2,
-          "fiber_diam": 13
+          "fiber_diam": 13,
+          "pulse_width": 0.2
         },
         "2": {
-          "pulse_width": 0.2,
-          "fiber_diam": 3
+          "fiber_diam": 3,
+          "pulse_width": 0.2
         },
         "3": {
-          "pulse_width": 0.2,
-          "fiber_diam": 13
+          "fiber_diam": 13,
+          "pulse_width": 0.2
         },
         "4": {
-          "pulse_width": 0.2,
-          "fiber_diam": 3
+          "fiber_diam": 3,
+          "pulse_width": 0.2
         },
         "5": {
-          "pulse_width": 0.2,
-          "fiber_diam": 13
+          "fiber_diam": 13,
+          "pulse_width": 0.2
         },
         "6": {
-          "pulse_width": 0.2,
-          "fiber_diam": 3
+          "fiber_diam": 3,
+          "pulse_width": 0.2
         },
         "7": {
-          "pulse_width": 0.2,
-          "fiber_diam": 13
+          "fiber_diam": 13,
+          "pulse_width": 0.2
         }
       }
     }
-  }
+  },
+  "source_sim": 3
 }

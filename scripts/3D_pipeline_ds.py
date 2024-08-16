@@ -33,6 +33,8 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
 sys.path.insert(0, os.path.abspath(root))
 sys.path.insert(0, os.path.join(root, 'src', 'utilities'))
 from nd_line.nd_line import nd_line
+from threedclass import FascicleConnectivityMap
+
 from src.core import Deformable, Fascicle, FiberSet, Model, Nerve, Slide, Trace
 from src.runner import Runner
 from src.utils import (
@@ -46,7 +48,6 @@ from src.utils import (
     ReshapeNerveMode,
     SetupMode,
 )
-from threedclass import FascicleConnectivityMap
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config_script", nargs="?")

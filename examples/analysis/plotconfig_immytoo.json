@@ -1,40 +1,42 @@
 {
-  "source_sim": 3,
   "sample_data": [
     {
-      "name": "5Rim",
+      "exsamples": [
+        5715
+      ],
       "index3d": 5735,
-      "exsamples": [5715]
+      "name": "5Rim"
     }
   ],
   "sim_data": {
     "17": {
       "nsim_key": {
         "0": {
-          "pulse_width": 0.25,
-          "fiber_diam": 3
+          "fiber_diam": 3,
+          "pulse_width": 0.25
         },
         "1": {
-          "pulse_width": 0.25,
-          "fiber_diam": 5
+          "fiber_diam": 5,
+          "pulse_width": 0.25
         },
         "2": {
-          "pulse_width": 0.25,
-          "fiber_diam": 7
+          "fiber_diam": 7,
+          "pulse_width": 0.25
         },
         "3": {
-          "pulse_width": 0.25,
-          "fiber_diam": 9
+          "fiber_diam": 9,
+          "pulse_width": 0.25
         },
         "4": {
-          "pulse_width": 0.25,
-          "fiber_diam": 11
+          "fiber_diam": 11,
+          "pulse_width": 0.25
         },
         "5": {
-          "pulse_width": 0.25,
-          "fiber_diam": 13
+          "fiber_diam": 13,
+          "pulse_width": 0.25
         }
       }
     }
-  }
+  },
+  "source_sim": 3
 }

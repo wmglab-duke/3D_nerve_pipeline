@@ -9,7 +9,6 @@ import os
 import pickle
 import sys
 import warnings
-from typing import List, Union
 
 import matplotlib.colorbar as cbar
 import matplotlib.colors as mplcolors
@@ -22,6 +21,7 @@ from nd_line.nd_line import nd_line
 from scipy.interpolate import griddata
 from scipy.stats import pearsonr
 from shapely.geometry import Point
+
 from src.core import Query, Sample, Simulation
 from src.utils import Config, Object
 
@@ -403,11 +403,11 @@ class _HeatmapPlotter:
 
 def ap_loctime(  # delete
     query_object: Query,
-    n_sim_filter: List[int] = None,
+    n_sim_filter: list[int] = None,
     plot: bool = False,
     plot_distribution: bool = False,
     n_sim_label_override: str = None,
-    model_labels: List[str] = None,
+    model_labels: list[str] = None,
     save: bool = False,
     subplots=False,
     nodes_only=False,
@@ -571,7 +571,7 @@ def ap_loctime(  # delete
                             )
 
 
-def _get_object(mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
+def _get_object(mode: Object, indices: list[int]) -> Sample | Simulation:
     """Load pickled python object from file.
 
     :param mode: Mode of object to load.
@@ -583,8 +583,8 @@ def _get_object(mode: Object, indices: List[int]) -> Union[Sample, Simulation]:
 
 
 def _build_path(
-    mode: Union[Config, Object],
-    indices: List[int] = None,
+    mode: Config | Object,
+    indices: list[int] = None,
 ) -> str:
     """Build path to pickled python object.
 

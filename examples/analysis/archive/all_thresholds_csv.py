@@ -3,10 +3,7 @@ import json
 import sys
 
 import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
 
 matplotlib.use('agg')
 sys.path.append('.')

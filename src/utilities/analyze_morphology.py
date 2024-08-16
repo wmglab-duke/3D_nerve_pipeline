@@ -16,9 +16,10 @@ from shapely.ops import unary_union
 
 sys.path.append('../../..')
 sys.path.append('../../../Scripts')
+from threedclass import FascicleConnectivityMap
+
 from src.core import Fascicle, Nerve, Slide, Trace
 from src.utils import ContourMode, DeformationMode, DownSampleMode, MaskSpaceMode, NerveMode
-from threedclass import FascicleConnectivityMap
 
 root = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
 

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 import json
-import os
 import sys
 
 import pandas as pd
 
 sys.path.append('.')
-import os
 
 # os.chdir('../..')
 from src.core.query import Query

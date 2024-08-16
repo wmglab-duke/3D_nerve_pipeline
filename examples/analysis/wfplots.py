@@ -2,7 +2,6 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import tol_colors as tc
 
 mpl.rcParams['figure.dpi'] = 400

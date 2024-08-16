@@ -6,7 +6,6 @@
 import json
 import os
 
-import cmasher as cmr
 import matplotlib as mpl
 import matplotlib.cm as cm
 import matplotlib.patheffects as PathEffects
@@ -452,7 +451,7 @@ plt.figure()
 g = sns.relplot(
     kind='line',
     style='deformation',
-    data=alldr.query(f"fiber_diam in [5]"),
+    data=alldr.query("fiber_diam in [5]"),
     y='percent_activated',
     x='threshold',
     units='nerve_label',
@@ -508,7 +507,7 @@ plt.figure()
 g = sns.relplot(
     kind="line",
     style="deformation",
-    data=alldr.query(f"fiber_diam in [3]"),
+    data=alldr.query("fiber_diam in [3]"),
     y="percent_activated",
     x="threshold",
     units="nerve_label",
@@ -1417,7 +1416,7 @@ for ax in g.axes.ravel():
     plt.sca(ax)
     plt.xticks(rotation=20)
 plt.gcf().set_size_inches(4, 3)
-plt.gca().set_ylabel(f'Absolute Percent Difference (%)')
+plt.gca().set_ylabel('Absolute Percent Difference (%)')
 # %% now for only cathodic calculate the median and plot barplot with values
 specdat = allpes.query(f'contact in {cath_comparison}')
 specdat = specdat.groupby(['deformation', 'level', 'fiber_diam']).agg({'pe': 'median'}).reset_index()
@@ -1478,7 +1477,7 @@ for row in newdefdr.itertuples():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdefdr.loc[row.Index, "percent_activated3d"] = val
 newdefdr["contact"] = newdefdr["contact"].replace(
     {
@@ -1610,7 +1609,7 @@ for ax in g.axes.ravel():
 for i, ax in enumerate(g.axes.flat):
     contact = g.col_names[i % g.axes.shape[1]]
     nerve_label = g.row_names[i // g.axes.shape[1]]
-    thisdat = plotactidata.query(f"contact == @contact and nerve_label==@nerve_label")
+    thisdat = plotactidata.query("contact == @contact and nerve_label==@nerve_label")
     data2d = thisdat.sort_values("master_fiber_index").percent_activated
     data3d = thisdat.sort_values("master_fiber_index").percent_activated3d
     ccc = concordance_correlation_coefficient(list(data3d), list(data2d))
@@ -2214,7 +2213,6 @@ plt.ylim([0, 1])
 plt.ylabel("Proportion Activated")
 # create legend, circle = extrusion, X= true-3D
 # create handles manually
-from matplotlib.lines import Line2D
 
 legend_elements = [
     Line2D([0], [0], label="extrusion", color="k", linestyle="-", alpha=0.6),
@@ -2271,7 +2269,7 @@ for row in newdefdr.itertuples():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdefdr.loc[row.Index, "percent_activated3"] = val
 # %% plot AR
 sns.set(font_scale=1, style="white", context='paper')
@@ -2820,7 +2818,7 @@ for nerve_label in ['3R']:
     for acsrc, ax in zip(sorted(pd.unique(thisplotdata.active_src_index)), axs):
         # plt.figure()
         g = sns.scatterplot(
-            data=thisplotdata.query(f"fiber_diam in [3] and active_src_index==@acsrc"),
+            data=thisplotdata.query("fiber_diam in [3] and active_src_index==@acsrc"),
             y="percent_activated",
             x="threshold",
             hue="inner",
@@ -2835,7 +2833,7 @@ for nerve_label in ['3R']:
         import matplotlib.patheffects as paffect
 
         sns.lineplot(
-            data=thisplotdata.query(f"fiber_diam in [3] and active_src_index==@acsrc"),
+            data=thisplotdata.query("fiber_diam in [3] and active_src_index==@acsrc"),
             y="percent_activated",
             x="threshold",
             color="w",
@@ -2889,7 +2887,7 @@ for nerve_label in ['3R']:
     # plt.suptitle(stringdat, x=0.37)
     g.set_titles(row_template="", col_template="Active contact: {col_name}")
     g.axes[0][0].set_xlabel("")
-    g.axes[0][0].set_ylabel(f"Threshold (mA)")
+    g.axes[0][0].set_ylabel("Threshold (mA)")
     g.set_xlabels("")
     norm = plt.Normalize(0, 1)
     sm = plt.cm.ScalarMappable(cmap="rainbow", norm=norm)
@@ -3901,7 +3899,6 @@ plt.gcf().set_size_inches(2.5, 4)
 #         ax.bar_label(i,fmt='{:.2f}')
 # %% threshold variances and coefficient of variation intrafascicle and inter
 estimator, errorbar = "median", ('ci', 95)
-from scipy.stats import variation
 
 sns.set(font_scale=1, style="white", context='paper')
 vardat = repeated_deformation.query('contact=="cathodic" and deformation=="Structural"')
@@ -4521,7 +4518,7 @@ g.map_dataframe(
 g.map_dataframe(sns.barplot, y="pe", x="level", hue='fiber_diam', facecolor='white', edgecolor='k', errorbar=None)
 g.set_ylabels("Percent Error")
 plt.gcf().set_size_inches(4, 8 / 3)
-g.set_ylabels(f'Relative\nPercent Difference (%)')
+g.set_ylabels('Relative\nPercent Difference (%)')
 # plt.suptitle(f'Relative Percent Difference (%)',x=0.05,y=0.95,rotation=90)
 g.set_titles(row_template='')
 for ax in g.axes.ravel():
@@ -4925,7 +4922,7 @@ for nerve in ["2L", '3R', '5R', '6R']:
     g = sns.relplot(
         kind="line",
         style="deformation",
-        data=alldr.query(f"fiber_diam in [3]"),
+        data=alldr.query("fiber_diam in [3]"),
         y="percent_activated",
         x="threshold",
         units="nerve_label",
@@ -5041,7 +5038,7 @@ for row in newdefdr.itertuples():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdefdr.loc[row.Index, "percent_activated3"] = val
 #  plot
 sns.set(font_scale=1, style="white", context='paper')
@@ -5132,7 +5129,7 @@ plt.figure()
 g = sns.relplot(
     kind="line",
     # style="deformation",
-    data=alldr.query(f"fiber_diam in [3,13]"),
+    data=alldr.query("fiber_diam in [3,13]"),
     y="percent_activated",
     x="threshold",
     units="nerve_label",
@@ -5182,7 +5179,7 @@ for activation in np.linspace(0, 1, 50):
         for fiber_diam in alldr.fiber_diam.unique():
             # take the highest threshold value that is less than or equal to the activation level, then take the median of these
             thisdat = alldr.query(
-                f"modeltype==@modeltype and fiber_diam==@fiber_diam and percent_activated<=@activation"
+                "modeltype==@modeltype and fiber_diam==@fiber_diam and percent_activated<=@activation"
             )
             # take the max threshold for each nerve
             thisdat = thisdat.groupby(['nerve_label']).agg({'threshold': 'max'}).reset_index()
@@ -5247,7 +5244,7 @@ for activation in [0.1, 0.5, 0.9]:
         for fiber_diam in alldr.fiber_diam.unique():
             # take the highest threshold value that is less than or equal to the activation level, then take the median of these
             thisdat = alldr.query(
-                f"modeltype==@modeltype and fiber_diam==@fiber_diam and percent_activated<=@activation"
+                "modeltype==@modeltype and fiber_diam==@fiber_diam and percent_activated<=@activation"
             )
             # take the max threshold for each nerve
             thisdat = thisdat.groupby(['nerve_label']).agg({'threshold': 'max'}).reset_index()
@@ -5570,7 +5567,7 @@ for nerve_label in pd.unique(imdatfasr["nerve_label"]):
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import mannwhitneyu, variation
+from scipy.stats import variation
 
 sns.set(font_scale=1, style="white", context='paper')
 import matplotlib.patheffects as PathEffects

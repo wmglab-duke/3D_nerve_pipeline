@@ -1,32 +1,34 @@
 {
-  "sample": "",
-  "samples_path": ["samples"],
-  "scale": {
-    "scale_ratio": 5,
-    "shrinkage": 0.2
-  },
+  "Morphology": null,
   "boundary_separation": {
     "fascicles": 10,
     "nerve": 10
   },
-  "modes": {
-    "mask_input": "INNER_AND_OUTER_SEPARATE",
-    "scale_input": "RATIO",
-    "nerve": "PRESENT",
-    "deform": "PHYSICS",
-    "ci_perineurium_thickness": "MEASURED",
-    "reshape_nerve": "NONE"
-  },
   "deform_ratio": 1,
-  "Morphology": null,
-  "plot": true,
-  "plot_folder": true,
   "image_preprocessing": {
     "fill_holes": true,
     "object_removal_area": 20
   },
+  "modes": {
+    "ci_perineurium_thickness": "MEASURED",
+    "deform": "PHYSICS",
+    "mask_input": "INNER_AND_OUTER_SEPARATE",
+    "nerve": "PRESENT",
+    "reshape_nerve": "NONE",
+    "scale_input": "RATIO"
+  },
+  "plot": true,
+  "plot_folder": true,
+  "sample": "",
+  "samples_path": [
+    "samples"
+  ],
+  "scale": {
+    "scale_ratio": 5,
+    "shrinkage": 0.2
+  },
   "smoothing": {
-    "nerve_distance": 0,
-    "fascicle_distance": 0
+    "fascicle_distance": 0,
+    "nerve_distance": 0
   }
 }

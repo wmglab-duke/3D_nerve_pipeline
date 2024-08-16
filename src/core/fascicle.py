@@ -12,11 +12,12 @@ https://github.com/wmglab-duke/ascent
 import itertools
 import os
 from copy import deepcopy
-from typing import List, Tuple, Union
+from typing import Union
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+
 from src.utils import MaskSpaceMode, MorphologyError, WriteMode
 
 from .nerve import Nerve
@@ -33,7 +34,7 @@ class Fascicle:
     def __init__(
         self,
         outer: Trace,
-        inners: List[Trace] = None,
+        inners: list[Trace] = None,
     ):
         """Initialize the Fascicle object.
 
@@ -48,7 +49,7 @@ class Fascicle:
         self.outer_scale = None
 
         # initialize constituent traces
-        self.inners: List[Trace] = inners if inners is not None else []
+        self.inners: list[Trace] = inners if inners is not None else []
         self.outer: Trace = outer
 
         if len(self.inners) > 0:
@@ -67,7 +68,7 @@ class Fascicle:
         if any(not inner.within(self.outer) for inner in self.inners):
             raise MorphologyError("Not all inner Traces fall within outer Trace")
         # ensure no Traces intersect (and only check each pair of Traces once)
-        pairs: List[Tuple[Trace]] = list(itertools.combinations(self.all_traces(), 2))
+        pairs: list[tuple[Trace]] = list(itertools.combinations(self.all_traces(), 2))
         if any(pair[0].intersects(pair[1]) for pair in pairs):
             self.plot()
             plt.axes().set_aspect('equal')
@@ -85,7 +86,7 @@ class Fascicle:
         else:  # other must be a Nerve
             return self.outer.intersects(other)
 
-    def min_distance(self, other: Union['Fascicle', Nerve]) -> Union[float, tuple]:
+    def min_distance(self, other: Union['Fascicle', Nerve]) -> float | tuple:
         """Calculate the minimum distance between the fascicle and another fascicle or nerve boundary.
 
         :param other: other Fascicle or Nerve to check
@@ -123,14 +124,14 @@ class Fascicle:
         for trace in self.all_traces():
             trace.shift(vector)
 
-    def all_traces(self) -> List[Trace]:
+    def all_traces(self) -> list[Trace]:
         """Get all constituent traces.
 
         :return: list of all traces
         """
         return list(self.inners) + [self.outer]
 
-    def centroid(self) -> Tuple[float, float]:
+    def centroid(self) -> tuple[float, float]:
         """Get the centroid of the outer trace.
 
         :return: centroid of outer trace (ellipse method)
@@ -172,7 +173,7 @@ class Fascicle:
     def plot(
         self,
         plot_format: str = 'b-',
-        color: Union[Tuple[float, float, float, float], List[Tuple[float, float, float, float]]] = None,
+        color: tuple[float, float, float, float] | list[tuple[float, float, float, float]] = None,
         ax: plt.Axes = None,
         outer_flag=True,
         inner_index_start: int = None,
@@ -224,7 +225,7 @@ class Fascicle:
         """
         return deepcopy(self)
 
-    def scale(self, factor: float, center: List[float] = None):
+    def scale(self, factor: float, center: list[float] = None):
         """Scale the fascicle by a factor.
 
         :param factor: scale factor
@@ -236,7 +237,7 @@ class Fascicle:
         for trace in self.all_traces():
             trace.scale(factor, center)
 
-    def rotate(self, angle: float, center: List[float] = None):
+    def rotate(self, angle: float, center: list[float] = None):
         """Rotate the fascicle by an angle.
 
         :param angle: angle in radians
@@ -291,7 +292,7 @@ class Fascicle:
         contour_mode,
         mask_space_mode,
         z: float = 0,
-    ) -> List['Fascicle']:
+    ) -> list['Fascicle']:
         """Convert a set of inner and outer images to a list of fascicles.
 
         :param z: z-coordinate of the slide this fascicle is on
@@ -303,7 +304,7 @@ class Fascicle:
         :return: list of Fascicles derived from the image(s)
         """
 
-        def build_traces(path: str) -> List[Trace]:
+        def build_traces(path: str) -> list[Trace]:
             # default findContours params
             params = [cv2.RETR_TREE, contour_mode.value]
             # default findContours params
@@ -334,7 +335,7 @@ class Fascicle:
             inners, outers = (np.array(build_traces(path)) for path in (inner_img_path, outer_img_path))
 
             # create empty list to hold the outer traces that inners correspond to
-            inner_correspondence: List[int] = []
+            inner_correspondence: list[int] = []
 
             # iterate through all inner traces and assign outer index
             for inner in inners:
@@ -342,7 +343,7 @@ class Fascicle:
                 inner_correspondence.append(np.where(mask)[0][0])
 
         # create empty list to hold fascicles
-        fascicles: List[Fascicle] = []
+        fascicles: list[Fascicle] = []
 
         # iterate through each outer and build fascicles
         for index, outer in enumerate(outers):
