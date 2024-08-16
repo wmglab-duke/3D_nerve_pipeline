@@ -7,7 +7,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy import stats
-from scipy.stats import pearsonr, sem, variation
+from scipy.stats import pearsonr
 
 os.chdir('../../')
 import sys
@@ -294,7 +294,7 @@ for row in newdefdr.itertuples():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdefdr.loc[row.Index, 'percent_activated3d'] = val
 # %% plot act order
 newdefdr['contact'] = newdefdr['contact'].replace(
@@ -346,7 +346,7 @@ plt.figure()
 g = sns.relplot(
     kind='line',
     style='deformation',
-    data=alldr.query(f"fiber_diam in [3]"),
+    data=alldr.query("fiber_diam in [3]"),
     y='percent_activated',
     x='threshold',
     units='nerve_label',
@@ -391,7 +391,6 @@ import statsmodels.api as sm
 
 # %%
 from statsmodels.formula.api import ols
-from statsmodels.stats.anova import AnovaRM
 
 model = ols('threshold ~ nerve_label', data=defdr).fit()
 print(model.summary())
@@ -502,7 +501,7 @@ for row in newdefdr.itertuples():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     if row.modeltype == "3DM":
         assert newdefdr.loc[row.Index, 'percent_activated'] == val
     newdefdr.loc[row.Index, 'percent_activated3d'] = val
@@ -570,7 +569,7 @@ g.legend.get_texts()[0].set_text('Sample')
 # %% new r2
 sns.reset_orig()
 sns.set(style='whitegrid', font_scale=1.5)
-nsimdata = concats.query(f'fiber_diam in [3,13]')  # TODO replace all cath comparison with non
+nsimdata = concats.query('fiber_diam in [3,13]')  # TODO replace all cath comparison with non
 nsimdata['contact'] = pd.Categorical(nsimdata['contact'], categories=['anodic', 'center', 'cathodic'], ordered=True)
 nsimdata['slice'] = nsimdata['contact'].copy()
 nsimdata['deformation'].replace({'3D-3D': 'Structural'}, inplace=True)

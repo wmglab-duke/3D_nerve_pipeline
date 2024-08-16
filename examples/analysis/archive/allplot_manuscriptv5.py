@@ -296,7 +296,6 @@ for nsim in [0, 5]:
     res = dadata.threshold3d - dadata.threshold
     print(f'Difference between means for {nsim}:', round(np.mean(res), 3), 'sem:', round(sem(res), 3))
 # %% threshold variances and coefficient of variation intrafascicle and inter
-from scipy.stats import variation
 
 sns.set(font_scale=1.75, style='whitegrid')
 vardat = repeated.query('sim==3 and contact=="cathodic"')
@@ -487,7 +486,7 @@ for i, row in newdr.iterrows():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdr.loc[i, 'percent_activated2d'] = val
 # %%
 # first find the mean threshold across all inners
@@ -507,7 +506,7 @@ for i, row in analyze.iterrows():
     thisdat = meanthresh.query('nerve_label == @row.nerve_label and fiber_diam == @row.fiber_diam and sim == @row.sim')
     # find the inner percentile for this fiber
     val = thisdat.query('inner == @row.inner').percentile.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     analyze.loc[i, 'inner_activation_2D_percent'] = val
 
 # could shade in min and max to show response range?
@@ -1780,7 +1779,7 @@ for stringdat in ['Undeformed', '2D-3D', '3D-3D']:
         )
         assert len(thisdat) == 1
         val = thisdat.percent_activated.values[0]
-        assert not val is np.nan
+        assert val is not np.nan
         newdefdr.loc[i, 'percent_activated2d'] = val
     sns.set(font_scale=2.25, style='whitegrid')
     plt.figure()
@@ -2254,7 +2253,7 @@ g = sns.lmplot(
 # %% tortuosity lineplot
 sns.set(font_scale=2)
 sns.set_style('whitegrid')
-nsimdata = defdefcomp.query(f'fiber_diam in [3,13]')
+nsimdata = defdefcomp.query('fiber_diam in [3,13]')
 corrs = (
     nsimdata.groupby(['sample', 'fiber_diam', 'nerve_label', 'deformed'])['threshold', 'tortuosity']
     .corr()
@@ -2455,7 +2454,7 @@ for i, row in defdefdr.iterrows():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     defdefdr.loc[i, 'percent_activatedUD'] = val
 # %%
 sns.set(font_scale=2, style='whitegrid')

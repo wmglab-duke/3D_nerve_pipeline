@@ -1,17 +1,8 @@
 {
-  "sourcedir": "../sipsource",
-  "sourcefile": "2L_strip.sip",
-  "path": {
-    "slides": "2_slides",
-    "fibers": "3_fiberset",
-    "mesh": "4_meshing",
-    "comsol": "5_comsol",
-    "ascent": "7_ascent"
-  },
   "config": {
+    "model": "model_LN2000.json",
     "path": "../config",
     "run": "run.json",
-    "model": "model_LN2000.json",
     "sample": "sample.json"
   },
   "input": {
@@ -22,30 +13,39 @@
     "z+": "caudal",
     "z-": "rostral"
   },
-  "preprocess": {
-    "upsample_z": 1,
-    "buffer": 10,
-    "nsmoothing": 25,
-    "fsmoothing": 10
+  "mesh": {
+    "internal_change_rate": 30,
+    "max_edge_length": 1.6,
+    "max_error": 0.005,
+    "min_edge_length": 0.01,
+    "n_layer_elements": 1.0,
+    "second_order": true,
+    "smooth_against_background": true,
+    "surface_change_rate": 60,
+    "use_nastran": false
   },
   "output": {
-    "image_um_per_px": 5,
-    "id_font": 60,
     "addl_cuff_buffer": 0,
+    "id_font": 60,
+    "image_um_per_px": 5,
     "slices": {
       "center": 29051
     }
   },
-  "mesh": {
-    "min_edge_length": 0.01,
-    "max_error": 0.005,
-    "max_edge_length": 1.6,
-    "internal_change_rate": 30,
-    "surface_change_rate": 60,
-    "n_layer_elements": 1.0,
-    "smooth_against_background": true,
-    "second_order": true,
-    "use_nastran": false
+  "path": {
+    "ascent": "7_ascent",
+    "comsol": "5_comsol",
+    "fibers": "3_fiberset",
+    "mesh": "4_meshing",
+    "slides": "2_slides"
   },
-  "project_path": "D:\\threed_final\\datanew\\2Lstrip"
+  "preprocess": {
+    "buffer": 10,
+    "fsmoothing": 10,
+    "nsmoothing": 25,
+    "upsample_z": 1
+  },
+  "project_path": "D:\\threed_final\\datanew\\2Lstrip",
+  "sourcedir": "../sipsource",
+  "sourcefile": "2L_strip.sip"
 }

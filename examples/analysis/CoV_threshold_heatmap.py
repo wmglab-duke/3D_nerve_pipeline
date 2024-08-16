@@ -11,9 +11,7 @@ RUN THIS FROM REPOSITORY ROOT
 """
 import os
 
-import matplotlib.pyplot as plt
 import pandas as pd
-import seaborn as sns
 
 os.chdir("../..")
 

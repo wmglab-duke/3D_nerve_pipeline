@@ -7,10 +7,10 @@ import json
 import math
 import os
 
-# temp
-import sys
-
 from scanip_api3 import *
+
+# temp
+
 
 # end temp
 sipconfig = App.GetInstance().GetInputValue()

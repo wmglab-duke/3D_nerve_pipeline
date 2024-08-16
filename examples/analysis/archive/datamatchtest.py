@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
-import json
 import os
 import sys
 
-import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
 from src.core.query import Query
 
 sys.path.insert(0, os.path.abspath('../../'))
 os.chdir('../../')
-from src.core.plotter import get_datamatch
 
 samples2d = [250, 252]
 samp3d = 253

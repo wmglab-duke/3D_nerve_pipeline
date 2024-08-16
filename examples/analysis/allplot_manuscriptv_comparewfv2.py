@@ -7,22 +7,16 @@ import json
 import os
 
 import matplotlib as mpl
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import tol_colors as tc
-from matplotlib.lines import Line2D
 from scipy import stats
-from scipy.stats import pearsonr, sem, variation
+from scipy.stats import pearsonr
 
 os.chdir("../../")
 import sys
-
-from src.core import Sample
-from src.core.query import Query
-from src.utils import Object
 
 sys.path.pop(-2)
 from src.core.plotter import datamatch_merge
