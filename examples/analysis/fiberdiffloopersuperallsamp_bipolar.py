@@ -1,11 +1,9 @@
 import os
 import pickle
-import random
 import sys
 
 import matplotlib
 import numpy as np
-import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy.signal import find_peaks
 from shapely.geometry import Point

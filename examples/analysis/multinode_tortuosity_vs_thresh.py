@@ -1,19 +1,14 @@
 import os
-import pickle
-import random
 import sys
 
 import numpy as np
 from matplotlib import pyplot as plt
-from scipy.signal import find_peaks
-from shapely.geometry import Point
 
 sys.path.append(r'C:\nrn\lib\python')  # noqa: E800
 
 os.chdir('../..')
 
 import pandas as pd
-from shapely.strtree import STRtree
 
 threshdata = pd.concat([pd.read_csv('thresh_unmatched_sim3_og.csv')]).query('type=="3D"')
 tort_data = []

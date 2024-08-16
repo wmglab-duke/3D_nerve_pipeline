@@ -39,10 +39,6 @@ def concordance_correlation_coefficient(y_true, y_pred):
     return numerator / denominator
 
 
-import matplotlib.pyplot as plt
-import numpy as np
-
-
 def generate_gaussian_points(n_points=100, mean=0, spread_along=1, spread_perpendicular=0.1):
     """Generate points following a 2D Gaussian distribution along y=x line,
     with independent control over the spread along and perpendicular to the line.

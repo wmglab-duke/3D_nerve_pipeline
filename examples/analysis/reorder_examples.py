@@ -48,7 +48,6 @@ input2 = random.sample(input1, len(input1))
 print(compute_reorder_cost(input1, input2))
 # plot change in the above as the length of the list increases
 # do 20 iterations for each length and plot the mean and standard deviation
-import seaborn as sns
 
 x = np.arange(2, 100, 5)
 y = []

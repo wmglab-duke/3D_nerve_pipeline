@@ -1,7 +1,7 @@
 {
   "ASCENT_COMSOL_PATH": "/hpc/group/wmglab/lab_software/COMSOL/comsol62/multiphysics",
   "ASCENT_JDK_PATH": "/hpc/group/wmglab/lab_software/jdk1.8/usr/bin",
-  "ASCENT_PROJECT_PATH": "/work/dpm42/ascent-3-d-vns",
   "ASCENT_NSIM_EXPORT_PATH": "/work/dpm42/ascent-3-d-vns/threed_out",
+  "ASCENT_PROJECT_PATH": "/work/dpm42/ascent-3-d-vns",
   "SIMPLEWARE_SCANIP_PATH": "/hpc/group/wmglab/lab_software/ScanIP/simpleware/T-2022.03/linux64"
 }

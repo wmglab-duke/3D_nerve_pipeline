@@ -14,7 +14,6 @@ import os
 import sys
 import warnings
 from io import BytesIO
-from typing import List
 
 import cv2
 import matplotlib.pyplot as plt
@@ -22,6 +21,7 @@ import numpy as np
 import scipy.stats as stats
 import shapely.affinity
 from shapely.geometry.point import Point
+
 from src.utils import Config, Configurable, IncompatibleParametersError, MorphologyError, PopulateMode
 
 
@@ -37,7 +37,7 @@ class MockSample(Configurable):
         # Initializes superclasses
         Configurable.__init__(self)
 
-        self.fascicles: List[shapely.geometry.Point] = []
+        self.fascicles: list[shapely.geometry.Point] = []
         self.nerve = shapely.geometry.Point
 
     # https://gis.stackexchange.com/questions/6412/generate-points-that-lie-inside-polygon

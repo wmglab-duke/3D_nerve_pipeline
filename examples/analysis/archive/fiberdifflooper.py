@@ -8,8 +8,6 @@ import os
 
 os.chdir('../..')
 
-from moviepy.video.io.bindings import mplfig_to_npimage
-from moviepy.video.VideoClip import VideoClip
 
 sim = 3
 
@@ -158,7 +156,6 @@ for dz in [1]:
         plt.xlim()
         # %% now do cross correlelograms
         # first, threshold the absolute value of perineurium thickness to find splits and merges
-        from scipy.signal import find_peaks
 
         merges = np.where(np.diff(inner_areas) > 25000)[0]
         splits = np.where(np.diff(inner_areas) < -25000)[0]

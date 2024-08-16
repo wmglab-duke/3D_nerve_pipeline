@@ -14,6 +14,7 @@ import os
 os.chdir('../..')
 
 import matplotlib.pyplot as plt
+
 from src.core import Sample
 from src.core.query import Query
 from src.utils import Object

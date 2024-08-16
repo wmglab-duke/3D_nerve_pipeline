@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import colormaps
+
 from src.core.plotter import heatmaps
 from src.core.query import Query
 from src.utils import Object

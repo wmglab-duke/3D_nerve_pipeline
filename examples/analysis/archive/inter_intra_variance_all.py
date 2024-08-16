@@ -2,7 +2,6 @@
 import json
 import sys
 
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -10,7 +9,6 @@ import seaborn as sns
 
 sys.path.append('.')
 
-from src.core.plotter import get_datamatch
 
 alldat = pd.read_csv('thresh.csv')
 

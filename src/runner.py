@@ -16,9 +16,9 @@ import subprocess
 import sys
 import time
 import warnings
-from typing import List
 
 import numpy as np
+
 from src.core import Model, Sample, Simulation
 from src.utils import (
     Config,
@@ -402,8 +402,8 @@ class Runner(Configurable):
             print('NO MODELS TO MAKE IN Config.RUN - killing process')
             return
         if self.configs[Config.RUN.value].get("post_java_only") is not True:
-            self.bases_potentials_exist: List[bool] = []  # if all of these are true, skip Java
-            self.ss_bases_exist: List[bool] = []  # if all of these are true, skip Java
+            self.bases_potentials_exist: list[bool] = []  # if all of these are true, skip Java
+            self.ss_bases_exist: list[bool] = []  # if all of these are true, skip Java
 
             sample, sample_num = self.generate_sample(all_configs, smart=smart)
             for model_index, model_config in enumerate(all_configs[Config.MODEL.value]):
