@@ -7,8 +7,6 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from moviepy.editor import VideoClip
-from moviepy.video.io.bindings import mplfig_to_npimage
 
 sys.path.append(r'C:\nrn\lib\python')
 
@@ -82,7 +80,7 @@ step = 75
 times = np.arange(start, stop, step)
 for i, t in enumerate(times):
     plt.plot(fiber.coordinates[11:-11:11], vm[t], color=plt.cm.viridis(i / len(times)))
-plt.title(f'Vm over time for 3 micron fiber')
+plt.title('Vm over time for 3 micron fiber')
 # make colorbar
 sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=plt.Normalize(vmin=start, vmax=stop))
 sm._A = []
@@ -184,7 +182,7 @@ step = 75
 times = np.arange(start, stop, step)
 for i, t in enumerate(times):
     plt.plot(fiber.coordinates[11:-11:11], vm[t], color=plt.cm.viridis(i / len(times)))
-plt.title(f'Vm over time for 3 micron fiber')
+plt.title('Vm over time for 3 micron fiber')
 # make colorbar
 sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=plt.Normalize(vmin=start, vmax=stop))
 sm._A = []

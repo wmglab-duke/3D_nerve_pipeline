@@ -17,6 +17,7 @@ import json
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+
 from src.core.plotter import heatmaps
 from src.core.query import Query
 
@@ -32,6 +33,7 @@ import matplotlib.colors as mplcolors
 import pandas as pd
 import seaborn as sns
 from matplotlib import colormaps
+
 from src.utils import Object
 
 
@@ -209,6 +211,7 @@ titles = [f"2DEM\n{pairnames[1]}", "3DM Undeformed"]
 
 import pandas as pd
 import seaborn as sns
+
 from src.utils import Object
 
 q = Query(

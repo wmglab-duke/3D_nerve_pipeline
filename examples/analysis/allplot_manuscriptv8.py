@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-from scipy import stats
 from scipy.stats import pearsonr, sem, variation
 
 os.chdir('../../')
@@ -303,7 +302,7 @@ g = sns.relplot(
     kind='line',
     col='nerve_label',
     style='deformation',
-    data=alldr.query(f"fiber_diam in [3]"),
+    data=alldr.query("fiber_diam in [3]"),
     y='percent_activated',
     x='threshold',
     units='nerve_label',
@@ -640,7 +639,7 @@ for i, row in newdefdr.iterrows():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdefdr.loc[i, 'percent_activated2d'] = val
 # plot
 sns.set(font_scale=1.75, style='whitegrid')

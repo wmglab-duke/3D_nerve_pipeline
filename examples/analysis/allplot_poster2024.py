@@ -14,7 +14,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.lines import Line2D
 from scipy import stats
-from scipy.stats import pearsonr, sem, variation
+from scipy.stats import pearsonr, variation
 
 os.chdir("../../")
 import sys
@@ -454,7 +454,7 @@ plt.figure()
 g = sns.relplot(
     kind="line",
     style="deformation",
-    data=alldr.query(f"fiber_diam in [3]"),
+    data=alldr.query("fiber_diam in [3]"),
     y="percent_activated",
     x="threshold",
     units="nerve_label",
@@ -907,7 +907,6 @@ plt.ylim([0, 1])
 plt.ylabel("Proportion Activated")
 # create legend, circle = extrusion, X= true-3D
 # create handles manually
-from matplotlib.lines import Line2D
 
 legend_elements = [
     Line2D([0], [0], label="extrusion", color="k", linestyle="-", alpha=0.6),
@@ -1260,7 +1259,6 @@ for contact_config in pd.unique(imdata["active_src_index"]):
 
 imdatfasr = pd.DataFrame(imdatfasr)
 # %%
-import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -1570,7 +1568,6 @@ for nerve_label, samplenum, r_cuff_in_pre_MCT in zip(
     plt.figure()
 # %% threshold variances and coefficient of variation intrafascicle and inter
 estimator, errorbar = "median", ("pi", 25)
-from scipy.stats import variation
 
 sns.set(font_scale=1.75, style="whitegrid")
 vardat = repeated_deformation.query('sim==3 and contact=="cathodic" and deformation=="Structural"')
@@ -1892,7 +1889,7 @@ alldr["deformation"] = pd.Categorical(
 plt.figure()
 g = sns.relplot(
     kind="line",
-    data=alldr.query(f"fiber_diam in [3]"),
+    data=alldr.query("fiber_diam in [3]"),
     y="percent_activated",
     x="threshold",
     units="nerve_label",
@@ -2016,7 +2013,7 @@ alldr["deformation"] = pd.Categorical(
 plt.figure()
 g = sns.relplot(
     kind="line",
-    data=alldr.query(f"fiber_diam in [3]"),
+    data=alldr.query("fiber_diam in [3]"),
     y="percent_activated",
     x="threshold",
     units="nerve_label",
@@ -2075,7 +2072,7 @@ alldr["deformation"] = pd.Categorical(
 plt.figure()
 g = sns.relplot(
     kind="line",
-    data=alldr.query(f"fiber_diam in [3] and deformation=='Structural'"),
+    data=alldr.query("fiber_diam in [3] and deformation=='Structural'"),
     y="percent_activated",
     x="threshold",
     units="nerve_label",

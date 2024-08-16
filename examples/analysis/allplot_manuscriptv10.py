@@ -367,7 +367,7 @@ plt.figure()
 g = sns.relplot(
     kind='line',
     style='deformation',
-    data=alldr.query(f"fiber_diam in [3]"),
+    data=alldr.query("fiber_diam in [3]"),
     y='percent_activated',
     x='threshold',
     units='nerve_label',
@@ -746,7 +746,7 @@ for row in newdefdr.itertuples():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdefdr.loc[row.Index, 'percent_activated3d'] = val
 newdefdr['contact'] = newdefdr['contact'].replace(
     {
@@ -767,7 +767,7 @@ plt.figure()
 g = sns.catplot(
     kind='swarm',
     row='fiber_diam',
-    data=newdefdr.query(f"fiber_diam in [3]"),
+    data=newdefdr.query("fiber_diam in [3]"),
     y='percent_activated',
     x='contact',
     units='nerve_label',
@@ -1149,11 +1149,11 @@ newim['percent_activated2d'] = np.nan
 for row in newim.itertuples():
     # find the 2D threshold for this fiber (same nerve, fiber diameter, and master fiber index)
     thisdat = newim.query(
-        f'type == "true-3D" and fiber_diam == @row.fiber_diam and master_fiber_index == @row.master_fiber_index and active_src_index==@row.active_src_index'
+        'type == "true-3D" and fiber_diam == @row.fiber_diam and master_fiber_index == @row.master_fiber_index and active_src_index==@row.active_src_index'
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newim.loc[row.Index, 'percent_activated3d'] = val
 newim['type'] = pd.Categorical(newim['type'], ordered=True, categories=['true-3D', 'extrusion'])
 # plot
@@ -1249,7 +1249,7 @@ for acsrc, ax in zip(sorted(pd.unique(imdr.active_src_index)), axs):
     # plt.figure()
     sns.set(font_scale=1.5, style='white')
     sns.lineplot(
-        data=imdr.query(f"fiber_diam in [3] and active_src_index==@acsrc"),
+        data=imdr.query("fiber_diam in [3] and active_src_index==@acsrc"),
         y='percent_activated',
         x='threshold',
         color='k',
@@ -1262,7 +1262,7 @@ for acsrc, ax in zip(sorted(pd.unique(imdr.active_src_index)), axs):
     )
 
     g = sns.scatterplot(
-        data=imdr.query(f"fiber_diam in [3] and active_src_index==@acsrc"),
+        data=imdr.query("fiber_diam in [3] and active_src_index==@acsrc"),
         y='percent_activated',
         x='threshold',
         hue='inner',
@@ -2234,7 +2234,7 @@ for row in newdefdr.itertuples():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdefdr.loc[row.Index, 'percent_activated3'] = val
 # plot
 sns.set(font_scale=1.5, style='whitegrid')

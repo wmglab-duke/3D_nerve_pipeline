@@ -201,7 +201,6 @@ plt.show()
 # %% tortuosity example
 sns.set(font_scale=1.25, style='whitegrid')
 import matplotlib.pyplot as plt
-import numpy as np
 
 
 def calculate_tortuosity(x, y):
@@ -485,7 +484,7 @@ for i, row in newdr.iterrows():
     )
     assert len(thisdat) == 1
     val = thisdat.percent_activated.values[0]
-    assert not val is np.nan
+    assert val is not np.nan
     newdr.loc[i, 'percent_activated2d'] = val
 newdr.sort_values(by='samplenum')
 # %%
@@ -1489,7 +1488,7 @@ for stringdat in ['Undeformed', '3D-3D']:
         )
         assert len(thisdat) == 1
         val = thisdat.percent_activated.values[0]
-        assert not val is np.nan
+        assert val is not np.nan
         newdefdr.loc[i, 'percent_activated2d'] = val
     sns.set(font_scale=2.25, style='whitegrid')
     plt.figure()

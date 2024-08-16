@@ -12,13 +12,13 @@ import os
 import shutil
 import sys
 import warnings
-from typing import List
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import binary_fill_holes
 from skimage import morphology
+
 from src.core import Deformable, Fascicle, Map, Nerve, Slide, Trace
 from src.utils import (
     Config,
@@ -64,7 +64,7 @@ class Sample(Configurable, Saveable):
         self.reshape_nerve_mode = None
         self.nerve_mode = None
         self.mask_input_mode = None
-        self.slides: List[Slide] = []
+        self.slides: list[Slide] = []
 
         # Set instance variable map
         self.map = None

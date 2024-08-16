@@ -1,10 +1,10 @@
 {
-  "outpath": "/work/wmglab/dpm42/ASC3D/sipsource/preprocessed/mock",
+  "i_mask": "endoneurium_ds_opened",
   "infile": "/work/wmglab/dpm42/ASC3D/sipsource/mock.sip",
+  "n_mask": "epineurium_destepped",
+  "outpath": "/work/wmglab/dpm42/ASC3D/sipsource/preprocessed/mock",
   "resample_factor": 1,
   "resample_xy": 2.0,
   "um_per_px": 10,
-  "um_per_slice": 20,
-  "n_mask": "epineurium_destepped",
-  "i_mask": "endoneurium_ds_opened"
+  "um_per_slice": 20
 }
