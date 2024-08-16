@@ -1,11 +1,3 @@
-"""Defines functinos for data saving after NEURON simulations.
-
-The copyrights of this software are owned by Duke University. Please
-refer to the LICENSE and README.md files for licensing instructions. The
-source code can be found on the following GitHub repository:
-https://github.com/wmglab-duke/ascent
-"""
-
 import os
 import warnings
 
@@ -87,8 +79,7 @@ def save_thresh(params: dict, thresh: float):
     thresh_path = os.path.join(
         params['output_path'], f'thresh_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}.dat'
     )
-    with open(thresh_path, 'w') as thresh_file:
-        thresh_file.write(f"{thresh:.6f}")  # TODO change to np.savetxt
+    np.savetxt(thresh_path, [thresh], fmt='%.6f')
 
 
 def save_runtime(params: dict, runtime: float, amp_ind: int = 0):
@@ -102,8 +93,7 @@ def save_runtime(params: dict, runtime: float, amp_ind: int = 0):
         runtimes_path = os.path.join(
             params['output_path'], f'runtime_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
         )
-        with open(runtimes_path, 'w') as runtime_file:
-            runtime_file.write(f'{runtime:.3f}')  # TODO change to np.savetxt
+        np.savetxt(runtimes_path, [runtime], fmt='%.3f')
 
 
 def save_sfap(params: dict, sfap: list, downsampled_time: list, amp_ind: int = 0):
@@ -133,7 +123,8 @@ def save_matrix(params: dict, imembrane_matrix: np.ndarray, amp_ind: int = 0):
         params['output_path'],
         f'adjusted_imembrane_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat',
     )
-    np.savetxt(adj_im_path, imembrane_matrix)
+    # TODO consider using hdf5 for this and all large data, for now use np.save
+    np.save(adj_im_path, imembrane_matrix)
 
 
 def save_activation(params: dict, n_aps: int, amp_ind: int):
@@ -146,8 +137,7 @@ def save_activation(params: dict, n_aps: int, amp_ind: int):
     output_file_path = os.path.join(
         params['output_path'], f'activation_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
     )
-    with open(output_file_path, 'w') as activation_file:
-        activation_file.write(f'{n_aps}')  # TODO change to np.savetxt
+    np.savetxt(output_file_path, [n_aps], fmt='%d')
 
 
 def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind: int = 0):
@@ -187,11 +177,25 @@ def save_variables(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind:
             save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'space', stimulation)
         if params['time_gating']:
             save_gating_data(params, all_gating_data, amp_ind, fiber, stimulation.dt, 'time', stimulation)
-    if params['istim']:
-        istim_data = pd.DataFrame(np.array(fiber.syn_current))
-        save_data(params, amp_ind, fiber, istim_data, stimulation.dt, 'istim', 'time', stimulation, 'nA')
     if params['ap_loctime']:
         save_aploctime(params, amp_ind, fiber)
+    if params['istim']:
+        save_istim_as_time_function(params, fiber, stimulation)
+
+
+def save_istim_as_time_function(params: dict, fiber: Fiber, stimulation: ScaledStim, amp_ind: int = 0):
+    """Save Istim as a function of time to file.
+
+    :param params: dictionary containing saving parameters
+    :param fiber: instance of Fiber class
+    :param stimulation: instance of ScaledStim class
+    :param amp_ind: index of amplitude if protocol is FINITE_AMPLITUDES
+    """
+    istim_path = os.path.join(
+        params['output_path'], f'istim_time_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
+    )
+    istim_data = pd.DataFrame({'Time (ms)': stimulation.time, 'Istim (nA)': np.array(fiber.syn_current)})
+    istim_data.to_csv(istim_path, sep=' ', float_format='%.6f', index=False)
 
 
 def save_data(
@@ -310,6 +314,7 @@ def save_aploctime(params: dict, amp_ind: int, fiber: Fiber):
     aploctime_path = os.path.join(
         params['output_path'], f'ap_loctime_inner{params["inner_ind"]}_fiber{params["fiber_ind"]}_amp{amp_ind}.dat'
     )
-    with open(aploctime_path, 'w') as file:
-        for node_ind, _ in enumerate(fiber.nodes):
-            file.write(f"{fiber.apc[node_ind].time:.6f}\n")  # TODO Change this to use pandas
+    ap_loctime_data = pd.DataFrame(
+        {'Node#': list(range(len(fiber.nodes))), 'AP_LocTime (ms)': [ap.time for ap in fiber.apc]}
+    )
+    ap_loctime_data.to_csv(aploctime_path, sep=' ', float_format='%.6f', index=False)

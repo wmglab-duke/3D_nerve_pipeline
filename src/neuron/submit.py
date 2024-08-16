@@ -21,6 +21,8 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from packaging.version import Version
+from tqdm import tqdm
 
 
 # %%Set up parser and top level args
@@ -366,6 +368,8 @@ def submit_fibers(submission_context, submission_data):
     sim_dir = os.path.join('n_sims')
     n_fibers = sum(len(v) for v in submission_data.values())
 
+    progress_bar = tqdm(total=n_fibers, dynamic_ncols=True, disable=args.verbose, desc='Fibers submitted')
+
     for sim_name, runfibers in submission_data.items():
         if args.verbose:
             print(f'\n\n################ {sim_name} ################\n\n')
@@ -379,8 +383,7 @@ def submit_fibers(submission_context, submission_data):
         if submission_context == 'cluster':
             cluster_submit(runfibers, sim_name, sim_path, start_path_base)
             ran_fibers += len(runfibers)
-            if not args.verbose:
-                print_progress_bar(ran_fibers, n_fibers, length=40, prefix=f'Fibers submitted: {ran_fibers}/{n_fibers}')
+            progress_bar.update(len(runfibers))
         else:
             if args.num_cpu is not None:
                 cpus = args.num_cpu
@@ -400,22 +403,9 @@ def submit_fibers(submission_context, submission_data):
             with multiprocessing.Pool(cpus) as p:
                 for x in runfibers:
                     x['verbose'] = args.verbose
-                if not args.verbose:
-                    print_progress_bar(
-                        0,
-                        len(runfibers),
-                        length=40,
-                        prefix='Sample {}, Model {}, Sim {}, n_sim {}:'.format(*sim_name.split('_')),  # noqa FS002
-                    )
                 # open pool instance, set up progress bar, and iterate over each job
-                for i, _ in enumerate(p.imap_unordered(local_submit, runfibers, 1)):
-                    if not args.verbose:
-                        print_progress_bar(
-                            i + 1,
-                            len(runfibers),
-                            length=40,
-                            prefix='Sample {}, Model {}, Sim {}, n_sim {}:'.format(*sim_name.split('_')),  # noqa FS002
-                        )
+                for _ in p.imap_unordered(local_submit, runfibers, 1):
+                    progress_bar.update(1)
             os.chdir("../..")
 
 
@@ -592,8 +582,12 @@ def make_run_sub_list(run_number: int):
                                 print(f'Found {search_path} -->\t\tskipping inner ({inner_ind}) fiber ({fiber_ind})')
                                 time.sleep(1)
                             continue
-                        elif args.force_rerun:
-                            warnings.warn("Re-running existing fibers. Use -v flag to see which ones.", stacklevel=2)
+                        if args.force_rerun:
+                            warnings.warn(
+                                "Re-running existing fibers (due to -f/--force-rerun argument). "
+                                "Use -v flag to see which ones.",
+                                stacklevel=2,
+                            )
                             if args.verbose:
                                 print(f'Found {search_path} -->\t\tre-running inner ({inner_ind}) fiber ({fiber_ind})')
 
@@ -734,7 +728,7 @@ def main():
         sys.exit('Error: PyFibers is not installed. Please install it to run this script.')
     # check version
     reqver = '0.1.1'
-    if pyfibers.__version__ != reqver:
+    if Version(pyfibers.__version__) < Version(reqver):
         raise ImportError(f'Error: PyFibers version is {pyfibers.__version__}, but version {reqver} is required.')
 
     # pre submit setup

@@ -18,6 +18,7 @@
     "recess": "saline"
   },
   "cuff": {
+    "index": 0,
     "preset": "Purdue.json",
     "rotate": {
       "add_ang": 0
@@ -80,6 +81,7 @@
     "rho_perineurium": "RHO_WEERASURIYA",
     "use_ci": true
   },
+  "nerve_interp_tol": 0.02,
   "outer_interp_tol": 0.01,
   "pseudonym": "tutorial model",
   "solver": {

@@ -79,7 +79,17 @@
       "passive_end_nodes": 1,
       "sampling": "discrete"
     },
-    "SCHILD": {
+    "SCHILD94": {
+      "channels_type": 5,
+      "delta_zs": 8.333,
+      "fiber_type": 3,
+      "myelinated": false,
+      "neuron_flag": 3,
+      "node_channels": 1,
+      "passive_end_nodes": 1,
+      "sampling": "discrete"
+    },
+    "SCHILD97": {
       "channels_type": 4,
       "delta_zs": 8.333,
       "fiber_type": 3,

@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import time
+import warnings
 
 import numpy as np
 from pyfibers import BoundsSearchMode, Fiber, FiberModel, ScaledStim, TerminationMode, ThresholdCondition, build_fiber
@@ -122,6 +123,11 @@ def main(
 
     if protocol_configs['mode'] != 'FINITE_AMPLITUDES':  # threshold search
         find_threshold_kws = protocol_configs.get('find_threshold_kws', {})
+        if 'fail_on_end_excitation' not in find_threshold_kws:
+            warnings.warn(
+                'fail_on_end_excitation not specified in find_threshold_kws, defaulting to False (warning upon end excitation)'
+            )
+            find_threshold_kws['fail_on_end_excitation'] = False
         amp = threshold_protocol(
             fiber,
             protocol_configs,
@@ -132,33 +138,39 @@ def main(
             ap_detect_location,
             find_threshold_kws,
         )
-        save_thresh(saving_params, amp)  # Save threshold value to file
-        if 'active_recs' in sim_configs:
+        if 'active_recs' in sim_configs:  # TODO should this be done for threshold protocol?
             calculate_save_sfap(sim_configs, fiber, saving_params, potentials_path, inner_ind, fiber_ind, 0, axontotal)
         save_variables(saving_params, fiber, stimulation)  # Save user-specified variables
-        save_runtime(
-            saving_params, time.time() - start_time
-        )  # Save runtime of simulation #TODO modify original ASCENT runtime to save after alll export
+        save_runtime(saving_params, time.time() - start_time)  # Save runtime of simulation
+        save_thresh(saving_params, amp)  # Save threshold value to file
 
     else:  # finite amplitudes protocol
         time_total = 0
         amps = protocol_configs['amplitudes']
         run_sim_kws = protocol_configs.get('run_sim_kws', {})
+        if 'fail_on_end_excitation' not in run_sim_kws:
+            warnings.warn(
+                'fail_on_end_excitation not specified in run_sim_kws, defaulting to False (warning upon end excitation)'
+            )
+            run_sim_kws['fail_on_end_excitation'] = False
+            # TODO note that find_threshold_kws is ignored here, and run_sim_kws is ignored above
+
         for amp_ind, amp in enumerate(amps):
             print(f'Running amp {amp_ind} of {len(amps)}: {amp} mA')
 
             n_aps, _ = stimulation.run_sim(
                 stimamp=amp, fiber=fiber, ap_detect_location=ap_detect_location, **run_sim_kws
             )
-            save_activation(saving_params, int(n_aps), amp_ind)  # Save number of APs triggered
             if 'active_recs' in sim_configs:
                 calculate_save_sfap(
                     sim_configs, fiber, saving_params, potentials_path, inner_ind, fiber_ind, amp_ind, axontotal
                 )
             save_variables(saving_params, fiber, stimulation, amp_ind)  # Save user-specified variables
-            time_individual = time.time() - start_time - time_total
 
+            time_individual = time.time() - start_time - time_total
             save_runtime(saving_params, time_individual, amp_ind)  # Save runtime of inidividual run
+
+            save_activation(saving_params, int(n_aps), amp_ind)  # Save number of APs triggered
 
             time_total += time_individual
 

@@ -280,7 +280,7 @@ class Query(Configurable, Saveable):
         if just_directory:
             result = os.path.join(*result.split(os.sep)[:-1])
 
-        return result
+        return result  # noqa: R504
 
     def _match(self, criteria: dict, data: dict) -> bool:
         for key in criteria.keys():
@@ -293,30 +293,29 @@ class Query(Configurable, Saveable):
             d_val = data[key]
 
             # now lots of control flow - dependent on the types of the variables
-
             # if c_val is a dict, recurse
-            if type(c_val) is dict:
+            if isinstance(c_val, dict):
                 if not self._match(c_val, d_val):
                     return False
 
             # neither c_val nor d_val are list
-            elif not any(type(v) is list for v in (c_val, d_val)):
+            elif not any(isinstance(v, list) for v in (c_val, d_val)):
                 if c_val != d_val:
                     return False
 
             # c_val IS list, d_val IS NOT list
-            elif type(c_val) is list and type(d_val) is not list:
+            elif isinstance(c_val, list) and not isinstance(d_val, list):
                 if d_val not in c_val:
                     return False
 
             # c_val IS NOT list, d_val IS list
-            elif type(c_val) is not list and type(d_val) is list:
+            elif not isinstance(c_val, list) and isinstance(d_val, list):
                 # "partial matches" indicates that other values may be present in d_val
                 if not self.search(Config.CRITERIA, 'partial_matches') or c_val not in d_val:
                     return False
 
             # both c_val and d_val are list
-            else:  # all([type(v) is list for v in (c_val, d_val)]):
+            else:  # all([isinstance(v, list) for v in (c_val, d_val)]):
                 # "partial matches" indicates that other values may be present in d_val
                 if not self.search(Config.CRITERIA, 'partial_matches') or not all(c_i in d_val for c_i in c_val):
                     return False
@@ -1127,9 +1126,9 @@ class Query(Configurable, Saveable):
         imembrane_file_name = os.path.join(
             os.getcwd(),
             f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
-            f"{nsim}/data/outputs/adjusted_imembrane_inner0_fiber0_amp0.dat",
+            f"{nsim}/data/outputs/adjusted_imembrane_inner0_fiber0_amp0.dat.npy",  # TODO fix to just.npy
         )
-        current_matrix = np.loadtxt(imembrane_file_name)  # should be columns=section and rows = time step
+        current_matrix = np.load(imembrane_file_name)  # should be columns=section and rows = time step
         waveform_file = os.path.join(
             os.getcwd(),
             f"samples/{sample_results['index']}/models/{model_results['index']}/sims/{sim}/n_sims/"
@@ -1150,7 +1149,6 @@ class Query(Configurable, Saveable):
         sim_indices: list[int] = None,
         fiber_indices: list[int] | str = 'all',
         ignore_missing: bool = False,
-        as_dataframe=True,
         amp_indices: int | str = 'all',
     ) -> list[dict]:
         """Extract data from a simulation for specified data types.
@@ -1296,10 +1294,7 @@ class Query(Configurable, Saveable):
                                                 raise ValueError(f'Invalid data type: {data_type}')
                                         # add the data to list
                                         alldat.append(data.copy())
-        if not as_dataframe:
-            return alldat
-        else:
-            return pd.DataFrame(alldat)
+        return pd.DataFrame(alldat)
 
     def retrieve_sfap_data(self, data: dict, n_sim_dir: str, ignore_missing: bool, alldat: list[dict]):  # noqa: D
         sfap_path = os.path.join(

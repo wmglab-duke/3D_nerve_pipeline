@@ -86,12 +86,11 @@ class Configurable:
                 raise TypeError(f'Invalid search parameter type:\tTYPE: {type(arg)}\tVALUE: {arg}\n')
 
             if result is None:
-                if optional:
-                    return result
-                else:
+                if not optional:
                     raise KeyError(
                         f'Value {"".join([arg + "->" for arg in args[:-1]]) + args[-1]} not defined in {key}'
                     )
+                return result
 
         if isinstance(result, list) and len(result) < 1 and not optional:
             raise IndexError(f'Value {"".join([arg + "->" for arg in args[:-1]]) + args[-1]} is empty in {key}')
