@@ -349,7 +349,7 @@ class _HeatmapPlotter:
                 tick.AutoLocator() if not self.min_max_ticks else [self.min_thresh, self.max_thresh]
             )
         # generate colorbar
-        cb_label = r'mA'
+        cb_label = self.cbar_kws.pop('title', 'mA')
         cb: cbar.Colorbar = plt.colorbar(mappable=self.mappable, ax=ax, **self.cbar_kws)
         cb.ax.set_title(cb_label)
 

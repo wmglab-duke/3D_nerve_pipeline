@@ -981,7 +981,7 @@ class Query(Configurable, Saveable):
             else:
                 writer.sheets[sheet_name].set_column(0, 256)
 
-        writer.save()
+        writer.close()
 
     def handle_sim(  # noqa: D102
         self,
