@@ -10,6 +10,7 @@ import os
 import pickle
 
 import pytest
+
 from src.utils import Configurable, Saveable
 
 saver = Saveable()
@@ -34,4 +35,3 @@ def test_saveable():
 
 def test_configurable():
     """Tests the Configurable class."""
-    pass

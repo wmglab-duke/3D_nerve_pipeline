@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.7
-
 """Plot the Ve across a fiber length.
 
 The copyrights of this software are owned by Duke University.
@@ -10,6 +8,9 @@ RUN THIS FROM REPOSITORY ROOT
 """
 
 import os
+import sys
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -14,14 +14,14 @@ import os
 import sys
 import warnings
 from io import BytesIO
-from typing import List
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats as stats
 import shapely.affinity
-from shapely.geometry.point import Point
+from shapely.geometry import Point, Polygon
+
 from src.utils import Config, Configurable, IncompatibleParametersError, MorphologyError, PopulateMode
 
 
@@ -37,22 +37,22 @@ class MockSample(Configurable):
         # Initializes superclasses
         Configurable.__init__(self)
 
-        self.fascicles: List[shapely.geometry.Point] = []
+        self.fascicles: list[shapely.geometry.Point] = []
         self.nerve = shapely.geometry.Point
 
-    # https://gis.stackexchange.com/questions/6412/generate-points-that-lie-inside-polygon
     @staticmethod
-    def get_random_point_in_polygon(poly):
-        """Get a random point inside a polygon.
+    def get_random_fascicle_loc(nerve):
+        """Get a random point inside the nerve epineurium.
 
-        :param poly: The polygon.
+        :param nerve: The nerve ellipse.
         :return: A random point inside the polygon.
         """
-        minx, miny, maxx, maxy = poly.bounds
-        while True:
+        minx, miny, maxx, maxy = nerve.bounds
+        p = Point(minx, miny)  # min point will not be in ellipse
+        while not nerve.contains(p):
             p = Point(np.random.uniform(minx, maxx), np.random.uniform(miny, maxy))
-            if poly.contains(p):
-                return p
+
+        return p
 
     @staticmethod
     def gen_ellipse(ell):
@@ -61,10 +61,20 @@ class MockSample(Configurable):
         :param ell: tuple of (center, (a, b), angle); a is the major diameter of the ellipse, b is the minor diameter
         :return: The ellipse shapely object.
         """
-        ell_obj = shapely.geometry.Point(ell[0]).buffer(1)
-        ell_obj = shapely.affinity.scale(ell_obj, ell[1][0], ell[1][1], 0, ell[0])
-        ell_obj = shapely.affinity.rotate(ell_obj, ell[2], origin='center', use_radians=False)
-        return ell_obj
+        # Unpack ellipse parameters
+        cx, cy = ell[0]
+        a, b = ell[1]
+        theta = np.deg2rad(ell[2])
+        # Construct ellipse parameterized by (a*cos(t), b*cos(t))
+        t = np.linspace(0, 2 * np.pi, 65)
+        xs = np.cos(t) * a
+        ys = np.sin(t) * b
+        # Rotate ellipse with rotation matrix
+        rot_mat = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        ell_pts = np.dot(rot_mat, np.array([xs, ys]))
+        ell_pts[0] += cx
+        ell_pts[1] += cy
+        return Polygon(ell_pts.T)
 
     @staticmethod
     def binary_mask_canvas(margin: float, size: float):
@@ -140,25 +150,13 @@ class MockSample(Configurable):
         #            and the corresponding semi-axis
         p = Point(0.0, 0.0)
 
-        if 'a_nerve' not in list(self.configs['mock_sample']['nerve'].keys()):
-            # a is the major diameter of the ellipse
-            a: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'a') / 2
-        else:
-            # backwards compatible: a_nerve is the major radius
-            a: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'a_nerve')
+        # a is the major diameter of the ellipse
+        a: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'a') / 2
 
-        if 'b_nerve' not in list(self.configs['mock_sample']['nerve'].keys()):
-            # b is the minor diameter of the ellipse
-            b: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'b') / 2
-        else:
-            # backwards compatible: b_nerve is the minor radius
-            b: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'b_nerve')
+        # b is the minor diameter of the ellipse
+        b: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'b') / 2
 
-        if 'rot_nerve' not in list(self.configs['mock_sample']['nerve'].keys()):
-            rot: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'rot')
-        else:
-            # backwards compatible
-            rot: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'rot_nerve')
+        rot: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'rot')
 
         ellipse = (p, (a, b), rot)
         self.nerve = self.gen_ellipse(ellipse)
@@ -336,7 +334,7 @@ class MockSample(Configurable):
                     break
 
                 # https://gis.stackexchange.com/questions/243459/drawing-ellipse-with-shapely
-                p = self.get_random_point_in_polygon(self.nerve)
+                p = self.get_random_fascicle_loc(self.nerve)
                 # 1st elem = center point (x,y) coordinates
                 # 2nd elem = the two semi-axis values (along x, along y)
                 # 3rd elem = angle in degrees between x-axis of the Cartesian base
@@ -389,7 +387,7 @@ class MockSample(Configurable):
                     '(i.e., analogous to circle diameter rather than radii). Make sure your values are set \n'
                     'appropriately. This change is new in v1.1.0 to be consistent with the ellipse parameters \n'
                     '(a,b) in Sample which are full width ellipse major/minor axes lengths.\n\n'
-                    'See config/templates/mock_sample.json for new template and avoid this message.\n'
+                    'See config/templates/advanced/mock_sample.json for new template and avoid this message.\n'
                     'Would you like to proceed with the values currently set for (a,b) as diameter? [y/N] '
                 )
                 .lower()
@@ -453,19 +451,9 @@ class MockSample(Configurable):
         with open(os.path.join(sample_dir, 'mock.json'), "w") as handle:
             handle.write(json.dumps(self.configs['mock_sample'], indent=2))
 
-        if 'a_nerve' not in list(self.configs['mock_sample']['nerve'].keys()):
-            # a is the major diameter of the ellipse
-            a: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'a') / 2
-        else:
-            # backwards compatible: a_nerve is the major radius
-            a: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'a_nerve')
+        a: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'a') / 2
 
-        if 'b_nerve' not in list(self.configs['mock_sample']['nerve'].keys()):
-            # b is the minor diameter of the ellipse
-            b: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'b') / 2
-        else:
-            # backwards compatible: b_nerve is the minor radius
-            b: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'b_nerve')
+        b: float = self.search(Config.MOCK_SAMPLE, 'nerve', 'b') / 2
 
         scalebar_length: int = self.search(Config.MOCK_SAMPLE, 'scalebar_length')
         max_diam = max(scalebar_length, 2 * max(a, b))

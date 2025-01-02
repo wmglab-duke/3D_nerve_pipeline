@@ -7,11 +7,13 @@ https://github.com/wmglab-duke/ascent
 """
 
 import os
+import warnings
 from copy import deepcopy
 
 import numpy as np
 from quantiphy import Quantity
 from shapely.geometry import Point
+
 from src.core import Slide, Waveform
 from src.utils import (
     Config,
@@ -36,10 +38,12 @@ class Model(Configurable, Saveable):
         Configurable.__init__(self)
 
     def compute_cuff_shift(self, slide: Slide, sample_config: dict, addl_cuff_buffer=0, ignore_uncentered=False):
-        """Compute the Cuff Shift for a given model.
+        """Compute the Cuff Shift for single or multiple cuffs in a given model.
 
-        :param sample: Sample, sample object
+        :param slide: the slide to compute cuff shift around
         :param sample_config: dict, sample config
+        :param addl_cuff_buffer: additional amount of distance between cuff and nerve (in um)
+        :param ignore_uncentered: if False, error if slide is not centered on origin
         :raises ValueError: if deform_ratio is not between 0 and 1 (inclusive)
         :return: self
         """
@@ -60,13 +64,56 @@ class Model(Configurable, Saveable):
         else:
             deform_ratio = None
 
+        cuff_data = self.search(Config.MODEL, "cuff")
+
+        if isinstance(
+            cuff_data, dict
+        ):  # When single cuff configuration is provided, re-adjust data type to allow following for-loop
+            if not self.search(Config.MODEL, "cuff", "index", optional=True):  # If not cuff index is provided
+                warnings.warn('No "cuff" -> "index" provided in model.json. Assigning cuff index to 0.', stacklevel=2)
+                cuff_data["index"] = 0
+
+            cuff_data = [cuff_data]
+
+        cuff_dicts = []
+
+        for cuff_dict in cuff_data:
+            cuff_dict = self.cuff_shift_calc(
+                cuff_dict, slide, deform_ratio, nerve_mode, sample_config, addl_cuff_buffer, ignore_uncentered
+            )
+            cuff_dicts.append(cuff_dict)
+
+        self.configs[Config.MODEL.value]['cuff'] = cuff_dicts
+
+        return self
+
+    def cuff_shift_calc(
+        self,
+        cuff_dict: dict,
+        slide: Slide,
+        deform_ratio: float,
+        nerve_mode: NerveMode,
+        sample_config: dict,
+        addl_cuff_buffer,
+        ignore_uncentered,
+    ):
+        """Compute the cuff shift for a single cuff.
+
+        :param cuff_dict: dictionary for single cuff
+        :param slide: the sample's slide
+        :param deform_ratio: deformation ratio
+        :param nerve_mode: whether the nerve is present. Flag from sample config file.
+        :param sample_config: sample configuration variables
+        :param ignore_uncentered: if False, error if slide is not centered on origin
+        :param addl_cuff_buffer: additional amount of distance between cuff and nerve (in um)
+        :raises ValueError: if deform_ratio is not between 0 and 1 (inclusive)
+        :return: updated cuff dictionary
+        """
         # get center and radius of nerve's min_bound circle
         nerve_copy = deepcopy(slide.nerve if nerve_mode == NerveMode.PRESENT else slide.fascicles[0].outer)
 
         # fetch cuff config
-        cuff_config: dict = self.load(
-            os.path.join(os.getcwd(), "config", "system", "cuffs", self.search(Config.MODEL, 'cuff', 'preset'))
-        )
+        cuff_config: dict = self.load(os.path.join(os.getcwd(), "config", "system", "cuffs", cuff_dict['preset']))
 
         (
             cuff_code,
@@ -88,9 +135,6 @@ class Model(Configurable, Saveable):
 
         r_i, theta_f = self.check_cuff_expansion_radius(cuff_code, cuff_config, expandable, r_f, theta_i)
 
-        # remove sample config
-        self.remove(Config.SAMPLE)
-
         cuff_shift_mode: CuffShiftMode = self.search_mode(CuffShiftMode, Config.MODEL)
 
         if cuff_shift_mode not in CuffShiftMode:
@@ -111,13 +155,13 @@ class Model(Configurable, Saveable):
         x_shift = y_shift = 0
         # set pos_ang
         if naive or cuff_shift_mode == CuffShiftMode.NONE:
-            self.configs[Config.MODEL.value]['cuff']['rotate']['pos_ang'] = 0
+            cuff_dict['rotate']['pos_ang'] = 0
             if slide.orientation_point is not None:
                 print(
                     'Warning: orientation tif image will be ignored because a NAIVE or NONE cuff shift mode was chosen.'
                 )
         else:
-            self.configs[Config.MODEL.value]['cuff']['rotate']['pos_ang'] = theta_c - theta_f
+            cuff_dict['rotate']['pos_ang'] = theta_c - theta_f
 
         # min circle x and y shift
         if cuff_shift_mode in [
@@ -168,10 +212,9 @@ class Model(Configurable, Saveable):
 
                 x_shift, y_shift = center_x, center_y
 
-        self.configs[Config.MODEL.value]['cuff']['shift']['x'] = x_shift
-        self.configs[Config.MODEL.value]['cuff']['shift']['y'] = y_shift
-
-        return self
+        cuff_dict['shift']['x'] = x_shift
+        cuff_dict['shift']['y'] = y_shift
+        return cuff_dict
 
     def get_cuff_shift_parameters(self, cuff_config, deform_ratio, nerve_copy, sample_config, slide, ignore_uncentered):
         """Calculate parameters for cuff shift.
@@ -181,6 +224,7 @@ class Model(Configurable, Saveable):
         :param nerve_copy: copied nerve object
         :param sample_config: sample configuration
         :param slide: slide object to shift cuff around
+        :param ignore_uncentered: whether to ignore uncentered slide
         :raises MorphologyError: if slide is not centered at origin
         :return: (cuff code, cuff r buffer, expandable, offset, r_bound, r_f, theta_c, theta_i, x, y)
         """
@@ -223,10 +267,10 @@ class Model(Configurable, Saveable):
             try:
                 reference_x, reference_y = slide.fascicle_centroid()
                 theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
-            except ZeroDivisionError:
+            except ZeroDivisionError:  # TODO: why?
                 theta_c = 0
         else:
-            theta_c = 0
+            theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
         # calculate final necessary radius by adding buffer
         r_f = r_bound + cuff_r_buffer
         # fetch initial cuff rotation (convert to rads)
@@ -437,7 +481,8 @@ class Model(Configurable, Saveable):
             raise IncompatibleParametersError(
                 "Cuff configuration file has no conditions that match the given parameters. "
             )
-        elif condition_match_count > 1:
+
+        if condition_match_count > 1:
             # conditions are not mutually exclusive in preset JSON file
             raise IncompatibleParametersError(
                 "Cuff configuration file has more than one condition that matches the given parameters. "

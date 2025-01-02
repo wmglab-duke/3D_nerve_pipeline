@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 import numpy as np
 
@@ -9,7 +8,7 @@ x, y = 0, 0
 fiber_index = 99
 
 
-def write(x_coord: float, y_coord: float, z_coords: List[float], path: str):
+def write(x_coord: float, y_coord: float, z_coords: list[float], path: str):
     """
     :param path:
     """

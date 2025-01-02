@@ -20,11 +20,11 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'ASCENT'
-copyright = '2021-2023, Duke University'  # noqa A001
+copyright = '2021-2024, Duke University'  # noqa A001
 author = 'Musselman ED, Cariello JE, Marshall DM, Grill WM, Pelot NA.'
 
 # The full version, including alpha/beta/rc tags
-release = 'v1.2.2'
+release = 'v1.3.0'
 
 # -- General configuration ---------------------------------------------------
 
@@ -54,7 +54,7 @@ source_suffix = {
     '.md': 'markdown',
 }
 
-MOCK_MODULES = ['numpy', 'pandas']
+MOCK_MODULES = ['numpy', 'pandas', 'tqdm']
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
@@ -72,6 +72,8 @@ autodoc_mock_imports = [
     'pygame',
     'pymunk',
     'quantiphy',
+    'nd_line',
+    'tqdm',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

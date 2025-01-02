@@ -1,0 +1,132 @@
+{
+  "active_recs": {
+    "CorTec300.json": [
+      1,
+      -1
+    ],
+    "cuff_index": 1,
+    "cyl_MicroLeads_300t.json": [
+      [
+        1,
+        0,
+        0
+      ]
+    ]
+  },
+  "active_srcs": {
+    "CorTec300.json": [
+      1,
+      -1
+    ],
+    "cuff_index": 0,
+    "cyl_MicroLeads_300b.json": [
+      [
+        1,
+        -1
+      ]
+    ]
+  },
+  "fibers": {
+    "mode": "SMALL_MRG_INTERPOLATION",
+    "plot": false,
+    "xy_parameters": {
+      "mode": "CENTROID"
+    },
+    "xy_trace_buffer": 5,
+    "z_parameters": {
+      "diameter": [
+        1.012706,
+        1.024754,
+        1.036945,
+        1.049281,
+        1.061764,
+        2.010853,
+        3.006143,
+        4.0403,
+        5.058253,
+        6.040083,
+        7.043896,
+        8.022517,
+        9.029676,
+        9.809012
+      ],
+      "full_nerve_length": true,
+      "offset": 0,
+      "seed": 123
+    }
+  },
+  "n_dimensions": 1,
+  "protocol": {
+    "amplitudes": [
+      -0.42752382
+    ],
+    "bounds_search": {
+      "bottom": -0.35,
+      "mode": "PERCENT_INCREMENT",
+      "scout_sim": false,
+      "step": 10,
+      "top": -0.65
+    },
+    "dt_initSS": 10,
+    "initSS": -200,
+    "mode": "FINITE_AMPLITUDES",
+    "termination_criteria": {
+      "mode": "PERCENT_DIFFERENCE",
+      "percent": 1
+    },
+    "threshold": {
+      "ap_detect_location": 0.9,
+      "n_min_aps": 1,
+      "value": -30
+    }
+  },
+  "pseudonym": "cap_template sim",
+  "saving": {
+    "aploctime": false,
+    "cap_recording": {
+      "downsample": 1,
+      "save_adjusted_im": true
+    },
+    "end_ap_times": {
+      "loc_max": 0.9,
+      "loc_min": 0.1,
+      "threshold": -30
+    },
+    "runtimes": true,
+    "space": {
+      "gating": false,
+      "times": [
+        0
+      ],
+      "vm": false
+    },
+    "time": {
+      "gating": false,
+      "istim": false,
+      "locs": [
+        0
+      ],
+      "vm": false
+    }
+  },
+  "supersampled_bases": {
+    "dz": 1,
+    "generate": false,
+    "source_sim": 1009,
+    "use": false
+  },
+  "waveform": {
+    "BIPHASIC_PULSE_TRAIN": {
+      "digits": 1,
+      "inter_phase": 0.005,
+      "pulse_repetition_freq": 1.45,
+      "pulse_width": 0.05
+    },
+    "global": {
+      "dt": 0.0025,
+      "off": 49,
+      "on": 1,
+      "stop": 50
+    }
+  }
+}

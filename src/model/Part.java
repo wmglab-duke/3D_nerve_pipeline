@@ -15,6 +15,31 @@ import org.json.JSONObject;
 @SuppressWarnings({ "path" })
 class Part {
 
+    public static void addPointCurrentSource(
+        ModelWrapper mw,
+        Model model,
+        int index,
+        String instanceLabel,
+        String selLabel
+    ) {
+        String ribbon_pcsLabel = instanceLabel + " Current Source";
+        String id = mw.im.next("pcs", ribbon_pcsLabel);
+        PhysicsFeature pf = model
+            .component("comp1")
+            .physics("ec")
+            .create(id, "PointCurrentSource", 0);
+
+        JSONObject src_ribbon = new JSONObject();
+        src_ribbon.put("name", instanceLabel);
+        src_ribbon.put("pcs", id);
+        src_ribbon.put("cuff_index", String.valueOf(index));
+        mw.im.currentIDs.put(mw.im.present("pcs"), src_ribbon);
+
+        pf.selection().named("geom1_" + mw.im.get(instanceLabel) + "_" + selLabel + "_pnt"); // SRC
+        pf.set("Qjp", 0.000);
+        pf.label(ribbon_pcsLabel);
+    }
+
     /**
      * Create a defined part primitive. There is a finite number of choices, as seen below in the switch.
      * Fun fact: this method is nearly 1400 lines.
@@ -3850,6 +3875,9 @@ class Part {
      * @param pseudonym which primitive to create (it must have already been created in createCuffPartPrimitive())
      * @param mw the ModelWrapper to act upon
      * @param instanceParams instance parameters as loaded in from the associated JSON configuration (in ModelWrapper)
+     * @param name the name of the cuff preset
+     * @param index index of the cuff within the model's cuff list. Added for multiple cuff functionality
+     * @param cuffIndex cuff index defined in model.json
      * @throws IllegalArgumentException if the primitive specified by pseudonym has not been created
      */
     public static void createCuffPartInstance(
@@ -3857,7 +3885,10 @@ class Part {
         String instanceLabel,
         String pseudonym,
         ModelWrapper mw,
-        JSONObject instanceParams
+        JSONObject instanceParams,
+        String name,
+        int index,
+        int cuffIndex
     ) throws IllegalArgumentException {
         Model model = mw.getModel();
 
@@ -3868,8 +3899,15 @@ class Part {
         partInstance.label(instanceLabel);
         partInstance.set("part", mw.im.get(pseudonym));
 
-        partInstance.set("displ", new String[] { "cuff_shift_x", "cuff_shift_y", "cuff_shift_z" }); // moves cuff around the nerve
-        partInstance.set("rot", "cuff_rot");
+        partInstance.set(
+            "displ",
+            new String[] {
+                name + "_" + index + "_cuff_shift_x",
+                name + "_" + index + "_cuff_shift_y",
+                name + "_" + index + "_cuff_shift_z",
+            }
+        ); // moves cuff around the nerve
+        partInstance.set("rot", name + "_" + index + "_cuff_rot");
 
         JSONObject itemObject = instanceParams.getJSONObject("def");
         IdentifierManager myIM = mw.getPartPrimitiveIM(pseudonym);
@@ -4077,25 +4115,13 @@ class Part {
                     "off"
                 ); // RECESS FINAL
 
-                // assign physics
-                String ribbon_pcsLabel = instanceLabel + " Current Source";
-                String id = mw.im.next("pcs", ribbon_pcsLabel);
-                PhysicsFeature pf = model
-                    .component("comp1")
-                    .physics("ec")
-                    .create(id, "PointCurrentSource", 0);
-
-                JSONObject src_ribbon = new JSONObject();
-                src_ribbon.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_ribbon);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[2]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(ribbon_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[2])
+                );
 
                 break;
             case "TubeCuffSweep_Primitive":
@@ -4169,22 +4195,13 @@ class Part {
                     "on"
                 ); // SRC
 
-                // assign physics
-                String wire_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", wire_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject src_wire = new JSONObject();
-                src_wire.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_wire);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[2]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(wire_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[2])
+                );
 
                 break;
             case "CircleContact_Primitive":
@@ -4392,22 +4409,13 @@ class Part {
                     "off"
                 ); // BASE PLANE (PRE ROTATION)
 
-                // assign physics
-                String circle_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", circle_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject src_circ = new JSONObject();
-                src_circ.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_circ);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[4]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(circle_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[4])
+                );
 
                 break;
             case "HelicalContact_Primitive":
@@ -4418,7 +4426,7 @@ class Part {
                     partInstance.setEntry("inputexpr", param, (String) itemObject.get(param));
                 }
 
-                partInstance.set("rot", "cuff_rot + corr_LN");
+                partInstance.set("rot", name + "_" + index + "_cuff_rot + corr_LN");
 
                 model
                     .component("comp1")
@@ -4460,22 +4468,13 @@ class Part {
                     "off"
                 ); // Conductorp2
 
-                // assign physics
-                String pc_helix_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", pc_helix_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject pc_src_heli = new JSONObject();
-                pc_src_heli.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), pc_src_heli);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[4]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(pc_helix_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[4])
+                );
 
                 break;
             case "HelicalCuffnContact_Primitive":
@@ -4491,7 +4490,7 @@ class Part {
                     partInstance.setEntry("inputexpr", param, (String) itemObject.get(param));
                 }
 
-                partInstance.set("rot", "cuff_rot + corr_LN");
+                partInstance.set("rot", name + "_" + index + "_cuff_rot + corr_LN");
 
                 model
                     .component("comp1")
@@ -4583,22 +4582,13 @@ class Part {
                     "off"
                 ); // CUFF FINAL
 
-                // assign physics
-                String helix_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", helix_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject src_heli = new JSONObject();
-                src_heli.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_heli);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[4]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(helix_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[4])
+                );
 
                 break;
             case "RectangleContact_Primitive":
@@ -4876,22 +4866,13 @@ class Part {
                     "off"
                 ); // INNER CUTTER
 
-                // assign physics
-                String square_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", square_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject src_rect = new JSONObject();
-                src_rect.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_rect);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[16]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(square_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[16])
+                );
 
                 break;
             case "uContact_Primitive":
@@ -4938,22 +4919,13 @@ class Part {
                     "off"
                 ); // CONTACT FINAL
 
-                // assign physics
-                String u_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", u_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject src_u = new JSONObject();
-                src_u.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_u);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[2]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(u_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[2])
+                );
 
                 break;
             case "uCuff_Primitive":
@@ -5123,22 +5095,13 @@ class Part {
                     "on"
                 ); // SRC FINAL
 
-                // assign physics
-                String ut_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", ut_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject src_ut = new JSONObject();
-                src_ut.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_ut);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[4]) + "_pnt"
-                    ); // SRC_FINAL
-                pf.set("Qjp", 0.000);
-                pf.label(ut_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[4])
+                );
 
                 break;
             case "ArleContact_Primitive":
@@ -5179,22 +5142,13 @@ class Part {
                     "on"
                 ); // SRC FINAL
 
-                // assign physics
-                String ac_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", ac_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject src_ac = new JSONObject();
-                src_ac.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), src_ac);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[3]) + "_pnt"
-                    ); // SRC_FINAL
-                pf.set("Qjp", 0.000);
-                pf.label(ac_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[3])
+                );
 
                 break;
             case "LivaNova_Primitive": //TODO will need to update this to match master
@@ -5205,7 +5159,7 @@ class Part {
                     partInstance.setEntry("inputexpr", param, (String) itemObject.get(param));
                 }
 
-                partInstance.set("rot", "cuff_rot + corr_LN");
+                partInstance.set("rot", name + "_" + index + "_cuff_rot + corr_LN");
 
                 model
                     .component("comp1")
@@ -5279,22 +5233,13 @@ class Part {
                     "off"
                 ); // PC4
 
-                // assign physics
-                String LN_helix_pcsLabel = instanceLabel + " Current Source";
-                id = mw.im.next("pcs", LN_helix_pcsLabel);
-                pf = model.component("comp1").physics("ec").create(id, "PointCurrentSource", 0);
-
-                JSONObject LN_src_heli = new JSONObject();
-                LN_src_heli.put(instanceLabel, id);
-                mw.im.currentIDs.put(mw.im.present("pcs"), LN_src_heli);
-
-                pf
-                    .selection()
-                    .named(
-                        "geom1_" + mw.im.get(instanceLabel) + "_" + myIM.get(myLabels[5]) + "_pnt"
-                    ); // SRC
-                pf.set("Qjp", 0.000);
-                pf.label(LN_helix_pcsLabel);
+                Part.addPointCurrentSource(
+                    mw,
+                    model,
+                    cuffIndex,
+                    instanceLabel,
+                    myIM.get(myLabels[5])
+                );
 
                 break;
             default:
@@ -5576,20 +5521,7 @@ class Part {
                     icMesh.set("filename", mesh_inner_path);
                     icMesh.set("type", "closed");
 
-                    if (modelData.has("inner_interp_tol") && !modelData.has("trace_interp_tol")) {
-                        icMesh.set("rtol", modelData.getDouble("inner_interp_tol"));
-                    } else if (
-                        modelData.has("trace_interp_tol") && !modelData.has("inner_interp_tol")
-                    ) {
-                        icMesh.set("rtol", modelData.getDouble("trace_interp_tol")); // backwards compatibility
-                    } else if (
-                        modelData.has("trace_interp_tol") && modelData.has("inner_interp_tol")
-                    ) {
-                        throw new Exception(
-                            "Both trace_interp_tol and inner_interp_tol defined in Model. " +
-                            "Use new convention for inners (inner_interp_tol) and outers (outer_interp_tol) separately!"
-                        );
-                    }
+                    icMesh.set("rtol", modelData.getDouble("inner_interp_tol"));
 
                     String icSurfLabel = "outer" + index + " Inner Surface " + mesh_inner_index;
                     GeomFeature icSurf = innersPlane
@@ -5635,18 +5567,7 @@ class Part {
                 outeric1.set("filename", mesh_outer_path);
                 outeric1.set("type", "closed");
 
-                if (modelData.has("outer_interp_tol") && !modelData.has("trace_interp_tol")) {
-                    outeric1.set("rtol", modelData.getDouble("outer_interp_tol"));
-                } else if (
-                    modelData.has("trace_interp_tol") && !modelData.has("outer_interp_tol")
-                ) {
-                    outeric1.set("rtol", modelData.getDouble("trace_interp_tol")); // backwards compatibility
-                } else if (modelData.has("trace_interp_tol") && modelData.has("outer_interp_tol")) {
-                    throw new Exception(
-                        "Both trace_interp_tol and inner_interp_tol defined in Model. " +
-                        "Use new convention for inners (outer_interp_tol), outers (outer_interp_tol), and nerve (nerve_interp_tol) separately!"
-                    );
-                }
+                outeric1.set("rtol", modelData.getDouble("outer_interp_tol"));
 
                 String outericSurfaceLabel = "outer" + index + " Outer Surface";
                 outerPlane.geom().create(im.next("csol", outericSurfaceLabel), "ConvertToSolid");
@@ -5796,22 +5717,7 @@ class Part {
                 nerveic.set("type", "closed");
 
                 //set interpolation tolerance for nerve curve
-                if (modelData.has("nerve_interp_tol") && !modelData.has("trace_interp_tol")) {
-                    nerveic.set("rtol", modelData.getDouble("nerve_interp_tol"));
-                } else if (
-                    modelData.has("trace_interp_tol") && !modelData.has("nerve_interp_tol")
-                ) {
-                    nerveic.set("rtol", modelData.getDouble("trace_interp_tol")); // backwards compatibility
-                } else if (modelData.has("trace_interp_tol") && modelData.has("nerve_interp_tol")) {
-                    throw new Exception(
-                        "Both trace_interp_tol and nerve_interp_tol defined in Model. " +
-                        "Use new convention for inners (outer_interp_tol), outers (outer_interp_tol), and nerve (nerve_interp_tol) separately!"
-                    );
-                } else {
-                    throw new Exception(
-                        "You must specify a nerve interpolation tolerance (nerve_interp_tol in model.json)"
-                    );
-                }
+                nerveic.set("rtol", modelData.getDouble("nerve_interp_tol"));
 
                 //Generate surface from curve
                 String nerveicSurfaceLabel = "Epineurium Outer Surface";

@@ -31,7 +31,7 @@ for sample, samplenum, samp2d in zip(["6L"], [653], [652]):
             mfis.append(int(file.replace('.dat', '')))
 
     # get fiber thresholds
-    thisdat = threshdata.query(f'sample in [@samplenum, @samp2d]')
+    thisdat = threshdata.query('sample in [@samplenum, @samp2d]')
     fig, axs = plt.subplots(len(zpos), 1, figsize=(6, 10))
     # for each zpos, plot the slide from the zpos and plot the fiber thresholds
     for z in zpos:

@@ -1,7 +1,6 @@
 import sys
 
 import numpy as np
-from shapely.geometry import Point
 
 sys.path.append(r'C:\nrn\lib\python')  # noqa: E800
 import os
@@ -9,8 +8,6 @@ import os
 os.chdir('../..')
 
 import matplotlib.pyplot as plt
-from moviepy.video.io.bindings import mplfig_to_npimage
-from moviepy.video.VideoClip import VideoClip
 
 sim = 3
 
@@ -75,7 +72,7 @@ for diam in [3, 13]:
         times = [5, 20, 50, 100, 300, 600]
         for i, t in enumerate(times):
             plt.plot(fiber.coordinates[11:-11:11], vm[t], color=plt.cm.viridis(i / len(times)))
-        plt.title(f'Vm over time for 3 micron fiber')
+        plt.title('Vm over time for 3 micron fiber')
         # make colorbar
         sm = plt.cm.ScalarMappable(cmap=plt.cm.viridis, norm=plt.Normalize(vmin=start, vmax=stop))
         sm._A = []

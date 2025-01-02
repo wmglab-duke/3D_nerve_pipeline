@@ -1,20 +1,8 @@
 {
-  "project_path": "D:/3D_VNS/datanew/6L",
-  "path": {
-    "sip_input": "0_base",
-    "preprocess": "1_preprocessed",
-    "slides": "2_slides",
-    "fibers": "3_fiberset",
-    "mesh": "4_meshing",
-    "neuron": "6_neuron",
-    "comsol": "5_comsol",
-    "ascent": "7_ascent",
-    "temp": "tmp"
-  },
   "config": {
+    "model": "model.json",
     "path": "D:/3D_VNS/config",
-    "run": "run.json",
-    "model": "model.json"
+    "run": "run.json"
   },
   "input": {
     "i_mask": "6L_Fascicles_Centered",
@@ -24,26 +12,38 @@
     "z+": "caudal",
     "z-": "rostral"
   },
-  "preprocess": {
-    "upsample_z": 2,
-    "buffer": 10,
-    "crop": "True",
-    "center_target": "nerve",
-    "nsmoothing": 300,
-    "fsmoothing": 100
+  "mesh": {
+    "internal_change_rate": 30,
+    "max_edge_length": 1.6,
+    "max_error": 0.001,
+    "min_edge_length": 0.01,
+    "n_layer_elements": 1.0,
+    "smooth_against_background": true,
+    "surface_change_rate": 60
   },
   "output": {
-    "image_um_per_px": 5,
+    "addl_cuff_buffer": 0,
     "id_font": 60,
-    "addl_cuff_buffer": 0
+    "image_um_per_px": 5
   },
-  "mesh": {
-    "min_edge_length": 0.01,
-    "max_error": 0.001,
-    "max_edge_length": 1.6,
-    "internal_change_rate": 30,
-    "surface_change_rate": 60,
-    "n_layer_elements": 1.0,
-    "smooth_against_background": true
-  }
+  "path": {
+    "ascent": "7_ascent",
+    "comsol": "5_comsol",
+    "fibers": "3_fiberset",
+    "mesh": "4_meshing",
+    "neuron": "6_neuron",
+    "preprocess": "1_preprocessed",
+    "sip_input": "0_base",
+    "slides": "2_slides",
+    "temp": "tmp"
+  },
+  "preprocess": {
+    "buffer": 10,
+    "center_target": "nerve",
+    "crop": "True",
+    "fsmoothing": 100,
+    "nsmoothing": 300,
+    "upsample_z": 2
+  },
+  "project_path": "D:/3D_VNS/datanew/6L"
 }

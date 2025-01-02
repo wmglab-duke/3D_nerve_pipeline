@@ -9,13 +9,13 @@ repository: https://github.com/wmglab-duke/ascent
 """
 import itertools
 import os
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from quantiphy import Quantity
 from shapely.ops import unary_union
+
 from src.utils import MethodError, MorphologyError, NerveMode, ReshapeNerveMode, WriteMode
 
 from .fascicle import Fascicle
@@ -32,7 +32,7 @@ class Slide:
 
     def __init__(
         self,
-        fascicles: List[Fascicle],
+        fascicles: list[Fascicle],
         nerve: Nerve,
         nerve_mode: NerveMode,
         will_reposition: bool = False,
@@ -49,7 +49,7 @@ class Slide:
         self.nerve_mode = nerve_mode
 
         self.nerve: Nerve = nerve
-        self.fascicles: List[Fascicle] = fascicles
+        self.fascicles: list[Fascicle] = fascicles
 
         if not will_reposition:
             self.validate()
@@ -57,8 +57,8 @@ class Slide:
             if self.nerve_mode == NerveMode.NOT_PRESENT:
                 raise ValueError("Cannot deform monofascicle")
 
-        self.orientation_point: Optional[Tuple[float, float]] = None
-        self.orientation_angle: Optional[float] = None
+        self.orientation_point: tuple[float, float] | None = None
+        self.orientation_angle: float | None = None
         self.scale_from_init = 1
 
     def monofasc(self) -> bool:
@@ -68,7 +68,7 @@ class Slide:
         """
         return self.nerve_mode == NerveMode.NOT_PRESENT and len(self.fascicles) == 1
 
-    def fascicle_centroid(self) -> Tuple[float, float]:
+    def fascicle_centroid(self) -> tuple[float, float]:
         """Calculate the centroid of all fascicles.
 
         :return: Tuple of x and y coordinates of centroid
@@ -100,6 +100,8 @@ class Slide:
         :param tolerance: minimum separation distance for unit you are currently in
         :param plotpath: path to save plot to
         :param shapely: if True, uses shapely to check for valid polygons
+        :param intersection_target: which parts of fascicle to test for intersections (outers or inners)
+        :param plot_debug: if True, will show the plot instead of saving it
         :raises MorphologyError: if the nerve morphology is invalid
         :return: Boolean for True (no intersection) or False (issues with geometry overlap)
         """
@@ -155,13 +157,13 @@ class Slide:
 
         if error_message == '':
             return True
-        else:
-            debug_plot()
-            if die:
-                raise MorphologyError(error_message)
-            else:
-                print(MorphologyError(error_message))
-                return False
+
+        debug_plot()
+        if die:
+            raise MorphologyError(error_message)
+
+        print(MorphologyError(error_message))
+        return False
 
     def fascicles_too_close(self, tolerance: float = None) -> bool:
         """Check to see if any fascicles are too close to each other.
@@ -175,11 +177,11 @@ class Slide:
 
         if tolerance is None:
             return False
-        else:
-            pairs = itertools.combinations(self.fascicles, 2)
-            return any(first.min_distance(second) < tolerance for first, second in pairs) or any(
-                fascicle.min_distance(self.nerve) < tolerance for fascicle in self.fascicles
-            )
+
+        pairs = itertools.combinations(self.fascicles, 2)
+        return any(first.min_distance(second) < tolerance for first, second in pairs) or any(
+            fascicle.min_distance(self.nerve) < tolerance for fascicle in self.fascicles
+        )
 
     def fascicles_too_small(self) -> bool:
         """Check to see if any fascicles are too small.
@@ -196,6 +198,8 @@ class Slide:
         """Check to see if any fascicles intersect each other.
 
         :raises MethodError: If called on a monofascicular slide
+        :raises ValueError: If target is invalid
+        :param target: 'outers' or 'inners', which part of the fascicle to check for intersections
         :return: True if any fascicle intersects another fascicle, otherwise False
         """
         if self.monofasc():
@@ -204,6 +208,8 @@ class Slide:
             iterfasc = self.fascicles
         elif target == 'inners':
             iterfasc = [i for f in self.fascicles for i in f.inners]
+        else:
+            raise ValueError("Invalid target for fascicle_fascicle_intersection")
         pairs = itertools.combinations(iterfasc, 2)
         return any(first.intersects(second) for first, second in pairs)
 
@@ -229,18 +235,19 @@ class Slide:
 
         return any(not fascicle.within_nerve(self.nerve) for fascicle in self.fascicles)
 
-    def move_center(self, point: np.ndarray, target=None):
+    def move_center(self, point: np.ndarray, target="nerve"):
         """Shifts the center of the slide to the given point.
 
         :param point: the point of the new slide center
+        :param target: the target to shift to, either 'nerve' or 'fascicles'
         """
         if self.monofasc():
             # get shift from nerve centroid and point argument
             shift = list(point - np.array(self.fascicles[0].centroid())) + [0]
-        elif target is None or target == "nerve":
+        elif target == "nerve":
             # get shift from nerve centroid and point argument
             shift = list(point - np.array(self.nerve.centroid())) + [0]
-        elif target == "fascicle" or target == "fascicles":
+        elif target in ["fascicle", "fascicles"]:
             center = np.array(unary_union([fasc.outer.polygon() for fasc in self.fascicles]).centroid.coords[0])
             shift = list(point - center) + [0]
         # apply shift to nerve trace and all fascicles
@@ -263,7 +270,7 @@ class Slide:
         if self.monofasc():
             raise MethodError("Method reshaped_nerve does not apply for monofascicle nerves")
 
-        if mode == ReshapeNerveMode.CIRCLE:
+        if mode == ReshapeNerveMode.CIRCLE:  # noqa R505
             return self.nerve.to_circle(buffer, override_r=override_r)
         elif mode == ReshapeNerveMode.ELLIPSE:
             return self.nerve.to_ellipse()
@@ -278,7 +285,7 @@ class Slide:
         final: bool = True,
         inner_format: str = 'b-',
         fix_aspect_ratio: bool = True,
-        fascicle_colors: List[Tuple[float, float, float, float]] = None,
+        fascicle_colors: list[tuple[float, float, float, float]] = None,
         ax: plt.Axes = None,
         outers_flag: bool = True,
         inner_index_labels: bool = False,
@@ -308,6 +315,9 @@ class Slide:
         :param scalebar: If True, add a scalebar to the plot
         :param scalebar_length: Length of scalebar
         :param scalebar_units: Units of scalebar
+        :param line_kws: keywords to pass to matplotlib.pyplot.plot
+        :param colors_for_outers: If True, use the first color in fascicle_colors for the outer trace color
+        :param inners_flag: If True, plot inner traces
         :raises ValueError: If fascicle_colors is not None and not the same length as the number of inners
         """
         if ax is None:
@@ -375,6 +385,12 @@ class Slide:
             plt.show()
 
     def add_scalebar(self, ax, scalebar_length: float = 1, scalebar_units: str = 'mm'):
+        """Add a scalebar to the plot.
+
+        :param ax: axis to plot on
+        :param scalebar_length: Length of scalebar
+        :param scalebar_units: Units of scalebar
+        """
         # apply aspect for correct scaling
         ax.apply_aspect()
         # convert scalebar length to meters and calculat span across axes
@@ -417,6 +433,7 @@ class Slide:
 
         :param n_distance: distance to inflate and deflate the nerve trace
         :param i_distance: distance to inflate and deflate the fascicle traces
+        :param as_ratios: if True, distances are treated as ratios (instead of um)
         :raises ValueError: if i_distance is None
         """
         if i_distance is None:
@@ -470,12 +487,9 @@ class Slide:
 
         :return: list of trace objects
         """
-        if self.monofasc():
-            trace_list = [f.outer for f in self.fascicles]
-        else:
-            trace_list = (
-                [self.nerve] + [f.outer for f in self.fascicles] + [i for f in self.fascicles for i in f.inners]
-            )
+        trace_list = [f.outer for f in self.fascicles] + [i for f in self.fascicles for i in f.inners]
+        if not self.monofasc():
+            trace_list += [self.nerve]
         return trace_list
 
     def write(self, mode: WriteMode, path: str):
@@ -489,46 +503,46 @@ class Slide:
 
         if not os.path.exists(path):
             raise OSError("Invalid path to write Slide to.")
+
+        # go to directory to write to
+        os.chdir(path)
+
+        # keep track of starting place
+        sub_start = os.getcwd()
+
+        # write nerve (if not monofasc) and fascicles
+        if self.monofasc():
+            trace_list = [(self.fascicles, 'fascicles')]
         else:
-            # go to directory to write to
-            os.chdir(path)
+            trace_list = [([self.nerve], 'nerve'), (self.fascicles, 'fascicles')]
 
-            # keep track of starting place
-            sub_start = os.getcwd()
+        for items, folder in trace_list:
+            # build path if not already existing
+            os.makedirs(folder, exist_ok=True)
+            os.chdir(folder)
 
-            # write nerve (if not monofasc) and fascicles
-            if self.monofasc():
-                trace_list = [(self.fascicles, 'fascicles')]
-            else:
-                trace_list = [([self.nerve], 'nerve'), (self.fascicles, 'fascicles')]
+            # write all items (give filename as i (index) without the extension
+            for i, item in enumerate(items):
+                if isinstance(item, Trace):  # not Nerve bc it is buffer class!
+                    if not os.path.exists(str(i)):
+                        os.mkdir(str(i))
+                    item.write(mode, os.path.join(os.getcwd(), str(i), str(i)))
+                else:
+                    # start to keep track of position file structure
+                    index_start_folder = os.getcwd()
 
-            for items, folder in trace_list:
-                # build path if not already existing
-                os.makedirs(folder, exist_ok=True)
-                os.chdir(folder)
+                    # go to indexed folder for each fascicle
+                    index_folder = str(i)
+                    os.makedirs(index_folder, exist_ok=True)
 
-                # write all items (give filename as i (index) without the extension
-                for i, item in enumerate(items):
-                    if isinstance(item, Trace):  # not Nerve bc it is buffer class!
-                        if not os.path.exists(str(i)):
-                            os.mkdir(str(i))
-                        item.write(mode, os.path.join(os.getcwd(), str(i), str(i)))
-                    else:
-                        # start to keep track of position file structure
-                        index_start_folder = os.getcwd()
+                    os.chdir(index_folder)
+                    item.write(mode, os.getcwd())
 
-                        # go to indexed folder for each fascicle
-                        index_folder = str(i)
-                        os.makedirs(index_folder, exist_ok=True)
+                    # go back up a folder
+                    os.chdir(index_start_folder)
 
-                        os.chdir(index_folder)
-                        item.write(mode, os.getcwd())
-
-                        # go back up a folder
-                        os.chdir(index_start_folder)
-
-                # change directory back to starting place
-                os.chdir(sub_start)
+            # change directory back to starting place
+            os.chdir(sub_start)
 
         os.chdir(start)
 
@@ -628,24 +642,27 @@ class Slide:
 
         :return: True if all polygons are valid, False if not
         """
-        for trace in self.trace_list():
-            if not trace.polygon().is_valid:
-                return False
-        return True
+        return all(trace.polygon().is_valid for trace in self.trace_list())
 
     def plot_poly_invalid(self):
-        """Check if all polygons are valid and attempt to fix if not.
-
-        :return: True if all polygons are valid, False if not
-        """
+        """Check if all polygons are valid and attempt to fix if not."""
         for trace in self.trace_list():
             if not trace.polygon().is_valid:
                 trace.plot(plot_format='r-')
 
     def has_peanut_fasc(self):
+        """Check if any fascicles are peanut (multiple inner traces).
+
+        :return: True if any fascicle has multiple inner traces
+        """
         return np.any(np.array([len(f.inners) for f in self.fascicles]) > 1)
 
     def inners(self, polygon=False):
+        """Get all inner traces in the slide.
+
+        :param polygon: If True, return the inner traces as polygons
+        :return: List of inner traces
+        """
         if polygon:
             return [inner.polygon() for f in self.fascicles for inner in f.inners]
         return [inner for f in self.fascicles for inner in f.inners]

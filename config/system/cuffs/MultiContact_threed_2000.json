@@ -1,61 +1,63 @@
 {
+  "angle_to_contacts_deg": 180,
   "code": "MCT",
+  "expandable": true,
+  "fixed_point": "clockwise_end",
   "instances": [
     {
-      "type": "CuffFill_Primitive",
-      "label": "MultiContact Cuff Fill",
       "def": {
+        "Center": "Center_MCT",
+        "L": "L_MCT+2*Thk_fill_MCT",
         "Radius": "R_out_MCT+Thk_fill_MCT",
         "Thk": "Thk_fill_MCT",
-        "L": "L_MCT+2*Thk_fill_MCT",
-        "Center": "Center_MCT",
         "x_shift": "0",
         "y_shift": "0"
       },
+      "label": "MultiContact Cuff Fill",
       "materials": [
         {
           "info": "fill",
           "label_index": 0
         }
-      ]
+      ],
+      "type": "CuffFill_Primitive"
     },
     {
-      "type": "TubeCuff_Primitive",
-      "label": "MultiContact Cuff",
       "def": {
-        "N_holes": "N_holes_MCT",
-        "Tube_theta": "Theta_MCT",
+        "Buffer_hole": "Buffer_hole_MCT",
         "Center": "Center_MCT",
+        "D_hole": "D_hole_MCT",
+        "L_holecenter_cuffseam": "L_holecenter_cuffseam_MCT",
+        "N_holes": "N_holes_MCT",
+        "Pitch_holecenter_holecenter": "Pitch_holecenter_holecenter_MCT",
         "R_in": "R_in_MCT",
         "R_out": "R_out_MCT",
-        "Tube_L": "L_MCT",
         "Rot_def": "Rot_def_MCT",
-        "D_hole": "D_hole_MCT",
-        "Buffer_hole": "Buffer_hole_MCT",
-        "L_holecenter_cuffseam": "L_holecenter_cuffseam_MCT",
-        "Pitch_holecenter_holecenter": "Pitch_holecenter_holecenter_MCT"
+        "Tube_L": "L_MCT",
+        "Tube_theta": "Theta_MCT"
       },
+      "label": "MultiContact Cuff",
       "materials": [
         {
           "info": "insulator",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "TubeCuff_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT+L_MCT/4",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT [deg]"
+      },
       "label": "MultiContact Contact 1",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT+L_MCT/4",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -65,22 +67,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT+L_MCT/4",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 2",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT+L_MCT/4",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -90,22 +92,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT+L_MCT/4",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+2*ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 3",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT+L_MCT/4",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+2*ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -115,22 +117,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT+L_MCT/4",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+3*ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 4",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT+L_MCT/4",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+3*ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -140,22 +142,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT [deg]"
+      },
       "label": "MultiContact Contact 5",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -165,22 +167,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 6",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -190,22 +192,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+2*ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 7",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+2*ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -215,22 +217,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+3*ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 8",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+3*ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -240,22 +242,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT-L_MCT/4",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT [deg]"
+      },
       "label": "MultiContact Contact 9",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT-L_MCT/4",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -265,22 +267,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT-L_MCT/4",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 10",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT-L_MCT/4",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -290,22 +292,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
+      "def": {
+        "Center": "Center_MCT-L_MCT/4",
+        "Circle_def": "1",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
+        "Overshoot": "Overshoot_MCT",
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+2*ang_contactcenter_MCT [deg]"
+      },
       "label": "MultiContact Contact 11",
-      "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
-        "Center": "Center_MCT-L_MCT/4",
-        "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+2*ang_contactcenter_MCT [deg]",
-        "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
-      },
       "materials": [
         {
           "info": "conductor",
@@ -315,22 +317,22 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     },
     {
-      "type": "CircleContact_Primitive",
-      "label": "MultiContact Contact 12",
       "def": {
-        "Circle_thk": "Thk_elec_MCT",
-        "Circle_diam": "L_elec_MCT",
-        "R_in": "R_in_MCT",
-        "Circle_recess": "Recess_MCT",
         "Center": "Center_MCT-L_MCT/4",
         "Circle_def": "1",
-        "Rotation_angle": "ang_cuffseam_MCT+3*ang_contactcenter_MCT [deg]",
+        "Circle_diam": "L_elec_MCT",
+        "Circle_recess": "Recess_MCT",
+        "Circle_thk": "Thk_elec_MCT",
+        "L": "L_MCT",
         "Overshoot": "Overshoot_MCT",
-        "L": "L_MCT"
+        "R_in": "R_in_MCT",
+        "Rotation_angle": "ang_cuffseam_MCT+3*ang_contactcenter_MCT [deg]"
       },
+      "label": "MultiContact Contact 12",
       "materials": [
         {
           "info": "conductor",
@@ -340,140 +342,136 @@
           "info": "recess",
           "label_index": 2
         }
-      ]
+      ],
+      "type": "CircleContact_Primitive"
     }
   ],
-
+  "offset": {},
   "params": [
     {
-      "name": "N_holes_MCT",
+      "description": "Either 0, 1, or 2. If 0, no holes are created. If 1, a single hole is created centered along length. If 2, two holes are created centered with midway point of cuff and separated by Pitch_holecenter_holecenter.",
       "expression": "0",
-      "description": "Either 0, 1, or 2. If 0, no holes are created. If 1, a single hole is created centered along length. If 2, two holes are created centered with midway point of cuff and separated by Pitch_holecenter_holecenter."
+      "name": "N_holes_MCT"
     },
     {
-      "name": "Theta_MCT",
+      "description": "Degrees of wrap around of the cuff. If 360, the cuff is a complete circle. If 180, the cuff is a half circle. E.g., if 90, the cuff is a quarter circle.",
       "expression": "percent_circ_cuff_MCT*360 [deg]",
-      "description": "Degrees of wrap around of the cuff. If 360, the cuff is a complete circle. If 180, the cuff is a half circle. E.g., if 90, the cuff is a quarter circle."
+      "name": "Theta_MCT"
     },
     {
-      "name": "Center_MCT",
+      "description": "Center of the cuff along the length of the nerve (i.e., z-axis).",
       "expression": "z_nerve/2",
-      "description": "Center of the cuff along the length of the nerve (i.e., z-axis)."
+      "name": "Center_MCT"
     },
     {
-      "name": "R_in_MCT",
+      "description": "Radius of the inner surface of the cuff.",
       "expression": "max(r_nerve+thk_medium_gap_internal_MCT,r_cuff_in_pre_MCT)",
-      "description": "Radius of the inner surface of the cuff."
+      "name": "R_in_MCT"
     },
     {
-      "name": "R_out_MCT",
+      "description": "Radius of the outer surface of the cuff.",
       "expression": "R_in_MCT+thk_cuff_MCT",
-      "description": "Radius of the outer surface of the cuff."
+      "name": "R_out_MCT"
     },
     {
-      "name": "L_MCT",
+      "description": "Length of the cuff along the nerve (i.e., z-axis).",
       "expression": "5.4 [mm]",
-      "description": "Length of the cuff along the nerve (i.e., z-axis)."
+      "name": "L_MCT"
     },
     {
-      "name": "Rot_def_MCT",
+      "description": "Rotation orientation of the cuff. E.g., If 0, the cuff is aligned with the x-axis. If 90, the CW surface cuff slit is aligned with the y-axis. If 180, the CW surface cuff slit is aligned with the negative x-axis.",
       "expression": "0",
-      "description": "Rotation orientation of the cuff. E.g., If 0, the cuff is aligned with the x-axis. If 90, the CW surface cuff slit is aligned with the y-axis. If 180, the CW surface cuff slit is aligned with the negative x-axis."
+      "name": "Rot_def_MCT"
     },
     {
-      "name": "D_hole_MCT",
+      "description": "Diameter of the cutout hole(s) in the cuff",
       "expression": "NaN",
-      "description": "Diameter of the cutout hole(s) in the cuff"
+      "name": "D_hole_MCT"
     },
     {
-      "name": "Buffer_hole_MCT",
+      "description": "Manufacturing buffer around the hole(s) cut in the cuff for added radial length (half inside and half outside). Should not affect final dimensions.",
       "expression": "NaN",
-      "description": "Manufacturing buffer around the hole(s) cut in the cuff for added radial length (half inside and half outside). Should not affect final dimensions."
+      "name": "Buffer_hole_MCT"
     },
     {
-      "name": "L_holecenter_cuffseam_MCT",
+      "description": "Length from the cuff seam around the cuff circumference to the center of the hole(s) cut in the inner cuff (i.e., not the furl).",
       "expression": "NaN",
-      "description": "Length from the cuff seam around the cuff circumference to the center of the hole(s) cut in the inner cuff (i.e., not the furl)."
+      "name": "L_holecenter_cuffseam_MCT"
     },
     {
-      "name": "Pitch_holecenter_holecenter_MCT",
+      "description": "Pitch between the centers of the holes in the cuff",
       "expression": "NaN",
-      "description": "Pitch between the centers of the holes in the cuff"
+      "name": "Pitch_holecenter_holecenter_MCT"
     },
     {
-      "name": "percent_circ_cuff_MCT",
+      "description": "Wrap of the cuff (as compared to 360 degree wrap for continuous insulation) after expansion to accommodate the nerve",
       "expression": "percent_circ_cuff_pre_MCT*(r_cuff_in_pre_MCT/R_in_MCT)",
-      "description": "Wrap of the cuff (as compared to 360 degree wrap for continuous insulation) after expansion to accommodate the nerve"
+      "name": "percent_circ_cuff_MCT"
     },
     {
-      "name": "percent_circ_cuff_pre_MCT",
+      "description": "Wrap of the cuff (as compared to 360 degree wrap for continuous insulation) before expansion to accommodate the nerve",
       "expression": "1",
-      "description": "Wrap of the cuff (as compared to 360 degree wrap for continuous insulation) before expansion to accommodate the nerve"
+      "name": "percent_circ_cuff_pre_MCT"
     },
     {
-      "name": "r_cuff_in_pre_MCT",
+      "description": "Cuff resting inner diameter",
       "expression": "1 [mm]",
-      "description": "Cuff resting inner diameter"
+      "name": "r_cuff_in_pre_MCT"
     },
     {
-      "name": "thk_medium_gap_internal_MCT",
+      "description": "Gap between cuff and nerve",
       "expression": "100 [um]",
-      "description": "Gap between cuff and nerve"
+      "name": "thk_medium_gap_internal_MCT"
     },
     {
-      "name": "thk_cuff_MCT",
+      "description": "Cuff thickness",
       "expression": "1 [mm]",
-      "description": "Cuff thickness"
+      "name": "thk_cuff_MCT"
     },
     {
-      "name": "Recess_MCT",
+      "description": "Depth of fill material into the cuff before the contact. This is used to create an associated recess/fill domain with a contact.",
       "expression": "0.05 [mm]",
-      "description": "Depth of fill material into the cuff before the contact. This is used to create an associated recess/fill domain with a contact."
+      "name": "Recess_MCT"
     },
     {
-      "name": "Thk_elec_MCT",
+      "description": "Thickness of contact",
       "expression": "0.05 [mm]",
-      "description": "Thickness of contact"
+      "name": "Thk_elec_MCT"
     },
     {
-      "name": "L_elec_MCT",
+      "description": "Diameter of contact",
       "expression": "1 [mm]",
-      "description": "Diameter of contact"
+      "name": "L_elec_MCT"
     },
     {
-      "name": "Thk_fill_MCT",
+      "description": "Distance fill extends beyond cuff boundary",
       "expression": "100 [um]",
-      "description": "Distance fill extends beyond cuff boundary"
+      "name": "Thk_fill_MCT"
     },
     {
-      "name": "Overshoot_MCT",
+      "description": "Manufacturing overshoot of the contact, should not affect final dimensions",
       "expression": "0.05 [mm]",
-      "description": "Manufacturing overshoot of the contact, should not affect final dimensions"
+      "name": "Overshoot_MCT"
     },
     {
-      "name": "ang_cuffseam_MCT",
+      "description": "Angle from the cuff seam to the first contact center after expansion to accommodate the nerve",
       "expression": "ang_cuffseam_pre_MCT*(r_cuff_in_pre_MCT/R_in_MCT)",
-      "description": "Angle from the cuff seam to the first contact center after expansion to accommodate the nerve"
+      "name": "ang_cuffseam_MCT"
     },
     {
-      "name": "ang_cuffseam_pre_MCT",
+      "description": "Angle from the cuff seam to the first contact center before expansion to accommodate the nerve",
       "expression": "45 [deg]",
-      "description": "Angle from the cuff seam to the first contact center before expansion to accommodate the nerve"
+      "name": "ang_cuffseam_pre_MCT"
     },
     {
-      "name": "ang_contactcenter_MCT",
+      "description": "Angle between contact centers after expansion to accommodate the nerve",
       "expression": "ang_contactcenter_pre_MCT*(r_cuff_in_pre_MCT/R_in_MCT)",
-      "description": "Angle between contact centers after expansion to accommodate the nerve"
+      "name": "ang_contactcenter_MCT"
     },
     {
-      "name": "ang_contactcenter_pre_MCT",
+      "description": "Angle between contact centers before expansion to accommodate the nerve",
       "expression": "90 [deg]",
-      "description": "Angle between contact centers before expansion to accommodate the nerve"
+      "name": "ang_contactcenter_pre_MCT"
     }
-  ],
-
-  "expandable": true,
-  "fixed_point": "clockwise_end",
-  "angle_to_contacts_deg": 180,
-  "offset": {}
+  ]
 }

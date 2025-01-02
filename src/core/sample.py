@@ -12,13 +12,13 @@ import os
 import shutil
 import sys
 import warnings
-from typing import List
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.ndimage import binary_fill_holes
 from skimage import morphology
+
 from src.core import Deformable, Fascicle, Map, Nerve, Slide, Trace
 from src.utils import (
     Config,
@@ -64,7 +64,7 @@ class Sample(Configurable, Saveable):
         self.reshape_nerve_mode = None
         self.nerve_mode = None
         self.mask_input_mode = None
-        self.slides: List[Slide] = []
+        self.slides: list[Slide] = []
 
         # Set instance variable map
         self.map = None
@@ -180,29 +180,27 @@ class Sample(Configurable, Saveable):
         """
         if scale_bar_is_literal:
             # use explicitly specified um/px scale instead of drawing from a scale bar image
-            factor = scale_bar_length
+            return scale_bar_length
+
+        # load in image
+        image_raw: np.ndarray = cv2.imread(scale_bar_mask_path)
+
+        # get maximum of each column (each "pixel" is a 4-item vector)
+        row_of_column_maxes: np.ndarray = image_raw.max(0)
+        # find the indices of columns in original image where the first pixel item was maxed (i.e. white)
+
+        if row_of_column_maxes.ndim == 2:  # masks from histology, 3 or 4 bit
+            indices = np.where(row_of_column_maxes[:, 0] == max(row_of_column_maxes[:, 0]))[0]
+        elif row_of_column_maxes.ndim == 1:  # masks from mock morphology, 1 bit
+            indices = np.where(row_of_column_maxes[:] == max(row_of_column_maxes[:]))[0]
         else:
-            # load in image
-            image_raw: np.ndarray = cv2.imread(scale_bar_mask_path)
+            raise MaskError("Invalid TIF file format passed into the program")
 
-            # get maximum of each column (each "pixel" is a 4-item vector)
-            row_of_column_maxes: np.ndarray = image_raw.max(0)
-            # find the indices of columns in original image where the first pixel item was maxed (i.e. white)
+        # find the length of the scale bar by finding total range of "max white" indices
+        scale_bar_pixels = max(indices) - min(indices) + 1
 
-            if row_of_column_maxes.ndim == 2:  # masks from histology, 3 or 4 bit
-                indices = np.where(row_of_column_maxes[:, 0] == max(row_of_column_maxes[:, 0]))[0]
-            elif row_of_column_maxes.ndim == 1:  # masks from mock morphology, 1 bit
-                indices = np.where(row_of_column_maxes[:] == max(row_of_column_maxes[:]))[0]
-            else:
-                raise MaskError("Invalid TIF file format passed into the program")
-
-            # find the length of the scale bar by finding total range of "max white" indices
-            scale_bar_pixels = max(indices) - min(indices) + 1
-
-            # calculate scale factor as unit/pixel
-            factor = scale_bar_length / scale_bar_pixels
-
-        return factor
+        # calculate scale factor as unit/pixel
+        return scale_bar_length / scale_bar_pixels
 
     def build_file_structure(self, printing: bool = False) -> 'Sample':
         """Build the file structure for morphology inputs.
@@ -212,10 +210,7 @@ class Sample(Configurable, Saveable):
         :raises ValueError: If more than one slide provided
         :return: self
         """
-        scale_input_mode = self.search_mode(ScaleInputMode, Config.SAMPLE, optional=True)
-        # For backwards compatibility, if scale mode is not specified assume a mask image is provided
-        if scale_input_mode is None:
-            scale_input_mode = ScaleInputMode.MASK
+        scale_input_mode = self.search_mode(ScaleInputMode, Config.SAMPLE)
 
         sample_index = self.search(Config.RUN, 'sample')
 
@@ -309,11 +304,10 @@ class Sample(Configurable, Saveable):
         self.contour_mode = self.search_mode(ContourMode, Config.SAMPLE, optional=True)
         self.mask_space_mode = self.search_mode(MaskSpaceMode, Config.SAMPLE, optional=True)
 
-        # For backwards compatibility, if scale mode is not specified assume a mask image is provided
-        if self.scale_input_mode is None:
-            self.scale_input_mode = ScaleInputMode.MASK
-        if self.contour_mode is None:
-            self.contour_mode = ContourMode.NONE  # note changed default here for 3D
+        # Set defaults for optional modes
+        self.scale_input_mode = self.scale_input_mode or ScaleInputMode.MASK
+        self.contour_mode = self.contour_mode or ContourMode.NONE
+        self.mask_space_mode = self.mask_space_mode or MaskSpaceMode.CARTESIAN
 
     @staticmethod
     def mask_exists(mask_file_name: MaskFileNames):
@@ -421,8 +415,7 @@ class Sample(Configurable, Saveable):
                 outer_mask = None
 
         # generate fascicle objects from masks
-        fascicles = Fascicle.to_list(inner_mask, outer_mask, self.contour_mode, self.mask_space_mode)
-        return fascicles
+        return Fascicle.to_list(inner_mask, outer_mask, self.contour_mode, self.mask_space_mode)
 
     def get_epineurium_from_mask(self):
         """Generate epineurium trace from mask.
@@ -441,13 +434,11 @@ class Sample(Configurable, Saveable):
             img_nerve = np.flipud(img_nerve)
 
         contour, _ = cv2.findContours(img_nerve, cv2.RETR_TREE, self.contour_mode.value)
-        nerve = Nerve(
+        return Nerve(
             Trace(
                 [point + [0] for point in contour[0][:, 0, :]],
             )
         )
-
-        return nerve
 
     def generate_slide(self, slide_info):
         """Create slide from input masks.
@@ -498,7 +489,7 @@ class Sample(Configurable, Saveable):
 
         os.chdir(self.start_directory)
 
-        return slide
+        return slide  # noqa: R504
 
     def correct_shrinkage(self, slide):
         """Apply shrinkage correction to slide.
@@ -516,23 +507,20 @@ class Sample(Configurable, Saveable):
         else:
             sys.exit('Temporarily disallowing shrinkage correction')
         if s_mode is None:
-            print(
-                'WARNING: ShrinkageMode in Config.Sample is not defined or mode provided is not a known option. '
-                'Proceeding with backwards compatible (i.e., original default functionality) of LENGTH_FORWARDS'
-                ' shrinkage correction.\n'
-            )
+            print('No ShrinkageMode in Config.Sample, defaulting to LENGTH_FORWARDS shrinkage correction. ')
             shrinkage_correction = 1 + s_pre
+            s_mode = ShrinkageMode.LENGTH_FORWARDS
+
+        if s_mode == ShrinkageMode.LENGTH_BACKWARDS:
+            shrinkage_correction = 1 / (1 - s_pre)
+        elif s_mode == ShrinkageMode.LENGTH_FORWARDS:
+            shrinkage_correction = s_pre + 1
+        elif s_mode == ShrinkageMode.AREA_BACKWARDS:
+            shrinkage_correction = 1 / np.sqrt(1 - s_pre)
+        elif s_mode == ShrinkageMode.AREA_FORWARDS:
+            shrinkage_correction = np.sqrt(1 + s_pre)
         else:
-            if s_mode == ShrinkageMode.LENGTH_BACKWARDS:
-                shrinkage_correction = 1 / (1 - s_pre)
-            elif s_mode == ShrinkageMode.LENGTH_FORWARDS:
-                shrinkage_correction = s_pre + 1
-            elif s_mode == ShrinkageMode.AREA_BACKWARDS:
-                shrinkage_correction = 1 / np.sqrt(1 - s_pre)
-            elif s_mode == ShrinkageMode.AREA_FORWARDS:
-                shrinkage_correction = np.sqrt(1 + s_pre)
-            else:
-                raise ValueError("Invalid ShrinkageMode defined in sample.json")
+            raise ValueError("Invalid ShrinkageMode defined in sample.json")
 
         if shrinkage_correction < 1:
             raise ValueError(
@@ -589,8 +577,7 @@ class Sample(Configurable, Saveable):
                     "If NerveMode is set to PRESENT and smoothing is defined in Sample.json, "
                     "nerve_distance must be defined"
                 )
-            else:
-                self.smooth(n_distance, i_distance)
+            self.smooth(n_distance, i_distance)
 
     def prepare_perineurium(self):
         """Generate perineurium."""
@@ -833,27 +820,27 @@ class Sample(Configurable, Saveable):
             slide_path = os.path.join(sample_path, cassette, number)
             if not os.path.exists(slide_path):
                 raise OSError("Path to slide must have already been created.")
+
+            # change directories to slide path
+            os.chdir(slide_path)
+
+            # build the directory for output (name is the write mode)
+            if mode == WriteMode.SECTIONWISE2D:
+                directory_to_create = 'sectionwise2d'
+            elif mode == WriteMode.SECTIONWISE:
+                directory_to_create = 'sectionwise'
             else:
-                # change directories to slide path
-                os.chdir(slide_path)
+                raise NotImplementedError("Unimplemented write mode.")
 
-                # build the directory for output (name is the write mode)
-                if mode == WriteMode.SECTIONWISE2D:
-                    directory_to_create = 'sectionwise2d'
-                elif mode == WriteMode.SECTIONWISE:
-                    directory_to_create = 'sectionwise'
-                else:
-                    raise NotImplementedError("Unimplemented write mode.")
+            # clear directory if it exists, then create
+            if os.path.exists(directory_to_create):
+                shutil.rmtree(directory_to_create, ignore_errors=True)
+            os.makedirs(directory_to_create, exist_ok=True)
 
-                # clear directory if it exists, then create
-                if os.path.exists(directory_to_create):
-                    shutil.rmtree(directory_to_create, ignore_errors=True)
-                os.makedirs(directory_to_create, exist_ok=True)
+            os.chdir(directory_to_create)
 
-                os.chdir(directory_to_create)
-
-                # WRITE
-                self.slides[i].write(mode, os.getcwd())
+            # WRITE
+            self.slides[i].write(mode, os.getcwd())
 
             # go back up to start directory, then to top of loop
             os.chdir(start_directory)

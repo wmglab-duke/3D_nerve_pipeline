@@ -8,8 +8,6 @@ import os
 import pickle
 
 import numpy as np
-from src.core import Sample
-from src.utils import Config, SetupMode, WriteMode
 
 for sample in os.listdir('samples'):
     if len(sample) < 3 or str(sample)[2] == '3' or sample.startswith('.'):

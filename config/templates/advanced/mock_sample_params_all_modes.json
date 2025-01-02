@@ -1,0 +1,62 @@
+{
+  "EXPLICIT": {
+    "Fascicles": [
+      {
+        "a": 100,
+        "b": 100,
+        "centroid_x": 0,
+        "centroid_y": 550,
+        "rot": 0
+      },
+      {
+        "a": 100,
+        "b": 80,
+        "centroid_x": 550,
+        "centroid_y": 0,
+        "rot": 0
+      },
+      {
+        "a": 100,
+        "b": 70,
+        "centroid_x": 0,
+        "centroid_y": -550,
+        "rot": 90
+      },
+      {
+        "a": 100,
+        "b": 200,
+        "centroid_x": -550,
+        "centroid_y": 0,
+        "rot": 180
+      }
+    ],
+    "min_fascicle_separation": 5,
+    "mode": "EXPLICIT"
+  },
+  "TRUNCNORM": {
+    "max_attempt_iter": 100,
+    "min_fascicle_separation": 10,
+    "mode": "TRUNCNORM",
+    "mu_fasc_diam": 350,
+    "mu_fasc_ecc": 0.5,
+    "n_std_diam_limit": 2,
+    "n_std_ecc_limit": 2,
+    "num_fascicle_attempt": 10,
+    "num_fascicle_placed": 0,
+    "seed": 123,
+    "std_fasc_diam": 30,
+    "std_fasc_ecc": 0.2
+  },
+  "UNIFORM": {
+    "lower_fasc_diam": 450,
+    "lower_fasc_ecc": 0.5,
+    "max_attempt_iter": 100,
+    "min_fascicle_separation": 10,
+    "mode": "UNIFORM",
+    "num_fascicle_attempt": 10,
+    "num_fascicle_placed": 0,
+    "seed": 123,
+    "upper_fasc_diam": 500,
+    "upper_fasc_ecc": 0.99
+  }
+}

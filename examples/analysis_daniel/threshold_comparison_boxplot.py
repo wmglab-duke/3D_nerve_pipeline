@@ -1,5 +1,3 @@
-#!/usr/bin/env python3.7
-
 """Compare thresholds across models using a boxplot.
 
 The copyrights of this software are owned by Duke University.
@@ -12,6 +10,9 @@ RUN THIS FROM REPOSITORY ROOT
 """
 
 import os
+import sys
+
+sys.path.append(os.path.sep.join([os.getcwd(), '']))
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -27,7 +28,7 @@ q = Query(
     }
 ).run()
 
-data = q.threshold_data()
+data = q.common_data_extraction(data_types=['threshold'])
 g = sns.boxplot(data=data, x='model', y='threshold')
 plt.title('Threshold boxplot comparison')
 

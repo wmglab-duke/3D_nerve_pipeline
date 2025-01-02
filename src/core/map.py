@@ -46,9 +46,9 @@ import json
 import os
 import re
 import warnings
-from typing import List
 
 import numpy as np
+
 from src.utils import Config, Configurable, SetupMode
 
 
@@ -78,14 +78,14 @@ class Map(Configurable):
         self.sample = self.search(Config.SAMPLE, 'sample')
 
         # init self.slides
-        self.slides: List[SlideInfo] = []
+        self.slides: list[SlideInfo] = []
 
         # change mode to SYNTHETIC if no map path provided
         if 'map_path' not in self.search(Config.SAMPLE).keys():
             self.mode = SetupMode.SYNTHETIC
 
-        if self.mode == SetupMode.NEW:
-            raise Exception('NOT IMPLEMENTED')
+        if self.mode == SetupMode.NEW:  # noqa R506
+            raise NotImplementedError("Map with SetupMode.NEW not yet implemented")
 
         elif self.mode == SetupMode.OLD:
             # source FILE
@@ -110,7 +110,7 @@ class Map(Configurable):
             self.source_path = os.path.join(inputpath, 'map.json')
 
             # load/edit map template
-            mapper = self.load(os.path.join('config', 'templates', 'map.json'))
+            mapper = self.load(os.path.join('config', 'templates', 'advanced', 'map.json'))
             mapper[0]['directory'] = self.source_path.split(os.sep)[:-1]
 
             # write synthetic map
@@ -220,7 +220,7 @@ class SlideInfo:
 
 # quick class to keep track of a reference distance for resizing (i.e. space between electrodes)
 class Reference:
-    def __init__(self, start: List[SlideInfo], end: List[SlideInfo]):
+    def __init__(self, start: list[SlideInfo], end: list[SlideInfo]):
         # find average start and end positions  and save as instance variables for printing if needed
         self.start = np.mean([slide.position for slide in start])
         self.end = np.mean([slide.position for slide in end])

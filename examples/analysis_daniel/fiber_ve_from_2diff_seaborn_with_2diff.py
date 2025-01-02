@@ -1,14 +1,10 @@
 import os
-import pickle
-import random
 import sys
 
 import matplotlib
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
-from scipy.signal import find_peaks
-from shapely.geometry import Point
 
 font = {'size': 12}
 
@@ -19,7 +15,6 @@ sys.path.append(r'C:\nrn\lib\python')  # noqa: E800
 os.chdir('../..')
 
 import pandas as pd
-from shapely.strtree import STRtree
 
 threshdata = pd.concat([pd.read_csv('thresh_unmatched_sim3_og.csv'), pd.read_csv('thresh_unmatched_sim3_def.csv')])
 pal2d3d = ['#d95f02', '#7570b3']
