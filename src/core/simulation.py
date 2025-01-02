@@ -18,7 +18,6 @@ import warnings
 
 import numpy as np
 import scipy.interpolate as sci
-
 from src.core import Sample
 from src.utils import Config, Configurable, Env, ExportMode, IncompatibleParametersError, Saveable, SetupMode, WriteMode
 
@@ -556,6 +555,7 @@ class Simulation(Configurable, Saveable):
             if not threed:
                 src_bases_indices, rec_bases_indices = self.srcs_mapping(sim_dir)
             else:
+                rec_bases_indices = []
                 source_sim = supersampled_bases.get('source_sim')
                 src_bases_indices = np.sort(
                     [int(x) for x in os.listdir(os.path.join(sim_dir, str(source_sim), 'ss_bases'))]
