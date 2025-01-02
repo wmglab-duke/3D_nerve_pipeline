@@ -32,7 +32,8 @@
                   "<ves>": false,
                   "<vm_times>": false
                 }
-              }
+              },
+              "launch.hoc": true
             }
           },
           "plots": {

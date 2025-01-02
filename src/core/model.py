@@ -267,10 +267,10 @@ class Model(Configurable, Saveable):
             try:
                 reference_x, reference_y = slide.fascicle_centroid()
                 theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
-            except ZeroDivisionError:
+            except ZeroDivisionError:  # TODO: why?
                 theta_c = 0
         else:
-            theta_c = 0
+            theta_c = (np.arctan2(reference_y - y, reference_x - x) * (360 / (2 * np.pi))) % 360
         # calculate final necessary radius by adding buffer
         r_f = r_bound + cuff_r_buffer
         # fetch initial cuff rotation (convert to rads)
@@ -481,7 +481,8 @@ class Model(Configurable, Saveable):
             raise IncompatibleParametersError(
                 "Cuff configuration file has no conditions that match the given parameters. "
             )
-        elif condition_match_count > 1:
+
+        if condition_match_count > 1:
             # conditions are not mutually exclusive in preset JSON file
             raise IncompatibleParametersError(
                 "Cuff configuration file has more than one condition that matches the given parameters. "

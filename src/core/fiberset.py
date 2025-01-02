@@ -258,22 +258,20 @@ class FiberSet(Configurable, Saveable):
         if self.xy_mode not in FiberXYMode:
             raise NotImplementedError("Invalid FiberXYMode in Sim.")
 
-        elif self.xy_mode == FiberXYMode.CENTROID:
-            points = self.generate_centroid_points()
+        if self.xy_mode == FiberXYMode.CENTROID:  # noqa: R505
+            return self.generate_centroid_points()
 
         elif self.xy_mode == FiberXYMode.UNIFORM_DENSITY:
-            points = self.generate_uniform_density_points(buffer, my_xy_seed)
+            return self.generate_uniform_density_points(buffer, my_xy_seed)
 
         elif self.xy_mode == FiberXYMode.UNIFORM_COUNT:
-            points = self.generate_uniform_count_points(buffer, my_xy_seed)
+            return self.generate_uniform_count_points(buffer, my_xy_seed)
 
         elif self.xy_mode == FiberXYMode.WHEEL:
-            points = self.generate_wheel_points(buffer)
+            return self.generate_wheel_points(buffer)
 
         elif self.xy_mode == FiberXYMode.EXPLICIT:
-            points = self.load_explicit_coords(sim_directory, buffer)
-
-        return points
+            return self.load_explicit_coords(sim_directory, buffer)
 
     def _generate_xyz(self, sim_directory: str) -> np.ndarray:
         """Generate the xyz coordinates of the fibers.
@@ -282,13 +280,11 @@ class FiberSet(Configurable, Saveable):
         :raises NotImplementedError: If a mode is not supported.
         :return: xy coordinates of the fibers
         """
-        if self.xy_mode == FiberXYMode.EXPLICIT_3D:
-            points = self.load_explicit_coords(sim_directory, is_3d=True)
-        else:
+        if self.xy_mode != FiberXYMode.EXPLICIT_3D:
             raise NotImplementedError(
                 "Invalid FiberXYMode in Sim. FiberXYMode must be 'EXPLICIT_3D' when FiberZMode is 'EXPLICIT'."
             )
-        return points
+        return self.load_explicit_coords(sim_directory, is_3d=True)
 
     def generate_centroid_points(self):
         """Create the xy coordinates of the fibers using the centroid of the fascicles.
@@ -465,26 +461,19 @@ class FiberSet(Configurable, Saveable):
         explicit_index = self.search(Config.SIM, 'fibers', 'xy_parameters', 'explicit_fiberset_index')
         # 3D fiber file format is stored in .npy pickled files; can't be stored in .txt file.
         file_extension = 'npy' if is_3d else 'txt'
-        if explicit_index is not None:
-            input_sample_name = self.sample.configs['sample']['sample']
-            explicit_source = os.path.join(
-                'input', input_sample_name, 'explicit_fibersets', f'{explicit_index}.{file_extension}'
-            )
-            explicit_dest = os.path.join(sim_directory, f'explicit.{file_extension}')
-            shutil.copyfile(explicit_source, explicit_dest)
-        else:
-            print(
-                '\t\tWARNING: Explicit fiberset index not specified.'
-                '\n\t\tProceeding with backwards compatible check for explicit.txt in:'
-                f'\n\t\t{sim_directory}'
+        input_sample_name = self.sample.configs['sample']['sample']
+        explicit_source = os.path.join(
+            'input', input_sample_name, 'explicit_fibersets', f'{explicit_index}.{file_extension}'
+        )
+        explicit_dest = os.path.join(sim_directory, f'explicit.{file_extension}')
+
+        if not os.file.exists(explicit_source):
+            raise FileNotFoundError(
+                f"FiberXYMode is EXPLICIT or EXPLICIT_3D in Sim, but did not find the file {explicit_source}. "
+                "See config/templates/advanced/explicit.txt or config/templates/advanced/explicit_3d.npy for examples."
             )
 
-        if not os.path.exists(os.path.join(sim_directory, f'explicit.{file_extension}')):
-            raise FileNotFoundError(
-                f"FiberXYMode is EXPLICIT or EXPLICIT_3D in Sim, but no explicit.{file_extension} file with "
-                "coordinates is in the Sim directory. See config/system/templates/explicit.txt for example "
-                "of this file's required format."
-            )
+        shutil.copyfile(explicit_source, explicit_dest)
 
         if is_3d:
             points = np.load(explicit_dest, allow_pickle=True)
@@ -521,31 +510,28 @@ class FiberSet(Configurable, Saveable):
                 if not Point(fiber).within(unary_union(innershapes)):
                     if not True:  # TODO add point adjust param and buffer amt, also wrap this in funciton
                         raise MorphologyError(f"Explicit fiber coordinate: {fiber} does not fall in an inner")
-                    else:
-                        # TODO: make this correction optional
-                        tree = STRtree(innershapes)
-                        correct_fascicle = tree.nearest(Point(fiber))
-                        movedist = (
-                            Point(fiber).distance(correct_fascicle) + buffer
-                        )  # TODO add some leeway instead of doing +5 micron
-                        if movedist > 10 + buffer:
-                            if movedist < 50:
-                                warnings.warn(f"Moved a fiber by {movedist} microns.", stacklevel=2)
-                            else:
-                                raise RuntimeError(f"Correction would move {movedist} microns")
-                        dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
-                        newpoint = distpoint(fiber, dest, movedist)
-                        try:
-                            assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
-                        except AssertionError:
-                            # get the nearest point on the boundary of the correct fascicle and shift away from that
-                            # TODO: change it to always work this way
-                            from shapely.ops import nearest_points
+                    # TODO: make this correction optional
+                    tree = STRtree(innershapes)
+                    correct_fascicle = tree.nearest(Point(fiber))
+                    movedist = (
+                        Point(fiber).distance(correct_fascicle) + buffer
+                    )  # TODO add some leeway instead of doing +5 micron
+                    if movedist > 10 + buffer:
+                        if movedist < 50:
+                            warnings.warn(f"Moved a fiber by {movedist} microns.", stacklevel=2)
+                        else:
+                            raise RuntimeError(f"Correction would move {movedist} microns")
+                    dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
+                    newpoint = distpoint(fiber, dest, movedist)
+                    if not Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer])):
+                        # get the nearest point on the boundary of the correct fascicle and shift away from that
+                        # TODO: change it to always work this way
+                        from shapely.ops import nearest_points
 
-                            nearest = nearest_points(Point(fiber), correct_fascicle)[1]
-                            dest = (nearest.x, nearest.y)
-                            newpoint = distpoint(fiber, dest, movedist)
-                            assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
+                        nearest = nearest_points(Point(fiber), correct_fascicle)[1]
+                        dest = (nearest.x, nearest.y)
+                        newpoint = distpoint(fiber, dest, movedist)
+                        assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
                     points[i] = newpoint
                 # plt.scatter(np.array(points)[:, 0], np.array(points)[:, 1])
                 # checkslide.plot()
@@ -599,9 +585,7 @@ class FiberSet(Configurable, Saveable):
                                     raise RuntimeError(f"Correction would move {movedist} microns")
                             dest = (correct_fascicle.centroid.x, correct_fascicle.centroid.y)
                             newpoint = distpoint(fiber, dest, movedist)
-                            try:
-                                assert Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer]))
-                            except AssertionError:
+                            if not Point(newpoint).within(unary_union([x.polygon() for x in innerbuffer])):
                                 # get the nearest point on the boundary of the correct fascicle and shift away from that
                                 # TODO: change it to always work this way
                                 from shapely.ops import nearest_points
@@ -650,7 +634,8 @@ class FiberSet(Configurable, Saveable):
                 'or the "fibers">"z_parameters">"min"/"max" variables in sim.json.)'
                 'Please extend your model length, or shorten your fibers.'
             )
-        elif np.any(provided_fiber_lengths < desired_fiber_length):
+
+        if np.any(provided_fiber_lengths < desired_fiber_length):
             warnings.warn(
                 'Extruding explicit 3d fiber lengths. At least one fiber is shorter than desired fiber length '
                 '(provided by either the proximal medium length by default, '
@@ -698,8 +683,7 @@ class FiberSet(Configurable, Saveable):
                 points[fib_idx][:, 2] = np.array(z_extruded)  # Update z points with extruded coordinates
 
         # Transform from list of arrays to 3D array now that all fibers are the same length
-        points = np.stack(points)
-        return points
+        return np.stack(points)
 
     def plot_fibers_on_sample(self, sim_directory, z_index=0):
         """Plot the xy coordinates of the fibers on the sample.
@@ -843,7 +827,7 @@ class FiberSet(Configurable, Saveable):
 
             def _build_z(inter_length, node_length, paranodal_length_1, paranodal_length_2, delta_z):
                 z_steps: list = []
-                while sum(z_steps) < model_length / 2:
+                while sum(z_steps) < model_length / 2:  # TODO put back to how it was in 3D pipeline
                     z_steps += [
                         (node_length / 2) + (paranodal_length_1 / 2),
                         (paranodal_length_1 / 2) + (paranodal_length_2 / 2),
@@ -1106,12 +1090,10 @@ class FiberSet(Configurable, Saveable):
         )
 
         if myelinated and not super_sample:  # MYELINATED
-            fibers = generate_z_myelinated(diams)
+            return generate_z_myelinated(diams)
 
-        else:  # UNMYELINATED
-            fibers = generate_z_unmyel(diams)
-
-        return fibers
+        # else UNMYELINATED
+        return generate_z_unmyel(diams)
 
     def _generate_3d_longitudinal(  # noqa: C901
         self, fibers_xyz: np.ndarray, sim_directory: str, super_sample: bool = False
@@ -1355,5 +1337,5 @@ class FiberSet(Configurable, Saveable):
 
         if split_xy:
             return list(zip(*points))[0], list(zip(*points))[1]
-        else:
-            return points
+
+        return points

@@ -160,7 +160,7 @@
     },
     {
       "description": "",
-      "expression": "30 [um]",
+      "expression": "10 [um]",
       "name": "thk_medium_gap_internal_LN"
     },
     {

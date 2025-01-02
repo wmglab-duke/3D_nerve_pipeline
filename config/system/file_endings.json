@@ -1,5 +1,6 @@
 {
   "dat": "Text",
+  "hoc": "NEURON",
   "json": "JSON",
   "m": "MATLAB",
   "md": "Markdown",
