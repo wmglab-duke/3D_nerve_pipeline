@@ -22,7 +22,6 @@ from nd_line.nd_line import nd_line
 from scipy.signal import argrelextrema
 from scipy.spatial.distance import euclidean
 from shapely.geometry import Point
-
 from src.core import Sample, Simulation, Slide
 from src.utils import Config, Configurable, Object, Saveable, SetupMode
 
@@ -981,7 +980,7 @@ class Query(Configurable, Saveable):
             else:
                 writer.sheets[sheet_name].set_column(0, 256)
 
-        writer.save()
+        writer.close()
 
     def handle_sim(  # noqa: D102
         self,

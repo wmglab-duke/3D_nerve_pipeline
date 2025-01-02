@@ -126,7 +126,11 @@ class Configurable:
         :return: json data (dict or list)
         """
         with open(config_path) as handle:
-            return json.load(handle)
+            try:
+                return json.load(handle)
+            except json.JSONDecodeError as e:
+                print(f'Error decoding JSON file {config_path}:\n{e}')
+                raise e
 
     @staticmethod
     def write(data: list | dict, dest_path):
