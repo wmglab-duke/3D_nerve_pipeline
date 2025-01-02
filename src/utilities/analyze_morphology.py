@@ -16,8 +16,11 @@ from shapely.ops import unary_union
 
 sys.path.append('../../..')
 sys.path.append('../../../Scripts')
+os.chdir('../..')
 from src.core import Fascicle, Nerve, Slide, Trace
 from src.utils import ContourMode, DeformationMode, DownSampleMode, MaskSpaceMode, NerveMode
+
+os.chdir('src/utilities')
 from threedclass import FascicleConnectivityMap
 
 root = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
@@ -26,6 +29,7 @@ ascentdir = r'D:\threed_final\input\slides'
 
 os.makedirs(ascentdir, exist_ok=True)
 mpl.rcParams['figure.dpi'] = 400
+custompal = ['#32ADD4', '#42DC7C', '#E43E8A', '#E6DD3C']
 
 
 def get_sorted_image_list(path, pattern):
@@ -73,7 +77,8 @@ os.chdir(os.path.join(root))
 
 # samples = ['2LDS5','2RDS5','3RDS5','5RDS5','6LDS5','6RDS5','2LDS5def', '3RDS5def', '5RDS5def', '6RDS5def','2LDS5_fine','2LDS5_im','2LDS5_up','2LDS5_down']
 # samples = ['2LDS5']
-samples = ['2LDS5', '2RDS5', '3RDS5', '5RDS5', '6LDS5', '6RDS5']
+# samples = ['2LDS5', '2RDS5', '3RDS5', '5RDS5', '6LDS5', '6RDS5']
+samples = ['2LDS5', '3RDS5', '5RDS5', '6LDS5']
 
 if detailed:
     fig, axs = plt.subplots(nrows=5, ncols=len(samples), sharex=True)
@@ -262,19 +267,20 @@ for sample_index, sample in enumerate(samples):
 
         # Add text with arrows
         axs[areanum].annotate(
-            'Endoneurium',
-            xy=(0.15, 1),
-            xytext=(0.15, 1.3),
+            'Endo-\nneurium',
+            xy=(0.15, 0.6),
+            xytext=(0.8, 0.6),
             xycoords='axes fraction',
             textcoords='axes fraction',
             arrowprops=dict(arrowstyle='->', lw=1.5, color='k'),
             ha='center',
             va='center',
+            rotation=0,
         )
         axs[areanum].annotate(
             'Whole\nnerve',
-            xy=(0.45, 1),
-            xytext=(0.45, 1.15),
+            xy=(0.47, 0.9),
+            xytext=(0.85, 0.9),
             xycoords='axes fraction',
             textcoords='axes fraction',
             arrowprops=dict(arrowstyle='->', lw=1.5, color='k'),
@@ -305,21 +311,38 @@ plt.plot(mf, m * np.array(mf) + b, color='black', label=f'$R^2$={np.corrcoef(mf,
 plt.legend()
 plt.gcf().set_size_inches(3, 2)
 plt.savefig(os.path.join(morphdir, 'bcounts.png'), dpi=400)
+print({name.replace('DS5', ''): fmap.branch_count for name, fmap in fmaps.items()})
+print({name.replace('DS5', ''): 1000 * 10 * 5 / fmap.branch_count for name, fmap in fmaps.items()})
+print(np.mean([1000 * 10 * 5 / fmap.branch_count for name, fmap in fmaps.items()]))
+plt.figure()
+bd = [1000 * 10 * 5 / fmap.branch_count for name, fmap in fmaps.items()]
+plt.scatter(bd, bc, color='k')
+plt.xlabel('Mean branching distance (μm / branch)')
+plt.ylabel('Branch count')
+m, b = np.polyfit(bd, bc, 1)
+plt.plot(bd, m * np.array(bd) + b, color='black', label=f'$R^2$={np.corrcoef(bd,bc)[0,1]**2:.2f}')
+plt.legend()
+plt.gcf().set_size_inches(3, 2)
 # %%
 # sns.reset_orig()
 plt.figure()
-
+sns.set(style='ticks')
+from matplotlib.ticker import AutoMinorLocator, MultipleLocator
 
 fc = pd.DataFrame(fasccounts)
 maxcount = np.amax(np.amax(fc))
 # remove DS5 from each column name
 fc.columns = [col.replace('DS5', '') for col in fc.columns]
 
-g = sns.histplot(fc, element='poly', bins=range(maxcount + 1), palette='colorblind', fill=False, legend=False)
+g = sns.histplot(
+    fc, element='poly', bins=range(maxcount + 1), palette=custompal, fill=True, legend=False, multiple='layer'
+)
 plt.xlim([0, 20])
-plt.xlabel('Number of fascicles')
+plt.xlabel('Number of fascicles (per slice)')
 plt.ylabel('Count')
 plt.xticks([0, 5, 10, 15, 20])
+plt.gca().xaxis.set_minor_locator(MultipleLocator(1))
+
 # remove legend title
 # hand,lab = g.get_legend_handles_labels()
 # sns.move_legend(g,[1,0.3],title='Nerve',ncol=1,frameon=False)
@@ -328,27 +351,10 @@ sns.despine()
 # change dataframe to long form for seaborn
 fcnew = fc.stack().reset_index()
 fcnew.columns = ['slice', 'sample', 'count']
-# plot with y axis as slice, x axis as count, and color as sample
-plt.figure()
-sns.lineplot(data=fcnew, y='count', x='slice', hue='sample', palette='colorblind')
-plt.ylabel('Fascicle Count')
-plt.xlabel('Slice')
-plt.yticks([0, 10, 20])
-plt.gca().get_legend().set_title('')
-plt.gcf().set_size_inches(4, 3)
-plt.legend(ncol=3)
+print(fcnew['count'].median(axis=None))
+print(fcnew['count'].max(axis=None))
+print(fcnew['count'].min(axis=None))
 
-# redo using matplotlib with x axis as slice, y axis as count, and color as sample
-plt.figure()
-# get seaborn colorblind palette
-palette = sns.color_palette('colorblind')
-for sample in fc.columns:
-    plt.plot(fc[sample], np.array(fc.index) * 20e-3, label=sample, color=palette[fc.columns.get_loc(sample)])
-plt.ylabel('Position (mm)')
-plt.xlabel('Fascicle Count')
-plt.legend()
-plt.gcf().set_size_inches(3, 4)
-plt.xticks([0, 10, 20])
 
 # %%
 # diamcounts is a dict of lists of sizes foreach sample. Each sample has different number of sizes
@@ -366,12 +372,17 @@ g = sns.histplot(
     x='sizes',
     hue='nerve',
     element='poly',
-    palette='colorblind',
-    fill=False,
+    palette=custompal,
+    fill=True,
     legend=True,
     bins=np.arange(0, 1600, 100),
+    multiple='layer',
 )
-sns.move_legend(g, [1.1, 0.1], title='')
-plt.xlabel('Fascicle Diameter (μm)')
+sns.move_legend(g, [0.65, 0.32], title='')
+plt.xlabel('Fascicle diameter (μm)')
 plt.gcf().set_size_inches(3, 2)
 sns.despine()
+plt.gca().xaxis.set_minor_locator(MultipleLocator(100))
+print(fs.sizes.median())
+print(fs.sizes.max())
+print(fs.sizes.min())
