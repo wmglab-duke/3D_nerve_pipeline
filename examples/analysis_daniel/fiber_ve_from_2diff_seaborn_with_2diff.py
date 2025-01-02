@@ -21,7 +21,7 @@ os.chdir('../..')
 import pandas as pd
 from shapely.strtree import STRtree
 
-threshdata = pd.concat([pd.read_csv('thresh_unmatched_sim10_og.csv'), pd.read_csv('thresh_unmatched_sim10_def.csv')])
+threshdata = pd.concat([pd.read_csv('thresh_unmatched_sim3_og.csv'), pd.read_csv('thresh_unmatched_sim3_def.csv')])
 pal2d3d = ['#d95f02', '#7570b3']
 
 n_sim = 0

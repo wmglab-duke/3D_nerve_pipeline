@@ -83,7 +83,7 @@ def corrcalc(data, comparison):
 
 
 def addpwfd(data, sim, infile="plotconfig"):
-    with open(f"examples/analysis/{infile}.json") as f:
+    with open(f"examples/analysis_daniel/{infile}.json") as f:
         config = json.load(f)
     nsim_key = config["sim_data"][sim]["nsim_key"]
     for nsim in nsim_key:
@@ -165,8 +165,8 @@ newdefdat_allwf = []
 deftomatch = []
 allconcats = []
 for simNUM, stimtype in zip(
-    ['333', '3', '330', '3'],
-    ['Asymmetric & Bipolar', 'Symmetric & Bipolar', 'Asymmetric & Monopolar', 'Symmetric & Bipolar (Selective)'],
+    ['333', '330', '3', '3'],
+    ['Asymmetric & Bipolar', 'Asymmetric & Monopolar', 'Symmetric & Bipolar', 'Symmetric & Bipolar (Select)'],
 ):
 
     gogo = "initial"
@@ -240,19 +240,7 @@ for simNUM, stimtype in zip(
     newdefdat["deformed"] = newdefdat["deformation"] != "Undeformed"
     newdefdat.reset_index(inplace=True)
 
-    # plot thresholds in newdefdat by contact and deformation
-    sns.catplot(
-        data=newdefdat,
-        x="deformation",
-        y="threshold",
-        hue="contact",
-        col="nerve_label",
-        row='fiber_diam',
-        kind="box",
-        sharey=False,
-    )
-
-    if 'Fixed' in stimtype:
+    if 'Select' in stimtype:
         # Filter out cathodic and anodic data
         cathodic_df = newdefdat[newdefdat['contact'] == 'cathodic']
         anodic_df = newdefdat[newdefdat['contact'] == 'anodic']
@@ -272,18 +260,6 @@ for simNUM, stimtype in zip(
 
         for idx in cathodic_indices_to_update:
             newdefdat.loc[cathodic_df.index[idx], 'threshold'] = merged_df.loc[idx, 'threshold_anodic']
-
-        # plot thresholds in newdefdat by contact and deformation
-        sns.catplot(
-            data=newdefdat,
-            x="deformation",
-            y="threshold",
-            hue="contact",
-            col="nerve_label",
-            row='fiber_diam',
-            kind="box",
-            sharey=False,
-        )
 
     # all wf data
     newdefdat_allwf.append(newdefdat)
@@ -409,7 +385,7 @@ for simNUM, stimtype in zip(
 newdefdat_allwf = pd.concat(newdefdat_allwf).query('fiber_diam in [3,13]')
 deftomatch = pd.concat(deftomatch)
 allconcats = pd.concat(allconcats)
-
+sns.set(context='paper', style='white')
 sys.exit("prepdone")
 # %% compare dose response across waveforms and deformation
 peses = []
@@ -556,6 +532,7 @@ allpes["deformation"] = allpes.deformation.replace({'Structural': 'Deformed'})
 
 allpes.wf = allpes.wf.str.replace(' ', '\n')
 allpes.fiber_diam = allpes.fiber_diam.astype(str)
+wfpal = [tc.tol_cset('muted')[i] for i in [0, 2, 1, 3]]
 # %%
 sns.set(context='paper', style='white', font_scale=1)
 allpes['pe_abs'] = allpes['pe'].abs()
@@ -574,7 +551,8 @@ g.map_dataframe(
     errorbar=None,
     dodge=0.5,
     hue='wf',
-    palette=tc.tol_cset('muted'),
+    # hue_order = ['Asymmetric\n&\nBipolar', 'Asymmetric\n&\nMonopolar', 'Symmetric\n&\nBipolar', 'Symmetric\n&\nBipolar\n(Select)'],
+    palette=wfpal,
 )
 g.map_dataframe(
     sns.swarmplot,
@@ -585,7 +563,8 @@ g.map_dataframe(
     # errorbar=None,
     dodge=0.2,
     hue='wf',
-    palette=tc.tol_cset('muted'),
+    # hue_order = ['Asymmetric\n&\nBipolar', 'Asymmetric\n&\nMonopolar', 'Symmetric\n&\nBipolar', 'Symmetric\n&\nBipolar\n(Select)'],
+    palette=wfpal,
     edgecolor='lightgray',
     linewidth=0.5,
     s=4,
@@ -604,8 +583,8 @@ plt.gcf().set_size_inches(4, 2)
 plt.xlim(-0.5, 2.5)
 g.add_legend(
     title='',
-    ncol=4,
-    labels=['Asymmetric & Bipolar', 'Symmetric & Bipolar', 'Asymmetric & Monopolar', 'Symmetric & Bipolar (Selective)'],
+    ncol=2,
+    # labels=['Asymmetric & Bipolar', 'Asymmetric & Monopolar', 'Symmetric & Bipolar', 'Symmetric & Bipolar (Select)'],
 )  # ,ncol=2,bbox_to_anchor=[0.6,0.7], frameon=True,framealpha=1)
 g.set_ylabels('Absolute Percent Difference (%)')
 g.set_titles(col_template='D: {col_name} μm')
@@ -676,7 +655,7 @@ g.map_dataframe(
     y="aCCC",
     x="fiber_diam",
     hue="wf",
-    palette=tc.tol_cset('muted'),
+    palette=wfpal,
     errorbar=None,
     estimator='median',
     legend=False,
@@ -721,7 +700,7 @@ g.map_dataframe(
     y="CCC",
     x="fiber_diam",
     hue="wf",
-    palette=tc.tol_cset('muted'),
+    palette=wfpal,
     errorbar=None,
     estimator='median',
     legend=False,
@@ -851,3 +830,132 @@ for waveform in newdefdat_allwf.waveform.unique():
     axs[0].set_ylabel("Activation Location (cm)\n(at threshold)")
     axs[0].set_title("extrusion")
     axs[1].set_title("true-3D")
+
+# %% Thresholds plot
+newdefdat_allwf.query(f'deformation == "Structural" and contact in {cath_comparison}')
+# Group by fiber diameter, nerve label, and type
+group_cols = ['fiber_diam', 'nerve_label', 'type']
+# Calculate the median threshold for Asymmetric & Bipolar waveform
+median_asym_bipolar = (
+    newdefdat_allwf.query(
+        'deformation == "Structural" and contact in @cath_comparison and waveform == "Asymmetric & Bipolar"'
+    )
+    .groupby(group_cols)['threshold']
+    .mean()
+    .reset_index()
+    .rename(columns={'threshold': 'median_threshold'})
+)
+# Merge with the original data
+normalized_data = (
+    newdefdat_allwf.query('deformation == "Structural" and contact in @cath_comparison')
+    .reset_index()
+    .merge(median_asym_bipolar, on=group_cols, how='left')
+)
+# Normalize the threshold by the median of Asymmetric & Bipolar
+normalized_data['threshold_normalized'] = normalized_data['threshold'] / normalized_data['median_threshold']
+g = sns.catplot(
+    kind='point',
+    data=normalized_data,
+    y='threshold_normalized',
+    x='waveform',
+    hue='fiber_diam',
+    row='type',
+    estimator='mean',
+    dodge=True,
+    # errorbar=('pi',100)
+    # palette=wfpal,
+    # sharey=False,
+)
+# g.set_titles(col_template='D: {col_name} μm')
+# g.set_xlabels('Nerve')
+# g.set_ylabels('Normalized Threshold')
+# sns.move_legend(g,[0.75,0.4])
+for ax in g.axes.ravel():
+    plt.sca(ax)
+    plt.axhline(1, color='black', ls='--')
+    plt.xticks(rotation=20)
+plt.gcf().set_size_inches([4, 4])
+plt.subplots_adjust(hspace=0.2)
+import matplotlib.pyplot as plt
+import numpy as np
+
+# %%
+import pandas as pd
+import seaborn as sns
+
+# Define a "fiber key" that identifies each fiber (excluding waveform).
+fiber_key = [
+    "contact",
+    "fiber_diam",
+    "nerve_label",
+    "type",
+    "deformation",
+    "master_fiber_index",
+    # add others if needed, but NOT "waveform"
+]
+
+# 1) Extract exactly one baseline threshold (waveform="Asymmetric & Bipolar")
+df_baseline = (
+    newdefdat_allwf.query('waveform == "Asymmetric & Bipolar"')
+    .drop_duplicates(subset=fiber_key)  # ensure exactly 1 row per fiber_key
+    .copy()
+)
+
+# Rename the threshold column to "baseline_threshold"
+df_baseline.rename(columns={"threshold": "baseline_threshold"}, inplace=True)
+
+# 2) Merge that baseline with the full data
+df_merged = pd.merge(newdefdat_allwf, df_baseline[fiber_key + ["baseline_threshold"]], on=fiber_key, how="left")
+
+# 3) Compute normalized threshold by dividing by the single baseline
+df_merged["threshold_normalized"] = df_merged["threshold"] / df_merged["baseline_threshold"]
+
+# Example: Filter down if needed (e.g., only "Structural" + certain contacts)
+df_plot = df_merged.query('deformation == "Structural" and contact in @cath_comparison')
+
+# 4) Plot the normalized threshold vs. waveform, etc.
+g = sns.catplot(
+    kind='point',
+    data=df_plot,
+    x='waveform',
+    y='threshold_normalized',
+    hue='fiber_diam',  # or whatever makes sense
+    row='type',
+    estimator='mean',  # or median
+    dodge=True,
+)
+# Optionally draw a horizontal line at 1, since that's the baseline
+for ax_row in g.axes:
+    for ax in ax_row:
+        ax.axhline(1, ls='--', color='gray')
+        plt.sca(ax)
+        plt.xticks(rotation=20)
+
+plt.gcf().set_size_inches(5, 6)
+g.set_ylabels('Threshold change')
+plt.tight_layout()
+plt.show()
+
+
+# %% Thresholds plot
+newdefdat_allwf.query(f'deformation == "Structural" and contact in {cath_comparison}')
+g = sns.catplot(
+    data=newdefdat_allwf.query(f'deformation == "Structural" and contact in {cath_comparison}').reset_index(),
+    y='threshold',
+    hue='waveform',
+    kind='box',
+    x='nerve_label',
+    col='fiber_diam',
+    row='type',
+    # col_wrap=2,
+    height=4,
+    aspect=1,
+    palette=wfpal,
+    sharey=False,
+    # legend=False
+)
+g.set_titles(col_template='D: {col_name} μm')
+g.set_xlabels('Nerve')
+g.set_ylabels('Threshold (mA)')
+sns.move_legend(g, [0.75, 0.4])
+plt.gcf().set_size_inches([8, 6])

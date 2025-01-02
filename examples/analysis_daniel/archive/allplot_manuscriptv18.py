@@ -3,6 +3,7 @@
 @author: dpm42
 """
 
+# %%
 import json
 import os
 
@@ -314,7 +315,8 @@ newdefdat["deformed"] = newdefdat["deformation"] != "Undeformed"
 deftomatch = newdefdat.copy()
 
 # remove unused colors from palette
-defpal = [sns.color_palette("colorblind")[ind] for ind in [0, 2, 3, 5]]
+custompal = ['#32ADD4', '#E67D32', '#42DC7C', '#E43E8A', '#E6DD3C', '#B44BD6']
+defpal = [sns.color_palette(custompal)[ind] for ind in [0, 2, 3, 5]]
 defdefcomp = newdefdat.query('type=="true-3D" and deformation != "ASCENT"')
 defdefcomp["deformed"] = defdefcomp["deformation"] != "Undeformed"
 defsamples = ["2L", "3R", "5R", "6R"]
@@ -1525,6 +1527,7 @@ g = sns.relplot(
     # color="white",
     hue='nerve_label',
     col='contact',
+    palette=defpal,
     s=15,
     facet_kws={"sharex": 'all', "sharey": 'all', "margin_titles": True},
     edgecolor="black",
@@ -1916,8 +1919,8 @@ for ax in g.axes.ravel():
 # print max and min values for cathodic structural deformation
 print(
     scoredat.query('deformation=="Structural" and slice=="cathodic"')
-    .groupby(["fiber_diam"])[["score2d3d"]]
-    .agg([np.min, np.max])
+    .groupby(["fiber_diam"])[["aCCC"]]
+    .agg([np.min, np.max, np.median])
 )
 # %%
 sns.set(context='paper', style='whitegrid')
@@ -2487,6 +2490,8 @@ sns.barplot(
     edgecolor='k',
 )
 groupdat = deffinalmatch.groupby(["nerve_label", "fiber_diam"]).agg(np.max)
+print(groupdat.groupby(['fiber_diam']).pe.min())
+print(groupdat.groupby(['fiber_diam']).pe.median())
 print(groupdat.groupby(['fiber_diam']).pe.max())
 # sns.stripplot(
 #     data=groupdat,
@@ -2503,6 +2508,10 @@ plt.ylabel("Absolute Percent Difference (%)")
 plt.gcf().set_size_inches(3, 2.5)
 # plt.ylim(None,100)
 sns.despine()
+# %%
+deffinalmatch.pe.min()
+deffinalmatch.pe.median()
+deffinalmatch.pe.max()
 # %% CCC comparison maincomp
 nsimdata = concats.query("fiber_diam in [3]")  # TODO replace all cath comparison with non
 g = sns.relplot(
@@ -2521,6 +2530,7 @@ g = sns.relplot(
     edgecolor="black",
     linewidth=0.5,
     alpha=1,
+    palette=defpal,
     # legend=False
 )
 # for each plot, calculate CCC, and add to title
@@ -3804,7 +3814,8 @@ g.map_dataframe(
 )
 
 plt.gcf().set_size_inches(2.5, 8)
-plt.ylim(-100, 100)
+plt.ylim(-10, 10)
+plt.axhline(0)
 g.set_titles(row_template='D: {row_name} μm')
 g.set_ylabels('Off target activation (%) \n(true-3D minus extrusion)')
 g.set_xlabels('Active Contact')
@@ -3860,6 +3871,9 @@ simipledat['active_src_index'] = simipledat['active_src_index'].replace(
 print(simipledat.groupby(['fiber_diam', 'active_src_index'])['resid', 'absresid'].median())
 print(simipledat.groupby(['fiber_diam', 'active_src_index'])['resid', 'absresid'].min())
 print(simipledat.groupby(['fiber_diam', 'active_src_index'])['resid', 'absresid'].max())
+print(simipledat.groupby(['active_src_index'])['resid', 'absresid'].median())
+print(simipledat.groupby(['active_src_index'])['resid', 'absresid'].min())
+print(simipledat.groupby(['active_src_index'])['resid', 'absresid'].max())
 
 # lastly, calculate the min off target activated for each nerve, fiber_diam, active_src_index, and percent_ontarget
 selectivedat = simipledat.groupby(['nerve_label', 'fiber_diam', 'active_src_index', 'percent_ontarget'])['RC3d'].min()
@@ -5116,7 +5130,8 @@ for ax in g.axes.ravel():
             f"modeltype==@mod and fiber_diam in [13] and contact in {cath_comparison} and deformation=='Structural'"
         )
         for fiber_data in shortdat.itertuples():
-            if fiber_data.percent_activated != fiber_data.percent_activated3:
+            # if fiber_data.percent_activated != fiber_data.percent_activated3:
+            if True:
                 ax.plot(
                     [0.55, 1],
                     [fiber_data.percent_activated, fiber_data.percent_activated3],
@@ -5735,6 +5750,9 @@ simipledat['active_src_index'] = simipledat['active_src_index'].replace(
 print(simipledat.groupby(['fiber_diam', 'active_src_index'])['resid', 'absresid'].median())
 print(simipledat.groupby(['fiber_diam', 'active_src_index'])['resid', 'absresid'].min())
 print(simipledat.groupby(['fiber_diam', 'active_src_index'])['resid', 'absresid'].max())
+print(simipledat.groupby(['active_src_index'])['resid', 'absresid'].median())
+print(simipledat.groupby(['active_src_index'])['resid', 'absresid'].min())
+print(simipledat.groupby(['active_src_index'])['resid', 'absresid'].max())
 
 # lastly, calculate the min off target activated for each nerve, fiber_diam, active_src_index, and percent_ontarget
 selectivedat = simipledat.groupby(['nerve_label', 'fiber_diam', 'active_src_index', 'percent_ontarget', 'inner'])[

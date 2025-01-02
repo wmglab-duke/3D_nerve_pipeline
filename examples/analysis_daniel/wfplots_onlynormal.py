@@ -6,6 +6,7 @@ import seaborn as sns
 import tol_colors as tc
 
 mpl.rcParams['figure.dpi'] = 400
+sns.set(style='ticks', context='paper')
 
 # Define the waveform time and amplitude details
 t1 = np.linspace(0, 200e-6, 100)  # Active phase for asymmetric waveform
@@ -37,40 +38,29 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 6), sharey=True)  # Two columns
 colors = tc.tol_cset('muted')
 
 # Plot original waveforms
-axs[0].plot(t_wave1_adj * 1e6, wave1_adj, label="Asymmetric & Bipolar", lw=3.5, color=colors[0])
-axs[0].plot(t_wave1_adj * 1e6, wave1_adj, label="Asymmetric & Monopolar", lw=3.5, color=colors[2], linestyle='--')
-
-axs[0].plot(t_wave2_adj * 1e6, wave2_adj, label="Symmetric & Bipolar", linestyle='-', lw=1.5, color=colors[1])
+axs[0].axhline(0, color='gray', linestyle='-', alpha=0.5)
+axs[0].plot(t_wave1_adj * 1e6, -wave1_adj, label="Asymmetric & Bipolar", lw=1, color='k')
 
 # now plot "Asymmetric monopolar", which is identical to the asymmetric biphasic waveform
 axs[0].set_title("cathodic contact")
 axs[0].set_xlabel("Time (μs)")
-axs[0].set_ylabel("Amplitude")
-axs[0].axhline(0, color='gray', linestyle='--', alpha=0.5)
+axs[0].set_ylabel("Unscaled amplitude")
+
 # axs[0].legend()
 axs[0].spines['top'].set_visible(False)
 axs[0].spines['right'].set_visible(False)
-axs[0].legend(bbox_to_anchor=[3.4, 0.67])
+# axs[0].legend(bbox_to_anchor=[3.4, 0.67])
 # Plot polarity-flipped waveforms
-axs[1].plot(t_wave1_adj * 1e6, -wave1_adj, label="Flipped Asymmetric Bipolar", lw=3.5, color=colors[0])
-# now asympmetric monopolar is all zeros
-axs[1].plot(
-    t_wave1_adj * 1e6,
-    np.zeros_like(wave1_adj),
-    label="Flipped Asymmetric Monopolar",
-    lw=3.5,
-    color=colors[2],
-    linestyle='dashed',
-)
-axs[1].plot(t_wave2_adj * 1e6, -wave2_adj, label="Flipped Symmetric Bipolar", linestyle='-', lw=1.5, color=colors[1])
+axs[1].axhline(0, color='gray', linestyle='-', alpha=0.5, zorder=-1)
+
+axs[1].plot(t_wave1_adj * 1e6, wave1_adj, label="Flipped Asymmetric Bipolar", lw=1, color='k')
 
 axs[1].set_title("anodic contact")
 axs[1].set_xlabel("Time (μs)")
 axs[1].set_ylabel("")
-axs[1].axhline(0, color='gray', linestyle='-', alpha=0.5, zorder=-1)
 # axs[1].legend()
 axs[1].spines['top'].set_visible(False)
 axs[1].spines['right'].set_visible(False)
-plt.gcf().set_size_inches(6, 3)
+plt.gcf().set_size_inches(4, 1.8)
 
 # %%

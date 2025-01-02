@@ -60,7 +60,7 @@ def add_thresh_colorbar(ax, mint, maxt):
 
 
 def addpwfd(data, sim):
-    with open("examples/analysis/plotconfig.json") as f:
+    with open("examples/analysis_daniel/plotconfig.json") as f:
         config = json.load(f)
     nsim_key = config["sim_data"][sim]["nsim_key"]
     for nsim in nsim_key:
@@ -100,7 +100,7 @@ for samp2d, samp3d, pairname, slidename in zip(samp2ds, samp3ds, pairnames, slid
     threshdat = pd.concat([dat2d, dat3d])
     threshdat.query("nsim in [0,5]", inplace=True)
     threshdat = addpwfd(threshdat, "3")
-    threshdat.query("nsim==0", inplace=True)
+    # threshdat.query("nsim==0", inplace=True)
     # %%
     # calculate activation order
     drdat = threshdat.copy().reset_index()  # change this to repeated?
