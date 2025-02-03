@@ -17,6 +17,8 @@ sipconfig = App.GetInstance().GetInputValue()
 
 sipconfig = r'D:\work\threed\config\system/sipmeshconfig.json' if sipconfig == "" else sipconfig
 
+print(sipconfig)
+
 with open(sipconfig) as f:
     config = json.load(f)
 

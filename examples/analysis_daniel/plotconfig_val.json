@@ -1,0 +1,77 @@
+{
+  "sample_data": [
+    {
+      "exsamples": [
+        252
+      ],
+      "index3d": 253,
+      "name": "2L"
+    },
+    {
+      "exsamples": [
+        252000
+      ],
+      "index3d": 253000,
+      "name": "2L_extrusion"
+    }
+  ],
+  "sim_data": {
+    "3": {
+      "nsim_key": {
+        "0": {
+          "fiber_diam": 3,
+          "pulse_width": 0.25
+        },
+        "1": {
+          "fiber_diam": 5,
+          "pulse_width": 0.25
+        },
+        "2": {
+          "fiber_diam": 7,
+          "pulse_width": 0.25
+        },
+        "3": {
+          "fiber_diam": 9,
+          "pulse_width": 0.25
+        },
+        "4": {
+          "fiber_diam": 11,
+          "pulse_width": 0.25
+        },
+        "5": {
+          "fiber_diam": 13,
+          "pulse_width": 0.25
+        }
+      }
+    },
+    "333": {
+      "nsim_key": {
+        "0": {
+          "fiber_diam": 3,
+          "pulse_width": 0.2
+        },
+        "1": {
+          "fiber_diam": 5,
+          "pulse_width": 0.2
+        },
+        "2": {
+          "fiber_diam": 7,
+          "pulse_width": 0.2
+        },
+        "3": {
+          "fiber_diam": 9,
+          "pulse_width": 0.2
+        },
+        "4": {
+          "fiber_diam": 11,
+          "pulse_width": 0.2
+        },
+        "5": {
+          "fiber_diam": 13,
+          "pulse_width": 0.2
+        }
+      }
+    }
+  },
+  "source_sim": 3
+}

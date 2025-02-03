@@ -394,10 +394,17 @@ class Query(Configurable, Saveable):
                         potentials_product_index,
                         waveform_index,
                     ) in enumerate(sim_object.master_product_indices):
-                        (
-                            active_src_index,
-                            fiberset_index,
-                        ) = sim_object.potentials_product[potentials_product_index]
+                        try:
+                            (
+                                active_src_index,
+                                active_rec_index,
+                                fiberset_index,
+                            ) = sim_object.potentials_product[potentials_product_index]
+                        except:
+                            (
+                                active_src_index,
+                                fiberset_index,
+                            ) = sim_object.potentials_product[potentials_product_index]
                         # fetch outer->inner->fiber and out->inner maps
 
                         out_in_fib, out_in = sim_object.fiberset_map_pairs[fiberset_index]
@@ -583,11 +590,15 @@ class Query(Configurable, Saveable):
         # directory for specific n_sim
         n_sim_dir = os.path.join(sim_dir, 'n_sims', str(base_dict['nsim']), 'data', 'inputs')
         if not threed:
-            potfile = f'inner{base_dict["inner"]}_fiber{base_dict["fiber"]}.dat'
+            potfile = f'src_inner{base_dict["inner"]}_fiber{base_dict["fiber"]}.dat'
         else:
-            potfile = f'inner0_fiber{base_dict["master_fiber_index"]}.dat'
+            potfile = f'src_inner0_fiber{base_dict["master_fiber_index"]}.dat'
 
-        potentials = np.loadtxt(os.path.join(n_sim_dir, potfile), skiprows=1)[::11]
+        try:
+            potentials = np.loadtxt(os.path.join(n_sim_dir, potfile), skiprows=1)[::11]
+        except:
+            potentials = np.loadtxt(os.path.join(n_sim_dir, potfile.replace('src_', '')), skiprows=1)[::11]
+
         # calculate second derivative
         second_diff = np.diff(potentials, n=2)
         # find peak
@@ -843,7 +854,10 @@ class Query(Configurable, Saveable):
             loctimefile,
         )
 
-        aploc_data = np.loadtxt(aploctime_path, skiprows=0)
+        try:
+            aploc_data = np.loadtxt(aploctime_path, skiprows=1)[:, 1]
+        except:
+            aploc_data = np.loadtxt(aploctime_path, skiprows=0)
 
         aploc_data[np.where(aploc_data == 0)] = float('Inf')
 

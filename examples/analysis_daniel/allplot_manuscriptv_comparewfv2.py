@@ -177,8 +177,7 @@ for simNUM, stimtype in zip(
     # %% BEGIN DEFORMATION ANALYSIS
     print("deformation")
     # match fascicle thresholds
-    sns.set(font_scale=1.75)
-    sns.set_style("white")
+    sns.set(font_scale=1, style='white', context='paper')
     threshes = pd.concat(
         [
             pd.read_csv(f"thresh_unmatched_sim{simNUM}_og.csv"),
@@ -569,8 +568,8 @@ rownames(g, row_template="Absolute Percent Difference (%)\n{row_name}")
 for ax in g.axes.ravel():
     plt.sca(ax)
     # plt.xticks(rotation=20)
-    plt.xlabel("% active")
-    ax.set_xticklabels(['10', '50', '90'])
+    plt.xlabel("")
+    ax.set_xticklabels(['onset', 'half', 'saturation'])
 plt.subplots_adjust(hspace=0.1, wspace=0)
 plt.gcf().set_size_inches(4, 2)
 # plt.ylim(None, 80)
@@ -710,7 +709,7 @@ g.map_dataframe(
     linewidth=0.5,
     legend=False,
 )
-
+plt.ylabel('tCCC')
 # ax.set_xlabel('Fiber Diameter (μm)')
 # plt.ylabel("Activation Reordering")
 g.set_titles(col_template="D: {col_name} μm")

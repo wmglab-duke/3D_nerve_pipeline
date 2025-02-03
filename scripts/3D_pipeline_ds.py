@@ -33,8 +33,6 @@ os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
 sys.path.insert(0, os.path.abspath(root))
 sys.path.insert(0, os.path.join(root, 'src', 'utilities'))
 from nd_line.nd_line import nd_line
-from threedclass import FascicleConnectivityMap
-
 from src.core import Deformable, Fascicle, FiberSet, Model, Nerve, Slide, Trace
 from src.runner import Runner
 from src.utils import (
@@ -48,6 +46,7 @@ from src.utils import (
     ReshapeNerveMode,
     SetupMode,
 )
+from threedclass import FascicleConnectivityMap
 
 parser = argparse.ArgumentParser()
 parser.add_argument("config_script", nargs="?")
@@ -177,17 +176,20 @@ mesh = False
 
 model = False
 
-fibergen = True
+fibergen = False
 
 extract = True
 
-skip_getpots = True
+
+# Things that stop stuff from happening
+
+skip_getpots = False
 
 quit_premesh = False
 
 no_remesh = True
 
-skipsave = True
+skipsave = False
 
 # TODO: make each model source from datanew directory instead of main model directory
 
@@ -1458,7 +1460,7 @@ if extract:
         np.savetxt(params['path']['ascent'] + f'/samples/3D/models/0/sims/3/ss_lengths/{i}.dat', [le])
         fiberset = FiberSet(None)
         fiberset.configs.update(ascent_configs.configs)
-        fpoints = fiberset._generate_z([(0, 0)], super_sample=True, override_length=le)
+        fpoints = fiberset._generate_longitudinal([(0, 0)], super_sample=True, override_length=le)
         fpoints = [d['fiber'] for d in fpoints]
         fpoints = np.vstack(fpoints)[:, -1]
         coords = np.zeros([len(fpoints), 3])

@@ -23,7 +23,6 @@ from shapely.affinity import scale
 from shapely.geometry import LineString, Point
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
-
 from src.utils import (
     Config,
     Configurable,
@@ -467,7 +466,7 @@ class FiberSet(Configurable, Saveable):
         )
         explicit_dest = os.path.join(sim_directory, f'explicit.{file_extension}')
 
-        if not os.file.exists(explicit_source):
+        if not os.path.isfile(explicit_source):
             raise FileNotFoundError(
                 f"FiberXYMode is EXPLICIT or EXPLICIT_3D in Sim, but did not find the file {explicit_source}. "
                 "See config/templates/advanced/explicit.txt or config/templates/advanced/explicit_3d.npy for examples."

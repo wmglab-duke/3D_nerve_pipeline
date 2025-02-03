@@ -14,11 +14,11 @@ from src.utils import Object
 model = 0
 sim = 333
 threshtarget = 'def'
-early_exit = False
-normalize = False
+early_exit = True
+normalize = True
 
 # List of n_sims to loop over
-n_sims_list = [0, 5]  # Change as needed
+n_sims_list = [5, 0]  # Change as needed
 
 
 def loadcoord(sim_object, sample, model, sim, n_sim, inner, fiber):
@@ -51,7 +51,7 @@ def loadcoord(sim_object, sample, model, sim, n_sim, inner, fiber):
 rho = [1, 1, 5]
 for sample, samp3d, nerve_label in zip(
     [2521, 3721, 5721, 6721],
-    [253, 373, 573, 653, 673],
+    [2531, 3731, 5731, 6731],
     ['2Ldef', '3Rdef', '5Rdef', '6Rdef'],
 ):
 
@@ -67,7 +67,7 @@ for sample, samp3d, nerve_label in zip(
 
     # For color mapping, one color per n_sim
     # colors = plt.cm.viridis(np.linspace(0, 1, len(n_sims_list)))
-    colors = ['k', 'gray']
+    colors = ['gray', 'k']
 
     for n_sim_i, color in zip(n_sims_list, colors):
         print(n_sim_i, sample)
@@ -214,4 +214,5 @@ for sample, samp3d, nerve_label in zip(
     fig.savefig(
         os.path.join(outdir, f'{nerve_label}_{"-".join(map(str,n_sims_list))}_{sim}_2x2_norm{normalize}.png'), dpi=400
     )
+    plt.show()
     plt.close(fig)

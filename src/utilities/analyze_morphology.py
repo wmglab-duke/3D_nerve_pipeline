@@ -29,7 +29,7 @@ ascentdir = r'D:\threed_final\input\slides'
 
 os.makedirs(ascentdir, exist_ok=True)
 mpl.rcParams['figure.dpi'] = 400
-custompal = ['#32ADD4', '#42DC7C', '#E43E8A', '#E6DD3C']
+custompal = ['#32ADD4', '#42DC7C', '#E43E8A', '#B44BD6']
 
 
 def get_sorted_image_list(path, pattern):
