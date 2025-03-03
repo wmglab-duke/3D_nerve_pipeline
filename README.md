@@ -1,10 +1,11 @@
+# 3D modeling of peripheral nerve stimulation
+
 # Installation
 
 1. Clone the repository
 2. Create a subdirectory called "sipsource" and place the input .sip files there.
 3. `pip install -r requirements.txt`
 4. Copy `config/system/example_env.json` and rename to `config/system/env.json` edit with the following paths:
-
     - ASCENT_COMSOL_PATH: Path to COMSOL installation ending in `/multiphysics`
     - ASCENT_JDK_PATH: Path to jdk installation ending in `/bin` (Must be either JDK8 or 11, 11 is recommended)
     - ASCENT_PROJECT_PATH: Root of the repository
