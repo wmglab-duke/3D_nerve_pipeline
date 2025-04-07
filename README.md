@@ -1,3 +1,8 @@
+<!-- TODO
+- Add dependencies and versions of code / libraries / software / etc.
+- Add note about config README
+ -->
+
 # 3D modeling of peripheral nerve stimulation
 
 # Installation
