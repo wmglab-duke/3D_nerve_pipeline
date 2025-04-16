@@ -1,49 +1,59 @@
 {
+  "sourcefile": "my_segmentation.sip",
+  "sourcedir": "../input/sipsource",
   "config": {
     "model": "model.json",
-    "path": "D:/3D_VNS/config",
+    "path": "../config",
     "run": "run.json"
+    "sample": "sample.json"
   },
   "input": {
-    "i_mask": "6L_Fascicles_Centered",
-    "n_mask": "6L_Epineurium_Centered",
+    "i_mask": "endoneurium_ds_opened",
+    "n_mask": "epineurium_destepped",
     "um_per_px": 10,
     "um_per_slice": 100,
     "z+": "caudal",
-    "z-": "rostral"
+    "z-": "rostral",
   },
   "mesh": {
-    "internal_change_rate": 30,
-    "max_edge_length": 1.6,
-    "max_error": 0.001,
     "min_edge_length": 0.01,
+    "max_error": 0.005,
+    "max_edge_length": 1.6,
+    "internal_change_rate": 30,
+    "surface_change_rate": 60,
     "n_layer_elements": 1.0,
     "smooth_against_background": true,
-    "surface_change_rate": 60
+    "second_order": true,
+    "use_nastran": true
   },
   "output": {
-    "addl_cuff_buffer": 0,
+    "image_um_per_px": 5,
     "id_font": 60,
-    "image_um_per_px": 5
+    "addl_cuff_buffer": 0,
+    "slices": {
+      "rostral": 27700,
+      "center": 29051,
+      "caudal": 30400,
+      "caudalfar": 31750,
+      "caudalfarfar": 33100,
+      "rostralfar": 26350,
+      "rostralfarfar": 25000
+    }
   },
   "path": {
-    "ascent": "7_ascent",
-    "comsol": "5_comsol",
-    "fibers": "3_fiberset",
-    "mesh": "4_meshing",
-    "neuron": "6_neuron",
-    "preprocess": "1_preprocessed",
-    "sip_input": "0_base",
-    "slides": "2_slides",
-    "temp": "tmp"
+    "slides": "slides",
+    "fibers": "fiberset",
+    "mesh": "mesh",
+    "comsol": "model",
+    "ascent": "ascent"
   },
   "preprocess": {
+    "upsample_z": 1,
     "buffer": 10,
-    "center_target": "nerve",
     "crop": "True",
-    "fsmoothing": 100,
-    "nsmoothing": 300,
-    "upsample_z": 2
+    "center_target": "nerve",
+    "nsmoothing": 25,
+    "fsmoothing": 10
   },
   "project_path": "D:/3D_VNS/datanew/6L"
 }
