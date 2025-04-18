@@ -179,7 +179,7 @@ class _HeatmapPlotter:
             ax=ax,
             outers_flag=self.plot_outers,
             inner_format='k-',
-            scalebar=True,
+            scalebar=False,
             line_kws=self.line_kws,
         )
         if np.any([bool(x) for x in self.fiber_colors]):
