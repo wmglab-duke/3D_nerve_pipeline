@@ -21,7 +21,7 @@ This document describes the available config parameters for the 3D pipeline. Par
   - `model`: Model specifications file.
   - `sample`: Sample information file.
 
-- **project_path**: Absolute path to the project's base directory on the system. Example: `"D:\\threed_final\\datanew\\2Lstrip"`. 
+- **project_path**: Absolute path to the project's base directory on the system. Example: `"D:\\threed_final\\datanew\\2Lstrip"`.
 
 ## Input Parameters
 

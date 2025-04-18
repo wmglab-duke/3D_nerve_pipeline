@@ -1,10 +1,8 @@
 {
-  "sourcefile": "my_segmentation.sip",
-  "sourcedir": "../input/sipsource",
   "config": {
     "model": "model.json",
     "path": "../config",
-    "run": "run.json"
+    "run": "run.json",
     "sample": "sample.json"
   },
   "input": {
@@ -13,47 +11,49 @@
     "um_per_px": 10,
     "um_per_slice": 100,
     "z+": "caudal",
-    "z-": "rostral",
+    "z-": "rostral"
   },
   "mesh": {
-    "min_edge_length": 0.01,
-    "max_error": 0.005,
-    "max_edge_length": 1.6,
     "internal_change_rate": 30,
-    "surface_change_rate": 60,
+    "max_edge_length": 1.6,
+    "max_error": 0.005,
+    "min_edge_length": 0.01,
     "n_layer_elements": 1.0,
-    "smooth_against_background": true,
     "second_order": true,
+    "smooth_against_background": true,
+    "surface_change_rate": 60,
     "use_nastran": true
   },
   "output": {
-    "image_um_per_px": 5,
-    "id_font": 60,
     "addl_cuff_buffer": 0,
+    "id_font": 60,
+    "image_um_per_px": 5,
     "slices": {
-      "rostral": 27700,
-      "center": 29051,
       "caudal": 30400,
       "caudalfar": 31750,
       "caudalfarfar": 33100,
+      "center": 29051,
+      "rostral": 27700,
       "rostralfar": 26350,
       "rostralfarfar": 25000
     }
   },
   "path": {
-    "slides": "slides",
+    "ascent": "ascent",
+    "comsol": "model",
     "fibers": "fiberset",
     "mesh": "mesh",
-    "comsol": "model",
-    "ascent": "ascent"
+    "slides": "slides"
   },
   "preprocess": {
-    "upsample_z": 1,
     "buffer": 10,
-    "crop": "True",
     "center_target": "nerve",
+    "crop": "True",
+    "fsmoothing": 10,
     "nsmoothing": 25,
-    "fsmoothing": 10
+    "upsample_z": 1
   },
-  "project_path": "D:/3D_VNS/datanew/6L"
+  "project_path": "D:/3D_VNS/datanew/6L",
+  "sourcedir": "../input/sipsource",
+  "sourcefile": "my_segmentation.sip"
 }

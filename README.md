@@ -23,7 +23,7 @@ Note that this pipeline requires basic familiarity with the ASCENT pipeline (htt
 
 # Running
 
-1. Create a configuration file by copying `config/templates/3D.json` to `config/<myfile>.json` (replace `<myfile>` with a name of your choice). The configuration file contains all the parameters for the pipeline. The parameters are described in the README file in the `config` directory. 
+1. Create a configuration file by copying `config/templates/3D.json` to `config/<myfile>.json` (replace `<myfile>` with a name of your choice). The configuration file contains all the parameters for the pipeline. The parameters are described in the README file in the `config` directory.
 2. Place the necessary ASCENT configuration files in the following locations:
   - `sim.json`: `config` directory
   - `model.json`: `config/models` directory
