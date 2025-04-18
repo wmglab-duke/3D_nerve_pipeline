@@ -10,7 +10,8 @@
   "<gating_s_space>": "gating_s_space_inner\\d+_fiber\\d+_amp\\d+\\.dat",
   "<gating_s_times>": "gating_s_time_inner\\d+_fiber\\d+_amp\\d+\\.dat",
   "<thresh>": "thresh_inner\\d+_fiber\\d+\\.dat",
-  "<ve_files>": "inner\\d+_fiber\\d+.dat",
+  "<ve_rec_files>": "rec_inner\\d+_fiber\\d+.dat",
+  "<ve_src_files>": "src_inner\\d+_fiber\\d+.dat",
   "<ves>": "Ve_inner\\d+_fiber\\d+_amp\\d+\\.dat",
   "<vm_times>": "Vm_time_inner\\d+_fiber\\d+_amp\\d+\\.dat"
 }

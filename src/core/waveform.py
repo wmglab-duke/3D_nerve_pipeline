@@ -16,7 +16,6 @@ import warnings
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal as sg
-
 from src.utils import Configurable, Saveable
 from src.utils.enums import Config, SetupMode, WaveformMode, WriteMode
 

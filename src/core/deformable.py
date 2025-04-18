@@ -15,10 +15,9 @@ import pymunk.pygame_util
 from pygame.colordict import THECOLORS
 from pygame.locals import DOUBLEBUF, HWSURFACE, K_ESCAPE, KEYDOWN, QUIT, RESIZABLE
 from shapely.geometry import LineString, Point
-from tqdm import tqdm
-
 from src.core import Slide, Trace
 from src.utils import ReshapeNerveMode
+from tqdm import tqdm
 
 
 class Deformable:

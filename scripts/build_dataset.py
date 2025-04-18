@@ -17,8 +17,8 @@ import warnings
 
 import numpy as np
 import pandas as pd
-
 from src.core.query import Query
+from tqdm import tqdm
 
 # RUN THIS FROM REPOSITORY ROOT
 
@@ -229,7 +229,10 @@ def tidy_n_sim_index_json(thing_to_copy: str, model_config_path: str, tmp_files_
     """
     n_sim_index_json = load(thing_to_copy)
     model_config = load(model_config_path)
-    cuff = model_config['cuff']['preset']
+    try:
+        cuff = model_config['cuff']['preset']
+    except:
+        cuff = model_config['cuff'][0]['preset']
 
     keys = list(n_sim_index_json['active_srcs'])
     for key in keys:
@@ -345,6 +348,11 @@ def run(args):
         print(f'\ndataset_index {dataset_index} runtime: {elapsed} (HH:MM:SS)')
 
         print(f'======================= DONE WITH DATASET: {dataset_index} =======================')
+        # create done.txt
+        done_path = os.path.join(dataset_index_directory, 'done.txt')
+        with open(done_path, 'w') as f:
+            f.write('done')
+        print(f'Created done.txt at {done_path}')
 
     return
 
@@ -361,38 +369,37 @@ def generate_dataset(  # noqa: D103
     regex_legend,
     tmp_files_directory,
 ):
-    # check for existing dataset
+    print("Checking for existing dataset...")
     check_existing_dataset(args, dataset_index, dataset_index_directory)
 
-    # make directories
+    print("Making dataset directories...")
     code_destination, data_destination, metadata_destination, tmp_files_dataset_destination = make_dataset_directories(
         dataset_index, dataset_index_directory, tmp_files_directory
     )
 
-    # FREEZE ENVIRONMENT
-    freeze_pip_requirements(metadata_destination)
+    print("Freezing environment requirements...")
+    # freeze_pip_requirements(metadata_destination)
+    print("Loading Excel file...")
     xls = pd.ExcelFile(queried_indices_path, engine='openpyxl')
     df = pd.read_excel(xls, None)
 
-    # LOAD ASCENT INDICES, AND, IF APPLICABLE, USER-INDICATED PICKY SPARC INDICES
+    print("Processing indices and loading ASCENT indices...")
     ascent_indices, sparc_sams, sparc_subs = process_indices(df)
 
-    # CHECK THAT PICKY ENTRIES WITH THE SAME SAMPLE (ASCENT) ARE ASSIGNED TO THE SAME SUB+SAM (SPARC);
-    # ALSO ASSIGN PICKY SUB+SAM
+    print("Assigning picky SPARC indices...")
     samples_sub_sam = assign_picky(ascent_indices, sparc_sams, sparc_subs)
 
-    # ASSIGN NON-PICKY SUB+SAM, MAKE NEW INDICES LAZILY AS NEEDED TO FILL
+    print("Assigning non-picky SPARC indices...")
     assign_non_picky(ascent_indices, samples_sub_sam, sparc_subs)
 
-    # SAVE SAMPLES_SUB_SAM TO FILE FOR USE IN ANALYSIS CODE
-    # TO CONVERT ASCENT FILE STRX TO DATASET FILE STRX WITH SPARC SUB+SAM
+    print("Saving samples_sub_sam to file...")
     samples_sub_sam_path = os.path.join(metadata_destination, 'samples_sub_sam.json')
     to_json(samples_sub_sam_path, samples_sub_sam)
 
-    # COMPILE ALL INDICES OF THINGS WE WILL COPY: SAMPLE, MODEL, SIM, N-SIM,
+    print("Compiling master indices...")
     master_indices = compile_indices(ascent_indices, samples_sub_sam)
 
-    # MAKE LIST OF THINGS TO COPY
+    print("Listing all things to copy...")
     (
         destination_ascent_config_directory,
         directories_to_copy,
@@ -409,36 +416,36 @@ def generate_dataset(  # noqa: D103
         tmp_files_dataset_destination,
     )
 
-    # CHECK THAT DIRECTORIES TO COPY ARE NOT EMPTY
+    print("Checking for empty directories to copy...")
     check_empty(directories_to_copy)
 
-    # ADD FILES FROM FILE LISTS TO FILES TO COPY USING REGEX
+    print("Adding files from file lists using regex...")
     regex_copy_list(file_lists_to_copy, files_to_copy, regex_legend)
 
-    # REMOVE DUPLICATE THINGS TO COPY
+    print("Removing duplicate entries from copy lists...")
     directories_to_copy, files_to_copy, modified_files_to_copy = remove_duplicates(
         directories_to_copy, files_to_copy, modified_files_to_copy
     )
 
-    # MAKE FOLDERS STRX IN OUTPUT DIRECTORY FOR FILES, LATER MAKE DIRECTORIES TO COPY WHEN WE COPY
+    print("Creating folders for each file to copy in output directory...")
     make_folders_for_copy(data_destination, files_to_copy, samples_sub_sam)
 
-    # COPY FILES
+    print("Copying files...")
     already_copied_files, copied_mph_files = copy_files(
         comsol_file_ending, data_destination, files_to_copy, samples_sub_sam
     )
 
-    # COPY MODIFIED FILES
+    print("Copying modified files...")
     copy_modified_files(data_destination, modified_files_to_copy, samples_sub_sam)
 
-    # COPY DIRECTORIES
+    print("Copying directories...")
     copy_directories(comsol_file_ending, copied_mph_files, data_destination, directories_to_copy, samples_sub_sam)
 
-    # COPY SIM CONFIGS
+    print("Copying simulation configuration files...")
     copy_sim_configs(already_copied_files, destination_ascent_config_directory, sims_to_copy)
 
-    # Clear COMSOL files and make README
     if len(copied_mph_files) > 1:
+        print("Making COMSOL cleared README and handing off COMSOL files...")
         make_comsol_cleared_readme(
             my_dataset_index=dataset_index,
             comsol_clearing_config_directory=comsol_clearing_exceptions_directory,
@@ -447,12 +454,12 @@ def generate_dataset(  # noqa: D103
         )
         handoff(comsol_files=copied_mph_files, env=env_config, my_dataset_index=dataset_index)
 
-    # Get final sample and subject lists
+    print("Getting final subjects and samples lists...")
     sams, subs = get_sams_subs(samples_sub_sam)
     print(f'NUMBER OF SUBJECTS: {len(subs)}')
     print(f'NUMBER OF SAMPLES: {len(sams)}')
 
-    # DELETE TMPDIR
+    print("Deleting temporary dataset directory...")
     shutil.rmtree(tmp_files_dataset_destination)
     print(f'REMEMBER TO ADD YOUR SCRIPTS AND VERIFY THAT THEY RUN IN PLACE FROM: {code_destination}\n')
     print(
@@ -482,7 +489,7 @@ def get_sams_subs(samples_sub_sam):  # noqa: D103
 def copy_files(comsol_file_ending, data_destination, files_to_copy, samples_sub_sam):  # noqa: D103
     already_copied_files = []
     copied_mph_files = []  # to use later if you choose to clear mesh/solutions
-    for file in files_to_copy:
+    for file in tqdm(files_to_copy, desc="Copying files", unit="file"):
         sample = int(file.split(os.sep)[1])
         sub = samples_sub_sam[sample]['sub']
         sam = samples_sub_sam[sample]['sam']
@@ -511,6 +518,8 @@ def copy_modified_files(data_destination, modified_files_to_copy, samples_sub_sa
         sam = samples_sub_sam[sample]['sam']
         base_directory = os.path.join(data_destination, f'sub-{sub}', f'sam-{sam}-sub-{sub}')
         new_file_path = os.path.join(base_directory, 'samples') + dataset_file_path
+
+        os.makedirs(os.path.dirname(new_file_path), exist_ok=True)
 
         if not os.path.exists(new_file_path):
             shutil.copy(file, new_file_path)
@@ -853,6 +862,7 @@ def check_existing_dataset(args, dataset_index, dataset_index_directory):  # noq
                 f'or pass the -f option to overwrite the existing dataset_index files.'
             )
         try:
+            print("Dataset found, deleting existing dataset...")
             shutil.rmtree(dataset_index_directory)
         except OSError as e:
             raise OSError('Could not delete existing dataset_index directory') from e

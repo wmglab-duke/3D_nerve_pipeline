@@ -1082,10 +1082,17 @@ class Query(Configurable, Saveable):
         optional_keys,
     ):
         nsim_dir = os.path.join(sim_dir, 'n_sims', str(nsim_index))
-        (
-            active_src_index,
-            fiberset_index,
-        ) = sim_object.potentials_product[potentials_product_index]
+        try:
+            (
+                active_src_index,
+                active_rec_index,
+                fiberset_index,
+            ) = sim_object.potentials_product[potentials_product_index]
+        except:
+            (
+                active_src_index,
+                fiberset_index,
+            ) = sim_object.potentials_product[potentials_product_index]
         # fetch additional sample, model, and sim values
         # that's one juicy list comprehension right there
         values = [
