@@ -3,6 +3,8 @@
 - Add note about config README
  -->
 
+[![DOI](https://zenodo.org/badge/1149201201.svg)](https://doi.org/10.5281/zenodo.18475037)
+
 # 3D modeling of peripheral nerve stimulation
 
 Note that this pipeline requires basic familiarity with the ASCENT pipeline (https://github.com/wmglab-duke/ascent). Therefore, it is recommended to complete the ASCENT tutorial before using this software.
