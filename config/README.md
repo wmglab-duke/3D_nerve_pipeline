@@ -1,21 +1,21 @@
 # Configuration Documentation
 
-This document describes the available config parameters for the 3D pipeline. Parameters with TODO have immediate action items.
+This document describes the available config parameters for the 3D pipeline.
 
 ## General Configuration
 
-- **sourcedir**: Directory relative to the current working directory where source files are located. Example: `"../sipsource"` indicates a folder one level up in the directory hierarchy. #TODO remove in favor of assuming this value
+- **sourcedir**: Directory relative to the current working directory where source files are located. Example: `"../sipsource"` indicates a folder one level up in the directory hierarchy.
 
 - **sourcefile**: Name of the simpleware source file for the process. Example: `"2L_strip.sip"`.
 
-- **path**: Directories for different stages or aspects of the workflow, categorized as follows: #TODO remove this and migrate to ASCENT data structure
+- **path**: Directories for different stages or aspects of the workflow, categorized as follows:
   - `slides`: Directory for slide images.
   - `fibers`: Directory for fiber datasets.
   - `mesh`: Directory for meshing results.
   - `comsol`: Directory for COMSOL simulation files.
   - `ascent`: Directory for ascent data.
 
-- **config**: Path and names of essential configuration files: #TODO remove this and migrate to ASCENT data structure
+- **config**: Path and names of essential configuration files:
   - `path`: Directory containing configuration files.
   - `run`: Run parameters file.
   - `model`: Model specifications file.
