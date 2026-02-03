@@ -39,13 +39,13 @@ Note that this pipeline requires basic familiarity with the ASCENT pipeline (htt
 2. The pipeline will exit prior to actually running the deformation simulation. You need to do the following:
     - Look through `predeform.sip` to see that no fascicle jump around. If they do, you must manually correct the segmentation.
     - Manually run the deform COMSOL simulation (`datanew/<myfile>/2_slides/doubledeform`). You may need to adjust the contact penalty parameters to get a successful simulation. Even then, you may not succeed. However, if you simulation gets most of the way there, it may still be usable since the ramping is exponential decreasing.
-    - Manually export the final simulation stepas postdeform.stl
+    - Manually export the final simulation step as postdeform.stl
     - Manually Import into Simpleware predeform file and scroll through to check that everything looks ok.
     - Manually use the code in `scripts/sip_postdeform.py` to generate contour coordinates for the deformed fascicles.
     - Run the pipeline again, it should skip deformation now that the proper files are in place.
     - If there are any topological mismatches a window will pop up and ask you to indicate fascicles which watershed segmentation thinks are separate but are not.
     - Once this completes, the pipeline will run as normal.
-Note: Sometimes the mesh from COMSOL will be non-manifold. In these cases, you may need to "fix" the import geometry before exporting contours. However, this will result in a LOT of windows popping up during the watershed. To avoid this, new code should be written that loops through and export all possible contours where the mesh is manifold, skipping the others, then fixes the STL, and exports the remaining contours.
+Note: Sometimes the mesh from COMSOL will be non-manifold. In these cases, you may need to "fix" the import geometry before exporting contours. However, this will result in a LOT of windows popping up during the watershed. To avoid this, write a short code snippet in the API window to loop through and export all possible contours where the mesh is manifold, skipping the others, then apply the fix operation, and export the remaining contours.
 
 Other note: sometimes you may want to run a new cuff on a deformed nerve without redoing the whole deformation process. In this case, follow all the steps to make a new config as normal, then:
 1. Copy the "slides" folder to the relevant new directory (in datanew, e.g., from 2Ldeform to 2Ldeformnewcuff)
